@@ -1,0 +1,75 @@
+const COP = new Intl.NumberFormat('es-CO', {
+  style: 'currency',
+  currency: 'COP',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+})
+
+const es = (n, dec = 1) =>
+  n.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: dec })
+
+// Escala colombiana: billón = 10^12, millón = 10^6
+export function formatCOP(value) {
+  if (value == null) return '—'
+  const abs = Math.abs(value)
+  if (abs >= 1e12) return `$${es(value / 1e12)} billones`
+  if (abs >= 1e6) return `$${es(value / 1e6)} millones`
+  if (abs >= 1e3) return `$${es(value / 1e3, 0)} mil`
+  return COP.format(value)
+}
+
+export function formatCOPFull(value) {
+  if (value == null) return '—'
+  return COP.format(value)
+}
+
+export function daysSince(dateStr) {
+  if (!dateStr) return null
+  const diff = Date.now() - new Date(dateStr).getTime()
+  return Math.floor(diff / 86_400_000)
+}
+
+export function semaforo(days) {
+  if (days == null || days <= 0) return null
+  if (days <= 30) return 'verde'
+  if (days <= 180) return 'ambar'
+  return 'rojo'
+}
+
+export function formatDate(dateStr) {
+  if (!dateStr) return '—'
+  return new Date(dateStr).toLocaleDateString('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+// Convierte un número de días a una forma humana (meses / años).
+// Devuelve null si el número de días ya es fácil de leer por sí solo.
+export function humanDuration(days) {
+  if (days == null) return null
+  const abs = Math.abs(days)
+  if (abs < 60) return null
+  if (abs < 365) {
+    const m = Math.round(abs / 30)
+    return `${m} ${m === 1 ? 'mes' : 'meses'}`
+  }
+  const years = Math.floor(abs / 365)
+  const months = Math.round((abs % 365) / 30)
+  if (years >= 5 || months === 0) {
+    return `${years} ${years === 1 ? 'año' : 'años'}`
+  }
+  return `${years} ${years === 1 ? 'año' : 'años'} ${months} m`
+}
+
+// Porcentaje seguro (evita división por cero)
+export function pct(part, whole) {
+  if (!whole || part == null) return null
+  return (part / whole) * 100
+}
+
+export function formatPct(value, dec = 1) {
+  if (value == null) return '—'
+  return `${es(value, dec)}%`
+}
