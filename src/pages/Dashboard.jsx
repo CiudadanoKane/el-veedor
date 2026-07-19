@@ -91,17 +91,90 @@ function DesgloseEstados({ query }) {
   )
 }
 
+// Separa retrasos plausiblemente reales de registros sin cerrar. La distinción
+// es esencial: sumarlos todos y llamarlos "mora" exagera el problema real.
+function VencidosPorAntiguedad({ query, total, enEjecucion, pctVencidos }) {
+  const TRAMOS = [
+    { k: 'recientes', label: 'Vencidos hace menos de 6 meses', tono: 'bg-danger',
+      nota: 'Muy probablemente retrasos reales y activos' },
+    { k: 'medios', label: 'Vencidos entre 6 meses y 1 año', tono: 'bg-warning',
+      nota: 'Zona mixta: retrasos largos o registros rezagados' },
+    { k: 'antiguos', label: 'Vencidos hace más de 1 año', tono: 'bg-textSecondary',
+      nota: 'Casi siempre contratos terminados que nadie cerró en SECOP' },
+  ]
+
+  return (
+    <section className="bg-surface rounded-xl border border-border p-5">
+      <h2 className="font-display font-semibold text-lg mb-1">
+        ¿Cuántos están realmente retrasados?
+      </h2>
+      <p className="text-sm text-textSecondary mb-1">
+        {total != null && enEjecucion
+          ? `${total.toLocaleString('es-CO')} contratos (${pctVencidos} de los vigentes) tienen el plazo vencido — pero no todos son retrasos reales.`
+          : 'Distribución de los contratos con plazo vencido según su antigüedad.'}
+      </p>
+      <Methodology>
+        Un contrato figura con <strong>plazo vencido</strong> si su estado es "En
+        ejecución" y su fecha de fin ya pasó. Pero eso mezcla dos situaciones muy
+        distintas: un contrato vencido hace un mes probablemente está genuinamente
+        retrasado, mientras que uno vencido hace cinco años casi con certeza{' '}
+        <strong>ya terminó y la entidad nunca actualizó el registro</strong>. Por eso
+        no sumamos todo bajo la etiqueta "mora": sería exagerar. La cifra destacada
+        arriba usa solo los vencidos en los últimos 6 meses.
+      </Methodology>
+
+      <div className="mt-4">
+        <QueryState query={query} empty="Sin contratos con plazo vencido.">
+          {(data) => {
+            const suma = data.recientes + data.medios + data.antiguos
+            return (
+              <ul className="space-y-3">
+                {TRAMOS.map((t) => {
+                  const n = data[t.k]
+                  return (
+                    <li key={t.k}>
+                      <div className="flex items-center gap-3 text-sm mb-1">
+                        <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${t.tono}`} />
+                        <span className="text-textPrimary flex-1 min-w-0">{t.label}</span>
+                        <span className="tabular-nums text-textPrimary font-medium shrink-0">
+                          {n.toLocaleString('es-CO')}
+                        </span>
+                        <span className="tabular-nums text-textSecondary w-14 text-right shrink-0">
+                          {formatPct(pct(n, suma))}
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden mb-1">
+                        <div className={`h-full ${t.tono}`} style={{ width: `${(n / suma) * 100}%` }} />
+                      </div>
+                      <p className="text-xs text-textSecondary pl-6">{t.nota}</p>
+                    </li>
+                  )
+                })}
+              </ul>
+            )
+          }}
+        </QueryState>
+      </div>
+    </section>
+  )
+}
+
 export function Dashboard() {
   const { filters } = useFilters()
-  const { generales, porEstado, mora, porSector, entidadesMora } =
+  const { generales, porEstado, mora, vencidosPorAntiguedad, porSector, entidadesMora } =
     useDashboardStats(filters)
 
   const scope = filters.city || filters.department || 'Colombia'
 
-  // La mora solo aplica a contratos En ejecución: ese es el denominador honesto.
+  // Solo los contratos En ejecución pueden tener el plazo vencido.
   const enEjecucion = porEstado.data?.enEjecucion
-  const pctMoraNum = pct(mora.data?.total, enEjecucion)
-  const pctMora = pctMoraNum != null ? formatPct(pctMoraNum) : null
+  const ant = vencidosPorAntiguedad.data
+  // El indicador principal es el retraso RECIENTE: los vencidos hace más de un
+  // año casi siempre son registros sin cerrar, no retrasos activos.
+  const pctRecienteNum = pct(ant?.recientes, enEjecucion)
+  const pctReciente = pctRecienteNum != null ? formatPct(pctRecienteNum) : null
+  const pctVencidosNum = pct(mora.data?.total, enEjecucion)
+  const pctVencidos = pctVencidosNum != null ? formatPct(pctVencidosNum) : null
   const pctRiesgoNum = pct(mora.data?.riesgo, generales.data?.valor)
   const pctRiesgo = pctRiesgoNum != null ? formatPct(pctRiesgoNum) : null
 
@@ -129,16 +202,12 @@ export function Dashboard() {
           loading={generales.isLoading}
         />
         <StatCard
-          label="Contratos en mora"
-          value={mora.data?.total?.toLocaleString('es-CO') ?? '—'}
-          pct={pctMora ? `${pctMora} de los vigentes` : null}
-          sub={
-            enEjecucion
-              ? `De ${enEjecucion.toLocaleString('es-CO')} contratos en ejecución`
-              : 'En ejecución con plazo vencido'
-          }
+          label="Vencidos hace poco"
+          value={ant?.recientes?.toLocaleString('es-CO') ?? '—'}
+          pct={pctReciente ? `${pctReciente} de los vigentes` : null}
+          sub="Plazo vencido en los últimos 6 meses"
           tone="danger"
-          loading={mora.isLoading || porEstado.isLoading}
+          loading={vencidosPorAntiguedad.isLoading || porEstado.isLoading}
         />
         <StatCard
           label="Valor en riesgo"
@@ -149,6 +218,13 @@ export function Dashboard() {
           loading={mora.isLoading || generales.isLoading}
         />
       </div>
+
+      <VencidosPorAntiguedad
+        query={vencidosPorAntiguedad}
+        total={mora.data?.total}
+        enEjecucion={enEjecucion}
+        pctVencidos={pctVencidos}
+      />
 
       <DesgloseEstados query={porEstado} />
 

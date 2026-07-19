@@ -33,6 +33,26 @@ export function moraConditions() {
   ]
 }
 
+// Fecha de hace N días, en formato SoQL.
+export function haceDias(n) {
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  return `${d.toISOString().split('T')[0]}T00:00:00`
+}
+
+// Rangos de antigüedad del vencimiento. La distinción importa: un contrato
+// vencido hace un mes es muy probablemente un retraso real; uno vencido hace
+// cinco años casi siempre es un registro que la entidad nunca cerró.
+export const RANGOS_VENCIMIENTO = {
+  todos: [],
+  recientes: [`fecha_de_fin_del_contrato >= '${haceDias(180)}'`],
+  medios: [
+    `fecha_de_fin_del_contrato < '${haceDias(180)}'`,
+    `fecha_de_fin_del_contrato >= '${haceDias(365)}'`,
+  ],
+  antiguos: [`fecha_de_fin_del_contrato < '${haceDias(365)}'`],
+}
+
 // Estados que NO representan un contrato real y vigente:
 //   Borrador          → aún no es un contrato
 //   Cancelado         → se canceló; no compromete recursos ($1.156 billones!)

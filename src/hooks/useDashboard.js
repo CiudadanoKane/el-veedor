@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
 import { DATASETS, ESTADO_ACTIVO } from '../lib/constants'
-import { whereFromFilters, buildWhere, moraConditions, soloContratosValidos } from '../lib/soql'
+import {
+  whereFromFilters, buildWhere, moraConditions, soloContratosValidos,
+  RANGOS_VENCIMIENTO,
+} from '../lib/soql'
 
 const DS = DATASETS.CONTRATOS
 
@@ -44,6 +47,30 @@ export function useDashboardStats(filters = {}) {
       const enEjecucion =
         lista.find((x) => x.estado === ESTADO_ACTIVO)?.n ?? 0
       return { lista, enEjecucion }
+    },
+  })
+
+  // Vencidos por antigüedad. Separarlos es clave: los de más de un año casi
+  // siempre son registros sin cerrar, no retrasos activos.
+  const vencidosPorAntiguedad = useQuery({
+    queryKey: ['dash', 'antiguedad', filters],
+    queryFn: async () => {
+      const contar = async (rango) => {
+        const where = buildWhere(
+          whereFromFilters(filters, [...moraConditions(), ...RANGOS_VENCIMIENTO[rango]]),
+        )
+        const rows = await socrataQuery(
+          DS,
+          `SELECT count(id_contrato) as n ${where} LIMIT 1`,
+        )
+        return parseInt(rows[0]?.n ?? 0, 10)
+      }
+      const [recientes, medios, antiguos] = await Promise.all([
+        contar('recientes'),
+        contar('medios'),
+        contar('antiguos'),
+      ])
+      return { recientes, medios, antiguos }
     },
   })
 
@@ -97,5 +124,7 @@ export function useDashboardStats(filters = {}) {
       })),
   })
 
-  return { generales, porEstado, mora, porSector, entidadesMora }
+  return {
+    generales, porEstado, mora, vencidosPorAntiguedad, porSector, entidadesMora,
+  }
 }

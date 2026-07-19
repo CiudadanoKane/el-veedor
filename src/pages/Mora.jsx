@@ -14,7 +14,8 @@ import { formatCOP, formatDate, daysSince, humanDuration } from '../lib/formatte
 export function Mora() {
   const { filters } = useFilters()
   const [orden, setOrden] = useState('fecha')
-  const query = useMora(filters, 100, orden)
+  const [rango, setRango] = useState('recientes')
+  const query = useMora(filters, 100, orden, rango)
 
   const columns = [
     {
@@ -68,7 +69,7 @@ export function Mora() {
       <GlobalFilters />
 
       <div className="bg-surface rounded-xl border border-border p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-1">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
           <h2 className="font-display font-semibold text-lg">
             {query.data ? `${query.data.length} contratos mostrados` : 'Resultados'}
           </h2>
@@ -81,13 +82,31 @@ export function Mora() {
             ]}
           />
         </div>
+
+        <div className="flex flex-wrap items-center gap-2 mb-1">
+          <span className="text-xs text-textSecondary">Antigüedad del vencimiento:</span>
+          <Segmented
+            value={rango}
+            onChange={setRango}
+            options={[
+              { value: 'recientes', label: 'Últimos 6 meses' },
+              { value: 'medios', label: '6 meses a 1 año' },
+              { value: 'antiguos', label: 'Más de 1 año' },
+              { value: 'todos', label: 'Todos' },
+            ]}
+          />
+        </div>
         <Methodology>
-          Un contrato está <strong>en mora</strong> si su <code>estado</code> es
-          "En ejecución" y su <code>fecha de fin</code> es anterior a hoy. El semáforo
-          clasifica por antigüedad del vencimiento: verde &lt;30 días, ámbar 30–180,
-          rojo &gt;180. El "valor pendiente" es lo que aún falta por ejecutar según SECOP.
-          Se muestran los primeros 100 casos, ordenados del vencimiento más antiguo.
-          <strong> Haz clic en cualquier fila para ver el detalle y la interpretación.</strong>
+          Un contrato aparece aquí si su <code>estado</code> es "En ejecución" y su{' '}
+          <code>fecha de fin</code> ya pasó. <strong>Importante:</strong> eso no siempre
+          significa retraso. De los 1,33 millones con plazo vencido en el país, el{' '}
+          <strong>53% venció hace más de un año</strong> — casi siempre son contratos que
+          ya terminaron pero cuyo estado la entidad nunca actualizó en SECOP. Por eso el
+          filtro de antigüedad viene por defecto en <strong>"Últimos 6 meses"</strong>:
+          esos son los que con mayor probabilidad están genuinamente retrasados. El
+          semáforo clasifica por días vencidos: verde &lt;30, ámbar 30–180, rojo &gt;180.
+          Se muestran hasta 100 casos.{' '}
+          <strong>Haz clic en cualquier fila para ver el detalle y la interpretación.</strong>
         </Methodology>
 
         <div className="mt-4">

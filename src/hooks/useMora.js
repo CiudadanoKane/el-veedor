@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
 import { DATASETS } from '../lib/constants'
-import { whereFromFilters, buildWhere, moraConditions } from '../lib/soql'
+import { whereFromFilters, buildWhere, moraConditions, RANGOS_VENCIMIENTO } from '../lib/soql'
 import { adaptList } from '../adapters/secop2Adapter'
 import { CONTRACT_FIELDS } from '../lib/constants'
 
@@ -14,12 +14,15 @@ const ORDEN_MORA = {
 }
 
 // Lista de contratos en mora (en ejecución + fecha fin pasada)
-export function useMora(filters = {}, limit = 100, orden = 'fecha') {
+export function useMora(filters = {}, limit = 100, orden = 'fecha', rango = 'todos') {
   const orderBy = ORDEN_MORA[orden] || ORDEN_MORA.fecha
+  const extraRango = RANGOS_VENCIMIENTO[rango] || []
   return useQuery({
-    queryKey: ['mora', 'lista', filters, limit, orden],
+    queryKey: ['mora', 'lista', filters, limit, orden, rango],
     queryFn: () => {
-      const where = buildWhere(whereFromFilters(filters, moraConditions()))
+      const where = buildWhere(
+        whereFromFilters(filters, [...moraConditions(), ...extraRango]),
+      )
       return socrataQuery(
         DS,
         `SELECT ${CONTRACT_FIELDS}
