@@ -159,10 +159,79 @@ function VencidosPorAntiguedad({ query, total, enEjecucion, pctVencidos }) {
   )
 }
 
+// Ejecución financiera de los vencidos: la evidencia sobre la mesa, sin
+// interpretarla por el lector. Clave: "sin registro" ≠ "no se pagó".
+function EjecucionVencidos({ query }) {
+  const TRAMOS = [
+    { k: 'completo', label: 'Con pago registrado completo', tono: 'bg-success',
+      nota: 'Se pagó el 100% o más del valor: sugiere que ya se ejecutó' },
+    { k: 'parcial', label: 'Con pago parcial registrado', tono: 'bg-warning',
+      nota: 'Quedó dinero sin desembolsar: obra o servicio a medias' },
+    { k: 'sinDato', label: 'Sin registro de pago', tono: 'bg-textSecondary',
+      nota: 'La entidad no reportó pagos. No significa que no se pagó' },
+  ]
+
+  return (
+    <section className="bg-surface rounded-xl border border-border p-5">
+      <h2 className="font-display font-semibold text-lg mb-1">
+        ¿Cuánto se ejecutó de los contratos vencidos?
+      </h2>
+      <p className="text-sm text-textSecondary mb-1">
+        El pago reportado es la mejor pista sobre si un contrato realmente avanzó.
+      </p>
+      <Methodology>
+        Comparamos <code>valor_pagado</code> contra <code>valor_del_contrato</code> en los
+        contratos con plazo vencido. <strong>Advertencia importante:</strong> este campo
+        está muy incompleto en SECOP — incluso entre contratos en estado "Cerrado", el{' '}
+        <strong>34% reporta $0 pagado</strong>, lo cual es imposible en la práctica. Por
+        eso el tercer grupo se llama <em>"sin registro de pago"</em> y no <em>"no
+        pagado"</em>: la ausencia de dato no es evidencia de que no hubo desembolso.
+        Mostramos los tres grupos para que cada quien saque sus conclusiones.
+      </Methodology>
+
+      <div className="mt-4">
+        <QueryState query={query} empty="Sin datos de ejecución.">
+          {(data) => {
+            const suma = data.completo + data.parcial + data.sinDato
+            if (!suma) return <p className="text-textSecondary text-sm">Sin datos.</p>
+            return (
+              <ul className="space-y-3">
+                {TRAMOS.map((t) => {
+                  const n = data[t.k]
+                  return (
+                    <li key={t.k}>
+                      <div className="flex items-center gap-3 text-sm mb-1">
+                        <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${t.tono}`} />
+                        <span className="text-textPrimary flex-1 min-w-0">{t.label}</span>
+                        <span className="tabular-nums text-textPrimary font-medium shrink-0">
+                          {n.toLocaleString('es-CO')}
+                        </span>
+                        <span className="tabular-nums text-textSecondary w-14 text-right shrink-0">
+                          {formatPct(pct(n, suma))}
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden mb-1">
+                        <div className={`h-full ${t.tono}`} style={{ width: `${(n / suma) * 100}%` }} />
+                      </div>
+                      <p className="text-xs text-textSecondary pl-6">{t.nota}</p>
+                    </li>
+                  )
+                })}
+              </ul>
+            )
+          }}
+        </QueryState>
+      </div>
+    </section>
+  )
+}
+
 export function Dashboard() {
   const { filters } = useFilters()
-  const { generales, porEstado, mora, vencidosPorAntiguedad, porSector, entidadesMora } =
-    useDashboardStats(filters)
+  const {
+    generales, porEstado, mora, vencidosPorAntiguedad, ejecucionVencidos,
+    porSector, entidadesMora,
+  } = useDashboardStats(filters)
 
   const scope = filters.city || filters.department || 'Colombia'
 
@@ -226,7 +295,10 @@ export function Dashboard() {
         pctVencidos={pctVencidos}
       />
 
-      <DesgloseEstados query={porEstado} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <EjecucionVencidos query={ejecucionVencidos} />
+        <DesgloseEstados query={porEstado} />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Treemap por sector */}

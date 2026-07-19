@@ -74,6 +74,33 @@ export function useDashboardStats(filters = {}) {
     },
   })
 
+  // Ejecución financiera de los contratos con plazo vencido. Es la evidencia
+  // más dura disponible... pero el campo valor_pagado está muy incompleto:
+  // incluso contratos "Cerrado" reportan $0 en un 34% de los casos. Por eso
+  // separamos "sin registro de pago" de "no se pagó": no son lo mismo.
+  const ejecucionVencidos = useQuery({
+    queryKey: ['dash', 'ejecucion', filters],
+    queryFn: async () => {
+      const contar = async (extra) => {
+        const where = buildWhere(
+          whereFromFilters(filters, [
+            ...moraConditions(),
+            'valor_del_contrato > 0',
+            ...extra,
+          ]),
+        )
+        const rows = await socrataQuery(DS, `SELECT count(id_contrato) as n ${where} LIMIT 1`)
+        return parseInt(rows[0]?.n ?? 0, 10)
+      }
+      const [completo, parcial, sinDato] = await Promise.all([
+        contar(['valor_pagado >= valor_del_contrato']),
+        contar(['valor_pagado > 0', 'valor_pagado < valor_del_contrato']),
+        contar(['valor_pagado = 0']),
+      ])
+      return { completo, parcial, sinDato }
+    },
+  })
+
   // Contratos en mora
   const mora = useQuery({
     queryKey: ['dash', 'mora', filters],
@@ -125,6 +152,7 @@ export function useDashboardStats(filters = {}) {
   })
 
   return {
-    generales, porEstado, mora, vencidosPorAntiguedad, porSector, entidadesMora,
+    generales, porEstado, mora, vencidosPorAntiguedad, ejecucionVencidos,
+    porSector, entidadesMora,
   }
 }

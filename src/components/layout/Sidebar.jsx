@@ -9,6 +9,7 @@ const NAV = [
   { to: '/rankings', label: 'Rankings', icon: '≡' },
 ]
 
+// Panel oscuro sobre contenido claro: aporta contraste y jerarquía.
 // En móvil se muestra como panel deslizante; en escritorio queda fijo.
 export function Sidebar({ abierto, onCerrar }) {
   return (
@@ -17,31 +18,28 @@ export function Sidebar({ abierto, onCerrar }) {
       {abierto && (
         <div
           onClick={onCerrar}
-          className="fixed inset-0 z-30 bg-textPrimary/40 lg:hidden"
+          className="fixed inset-0 z-30 bg-side/50 lg:hidden"
           aria-hidden
         />
       )}
 
       <aside
         className={`
-          fixed inset-y-0 left-0 z-40 w-64 bg-surface border-r border-border
-          flex-col shadow-xl
+          fixed inset-y-0 left-0 z-40 w-64 bg-side flex-col shadow-xl
           ${abierto ? 'flex' : 'hidden'}
           lg:flex lg:sticky lg:top-0 lg:h-screen lg:z-auto lg:shrink-0 lg:shadow-none
         `}
       >
-        <div className="px-6 py-5 border-b border-border flex items-center justify-between">
+        <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between">
           <div>
-            <div className="font-display font-bold text-xl text-textPrimary">
-              El Veedor
-            </div>
-            <div className="text-xs text-textSecondary mt-0.5">
+            <div className="font-display font-bold text-xl text-white">El Veedor</div>
+            <div className="text-xs text-sideSoft mt-0.5">
               Veeduría ciudadana · SECOP II
             </div>
           </div>
           <button
             onClick={onCerrar}
-            className="lg:hidden text-textSecondary hover:text-textPrimary text-xl leading-none p-1"
+            className="lg:hidden text-sideSoft hover:text-white text-2xl leading-none p-1"
             aria-label="Cerrar menú"
           >
             ×
@@ -58,8 +56,8 @@ export function Sidebar({ abierto, onCerrar }) {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                   isActive
-                    ? 'bg-primary/10 text-primary font-medium'
-                    : 'text-textSecondary hover:bg-muted hover:text-textPrimary'
+                    ? 'bg-sideHover text-sideActive font-medium'
+                    : 'text-sideSoft hover:bg-sideHover hover:text-white'
                 }`
               }
             >
@@ -69,7 +67,7 @@ export function Sidebar({ abierto, onCerrar }) {
           ))}
         </nav>
 
-        <div className="px-6 py-4 border-t border-border text-xs text-textSecondary leading-relaxed">
+        <div className="px-6 py-4 border-t border-white/10 text-xs text-sideSoft leading-relaxed">
           Datos públicos de SECOP II.
           <br />
           La plataforma señala patrones, no acusa.

@@ -16,6 +16,10 @@ export default {
         success:       'rgb(var(--c-success) / <alpha-value>)',
         textPrimary:   'rgb(var(--c-text) / <alpha-value>)',
         textSecondary: 'rgb(var(--c-text-soft) / <alpha-value>)',
+        side:          'rgb(var(--c-side) / <alpha-value>)',
+        sideSoft:      'rgb(var(--c-side-soft) / <alpha-value>)',
+        sideHover:     'rgb(var(--c-side-hover) / <alpha-value>)',
+        sideActive:    'rgb(var(--c-side-active) / <alpha-value>)',
       },
       fontFamily: {
         display: ['Space Grotesk', 'sans-serif'],

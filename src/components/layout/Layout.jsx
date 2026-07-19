@@ -20,10 +20,10 @@ export function Layout() {
 
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Barra superior: solo en móvil, para abrir el menú */}
-        <header className="lg:hidden sticky top-0 z-20 flex items-center gap-3 bg-surface border-b border-border px-4 py-3">
+        <header className="lg:hidden sticky top-0 z-20 flex items-center gap-3 bg-side text-white px-4 py-3">
           <button
             onClick={() => setMenuAbierto(true)}
-            className="text-textPrimary p-1 -ml-1"
+            className="text-white p-1 -ml-1"
             aria-label="Abrir menú"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
