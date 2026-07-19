@@ -1,7 +1,7 @@
 // Control segmentado (toggle) reutilizable. options: [{ value, label }]
 export function Segmented({ options, value, onChange }) {
   return (
-    <div className="inline-flex rounded-lg bg-bg/60 border border-white/10 p-1 gap-1">
+    <div className="inline-flex rounded-lg bg-muted border border-border p-1 gap-1">
       {options.map((o) => (
         <button
           key={o.value}

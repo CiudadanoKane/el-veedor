@@ -225,8 +225,8 @@ export function Adiciones() {
       />
       <GlobalFilters />
 
-      <div className="bg-surface rounded-xl border border-white/5 p-5">
-        <div className="flex gap-2 mb-4 border-b border-white/5 pb-4">
+      <div className="bg-surface rounded-xl border border-border p-5">
+        <div className="flex gap-2 mb-4 border-b border-border pb-4">
           <Segmented
             value={tab}
             onChange={setTab}

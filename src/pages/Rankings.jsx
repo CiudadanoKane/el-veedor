@@ -15,7 +15,7 @@ function TabButton({ active, onClick, children }) {
       className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
         active
           ? 'bg-primary/15 text-primary'
-          : 'text-textSecondary hover:text-textPrimary hover:bg-white/5'
+          : 'text-textSecondary hover:text-textPrimary hover:bg-muted'
       }`}
     >
       {children}
@@ -155,8 +155,8 @@ export function Rankings() {
       />
       <GlobalFilters />
 
-      <div className="bg-surface rounded-xl border border-white/5 p-5">
-        <div className="flex gap-2 mb-4 border-b border-white/5 pb-4">
+      <div className="bg-surface rounded-xl border border-border p-5">
+        <div className="flex gap-2 mb-4 border-b border-border pb-4">
           <TabButton active={tab === 'contratistas'} onClick={() => setTab('contratistas')}>
             Contratistas
           </TabButton>

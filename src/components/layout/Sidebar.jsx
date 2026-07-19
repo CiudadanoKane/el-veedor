@@ -9,43 +9,72 @@ const NAV = [
   { to: '/rankings', label: 'Rankings', icon: '≡' },
 ]
 
-export function Sidebar() {
+// En móvil se muestra como panel deslizante; en escritorio queda fijo.
+export function Sidebar({ abierto, onCerrar }) {
   return (
-    <aside className="w-60 shrink-0 bg-surface border-r border-white/5 flex flex-col min-h-screen sticky top-0">
-      <div className="px-6 py-6 border-b border-white/5">
-        <div className="font-display font-bold text-xl text-textPrimary">
-          El Veedor
-        </div>
-        <div className="text-xs text-textSecondary mt-1">
-          Veeduría ciudadana · SECOP II
-        </div>
-      </div>
+    <>
+      {/* Fondo oscuro al abrir el menú en móvil */}
+      {abierto && (
+        <div
+          onClick={onCerrar}
+          className="fixed inset-0 z-30 bg-textPrimary/40 lg:hidden"
+          aria-hidden
+        />
+      )}
 
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {NAV.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                isActive
-                  ? 'bg-primary/15 text-primary font-medium'
-                  : 'text-textSecondary hover:bg-white/5 hover:text-textPrimary'
-              }`
-            }
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-40 w-64 bg-surface border-r border-border
+          flex-col shadow-xl
+          ${abierto ? 'flex' : 'hidden'}
+          lg:flex lg:sticky lg:top-0 lg:h-screen lg:z-auto lg:shrink-0 lg:shadow-none
+        `}
+      >
+        <div className="px-6 py-5 border-b border-border flex items-center justify-between">
+          <div>
+            <div className="font-display font-bold text-xl text-textPrimary">
+              El Veedor
+            </div>
+            <div className="text-xs text-textSecondary mt-0.5">
+              Veeduría ciudadana · SECOP II
+            </div>
+          </div>
+          <button
+            onClick={onCerrar}
+            className="lg:hidden text-textSecondary hover:text-textPrimary text-xl leading-none p-1"
+            aria-label="Cerrar menú"
           >
-            <span className="text-base w-4 text-center">{item.icon}</span>
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
+            ×
+          </button>
+        </div>
 
-      <div className="px-6 py-4 border-t border-white/5 text-xs text-textSecondary leading-relaxed">
-        Datos públicos de SECOP II.
-        <br />
-        La plataforma señala patrones, no acusa.
-      </div>
-    </aside>
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+          {NAV.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              onClick={onCerrar}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                  isActive
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'text-textSecondary hover:bg-muted hover:text-textPrimary'
+                }`
+              }
+            >
+              <span className="text-base w-4 text-center shrink-0">{item.icon}</span>
+              <span className="truncate">{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="px-6 py-4 border-t border-border text-xs text-textSecondary leading-relaxed">
+          Datos públicos de SECOP II.
+          <br />
+          La plataforma señala patrones, no acusa.
+        </div>
+      </aside>
+    </>
   )
 }

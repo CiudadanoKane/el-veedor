@@ -17,7 +17,7 @@ export function ContractDetail({ contract: c }) {
   const sentences = interpretContract(c)
 
   return (
-    <div className="bg-bg/60 rounded-lg p-4 space-y-4">
+    <div className="bg-muted rounded-lg p-4 space-y-4">
       {/* Interpretación neutral generada a partir de los datos */}
       <div className="rounded-lg bg-primary/5 border border-primary/20 p-4">
         <div className="text-xs uppercase tracking-wide text-primary mb-2">
@@ -88,7 +88,7 @@ export function ContractDetail({ contract: c }) {
       </div>
 
       {/* Historial de adiciones de dinero y tiempo (fuente: dataset de modificaciones) */}
-      <div className="border-t border-white/10 pt-4">
+      <div className="border-t border-border pt-4">
         <ModificationHistory idContrato={c.id} />
       </div>
 

@@ -3,14 +3,15 @@ import { useDepartamentos, useCiudades } from '../../hooks/useGeoOptions'
 
 function Select({ label, value, onChange, options, loading, placeholder, disabled }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 w-full sm:w-auto">
       <label className="text-xs text-textSecondary">{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled || loading}
-        className="bg-bg border border-white/10 rounded-lg px-3 py-2 text-sm text-textPrimary
-                   focus:border-primary focus:outline-none disabled:opacity-40 min-w-[180px]"
+        className="bg-bg border border-border rounded-lg px-3 py-2 text-sm text-textPrimary
+                   focus:border-primary focus:outline-none disabled:opacity-40
+                   w-full sm:w-auto sm:min-w-[180px]"
       >
         <option value="">{loading ? 'Cargando…' : placeholder}</option>
         {options.map((o) => (
@@ -31,7 +32,7 @@ export function GlobalFilters() {
   const hasFilters = filters.department || filters.city
 
   return (
-    <div className="flex flex-wrap items-end gap-4 bg-surface/50 border border-white/5 rounded-xl p-4">
+    <div className="flex flex-wrap items-end gap-4 bg-surface border border-border rounded-xl p-4">
       <Select
         label="Departamento"
         value={filters.department}

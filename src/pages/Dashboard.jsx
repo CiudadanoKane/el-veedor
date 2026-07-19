@@ -5,11 +5,11 @@ import { PageHeader } from '../components/layout/Layout'
 import { GlobalFilters } from '../components/layout/GlobalFilters'
 import { StatCard } from '../components/ui/StatCard'
 import { QueryState } from '../components/ui/QueryState'
+import { Methodology } from '../components/ui/Methodology'
 import { useFilters } from '../context/FiltersContext'
 import { useDashboardStats } from '../hooks/useDashboard'
 import { formatCOP, formatCOPFull, pct, formatPct } from '../lib/formatters'
-
-const SECTOR_COLORS = ['#0EA5E9', '#0284C7', '#0369A1', '#075985', '#0C4A6E']
+import { CHART, SECTOR_COLORS, tooltipProps } from '../lib/chartTheme'
 
 function TreemapCell(props) {
   const { x, y, width, height, name, index } = props
@@ -19,24 +19,89 @@ function TreemapCell(props) {
       <rect
         x={x} y={y} width={width} height={height}
         fill={SECTOR_COLORS[index % SECTOR_COLORS.length]}
-        stroke="#0F172A" strokeWidth={2}
+        stroke="#FFFFFF" strokeWidth={2}
       />
-      <text x={x + 6} y={y + 18} fill="#F1F5F9" fontSize={12} fontWeight={500}>
+      <text x={x + 8} y={y + 20} fill="#FFFFFF" fontSize={12} fontWeight={500}>
         {name?.length > 20 ? name.slice(0, 20) + '…' : name}
       </text>
     </g>
   )
 }
 
+// Desglose por estado: barra proporcional + lista, para que el total no sea opaco.
+function DesgloseEstados({ query }) {
+  return (
+    <section className="bg-surface rounded-xl border border-border p-5">
+      <h2 className="font-display font-semibold text-lg mb-1">
+        ¿En qué estado están esos contratos?
+      </h2>
+      <Methodology>
+        El total agrupa contratos en distintas etapas. Solo los que están{' '}
+        <strong>En ejecución</strong> pueden estar en mora — por eso ese es el
+        denominador que usamos para el porcentaje de mora. Quedan excluidos de todas
+        las cifras los borradores, cancelados y los que siguen en trámite de
+        aprobación, porque no representan contratación real.
+      </Methodology>
+
+      <div className="mt-4">
+        <QueryState query={query} empty="Sin datos de estados.">
+          {(data) => {
+            const total = data.lista.reduce((a, x) => a + x.n, 0)
+            return (
+              <>
+                {/* Barra proporcional */}
+                <div className="flex h-3 w-full overflow-hidden rounded-full mb-4">
+                  {data.lista.map((e, i) => (
+                    <div
+                      key={e.estado}
+                      style={{
+                        width: `${(e.n / total) * 100}%`,
+                        background: SECTOR_COLORS[i % SECTOR_COLORS.length],
+                      }}
+                      title={`${e.estado}: ${e.n.toLocaleString('es-CO')}`}
+                    />
+                  ))}
+                </div>
+
+                <ul className="space-y-2">
+                  {data.lista.map((e, i) => (
+                    <li key={e.estado} className="flex items-center gap-3 text-sm">
+                      <span
+                        className="h-2.5 w-2.5 rounded-full shrink-0"
+                        style={{ background: SECTOR_COLORS[i % SECTOR_COLORS.length] }}
+                      />
+                      <span className="text-textPrimary flex-1 min-w-0 truncate">
+                        {e.estado}
+                      </span>
+                      <span className="tabular-nums text-textSecondary shrink-0">
+                        {e.n.toLocaleString('es-CO')}
+                      </span>
+                      <span className="tabular-nums text-textSecondary w-14 text-right shrink-0">
+                        {formatPct(pct(e.n, total))}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )
+          }}
+        </QueryState>
+      </div>
+    </section>
+  )
+}
+
 export function Dashboard() {
   const { filters } = useFilters()
-  const { generales, mora, porSector, entidadesMora } = useDashboardStats(filters)
+  const { generales, porEstado, mora, porSector, entidadesMora } =
+    useDashboardStats(filters)
 
   const scope = filters.city || filters.department || 'Colombia'
 
-  // Factores de interpretación: la mora como proporción del total
-  const pctMoraNum = pct(mora.data?.total, generales.data?.total)
-  const pctMoraCount = pctMoraNum != null ? formatPct(pctMoraNum) : null
+  // La mora solo aplica a contratos En ejecución: ese es el denominador honesto.
+  const enEjecucion = porEstado.data?.enEjecucion
+  const pctMoraNum = pct(mora.data?.total, enEjecucion)
+  const pctMora = pctMoraNum != null ? formatPct(pctMoraNum) : null
   const pctRiesgoNum = pct(mora.data?.riesgo, generales.data?.valor)
   const pctRiesgo = pctRiesgoNum != null ? formatPct(pctRiesgoNum) : null
 
@@ -53,6 +118,7 @@ export function Dashboard() {
         <StatCard
           label="Contratos registrados"
           value={generales.data?.total?.toLocaleString('es-CO') ?? '—'}
+          sub="Excluye borradores y cancelados"
           loading={generales.isLoading}
         />
         <StatCard
@@ -65,10 +131,14 @@ export function Dashboard() {
         <StatCard
           label="Contratos en mora"
           value={mora.data?.total?.toLocaleString('es-CO') ?? '—'}
-          pct={pctMoraCount ? `${pctMoraCount} del total` : null}
-          sub="En ejecución con plazo vencido"
+          pct={pctMora ? `${pctMora} de los vigentes` : null}
+          sub={
+            enEjecucion
+              ? `De ${enEjecucion.toLocaleString('es-CO')} contratos en ejecución`
+              : 'En ejecución con plazo vencido'
+          }
           tone="danger"
-          loading={mora.isLoading || generales.isLoading}
+          loading={mora.isLoading || porEstado.isLoading}
         />
         <StatCard
           label="Valor en riesgo"
@@ -80,9 +150,11 @@ export function Dashboard() {
         />
       </div>
 
+      <DesgloseEstados query={porEstado} />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Treemap por sector */}
-        <section className="bg-surface rounded-xl border border-white/5 p-5">
+        <section className="bg-surface rounded-xl border border-border p-5">
           <h2 className="font-display font-semibold text-lg mb-4">
             Distribución de valor por sector
           </h2>
@@ -95,12 +167,7 @@ export function Dashboard() {
                   content={<TreemapCell />}
                   isAnimationActive={false}
                 >
-                  <Tooltip
-                    formatter={(val) => [formatCOP(val), 'Valor']}
-                    contentStyle={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 8 }}
-                    labelStyle={{ color: '#F1F5F9' }}
-                    itemStyle={{ color: '#F1F5F9' }}
-                  />
+                  <Tooltip formatter={(val) => [formatCOP(val), 'Valor']} {...tooltipProps} />
                 </Treemap>
               </ResponsiveContainer>
             )}
@@ -115,7 +182,7 @@ export function Dashboard() {
         </section>
 
         {/* Entidades con más contratos en mora */}
-        <section className="bg-surface rounded-xl border border-white/5 p-5">
+        <section className="bg-surface rounded-xl border border-border p-5">
           <h2 className="font-display font-semibold text-lg mb-4">
             Entidades con más contratos en mora
           </h2>
@@ -132,19 +199,16 @@ export function Dashboard() {
                     type="category"
                     dataKey="entidad"
                     width={140}
-                    tick={{ fill: '#94A3B8', fontSize: 10 }}
+                    tick={{ fill: CHART.axis, fontSize: 10 }}
                     tickFormatter={(v) => (v.length > 22 ? v.slice(0, 22) + '…' : v)}
                   />
                   <Tooltip
-                    formatter={(val) => [val, 'Contratos en mora']}
-                    contentStyle={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 8 }}
-                    labelStyle={{ color: '#F1F5F9' }}
-                    itemStyle={{ color: '#F1F5F9' }}
-                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                    formatter={(val) => [val.toLocaleString('es-CO'), 'Contratos en mora']}
+                    {...tooltipProps}
                   />
                   <Bar dataKey="n" radius={[0, 4, 4, 0]}>
                     {data.slice(0, 8).map((_, i) => (
-                      <Cell key={i} fill="#EF4444" />
+                      <Cell key={i} fill={CHART.danger} />
                     ))}
                   </Bar>
                 </BarChart>

@@ -12,7 +12,7 @@ export function Methodology({ children }) {
         {open ? '▾ Ocultar metodología' : '▸ ¿Cómo se calcula esto?'}
       </button>
       {open && (
-        <div className="mt-2 rounded-lg bg-bg/60 border border-white/10 p-3 text-sm text-textSecondary leading-relaxed">
+        <div className="mt-2 rounded-lg bg-muted border border-border p-3 text-sm text-textSecondary leading-relaxed">
           {children}
         </div>
       )}

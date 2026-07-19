@@ -11,6 +11,7 @@ import { Methodology } from '../components/ui/Methodology'
 import { useFilters } from '../context/FiltersContext'
 import { useCategorias } from '../hooks/useCategorias'
 import { formatCOP, formatCOPFull, formatPct, pct } from '../lib/formatters'
+import { CHART, tooltipProps } from '../lib/chartTheme'
 
 export function Categorias() {
   const { filters } = useFilters()
@@ -71,7 +72,7 @@ export function Categorias() {
       />
       <GlobalFilters />
 
-      <div className="bg-surface rounded-xl border border-white/5 p-5">
+      <div className="bg-surface rounded-xl border border-border p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-1">
           <h2 className="font-display font-semibold text-lg">Categorías de contratación</h2>
           <Segmented
@@ -107,7 +108,7 @@ export function Categorias() {
                       type="category"
                       dataKey="nombre"
                       width={230}
-                      tick={{ fill: '#94A3B8', fontSize: 11 }}
+                      tick={{ fill: CHART.axis, fontSize: 11 }}
                       tickFormatter={(v) => (v.length > 34 ? v.slice(0, 34) + '…' : v)}
                     />
                     <Tooltip
@@ -116,14 +117,11 @@ export function Categorias() {
                           ? [formatCOPFull(val), 'Valor']
                           : [val.toLocaleString('es-CO'), 'Contratos']
                       }
-                      contentStyle={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 8 }}
-                      labelStyle={{ color: '#F1F5F9' }}
-                      itemStyle={{ color: '#F1F5F9' }}
-                      cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                      {...tooltipProps}
                     />
                     <Bar dataKey={metric} radius={[0, 4, 4, 0]}>
                       {sorted.slice(0, 15).map((_, i) => (
-                        <Cell key={i} fill="#0EA5E9" />
+                        <Cell key={i} fill={CHART.primary} />
                       ))}
                     </Bar>
                   </BarChart>

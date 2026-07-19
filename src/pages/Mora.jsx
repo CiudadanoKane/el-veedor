@@ -67,7 +67,7 @@ export function Mora() {
       />
       <GlobalFilters />
 
-      <div className="bg-surface rounded-xl border border-white/5 p-5">
+      <div className="bg-surface rounded-xl border border-border p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-1">
           <h2 className="font-display font-semibold text-lg">
             {query.data ? `${query.data.length} contratos mostrados` : 'Resultados'}

@@ -39,7 +39,7 @@ export function ModificationHistory({ idContrato }) {
         </span>
       </div>
 
-      <ol className="space-y-3 border-l border-white/10 pl-4">
+      <ol className="space-y-3 border-l border-border pl-4">
         {mods.map((m) => (
           <li key={m.id} className="relative">
             <span className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-warning" />
@@ -50,7 +50,7 @@ export function ModificationHistory({ idContrato }) {
                   +{m.dias.toLocaleString('es-CO')} días
                 </span>
               )}
-              <span className="rounded bg-white/5 text-textSecondary px-2 py-0.5 text-xs whitespace-nowrap">
+              <span className="rounded bg-muted text-textSecondary px-2 py-0.5 text-xs whitespace-nowrap">
                 Valor del contrato: {formatCOP(m.valorResultante)}
               </span>
             </div>

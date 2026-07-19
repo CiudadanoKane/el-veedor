@@ -3,15 +3,19 @@ export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
+      // Colores semánticos vía variables CSS: el tema se cambia en index.css
+      // sin tocar un solo componente.
       colors: {
-        bg:            '#0F172A',
-        surface:       '#1E293B',
-        primary:       '#0EA5E9',
-        danger:        '#EF4444',
-        warning:       '#F59E0B',
-        success:       '#10B981',
-        textPrimary:   '#F1F5F9',
-        textSecondary: '#94A3B8',
+        bg:            'rgb(var(--c-bg) / <alpha-value>)',
+        surface:       'rgb(var(--c-surface) / <alpha-value>)',
+        muted:         'rgb(var(--c-muted) / <alpha-value>)',
+        border:        'rgb(var(--c-border) / <alpha-value>)',
+        primary:       'rgb(var(--c-primary) / <alpha-value>)',
+        danger:        'rgb(var(--c-danger) / <alpha-value>)',
+        warning:       'rgb(var(--c-warning) / <alpha-value>)',
+        success:       'rgb(var(--c-success) / <alpha-value>)',
+        textPrimary:   'rgb(var(--c-text) / <alpha-value>)',
+        textSecondary: 'rgb(var(--c-text-soft) / <alpha-value>)',
       },
       fontFamily: {
         display: ['Space Grotesk', 'sans-serif'],
@@ -21,4 +25,3 @@ export default {
   },
   plugins: [],
 }
-

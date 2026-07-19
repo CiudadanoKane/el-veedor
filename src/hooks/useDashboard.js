@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
-import { DATASETS } from '../lib/constants'
+import { DATASETS, ESTADO_ACTIVO } from '../lib/constants'
 import { whereFromFilters, buildWhere, moraConditions, soloContratosValidos } from '../lib/soql'
 
 const DS = DATASETS.CONTRATOS
@@ -21,6 +21,30 @@ export function useDashboardStats(filters = {}) {
       total: parseInt(rows[0]?.total ?? 0, 10),
       valor: parseFloat(rows[0]?.valor ?? 0),
     }),
+  })
+
+  // Desglose por estado: da el panorama completo y aporta el denominador
+  // correcto para la mora (solo los que realmente están en ejecución).
+  const porEstado = useQuery({
+    queryKey: ['dash', 'estados', filters],
+    queryFn: () => {
+      const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
+      return socrataQuery(
+        DS,
+        `SELECT estado_contrato, count(id_contrato) as n, sum(valor_del_contrato) as valor
+         ${where} GROUP BY estado_contrato ORDER BY n DESC LIMIT 20`,
+      )
+    },
+    select: (rows) => {
+      const lista = rows.map((r) => ({
+        estado: r.estado_contrato,
+        n: parseInt(r.n ?? 0, 10),
+        valor: parseFloat(r.valor ?? 0),
+      }))
+      const enEjecucion =
+        lista.find((x) => x.estado === ESTADO_ACTIVO)?.n ?? 0
+      return { lista, enEjecucion }
+    },
   })
 
   // Contratos en mora
@@ -73,5 +97,5 @@ export function useDashboardStats(filters = {}) {
       })),
   })
 
-  return { generales, mora, porSector, entidadesMora }
+  return { generales, porEstado, mora, porSector, entidadesMora }
 }
