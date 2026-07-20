@@ -17,7 +17,7 @@ export function Methodology({ children }) {
         {open ? 'Ocultar metodología' : '¿Cómo se calcula esto?'}
       </button>
       {open && (
-        <div className="mt-2.5 rounded-md bg-muted border border-border px-4 py-3 text-[13px] text-textSecondary leading-relaxed">
+        <div className="mt-2.5 rounded-none bg-muted border border-border px-4 py-3 text-[13px] text-textSecondary leading-relaxed">
           {children}
         </div>
       )}

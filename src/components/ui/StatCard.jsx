@@ -6,22 +6,25 @@ const TONE = {
   primary: 'text-primary',
 }
 
+// Cifra clave sin caja: solo etiqueta, número grande y contexto.
 export function StatCard({ label, value, sub, pct, tone = 'default', loading }) {
   return (
-    <div className="rounded-lg bg-surface border border-border px-5 py-5 shadow-sm">
-      <div className="text-[11px] uppercase tracking-label text-textSecondary font-medium">
+    <div>
+      <div className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
         {label}
       </div>
 
       {loading ? (
-        <div className="h-9 w-28 rounded bg-muted animate-pulse mt-3" />
+        <div className="h-10 w-32 bg-muted animate-pulse mt-3" />
       ) : (
-        <div className="mt-2.5 flex items-baseline gap-2.5 flex-wrap">
-          <div className={`font-display font-bold text-[2rem] leading-none ${TONE[tone]}`}>
+        <div className="mt-3">
+          <div
+            className={`font-display text-[1.75rem] xl:text-[2rem] leading-tight font-medium tracking-[-0.03em] ${TONE[tone]}`}
+          >
             {value}
           </div>
           {pct && (
-            <div className={`text-sm font-semibold ${TONE[tone]}`}>{pct}</div>
+            <div className={`text-[13px] font-semibold mt-1 ${TONE[tone]}`}>{pct}</div>
           )}
         </div>
       )}

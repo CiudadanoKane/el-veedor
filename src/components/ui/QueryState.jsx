@@ -11,7 +11,7 @@ export function QueryState({ query, empty = 'Sin resultados.', children }) {
 
   if (query.isError) {
     return (
-      <div className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
+      <div className="rounded-none border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
         Error al consultar la fuente de datos. {query.error?.message}
         <button
           onClick={() => query.refetch()}

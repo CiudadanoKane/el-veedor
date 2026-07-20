@@ -72,7 +72,7 @@ export function Categorias() {
       />
       <GlobalFilters />
 
-      <div className="bg-surface rounded-xl border border-border p-5 shadow-sm">
+      <div className="border-b border-border pb-8">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-1">
           <h2 className="font-display font-semibold text-lg">Categorías de contratación</h2>
           <Segmented

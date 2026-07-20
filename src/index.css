@@ -2,31 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Tema claro: sobrio e institucional. Los valores son RGB sin coma para que
-   Tailwind pueda aplicarles opacidad (bg-surface/50, etc.). */
+/* Sistema visual minimalista y editorial.
+   Fondo blanco, sin tarjetas ni sombras: la jerarquía se construye con
+   tipografía, espacio en blanco y líneas finas. */
 :root {
-  --c-bg:        226 232 240;  /* gris definido: separa las tarjetas del fondo */
-  --c-surface:   255 255 255;  /* tarjetas, blanco puro para máximo contraste */
-  --c-muted:     241 245 249;  /* rellenos sutiles, encabezados de tabla */
-  --c-border:    203 213 225;  /* bordes visibles, no fantasmales */
-  --c-primary:     3 105 161;  /* azul institucional profundo */
-  --c-danger:    185  28  28;
-  --c-warning:   180  83   9;
-  --c-success:     4 120  87;
-  --c-text:        2   6  23;  /* casi negro */
-  --c-text-soft:  71  85 105;  /* secundario, más oscuro para mejor lectura */
+  --c-bg:        255 255 255;  /* blanco puro */
+  --c-surface:   255 255 255;  /* sin distinción: no hay "tarjetas" */
+  --c-muted:     247 247 245;  /* relleno mínimo, apenas perceptible */
+  --c-border:    224 224 220;  /* líneas finas, cálidas */
+  --c-primary:    17  61 122;  /* azul tinta, sobrio */
+  --c-danger:    178  32  32;
+  --c-warning:   166  85  10;
+  --c-success:    21 104  73;
+  --c-text:       17  17  17;  /* negro tinta */
+  --c-text-soft: 106 106 100;  /* gris cálido para texto secundario */
 
-  /* Barra lateral oscura: aporta contraste y jerarquía sobre el contenido claro */
-  --c-side:        15  23  42;  /* azul noche institucional */
-  --c-side-soft:  148 163 184;  /* texto secundario del panel */
-  --c-side-hover:  30  41  59;
-  --c-side-active: 56 189 248;  /* acento del ítem activo */
+  /* Navegación */
+  --c-side:      255 255 255;
+  --c-side-soft: 106 106 100;
+  --c-side-hover: 247 247 245;
+  --c-side-active: 17  17  17;
 
-  /* Colores para gráficas (Recharts no lee clases de Tailwind) */
-  --chart-tooltip-bg: #ffffff;
-  --chart-tooltip-border: #e2e8f0;
-  --chart-text: #0f172a;
-  --chart-axis: #64748b;
+  /* Gráficas (Recharts no lee clases de Tailwind) */
+  --chart-text: #111111;
+  --chart-axis: #6A6A64;
 }
 
 * {
@@ -41,23 +40,23 @@ body {
   margin: 0;
   background-color: rgb(var(--c-bg));
   color: rgb(var(--c-text));
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Manrope', system-ui, sans-serif;
   font-size: 15px;
-  line-height: 1.6;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  font-feature-settings: 'cv05' 1, 'ss01' 1;
 }
 
-/* Titulares serif: ajustados y con buen color óptico */
+/* Titulares: grandes y de peso ligero. El tamaño da la jerarquía,
+   no el grosor — es lo que separa un diseño elegante de uno básico. */
 h1, h2, h3 {
-  font-family: 'Source Serif 4', Georgia, serif;
-  letter-spacing: -0.011em;
-  line-height: 1.2;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
 }
 
-/* Las cifras siempre alineadas en columnas */
+/* Cifras siempre alineadas en columna */
 .tabular-nums,
 table {
   font-variant-numeric: tabular-nums;
@@ -65,9 +64,9 @@ table {
 
 code {
   font-size: 0.9em;
+  color: rgb(var(--c-text));
   background: rgb(var(--c-muted));
-  border: 1px solid rgb(var(--c-border));
-  border-radius: 4px;
+  border-radius: 2px;
   padding: 0.05em 0.35em;
 }
 
@@ -76,17 +75,16 @@ code {
   height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: rgb(var(--c-muted));
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: rgb(var(--c-border));
-  border-radius: 5px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(var(--c-text-soft));
 }
 
-/* Evita que el fondo se desplace cuando el menú móvil está abierto */
+/* Evita que el fondo se desplace con el menú móvil abierto */
 body.menu-abierto {
   overflow: hidden;
 }

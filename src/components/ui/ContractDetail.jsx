@@ -17,9 +17,9 @@ export function ContractDetail({ contract: c }) {
   const sentences = interpretContract(c)
 
   return (
-    <div className="bg-muted rounded-lg p-4 space-y-4">
+    <div className="bg-muted rounded-none p-4 space-y-4">
       {/* Interpretación neutral generada a partir de los datos */}
-      <div className="rounded-lg bg-primary/5 border border-primary/20 p-4">
+      <div className="rounded-none bg-primary/5 border border-primary/20 p-4">
         <div className="text-xs uppercase tracking-wide text-primary mb-2">
           En palabras simples
         </div>
@@ -32,7 +32,7 @@ export function ContractDetail({ contract: c }) {
 
       {/* Alerta: fecha de fin anterior a la de inicio (imposible lógicamente) */}
       {c.startDate && c.endDate && new Date(c.endDate) < new Date(c.startDate) && (
-        <div className="rounded-lg bg-danger/10 border border-danger/30 p-4 text-sm">
+        <div className="rounded-none bg-danger/10 border border-danger/30 p-4 text-sm">
           <span className="text-danger font-medium">Fechas inconsistentes</span>
           <p className="text-textSecondary mt-1 leading-relaxed">
             La fecha de fin (<strong className="text-textPrimary">{formatDate(c.endDate)}</strong>)
@@ -45,7 +45,7 @@ export function ContractDetail({ contract: c }) {
 
       {/* Explicación de contratos en $0 — duda frecuente de los usuarios */}
       {!c.contractValue && (
-        <div className="rounded-lg bg-warning/10 border border-warning/30 p-4 text-sm">
+        <div className="rounded-none bg-warning/10 border border-warning/30 p-4 text-sm">
           <span className="text-warning font-medium">¿Por qué aparece en $0?</span>
           <p className="text-textSecondary mt-1 leading-relaxed">
             SECOP registra este contrato sin cuantía. Suele ocurrir en contratos que por

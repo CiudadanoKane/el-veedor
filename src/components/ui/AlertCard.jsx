@@ -21,13 +21,13 @@ export function AlertCard({
   const t = TONE[tone] || TONE.danger
 
   return (
-    <section className="bg-surface rounded-lg border border-border overflow-hidden shadow-sm">
+    <section className="border-b border-border">
       <div className="px-6 py-5 border-b border-border">
         <div className="flex items-start justify-between gap-6">
           <div className="min-w-0">
             <div className="flex items-center gap-2.5">
               {icon && (
-                <span className={`shrink-0 rounded-md border p-1.5 ${t.fondo} ${t.borde} ${t.texto}`}>
+                <span className={`shrink-0 rounded-none border p-1.5 ${t.fondo} ${t.borde} ${t.texto}`}>
                   <Icon name={icon} className="h-4 w-4" />
                 </span>
               )}

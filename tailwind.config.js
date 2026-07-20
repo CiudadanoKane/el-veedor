@@ -22,13 +22,13 @@ export default {
         sideActive:    'rgb(var(--c-side-active) / <alpha-value>)',
       },
       fontFamily: {
-        // Serif editorial para títulos: da gravedad institucional.
-        // Sans para datos y UI: máxima legibilidad en tablas y cifras.
-        display: ['"Source Serif 4"', 'Georgia', 'serif'],
-        body:    ['Inter', 'system-ui', 'sans-serif'],
+        // Una sola familia, geométrica y limpia. La jerarquía se logra con
+        // tamaño y espacio, no con pesos gruesos ni familias distintas.
+        display: ['Manrope', 'system-ui', 'sans-serif'],
+        body:    ['Manrope', 'system-ui', 'sans-serif'],
       },
       letterSpacing: {
-        label: '0.08em',
+        label: '0.1em',
       },
     },
   },

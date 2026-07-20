@@ -225,7 +225,7 @@ export function Adiciones() {
       />
       <GlobalFilters />
 
-      <div className="bg-surface rounded-xl border border-border p-5 shadow-sm">
+      <div className="border-b border-border pb-8">
         <div className="flex gap-2 mb-4 border-b border-border pb-4">
           <Segmented
             value={tab}

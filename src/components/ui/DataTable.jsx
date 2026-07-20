@@ -17,16 +17,16 @@ export function DataTable({ columns, rows, keyField = 'id', renderDetail }) {
 
   return (
     <div>
-      <div className="overflow-x-auto rounded-lg border border-border">
+      <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] text-[13px]">
           <thead>
-            <tr className="bg-muted">
+            <tr>
               {cols.map((c) => (
                 <th
                   key={c.key}
-                  className={`px-4 py-3 font-medium text-[11px] uppercase tracking-label
+                  className={`px-3 pb-2.5 font-semibold text-[10px] uppercase tracking-label
                               text-textSecondary text-left whitespace-nowrap
-                              border-b border-border ${c.className || ''}`}
+                              border-b border-textPrimary/80 ${c.className || ''}`}
                 >
                   {c.header}
                 </th>
@@ -49,13 +49,13 @@ export function DataTable({ columns, rows, keyField = 'id', renderDetail }) {
                     {columns.map((c) => (
                       <td
                         key={c.key}
-                        className={`px-4 py-3 align-top leading-snug ${c.className || ''}`}
+                        className={`px-3 py-3.5 align-top leading-snug ${c.className || ''}`}
                       >
                         {c.render ? c.render(row) : row[c.key] ?? '—'}
                       </td>
                     ))}
                     {expandable && (
-                      <td className="px-4 py-3 align-top text-center text-textSecondary">
+                      <td className="px-3 py-3.5 align-top text-center text-textSecondary">
                         <Icon
                           name="chevron"
                           className={`h-4 w-4 inline-block transition-transform ${
@@ -67,7 +67,7 @@ export function DataTable({ columns, rows, keyField = 'id', renderDetail }) {
                   </tr>
                   {expandable && isOpen && (
                     <tr className="bg-muted border-b border-border">
-                      <td colSpan={cols.length} className="px-4 pb-5 pt-1">
+                      <td colSpan={cols.length} className="px-3 pb-6 pt-2">
                         {renderDetail(row)}
                       </td>
                     </tr>
