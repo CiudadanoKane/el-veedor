@@ -17,11 +17,11 @@
   --c-text:       17  17  17;  /* negro tinta */
   --c-text-soft: 106 106 100;  /* gris cálido para texto secundario */
 
-  /* Navegación */
-  --c-side:      255 255 255;
-  --c-side-soft: 106 106 100;
-  --c-side-hover: 247 247 245;
-  --c-side-active: 17  17  17;
+  /* Navegación: banda oscura que descansa la vista del blanco del contenido */
+  --c-side:       26  26  24;
+  --c-side-soft: 158 158 150;
+  --c-side-hover:  38  38  35;
+  --c-side-active: 255 255 255;
 
   /* Gráficas (Recharts no lee clases de Tailwind) */
   --chart-text: #111111;

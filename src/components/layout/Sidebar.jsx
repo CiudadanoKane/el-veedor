@@ -9,22 +9,22 @@ const NAV = [
   { to: '/rankings', label: 'Rankings' },
 ]
 
-// Navegación sobria: sin cajas ni íconos. La sección activa se marca con
-// una línea vertical y peso tipográfico, nada más.
+// Navegación sobre banda oscura: descansa la vista del blanco del contenido.
+// La sección activa se marca con una línea vertical y peso tipográfico.
 export function Sidebar({ abierto, onCerrar }) {
   return (
     <>
       {abierto && (
         <div
           onClick={onCerrar}
-          className="fixed inset-0 z-30 bg-textPrimary/20 lg:hidden"
+          className="fixed inset-0 z-30 bg-side/60 lg:hidden"
           aria-hidden
         />
       )}
 
       <aside
         className={`
-          fixed inset-y-0 left-0 z-40 w-64 bg-bg border-r border-border flex-col
+          fixed inset-y-0 left-0 z-40 w-64 bg-side flex-col
           ${abierto ? 'flex' : 'hidden'}
           lg:flex lg:sticky lg:top-0 lg:h-screen lg:z-auto lg:shrink-0
         `}
@@ -32,14 +32,14 @@ export function Sidebar({ abierto, onCerrar }) {
         <div className="px-7 pt-8 pb-7 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <img
-              src="/icono-el-veedor.png"
+              src="/icono-el-veedor-blanco.png"
               alt=""
               className="h-8 w-8 mb-3"
             />
-            <div className="font-display text-[1.35rem] font-semibold tracking-tight leading-none">
+            <div className="font-display text-[1.35rem] font-extrabold tracking-tight leading-none text-white">
               El Veedor
             </div>
-            <div className="text-xs text-textSecondary mt-1.5 leading-snug">
+            <div className="text-xs text-sideSoft mt-1.5 leading-snug font-light">
               Veeduría ciudadana de la
               <br />
               contratación pública
@@ -47,7 +47,7 @@ export function Sidebar({ abierto, onCerrar }) {
           </div>
           <button
             onClick={onCerrar}
-            className="lg:hidden text-textSecondary hover:text-textPrimary text-2xl leading-none -mt-1"
+            className="lg:hidden text-sideSoft hover:text-white text-2xl leading-none -mt-1"
             aria-label="Cerrar menú"
           >
             ×
@@ -64,8 +64,8 @@ export function Sidebar({ abierto, onCerrar }) {
               className={({ isActive }) =>
                 `block -ml-7 pl-7 pr-3 py-2 text-[14px] border-l-2 ${
                   isActive
-                    ? 'border-textPrimary text-textPrimary font-extrabold'
-                    : 'border-transparent text-textSecondary font-normal hover:text-textPrimary hover:border-border hover:translate-x-1'
+                    ? 'border-white text-white font-extrabold'
+                    : 'border-transparent text-sideSoft font-normal hover:text-white hover:border-sideSoft hover:translate-x-1'
                 }`
               }
             >
@@ -75,10 +75,10 @@ export function Sidebar({ abierto, onCerrar }) {
         </nav>
 
         <div className="px-7 py-7">
-          <p className="text-[11px] text-textSecondary leading-relaxed">
+          <p className="text-[11px] text-sideSoft leading-relaxed">
             Datos públicos de SECOP II
           </p>
-          <p className="text-[11px] text-textSecondary/70 leading-relaxed mt-1">
+          <p className="text-[11px] text-sideSoft/60 leading-relaxed mt-1">
             La plataforma señala patrones, no acusa.
           </p>
         </div>
