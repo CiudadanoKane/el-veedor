@@ -36,7 +36,8 @@ export function EvolucionMensual({ filters }) {
             Evolución de la contratación
           </h2>
           <p className="text-[14.5px] text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
-            Cómo cambia lo que contrata el Estado a lo largo del tiempo.
+            Cómo cambia lo que contrata el Estado a lo largo del tiempo. Cada punto es
+            lo firmado en ese {porAnio ? 'año' : 'mes'}, no un acumulado.
           </p>
         </div>
         <Segmented
@@ -55,7 +56,12 @@ export function EvolucionMensual({ filters }) {
       </div>
 
       <Methodology>
-        Agrupa por <code>fecha_de_firma</code>. Tres advertencias para leerlo bien:
+        Agrupa por <code>fecha_de_firma</code>. Cada punto cuenta{' '}
+        <strong>solo los contratos firmados en ese período</strong>: no se acumula con los
+        anteriores. Por eso la línea puede bajar, como ocurre entre 2018 y 2019.
+        <br />
+        <br />
+        Tres advertencias para leerlo bien:
         (1) en la vista mensual, <strong>enero dispara el conteo</strong> — es cuando las
         entidades firman en masa los contratos de prestación de servicios del año.
         Verificamos que es un fenómeno real y no una carga masiva de datos: las firmas se
