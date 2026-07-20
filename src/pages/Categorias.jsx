@@ -74,7 +74,7 @@ export function Categorias() {
 
       <div className="border-b border-border pb-8">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-1">
-          <h2 className="font-display font-semibold text-lg">Categorías de contratación</h2>
+          <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em]">Categorías de contratación</h2>
           <Segmented
             value={metric}
             onChange={setMetric}

@@ -53,11 +53,11 @@ export function Layout() {
 export function PageHeader({ title, subtitle }) {
   return (
     <header className="mb-10">
-      <h1 className="font-display text-[2.25rem] md:text-[3rem] font-medium text-textPrimary leading-[1.08] tracking-[-0.03em]">
+      <h1 className="font-display text-[2.25rem] md:text-[3.25rem] font-extrabold text-textPrimary leading-[1.02] tracking-[-0.04em]">
         {title}
       </h1>
       {subtitle && (
-        <p className="text-textSecondary mt-4 text-[17px] max-w-2xl leading-relaxed font-light">
+        <p className="text-textSecondary mt-4 text-[19px] max-w-2xl leading-[1.55] font-light">
           {subtitle}
         </p>
       )}

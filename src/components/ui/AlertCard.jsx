@@ -31,7 +31,7 @@ export function AlertCard({
                   <Icon name={icon} className="h-4 w-4" />
                 </span>
               )}
-              <h2 className="font-display font-semibold text-xl text-textPrimary">
+              <h2 className="font-display font-extrabold text-[1.5rem] tracking-[-0.03em] text-textPrimary">
                 {title}
               </h2>
             </div>

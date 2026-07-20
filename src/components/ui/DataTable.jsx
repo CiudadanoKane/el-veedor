@@ -42,15 +42,23 @@ export function DataTable({ columns, rows, keyField = 'id', renderDetail }) {
                 <Fragment key={key}>
                   <tr
                     onClick={expandable ? () => toggle(key) : undefined}
-                    className={`border-b border-border/60 last:border-0 transition-colors ${
+                    className={`group border-b border-border/60 last:border-0 ${
                       expandable ? 'cursor-pointer' : ''
-                    } ${isOpen ? 'bg-muted' : 'hover:bg-muted/60'}`}
+                    } ${isOpen ? 'bg-muted' : 'hover:bg-muted/70'}`}
                   >
-                    {columns.map((c) => (
+                    {columns.map((c, ci) => (
                       <td
                         key={c.key}
-                        className={`px-3 py-3.5 align-top leading-snug ${c.className || ''}`}
+                        className={`relative px-3 py-3.5 align-top leading-snug ${c.className || ''}`}
                       >
+                        {/* Barra que se despliega desde la izquierda al pasar el cursor */}
+                        {ci === 0 && (
+                          <span
+                            className={`absolute left-0 top-0 bottom-0 w-[2px] bg-textPrimary origin-top
+                                        transition-transform duration-200 ease-out
+                                        ${isOpen ? 'scale-y-100' : 'scale-y-0 group-hover:scale-y-100'}`}
+                          />
+                        )}
                         {c.render ? c.render(row) : row[c.key] ?? '—'}
                       </td>
                     ))}
@@ -58,8 +66,10 @@ export function DataTable({ columns, rows, keyField = 'id', renderDetail }) {
                       <td className="px-3 py-3.5 align-top text-center text-textSecondary">
                         <Icon
                           name="chevron"
-                          className={`h-4 w-4 inline-block transition-transform ${
-                            isOpen ? 'rotate-90' : ''
+                          className={`h-4 w-4 inline-block transition-transform duration-200 ${
+                            isOpen
+                              ? 'rotate-90 text-textPrimary'
+                              : 'group-hover:translate-x-0.5 group-hover:text-textPrimary'
                           }`}
                         />
                       </td>

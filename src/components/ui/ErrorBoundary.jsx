@@ -25,7 +25,7 @@ export class ErrorBoundary extends Component {
 
     return (
       <div className="rounded-none border border-danger/40 bg-danger/10 p-6">
-        <h2 className="font-display font-semibold text-lg text-danger mb-2">
+        <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] text-danger mb-2">
           Algo falló en esta sección
         </h2>
         <p className="text-textSecondary text-sm leading-relaxed mb-4">

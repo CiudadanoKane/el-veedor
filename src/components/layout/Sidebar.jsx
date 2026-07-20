@@ -62,10 +62,10 @@ export function Sidebar({ abierto, onCerrar }) {
               end={item.end}
               onClick={onCerrar}
               className={({ isActive }) =>
-                `block -ml-7 pl-7 pr-3 py-2 text-[14px] border-l-2 transition-colors ${
+                `block -ml-7 pl-7 pr-3 py-2 text-[14px] border-l-2 ${
                   isActive
-                    ? 'border-textPrimary text-textPrimary font-semibold'
-                    : 'border-transparent text-textSecondary hover:text-textPrimary'
+                    ? 'border-textPrimary text-textPrimary font-extrabold'
+                    : 'border-transparent text-textSecondary font-normal hover:text-textPrimary hover:border-border hover:translate-x-1'
                 }`
               }
             >

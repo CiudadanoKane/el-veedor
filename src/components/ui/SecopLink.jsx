@@ -6,9 +6,12 @@ export function SecopLink({ url }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-primary hover:underline whitespace-nowrap text-xs"
+      className="group inline-flex items-center gap-1 text-primary whitespace-nowrap text-xs font-semibold"
     >
-      Ver en SECOP ↗
+      <span className="enlace-sutil">Ver en SECOP</span>
+      <span className="transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5">
+        ↗
+      </span>
     </a>
   )
 }

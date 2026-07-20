@@ -48,12 +48,41 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Titulares: grandes y de peso ligero. El tamaño da la jerarquía,
-   no el grosor — es lo que separa un diseño elegante de uno básico. */
+/* Contraste tipográfico: titulares muy gruesos y compactos frente a
+   textos de apoyo muy delgados. El salto entre extremos es lo que da
+   elegancia; los pesos intermedios aplanan la página. */
 h1, h2, h3 {
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+}
+
+/* Texto de apoyo: delgado y con aire, para que contraste con el titular */
+.texto-apoyo {
+  font-weight: 300;
+  letter-spacing: 0;
+}
+
+/* Transiciones compartidas: sin ellas, cualquier hover se siente brusco */
+a, button, tr, select {
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease,
+    opacity 160ms ease;
+}
+
+/* Enlaces con subrayado que crece al pasar el cursor */
+.enlace-sutil {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 0% 1px;
+  transition: background-size 220ms ease;
+}
+.enlace-sutil:hover {
+  background-size: 100% 1px;
 }
 
 /* Cifras siempre alineadas en columna */

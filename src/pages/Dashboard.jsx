@@ -32,7 +32,7 @@ function TreemapCell(props) {
 function DesgloseEstados({ query }) {
   return (
     <section className="border-b border-border pb-8">
-      <h2 className="font-display font-semibold text-lg mb-1">
+      <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] mb-1">
         ¿En qué estado están esos contratos?
       </h2>
       <Methodology>
@@ -105,7 +105,7 @@ function VencidosPorAntiguedad({ query, total, enEjecucion, pctVencidos }) {
 
   return (
     <section className="border-b border-border pb-8">
-      <h2 className="font-display font-semibold text-lg mb-1">
+      <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] mb-1">
         ¿Cuántos están realmente retrasados?
       </h2>
       <p className="text-sm text-textSecondary mb-1">
@@ -173,7 +173,7 @@ function EjecucionVencidos({ query }) {
 
   return (
     <section className="border-b border-border pb-8">
-      <h2 className="font-display font-semibold text-lg mb-1">
+      <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] mb-1">
         ¿Cuánto se ejecutó de los contratos vencidos?
       </h2>
       <p className="text-sm text-textSecondary mb-1">
@@ -303,7 +303,7 @@ export function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Treemap por sector */}
         <section className="border-b border-border pb-8">
-          <h2 className="font-display font-semibold text-lg mb-4">
+          <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] mb-4">
             Distribución de valor por sector
           </h2>
           <QueryState query={porSector} empty="Sin datos de sector.">
@@ -331,7 +331,7 @@ export function Dashboard() {
 
         {/* Entidades con más contratos en mora */}
         <section className="border-b border-border pb-8">
-          <h2 className="font-display font-semibold text-lg mb-4">
+          <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] mb-4">
             Entidades con más contratos en mora
           </h2>
           <QueryState query={entidadesMora} empty="Sin contratos en mora.">
