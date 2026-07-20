@@ -118,7 +118,7 @@ export function EvolucionMensual({ filters }) {
           )}
         </QueryState>
 
-        <p className="mt-3 text-[12.5px] text-textSecondary font-light">
+        <p className="mt-3 text-[12.5px] text-textSecondary">
           {porAnio
             ? 'El año en curso se excluye por estar incompleto.'
             : 'Los últimos meses pueden estar incompletos: las entidades tardan en registrar.'}

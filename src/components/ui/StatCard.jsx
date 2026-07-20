@@ -61,7 +61,7 @@ export function StatCard({
       {/* Fila 4: contexto, crece hacia abajo sin mover lo de arriba */}
       <div className="pt-1.5">
         {sub && (
-          <p className="text-[13px] text-textSecondary leading-snug font-light">{sub}</p>
+          <p className="text-[13px] text-textSecondary leading-snug">{sub}</p>
         )}
       </div>
 

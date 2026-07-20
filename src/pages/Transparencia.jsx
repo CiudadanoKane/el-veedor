@@ -352,7 +352,7 @@ export function Transparencia() {
         </div>
       </Bloque>
 
-      <p className="text-[13px] text-textSecondary font-light pt-2">
+      <p className="text-[13px] text-textSecondary pt-2">
         Última revisión de esta metodología: julio de 2026.
       </p>
     </div>

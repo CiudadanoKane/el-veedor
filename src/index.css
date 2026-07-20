@@ -15,7 +15,7 @@
   --c-warning:   166  85  10;
   --c-success:    21 104  73;
   --c-text:       17  17  17;  /* negro tinta */
-  --c-text-soft: 106 106 100;  /* gris cálido para texto secundario */
+  --c-text-soft:  82  82  76;  /* gris cálido, oscuro para que se lea bien */
 
   /* Navegación: banda oscura que descansa la vista del blanco del contenido */
   --c-side:       26  26  24;

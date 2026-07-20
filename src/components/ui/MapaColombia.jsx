@@ -97,19 +97,19 @@ export function MapaColombia() {
                     <div className="font-display text-[2rem] font-extrabold tracking-[-0.03em] leading-none mt-2 text-danger">
                       {formatPct(activo.tasa)}
                     </div>
-                    <p className="text-[12.5px] text-textSecondary font-light mt-2 leading-snug">
+                    <p className="text-[12.5px] text-textSecondary mt-2 leading-snug">
                       {activo.vencidos.toLocaleString('es-CO')} vencidos de{' '}
                       {activo.enEjecucion.toLocaleString('es-CO')} en ejecución
                     </p>
                   </>
                 ) : (
-                  <p className="text-[12.5px] text-textSecondary font-light mt-2">
+                  <p className="text-[12.5px] text-textSecondary mt-2">
                     Sin datos suficientes
                   </p>
                 )}
               </>
             ) : (
-              <p className="text-[13px] text-textSecondary font-light">
+              <p className="text-[13px] text-textSecondary">
                 Pasa el cursor sobre un departamento para ver su tasa.
               </p>
             )}

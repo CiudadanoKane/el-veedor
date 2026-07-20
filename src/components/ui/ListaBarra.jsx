@@ -51,7 +51,7 @@ export function ListaBarra({ items, total, apilada = false, colores }) {
                 <span className="shrink-0 text-[14px] font-bold tabular-nums text-textPrimary">
                   {it.valorTexto ?? it.valor.toLocaleString('es-CO')}
                 </span>
-                <span className="shrink-0 w-14 text-right text-[13px] tabular-nums text-textSecondary font-light">
+                <span className="shrink-0 w-14 text-right text-[13px] tabular-nums text-textSecondary">
                   {formatPct(porcentaje)}
                 </span>
               </div>
@@ -70,7 +70,7 @@ export function ListaBarra({ items, total, apilada = false, colores }) {
               {(it.nota || it.secundario) && (
                 <div className="mt-1.5 flex items-baseline justify-between gap-3">
                   {it.nota && (
-                    <p className="text-[12.5px] text-textSecondary font-light leading-snug">
+                    <p className="text-[12.5px] text-textSecondary leading-snug">
                       {it.nota}
                     </p>
                   )}
