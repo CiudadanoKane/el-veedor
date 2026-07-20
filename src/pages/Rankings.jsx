@@ -4,6 +4,7 @@ import { GlobalFilters } from '../components/layout/GlobalFilters'
 import { QueryState } from '../components/ui/QueryState'
 import { DataTable } from '../components/ui/DataTable'
 import { Methodology } from '../components/ui/Methodology'
+import { SectionTitle } from '../components/ui/SectionTitle'
 import { useFilters } from '../context/FiltersContext'
 import { useRankingContratistas, useRankingEntidades } from '../hooks/useRankings'
 import { formatCOP } from '../lib/formatters'
@@ -12,10 +13,10 @@ function TabButton({ active, onClick, children }) {
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 rounded-none text-sm font-medium transition-colors ${
+      className={`px-0 mr-6 pb-2 -mb-4 text-sm font-medium border-b-2 transition-colors ${
         active
-          ? 'bg-primary/15 text-primary'
-          : 'text-textSecondary hover:text-textPrimary hover:bg-muted'
+          ? 'border-textPrimary text-textPrimary'
+          : 'border-transparent text-textSecondary hover:text-textPrimary'
       }`}
     >
       {children}

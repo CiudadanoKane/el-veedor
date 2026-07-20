@@ -11,6 +11,8 @@ export default {
         muted:         'rgb(var(--c-muted) / <alpha-value>)',
         border:        'rgb(var(--c-border) / <alpha-value>)',
         primary:       'rgb(var(--c-primary) / <alpha-value>)',
+        accent:        'rgb(var(--c-accent) / <alpha-value>)',
+        ink:           'rgb(var(--c-ink) / <alpha-value>)',
         danger:        'rgb(var(--c-danger) / <alpha-value>)',
         warning:       'rgb(var(--c-warning) / <alpha-value>)',
         success:       'rgb(var(--c-success) / <alpha-value>)',
