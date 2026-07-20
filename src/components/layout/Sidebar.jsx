@@ -76,24 +76,30 @@ export function Sidebar({ abierto, onCerrar }) {
           ))}
         </nav>
 
-        {/* Transparencia va aparte: no es un módulo de datos sino el manual
-            de cómo se construyen todos los demás. */}
+        {/* Estas dos van aparte: no son módulos de datos sino el manual de la
+            plataforma y el canal para corregirla. */}
         <div className="px-7 pt-5 pb-7">
-          <NavLink
-            to="/transparencia"
-            onClick={onCerrar}
-            className={({ isActive }) =>
-              `block -ml-7 pl-7 pr-3 py-2 mb-4 text-[13px] border-l-2 ${
-                isActive
-                  ? 'border-white text-white font-extrabold'
-                  : 'border-transparent text-sideSoft hover:text-white hover:border-sideSoft hover:translate-x-1'
-              }`
-            }
-          >
-            Cómo funciona
-          </NavLink>
+          {[
+            ['/transparencia', 'Cómo funciona'],
+            ['/reportar', 'Reportar un error'],
+          ].map(([ruta, etiqueta]) => (
+            <NavLink
+              key={ruta}
+              to={ruta}
+              onClick={onCerrar}
+              className={({ isActive }) =>
+                `block -ml-7 pl-7 pr-3 py-2 text-[13px] border-l-2 ${
+                  isActive
+                    ? 'border-white text-white font-extrabold'
+                    : 'border-transparent text-sideSoft hover:text-white hover:border-sideSoft hover:translate-x-1'
+                }`
+              }
+            >
+              {etiqueta}
+            </NavLink>
+          ))}
 
-          <p className="text-[11px] text-sideSoft leading-relaxed">
+          <p className="text-[11px] text-sideSoft leading-relaxed mt-4">
             Datos públicos de SECOP II
           </p>
           <p className="text-[11px] text-sideSoft/60 leading-relaxed mt-1">

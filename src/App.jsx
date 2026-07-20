@@ -8,6 +8,7 @@ import { Adiciones } from './pages/Adiciones'
 import { Categorias } from './pages/Categorias'
 import { Rankings } from './pages/Rankings'
 import { Transparencia } from './pages/Transparencia'
+import { Reportar } from './pages/Reportar'
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
             <Route path="categorias" element={<Categorias />} />
             <Route path="rankings" element={<Rankings />} />
             <Route path="transparencia" element={<Transparencia />} />
+            <Route path="reportar" element={<Reportar />} />
           </Route>
         </Routes>
       </FiltersProvider>
