@@ -9,9 +9,10 @@ import { Segmented } from '../components/ui/Segmented'
 import { useFilters } from '../context/FiltersContext'
 import {
   useFechasInconsistentes, useContratosSinValor, useSinContratista,
+  useObraParalizada, useAdicionTiempoExcesiva, NIVELES_ADICION,
 } from '../hooks/useAlertas'
 import { useAdicionesCosto } from '../hooks/useAdiciones'
-import { formatCOP, formatDate } from '../lib/formatters'
+import { formatCOP, formatDate, daysSince, humanDuration } from '../lib/formatters'
 
 function diasInconsistencia(r) {
   if (!r.startDate || !r.endDate) return null
@@ -320,7 +321,195 @@ function AlertaSinContratista() {
   )
 }
 
+function AlertaObraParalizada() {
+  const { filters } = useFilters()
+  const { conteo, lista } = useObraParalizada(filters)
+
+  const columns = [
+    {
+      key: 'entityName',
+      header: 'Entidad',
+      render: (r) => (
+        <div className="max-w-[240px]">
+          <div className="text-textPrimary">{r.entityName}</div>
+          <div className="text-xs text-textSecondary truncate">{r.description}</div>
+        </div>
+      ),
+    },
+    { key: 'contractorName', header: 'Contratista', render: (r) => r.contractorName || '—' },
+    {
+      key: 'contractValue',
+      header: 'Valor',
+      className: 'text-right tabular-nums',
+      render: (r) => formatCOP(r.contractValue),
+    },
+    {
+      key: 'valuePending',
+      header: 'Sin ejecutar',
+      className: 'text-right tabular-nums',
+      render: (r) => (
+        <span className="text-danger font-medium">{formatCOP(r.valuePending)}</span>
+      ),
+    },
+    { key: 'endDate', header: 'Debió terminar', render: (r) => formatDate(r.endDate) },
+    {
+      key: 'dias',
+      header: 'Vencida hace',
+      className: 'text-right tabular-nums',
+      render: (r) => {
+        const d = daysSince(r.endDate)
+        const h = humanDuration(d)
+        return <span className="text-danger font-medium">{h || `${d} días`}</span>
+      },
+    },
+  ]
+
+  return (
+    <AlertCard
+      icon="alerta"
+      title="Obra paralizada"
+      question="¿Qué obras llevan más de seis meses vencidas y con dinero sin ejecutar?"
+      count={conteo.data?.total}
+      valueAtRisk={
+        conteo.data?.pendiente ? `${formatCOP(conteo.data.pendiente)} sin ejecutar` : null
+      }
+      methodology={
+        <>
+          Contratos de <strong>tipo Obra</strong> que siguen "En ejecución", cuyo plazo
+          venció hace <strong>más de 180 días</strong>, y que además reportan{' '}
+          <strong>dinero pendiente por ejecutar</strong>. Es la combinación más
+          preocupante: la obra no terminó, el plazo se venció hace rato y quedaron
+          recursos sin gastar.
+          <br />
+          <br />
+          A diferencia de otros contratos vencidos, aquí el dinero pendiente es evidencia
+          positiva de que la obra <em>no</em> se completó — no depende de que alguien
+          actualizara el estado. Ordenadas por monto sin ejecutar. Se excluyen valores con
+          errores de digitación evidentes.
+        </>
+      }
+    >
+      <QueryState query={lista} empty="No se detectaron obras paralizadas con estos filtros.">
+        {(rows) => (
+          <DataTable
+            columns={columns}
+            rows={rows}
+            keyField="id"
+            renderDetail={(row) => <ContractDetail contract={row} />}
+          />
+        )}
+      </QueryState>
+    </AlertCard>
+  )
+}
+
+function AlertaAdicionTiempo() {
+  const { filters } = useFilters()
+  const [nivel, setNivel] = useState('alta')
+  const { conteo, lista } = useAdicionTiempoExcesiva(filters, nivel)
+
+  const columns = [
+    {
+      key: 'entityName',
+      header: 'Entidad',
+      render: (r) => (
+        <div className="max-w-[240px]">
+          <div className="text-textPrimary">{r.entityName}</div>
+          <div className="text-xs text-textSecondary truncate">{r.description}</div>
+        </div>
+      ),
+    },
+    { key: 'contractorName', header: 'Contratista', render: (r) => r.contractorName || '—' },
+    {
+      key: 'contractValue',
+      header: 'Valor',
+      className: 'text-right tabular-nums',
+      render: (r) => formatCOP(r.contractValue),
+    },
+    {
+      key: 'plazoOriginal',
+      header: 'Plazo pactado',
+      className: 'text-right tabular-nums',
+      render: (r) =>
+        r.plazoOriginal != null
+          ? `${r.plazoOriginal.toLocaleString('es-CO')} d`
+          : '—',
+    },
+    {
+      key: 'daysAdded',
+      header: 'Días añadidos',
+      className: 'text-right tabular-nums',
+      render: (r) => (
+        <span className="text-warning font-medium">
+          +{r.daysAdded?.toLocaleString('es-CO')}
+        </span>
+      ),
+    },
+    {
+      key: 'pct',
+      header: '% adición',
+      className: 'text-right tabular-nums',
+      render: (r) =>
+        r.pctAdicion != null ? (
+          <span className={r.pctAdicion > 200 ? 'text-danger font-bold' : 'text-danger'}>
+            +{r.pctAdicion.toLocaleString('es-CO')}%
+          </span>
+        ) : (
+          '—'
+        ),
+    },
+  ]
+
+  return (
+    <AlertCard
+      icon="reloj"
+      title="Adición de tiempo excesiva"
+      question="¿Qué contratos ampliaron su plazo mucho más allá de lo pactado?"
+      count={conteo.data?.total}
+      tone="warning"
+      methodology={
+        <>
+          Compara los días añadidos contra el <strong>plazo originalmente pactado</strong>,
+          que se calcula como (fecha fin − fecha inicio) − días añadidos. Un contrato de 90
+          días que se extendió 180 tiene una adición del 200%.
+          <br />
+          <br />
+          Que un contrato se prorrogue no es irregular por sí solo; lo llamativo es la
+          magnitud. Un plazo que se duplica o triplica sugiere que la planeación inicial
+          fue deficiente, o que el alcance cambió sustancialmente después de adjudicar —
+          cuando ya no hubo competencia. Se excluyen adiciones mayores a 3.650 días, que
+          son errores de digitación.
+        </>
+      }
+    >
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="text-xs text-textSecondary">Magnitud de la adición:</span>
+        <Segmented
+          value={nivel}
+          onChange={setNivel}
+          options={Object.entries(NIVELES_ADICION).map(([v, n]) => ({
+            value: v,
+            label: n.label,
+          }))}
+        />
+      </div>
+      <QueryState query={lista} empty="No se detectaron adiciones excesivas con estos filtros.">
+        {(rows) => (
+          <DataTable
+            columns={columns}
+            rows={rows}
+            keyField="id"
+            renderDetail={(row) => <ContractDetail contract={row} />}
+          />
+        )}
+      </QueryState>
+    </AlertCard>
+  )
+}
+
 const ALERTAS = [
+  { id: 'obra', label: 'Obra paralizada', Componente: AlertaObraParalizada },
+  { id: 'adiciontiempo', label: 'Adición de tiempo excesiva', Componente: AlertaAdicionTiempo },
   { id: 'sincontratista', label: 'Sin contratista identificado', Componente: AlertaSinContratista },
   { id: 'fechas', label: 'Fechas inconsistentes', Componente: AlertaFechasInconsistentes },
   { id: 'sinvalor', label: 'Contratos sin valor', Componente: AlertaContratosSinValor },

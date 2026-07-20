@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
-import { DATASETS, CONTRACT_FIELDS } from '../lib/constants'
-import { whereFromFilters, buildWhere, soloContratosValidos } from '../lib/soql'
+import { DATASETS, CONTRACT_FIELDS, ESTADO_ACTIVO } from '../lib/constants'
+import {
+  whereFromFilters, buildWhere, soloContratosValidos, haceDias,
+} from '../lib/soql'
 import { adaptList } from '../adapters/secop2Adapter'
 
 const DS = DATASETS.CONTRATOS
@@ -104,6 +106,119 @@ export function useSinContratista(filters = {}) {
       )
     },
     select: adaptList,
+  })
+
+  return { conteo, lista }
+}
+
+// ALERTA: obra paralizada.
+// Un contrato de obra vencido hace más de seis meses, que además reporta
+// dinero sin ejecutar. La combinación es la señal más preocupante: la obra
+// no terminó, el plazo se venció hace rato y quedaron recursos sin gastar.
+const CONDICIONES_OBRA_PARALIZADA = [
+  `estado_contrato = '${ESTADO_ACTIVO}'`,
+  `tipo_de_contrato = 'Obra'`,
+  `fecha_de_fin_del_contrato >= '2000-01-01T00:00:00'`,
+  `fecha_de_fin_del_contrato >= fecha_de_inicio_del_contrato`,
+  `fecha_de_fin_del_contrato < '${haceDias(180)}'`,
+  `valor_pendiente_de_ejecucion > 0`,
+  // Cota para que un valor mal digitado no distorsione el total
+  `valor_pendiente_de_ejecucion < 1000000000000`,
+]
+
+export function useObraParalizada(filters = {}) {
+  const conteo = useQuery({
+    queryKey: ['alerta', 'obra', 'conteo', filters],
+    queryFn: () => {
+      const where = buildWhere(whereFromFilters(filters, CONDICIONES_OBRA_PARALIZADA))
+      return socrataQuery(
+        DS,
+        `SELECT count(id_contrato) as n, sum(valor_pendiente_de_ejecucion) as pendiente
+         ${where} LIMIT 1`,
+      )
+    },
+    select: (rows) => ({
+      total: parseInt(rows[0]?.n ?? 0, 10),
+      pendiente: parseFloat(rows[0]?.pendiente ?? 0),
+    }),
+  })
+
+  const lista = useQuery({
+    queryKey: ['alerta', 'obra', 'lista', filters],
+    queryFn: () => {
+      const where = buildWhere(whereFromFilters(filters, CONDICIONES_OBRA_PARALIZADA))
+      return socrataQuery(
+        DS,
+        `SELECT ${CONTRACT_FIELDS} ${where}
+         ORDER BY valor_pendiente_de_ejecucion DESC LIMIT 100`,
+      )
+    },
+    select: adaptList,
+  })
+
+  return { conteo, lista }
+}
+
+// ALERTA: adición de tiempo excesiva.
+//
+// El umbral se despeja algebraicamente para poder filtrar en el servidor:
+//   pct = días / plazo_original,  con plazo_original = (fin − inicio) − días
+//   pct > 0,5  ⟺  días × 3   > (fin − inicio)
+//   pct > 1    ⟺  días × 2   > (fin − inicio)
+//   pct > 2    ⟺  días × 1,5 > (fin − inicio)
+export const NIVELES_ADICION = {
+  media: { label: 'Más del 50%', factor: 3 },
+  alta: { label: 'Más del 100%', factor: 2 },
+  critica: { label: 'Más del 200%', factor: 1.5 },
+}
+
+function condicionesAdicionExcesiva(nivel) {
+  const { factor } = NIVELES_ADICION[nivel] || NIVELES_ADICION.alta
+  return [
+    soloContratosValidos(),
+    'dias_adicionados > 0',
+    'dias_adicionados <= 3650',
+    'fecha_de_fin_del_contrato > fecha_de_inicio_del_contrato',
+    `dias_adicionados * ${factor} > date_diff_d(fecha_de_fin_del_contrato, fecha_de_inicio_del_contrato)`,
+  ]
+}
+
+export function useAdicionTiempoExcesiva(filters = {}, nivel = 'alta') {
+  const conteo = useQuery({
+    queryKey: ['alerta', 'adiciontiempo', 'conteo', filters, nivel],
+    queryFn: () => {
+      const where = buildWhere(whereFromFilters(filters, condicionesAdicionExcesiva(nivel)))
+      return socrataQuery(DS, `SELECT count(id_contrato) as n ${where} LIMIT 1`)
+    },
+    select: (rows) => ({ total: parseInt(rows[0]?.n ?? 0, 10) }),
+  })
+
+  const lista = useQuery({
+    queryKey: ['alerta', 'adiciontiempo', 'lista', filters, nivel],
+    queryFn: () => {
+      const where = buildWhere(whereFromFilters(filters, condicionesAdicionExcesiva(nivel)))
+      return socrataQuery(
+        DS,
+        `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY dias_adicionados DESC LIMIT 100`,
+      )
+    },
+    select: (rows) =>
+      adaptList(rows).map((c) => {
+        // El plazo original y el % se calculan en cliente para mostrarlos
+        let plazoOriginal = null
+        let pctAdicion = null
+        if (c.startDate && c.endDate) {
+          const dur = Math.round(
+            (new Date(c.endDate).getTime() - new Date(c.startDate).getTime()) / 86_400_000,
+          )
+          const original = dur - (c.daysAdded || 0)
+          if (original > 0) {
+            plazoOriginal = original
+            pctAdicion = Math.round(((c.daysAdded || 0) / original) * 100)
+          }
+        }
+        return { ...c, plazoOriginal, pctAdicion }
+      }),
   })
 
   return { conteo, lista }

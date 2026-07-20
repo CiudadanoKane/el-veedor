@@ -6,8 +6,18 @@ import { Icon } from './Icon'
 //
 // En móvil la tabla NO se comprime: conserva un ancho mínimo legible y se
 // desplaza en horizontal, que se lee mucho mejor que columnas apiladas.
-export function DataTable({ columns, rows, keyField = 'id', renderDetail }) {
+// Las columnas numéricas nunca parten en dos líneas: si una cifra se corta y
+// la de al lado no, la fila se ve desalineada. Se aplica aquí y no en cada
+// página para que valga en toda la plataforma.
+function normalizarColumna(c) {
+  const esNumerica = (c.className || '').includes('tabular-nums')
+  if (!esNumerica || (c.className || '').includes('whitespace-nowrap')) return c
+  return { ...c, className: `${c.className} whitespace-nowrap` }
+}
+
+export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', renderDetail }) {
   const [openKey, setOpenKey] = useState(null)
+  const columns = columnasCrudas.map(normalizarColumna)
   const expandable = typeof renderDetail === 'function'
   const cols = expandable
     ? [...columns, { key: '_chev', header: '', className: 'w-10 text-center' }]
