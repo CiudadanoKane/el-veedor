@@ -145,11 +145,7 @@ export function Dashboard() {
         />
       </div>
 
-      {/* Los dos gráficos que aportan lo que una lista no puede: tiempo y geografía */}
-      <EvolucionMensual filters={filters} />
-      <MapaColombia />
-
-      {/* Detalle desplegado (uno a la vez) */}
+      {/* Detalle desplegado (uno a la vez), pegado a las cifras que lo originan */}
       <div className="space-y-2">
         {abierta('contratos') && (
           <Detalle
@@ -371,6 +367,10 @@ export function Dashboard() {
           </Detalle>
         )}
       </div>
+
+      {/* Los dos gráficos que aportan lo que una lista no puede: tiempo y geografía */}
+      <EvolucionMensual filters={filters} />
+      <MapaColombia />
     </div>
   )
 }
