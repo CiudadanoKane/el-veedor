@@ -4,23 +4,22 @@ import { GlobalFilters } from '../components/layout/GlobalFilters'
 import { QueryState } from '../components/ui/QueryState'
 import { DataTable } from '../components/ui/DataTable'
 import { Methodology } from '../components/ui/Methodology'
+import { Segmented } from '../components/ui/Segmented'
 import { useFilters } from '../context/FiltersContext'
 import { useRankingContratistas, useRankingEntidades } from '../hooks/useRankings'
 import { formatCOP } from '../lib/formatters'
 import { documentoVisible, etiquetaDocumento, esPersonaJuridica } from '../lib/identidad'
 
-function TabButton({ active, onClick, children }) {
+// Encabezado de sección: mismo tratamiento que en el resto del sitio, con el
+// control de orden alineado a la derecha.
+function Encabezado({ titulo, children }) {
   return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-2 rounded-none text-sm font-medium transition-colors ${
-        active
-          ? 'bg-primary/15 text-primary'
-          : 'text-textSecondary hover:text-textPrimary hover:bg-muted'
-      }`}
-    >
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+      <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em]">
+        {titulo}
+      </h2>
       {children}
-    </button>
+    </div>
   )
 }
 
@@ -76,14 +75,17 @@ function RankingContratistas({ filters }) {
 
   return (
     <>
-      <div className="flex gap-2 mb-3">
-        <TabButton active={orderBy === 'valor_total'} onClick={() => setOrderBy('valor_total')}>
-          Por valor
-        </TabButton>
-        <TabButton active={orderBy === 'total_contratos'} onClick={() => setOrderBy('total_contratos')}>
-          Por cantidad
-        </TabButton>
-      </div>
+      <Encabezado titulo="Quién recibe más recursos públicos">
+        <Segmented
+          value={orderBy}
+          onChange={setOrderBy}
+          options={[
+            { value: 'valor_total', label: 'Por valor' },
+            { value: 'total_contratos', label: 'Por cantidad' },
+          ]}
+        />
+      </Encabezado>
+
       <Methodology>
         Agrupamos por <code>documento_proveedor</code> (NIT/cédula), nunca por nombre —
         los nombres no están normalizados en SECOP ("XYZ SAS" ≠ "X.Y.Z. S.A.S.").
@@ -108,6 +110,7 @@ function RankingContratistas({ filters }) {
         homónimos. Y aun en empresas, la marca señala un patrón que vale la pena mirar —
         no una irregularidad.
       </Methodology>
+
       <div className="mt-4">
         <QueryState query={query} empty="Sin contratistas con estos filtros.">
           {(rows) => (
@@ -150,11 +153,16 @@ function RankingEntidades({ filters }) {
 
   return (
     <>
+      <Encabezado titulo="Quién entrega más recursos públicos" />
+
       <Methodology>
         Agrupamos por entidad (nombre + NIT). "Proveedores" es el número de contratistas
         distintos — una entidad con muchos contratos pero pocos proveedores concentra su
-        contratación. Top 30 por valor comprometido.
+        contratación. Top 30 por valor comprometido. A diferencia de los contratistas,
+        aquí el NIT se muestra completo siempre: son entidades públicas manejando
+        recursos públicos.
       </Methodology>
+
       <div className="mt-4">
         <QueryState query={query} empty="Sin entidades con estos filtros.">
           {(rows) => (
@@ -182,16 +190,18 @@ export function Rankings() {
       />
       <GlobalFilters />
 
-      <div className="border-b border-border pb-8">
-        <div className="flex gap-2 mb-4 border-b border-border pb-4">
-          <TabButton active={tab === 'contratistas'} onClick={() => setTab('contratistas')}>
-            Contratistas
-          </TabButton>
-          <TabButton active={tab === 'entidades'} onClick={() => setTab('entidades')}>
-            Entidades
-          </TabButton>
-        </div>
+      <div className="overflow-x-auto -mx-1 px-1">
+        <Segmented
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: 'contratistas', label: 'Contratistas' },
+            { value: 'entidades', label: 'Entidades' },
+          ]}
+        />
+      </div>
 
+      <div className="border-b border-border pb-8">
         {tab === 'contratistas' ? (
           <RankingContratistas filters={filters} />
         ) : (

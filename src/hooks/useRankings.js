@@ -33,7 +33,7 @@ export function useRankingContratistas(filters = {}, orderBy = 'valor_total') {
       )
       const filas = await socrataQuery(
         DS,
-        `SELECT documento_proveedor, max(proveedor_adjudicado) as nombre,
+        `SELECT documento_proveedor,
                 max(tipodocproveedor) as tipo_documento,
                 count(id_contrato) as total_contratos,
                 sum(valor_del_contrato) as valor_total,
@@ -48,19 +48,49 @@ export function useRankingContratistas(filters = {}, orderBy = 'valor_total') {
       if (!documentos.length) return []
 
       const lista = documentos.map((d) => `'${esc(d)}'`).join(', ')
-      const nacional = await socrataQuery(
-        DS,
-        `SELECT documento_proveedor,
-                count(distinct nombre_entidad) as entidades_pais,
-                count(id_contrato) as contratos_pais
-         WHERE ${soloContratosValidos()} AND documento_proveedor IN (${lista})
-         GROUP BY documento_proveedor`,
-      )
+      const enLista = `${soloContratosValidos()} AND documento_proveedor IN (${lista})`
 
-      const porDocumento = new Map(
-        nacional.map((r) => [r.documento_proveedor, r]),
-      )
-      return filas.map((r) => ({ ...r, pais: porDocumento.get(r.documento_proveedor) }))
+      const [nacional, nombres] = await Promise.all([
+        socrataQuery(
+          DS,
+          `SELECT documento_proveedor,
+                  count(distinct nombre_entidad) as entidades_pais,
+                  count(id_contrato) as contratos_pais
+           WHERE ${enLista}
+           GROUP BY documento_proveedor`,
+        ),
+        // El nombre no es estable por documento: una empresa aparece con su
+        // razón social en casi todos sus contratos, y con el nombre de la unión
+        // temporal en los pocos donde se presentó asociada. Tomar max() elegía
+        // uno arbitrario — La Previsora, con 3.779 contratos, salía como
+        // "UT PREVISORA-SOLIDARIA DEQUIN LP 003 2025", que son 6. Nos quedamos
+        // con el nombre que más veces aparece.
+        socrataQuery(
+          DS,
+          `SELECT documento_proveedor, proveedor_adjudicado, count(id_contrato) as n
+           WHERE ${enLista}
+           GROUP BY documento_proveedor, proveedor_adjudicado`,
+        ),
+      ])
+
+      const porDocumento = new Map(nacional.map((r) => [r.documento_proveedor, r]))
+
+      const nombreMasUsado = new Map()
+      for (const r of nombres) {
+        const actual = nombreMasUsado.get(r.documento_proveedor)
+        if (!actual || parseInt(r.n, 10) > actual.n) {
+          nombreMasUsado.set(r.documento_proveedor, {
+            nombre: r.proveedor_adjudicado,
+            n: parseInt(r.n, 10),
+          })
+        }
+      }
+
+      return filas.map((r) => ({
+        ...r,
+        nombre: nombreMasUsado.get(r.documento_proveedor)?.nombre,
+        pais: porDocumento.get(r.documento_proveedor),
+      }))
     },
     select: (rows) =>
       rows
