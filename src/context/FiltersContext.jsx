@@ -32,8 +32,18 @@ export function FiltersProvider({ children }) {
     [setSearchParams],
   )
 
+  // Limpia la ubicación y nada más. Borrar la URL entera se llevaba por delante
+  // el estado de otros módulos que también viaja ahí, como la búsqueda.
   const clearFilters = useCallback(() => {
-    setSearchParams({}, { replace: true })
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('departamento')
+        next.delete('ciudad')
+        return next
+      },
+      { replace: true },
+    )
   }, [setSearchParams])
 
   const value = useMemo(

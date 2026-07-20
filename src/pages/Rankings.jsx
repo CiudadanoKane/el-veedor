@@ -7,6 +7,7 @@ import { Methodology } from '../components/ui/Methodology'
 import { useFilters } from '../context/FiltersContext'
 import { useRankingContratistas, useRankingEntidades } from '../hooks/useRankings'
 import { formatCOP } from '../lib/formatters'
+import { documentoVisible, etiquetaDocumento, esPersonaJuridica } from '../lib/identidad'
 
 function TabButton({ active, onClick, children }) {
   return (
@@ -35,7 +36,9 @@ function RankingContratistas({ filters }) {
       render: (r) => (
         <div>
           <div className="text-textPrimary">{r.nombre || '(sin nombre)'}</div>
-          <div className="text-xs text-textSecondary">NIT/CC: {r.nit}</div>
+          <div className="text-xs text-textSecondary">
+            {etiquetaDocumento(r.tipoDocumento)}: {documentoVisible(r.documento, r.tipoDocumento)}
+          </div>
         </div>
       ),
     },
@@ -47,14 +50,21 @@ function RankingContratistas({ filters }) {
     },
     { key: 'contratos', header: 'Contratos', className: 'text-right tabular-nums' },
     {
-      key: 'entidades',
-      header: 'Entidades',
+      key: 'entidadesPais',
+      header: 'Entidades (país)',
       className: 'text-right tabular-nums',
-      render: (r) => (
-        <span className={r.entidades === 1 && r.contratos >= 3 ? 'text-warning font-medium' : ''}>
-          {r.entidades}
-        </span>
-      ),
+      render: (r) => {
+        // La señal de concentración solo se marca en empresas. Para una persona
+        // natural, contratar con una sola entidad es tener un empleo, no una
+        // captura: marcarla sería señalar a un ciudadano por trabajar.
+        const concentrado =
+          esPersonaJuridica(r.tipoDocumento) && r.entidadesPais === 1 && r.contratosPais >= 3
+        return (
+          <span className={concentrado ? 'text-warning font-medium' : ''}>
+            {r.entidadesPais}
+          </span>
+        )
+      },
     },
     {
       key: 'diasAdicionales',
@@ -76,10 +86,27 @@ function RankingContratistas({ filters }) {
       </div>
       <Methodology>
         Agrupamos por <code>documento_proveedor</code> (NIT/cédula), nunca por nombre —
-        los nombres no están normalizados en SECOP ("XYZ SAS" ≠ "X.Y.Z. S.A.S."). La
-        columna <strong>Entidades</strong> marca en ámbar a quien tiene ≥3 contratos con
-        una sola entidad (posible captura). "Días añadidos" es la suma de adiciones de
-        plazo — proxy de conflictividad. Top 30.
+        los nombres no están normalizados en SECOP ("XYZ SAS" ≠ "X.Y.Z. S.A.S.").
+        "Días añadidos" es la suma de adiciones de plazo, un proxy de conflictividad.
+        Top 30.
+        <br />
+        <br />
+        <strong>Entidades (país)</strong> cuenta con cuántas entidades distintas contrata
+        esa persona o empresa <strong>en todo el país</strong>, e ignora a propósito el
+        filtro geográfico. Contar solo dentro del filtro medía el tamaño del filtro y no
+        al contratista: con "Vaupés" seleccionado alguien aparecía con una sola entidad
+        —y quedaba marcado— cuando en el país trabaja con 17. En Vaupés apenas contratan
+        7 entidades en total, así que tener una sola es allá lo normal.
+        <br />
+        <br />
+        La marca en ámbar (≥3 contratos con una sola entidad) se aplica{' '}
+        <strong>solo a empresas</strong>. El 85% de los contratos del país van a personas
+        naturales, y para quien presta servicios en una alcaldía tener un solo contratante
+        es tener un empleo, no una señal de captura. Por la misma razón{' '}
+        <strong>solo se muestra completo el NIT de las empresas</strong>: de las personas
+        naturales se conservan los últimos cuatro dígitos, suficientes para distinguir
+        homónimos. Y aun en empresas, la marca señala un patrón que vale la pena mirar —
+        no una irregularidad.
       </Methodology>
       <div className="mt-4">
         <QueryState query={query} empty="Sin contratistas con estos filtros.">

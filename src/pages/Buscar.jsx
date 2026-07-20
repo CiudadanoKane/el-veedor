@@ -12,6 +12,10 @@ import { useBusqueda, hayBusqueda, AMBITOS, ORDENES, LIMITE } from '../hooks/use
 import { MODALIDADES, TIPOS_CONTRATO, CAUSALES } from '../lib/catalogos'
 import { formatCOP, formatDate } from '../lib/formatters'
 
+// Parámetros de URL que le pertenecen al buscador. Todo lo demás en la URL es
+// de otro módulo (hoy, los filtros geográficos) y no se toca desde aquí.
+const PARAMS_BUSQUEDA = ['q', 'en', 'modalidad', 'tipo', 'causal', 'orden']
+
 // Búsquedas de arranque: la página en blanco no sugiere nada, y el punto de la
 // plataforma es que alguien sin saber qué buscar encuentre por dónde empezar.
 const EJEMPLOS = [
@@ -63,20 +67,38 @@ export function Buscar() {
   const [borrador, setBorrador] = useState(criterios.texto)
   useEffect(() => setBorrador(criterios.texto), [criterios.texto])
 
+  // Se toca solo lo propio del buscador y se conserva el resto de la URL. Los
+  // filtros de departamento y ciudad viven en esos mismos parámetros, y
+  // reemplazar el conjunto completo los borraba en cada búsqueda: quien entraba
+  // a una ciudad perdía el filtro apenas buscaba algo dentro de ella.
   const actualizar = (cambios) => {
     const siguiente = { ...criterios, ...cambios }
-    const limpio = {}
-    for (const [k, v] of Object.entries({
+    const propios = {
       q: siguiente.texto,
       en: siguiente.ambito === 'objeto' ? '' : siguiente.ambito,
       modalidad: siguiente.modalidad,
       tipo: siguiente.tipo,
       causal: siguiente.causal,
       orden: siguiente.orden === 'valor' ? '' : siguiente.orden,
-    })) {
-      if (v) limpio[k] = v
     }
-    setParams(limpio)
+    setParams((prev) => {
+      const next = new URLSearchParams(prev)
+      for (const [k, v] of Object.entries(propios)) {
+        if (v) next.set(k, v)
+        else next.delete(k)
+      }
+      return next
+    })
+  }
+
+  // "Limpiar búsqueda" borra la búsqueda, no la ubicación: para eso está
+  // "Limpiar filtros" en la barra geográfica.
+  const limpiarBusqueda = () => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev)
+      for (const k of PARAMS_BUSQUEDA) next.delete(k)
+      return next
+    })
   }
 
   const query = useBusqueda(criterios, filters)
@@ -186,7 +208,7 @@ export function Buscar() {
           {(hayFiltros || criterios.texto) && (
             <button
               type="button"
-              onClick={() => setParams({})}
+              onClick={limpiarBusqueda}
               className="text-sm text-textSecondary hover:text-textPrimary underline pb-2"
             >
               Limpiar búsqueda

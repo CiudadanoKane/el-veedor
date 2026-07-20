@@ -1,16 +1,27 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
 import { DATASETS } from '../lib/constants'
-import { whereFromFilters, buildWhere, soloContratosValidos } from '../lib/soql'
+import { esc, whereFromFilters, buildWhere, soloContratosValidos } from '../lib/soql'
 
 const DS = DATASETS.CONTRATOS
 
 // Ranking de contratistas por valor total recibido.
-// Clave real = documento_proveedor (NIT), el nombre no está normalizado.
+// Clave real = documento_proveedor (NIT/cédula), el nombre no está normalizado.
+//
+// Va en dos consultas a propósito. La primera arma el ranking respetando los
+// filtros geográficos; la segunda mide la concentración de esos mismos
+// contratistas SIN filtro, a nivel nacional.
+//
+// La razón: contar entidades dentro del filtro mide el tamaño del filtro, no al
+// contratista. Con "Vaupés" seleccionado, un contratista aparecía con 1 entidad
+// —señalado como posible captura— cuando en el país trabaja con 17. Y no era un
+// caso aislado: en Vaupés solo contratan 7 entidades en total, así que tener una
+// sola es allá la norma. La versión anterior marcaba a 6 de los 12 primeros por
+// un artefacto del filtro, sobre partes con nombre propio.
 export function useRankingContratistas(filters = {}, orderBy = 'valor_total') {
   return useQuery({
     queryKey: ['rank', 'contratistas', filters, orderBy],
-    queryFn: () => {
+    queryFn: async () => {
       // Excluir el bucket "No Definido" (registros sin NIT/cédula): agrupa
       // decenas de miles de contratos ajenos en un contratista falso.
       const where = buildWhere(
@@ -20,29 +31,49 @@ export function useRankingContratistas(filters = {}, orderBy = 'valor_total') {
           `documento_proveedor != 'No Definido'`,
         ]),
       )
-      return socrataQuery(
+      const filas = await socrataQuery(
         DS,
         `SELECT documento_proveedor, max(proveedor_adjudicado) as nombre,
+                max(tipodocproveedor) as tipo_documento,
                 count(id_contrato) as total_contratos,
                 sum(valor_del_contrato) as valor_total,
-                count(distinct nombre_entidad) as entidades_distintas,
                 sum(dias_adicionados) as dias_adicionales
          ${where}
          GROUP BY documento_proveedor
          ORDER BY ${orderBy} DESC
          LIMIT 30`,
       )
+
+      const documentos = filas.map((r) => r.documento_proveedor).filter(Boolean)
+      if (!documentos.length) return []
+
+      const lista = documentos.map((d) => `'${esc(d)}'`).join(', ')
+      const nacional = await socrataQuery(
+        DS,
+        `SELECT documento_proveedor,
+                count(distinct nombre_entidad) as entidades_pais,
+                count(id_contrato) as contratos_pais
+         WHERE ${soloContratosValidos()} AND documento_proveedor IN (${lista})
+         GROUP BY documento_proveedor`,
+      )
+
+      const porDocumento = new Map(
+        nacional.map((r) => [r.documento_proveedor, r]),
+      )
+      return filas.map((r) => ({ ...r, pais: porDocumento.get(r.documento_proveedor) }))
     },
     select: (rows) =>
       rows
         .filter((r) => r.documento_proveedor)
         .map((r) => ({
-          nit: r.documento_proveedor,
+          documento: r.documento_proveedor,
+          tipoDocumento: r.tipo_documento,
           nombre: r.nombre,
           contratos: parseInt(r.total_contratos, 10),
           valorTotal: parseFloat(r.valor_total ?? 0),
-          entidades: parseInt(r.entidades_distintas ?? 0, 10),
           diasAdicionales: parseInt(r.dias_adicionales ?? 0, 10),
+          entidadesPais: parseInt(r.pais?.entidades_pais ?? 0, 10),
+          contratosPais: parseInt(r.pais?.contratos_pais ?? 0, 10),
         })),
   })
 }

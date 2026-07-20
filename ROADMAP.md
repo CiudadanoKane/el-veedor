@@ -80,16 +80,32 @@ Dos hallazgos que definieron el diseño:
 No se muestra el total exacto de coincidencias: contarlas cuesta ~14 segundos y
 no vale esa espera. Se entregan los primeros 100 y se dice que hay más.
 
-### 4. Rankings de contratistas
+### 4. Perfiles de contratistas ← **siguiente**
 
 Hasta ahora el foco ha estado en el Estado. La corrupción también viene del lado
 privado, y analizarlo puede dar información valiosa.
 
-- Perfil de contratista: historial completo, entidades con las que contrata,
+**Restricción que define el alcance:** el **85% de los contratos** (4,48 de 5,3
+millones) van a **personas naturales con cédula**, no a empresas. Solo 793 mil
+son NIT. Un "perfil de contratista" sin distinguir sería, en la mayoría de casos,
+un expediente sobre un ciudadano particular. Y la señal principal se invierte:
+para quien presta servicios en una alcaldía, tener un solo contratante es tener
+un empleo, no una captura.
+
+Decisiones tomadas (jul 2026), ya aplicadas al ranking existente:
+
+- **Perfiles con señales solo para empresas (NIT).** Para personas naturales,
+  historial simple y sin interpretación.
+- **Documento completo solo para empresas.** De las personas naturales se
+  muestran los últimos cuatro dígitos, suficientes para distinguir homónimos.
+- **La concentración se mide a nivel nacional**, ignorando el filtro geográfico
+  (ver `useRankings.js`).
+
+Pendiente de construir:
+- Perfil de empresa: historial completo, entidades con las que contrata,
   concentración, adiciones acumuladas
-- Señales: contratista que depende de una sola entidad, que crece de forma
-  anómala, que concentra contratación directa
-- Cruce con los filtros por sector y palabra clave del punto 3
+- Señales: crecimiento anómalo, concentración de contratación directa
+- Cruce con los filtros por palabra clave del punto 3
 
 ### 5. Errores en SECOP — sección propia
 
