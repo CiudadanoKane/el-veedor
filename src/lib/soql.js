@@ -30,8 +30,23 @@ export function moraConditions() {
     `fecha_de_fin_del_contrato >= '2000-01-01T00:00:00'`,
     `fecha_de_fin_del_contrato < '${HOY()}T00:00:00'`,
     `fecha_de_fin_del_contrato >= fecha_de_inicio_del_contrato`,
+    SIN_EVIDENCIA_DE_TERMINADO,
   ]
 }
+
+// Un contrato pagado al 100% casi con certeza ya se ejecutó, aunque su estado
+// siga en "En ejecución" porque nadie lo actualizó. Excluirlo deja una cifra
+// más limpia: contratos vencidos SIN evidencia de haber terminado.
+//
+// El razonamiento es asimétrico a propósito: un pago completo SÍ es evidencia
+// de que terminó, mientras que la ausencia de datos de pago NO es evidencia de
+// lo contrario (el campo está muy incompleto en SECOP). Por eso solo excluimos
+// cuando hay evidencia positiva.
+//
+// La condición de valor > 0 evita descartar los contratos sin cuantía, donde
+// "pagado >= valor" se cumpliría trivialmente con ambos en cero.
+export const SIN_EVIDENCIA_DE_TERMINADO =
+  `(valor_del_contrato <= 0 OR valor_pagado < valor_del_contrato)`
 
 // Fecha de hace N días, en formato SoQL.
 export function haceDias(n) {

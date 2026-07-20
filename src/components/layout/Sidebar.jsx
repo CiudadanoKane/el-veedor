@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom'
 const NAV = [
   { to: '/', label: 'Panorama', end: true },
   { to: '/alertas', label: 'Alertas' },
-  { to: '/mora', label: 'Contratos en mora' },
+  { to: '/mora', label: 'Contratos vencidos' },
   { to: '/adiciones', label: 'Adiciones' },
   { to: '/categorias', label: 'En qué se contrata' },
   { to: '/rankings', label: 'Rankings' },

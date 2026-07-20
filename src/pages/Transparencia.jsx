@@ -1,5 +1,11 @@
 import { PageHeader } from '../components/layout/Layout'
 
+// Canal para recibir correcciones. OJO: debe ser un correo real y atendido.
+// El correo "noreply" de GitHub no sirve — esa dirección descarta todo lo que
+// le llega; existe justamente para ocultar el correo personal.
+const CORREO_REPORTES =
+  import.meta.env.VITE_CORREO_REPORTES || 'elveedor.co@gmail.com'
+
 /* ---------------------------------------------------------------------------
    Sección de transparencia metodológica.
 
@@ -197,9 +203,14 @@ export function Transparencia() {
 
           <Regla titulo="El contratista &quot;No Definido&quot;">
             <p>
-              Unos 82.508 contratos no tienen NIT o cédula registrada y SECOP los agrupa
+              Unos 14.839 contratos no tienen NIT o cédula registrada y SECOP los agrupa
               bajo esa etiqueta. Al ordenar por contratista aparecían como un falso
               contratista gigante, así que los excluimos de ese ranking.
+            </p>
+            <p>
+              Pero excluirlos del ranking no los hace desaparecer: involucran cerca de
+              $91 billones y en ellos <strong>no se puede saber quién recibió el dinero
+              público</strong>. Por eso tienen su propia alerta.
             </p>
           </Regla>
 
@@ -222,18 +233,25 @@ export function Transparencia() {
 
       <Bloque id="calculos" titulo="Cómo se calcula cada cifra">
         <div className="space-y-4">
-          <Regla titulo="Contratos con plazo vencido — y por qué no los llamamos &quot;mora&quot;">
+          <Regla titulo="Contratos vencidos — y por qué no los llamamos &quot;en mora&quot;">
             <p>
-              Un contrato figura con plazo vencido si su estado es "En ejecución" y su
-              fecha de fin ya pasó. Con esa definición, el 81% de los contratos vigentes
-              del país estaría vencido.
+              Un contrato figura como vencido si cumple tres condiciones: su estado es "En
+              ejecución", su fecha de fin ya pasó, y{' '}
+              <strong>no hay evidencia de que haya terminado</strong>.
             </p>
             <p>
-              <strong>Pero esa cifra sería engañosa.</strong> Al separarlos por antigüedad
-              encontramos que el 53% venció hace más de un año: casi siempre son contratos
-              que ya terminaron y cuyo estado la entidad nunca actualizó, no retrasos
-              activos. Por eso la cifra que destacamos es solo la de los vencidos en los
-              últimos 6 meses (8%), y mostramos los tres tramos por separado.
+              Esa última condición excluye los contratos con pago registrado del 100%: si
+              ya se pagó todo, casi con certeza se ejecutó, aunque nadie actualizara el
+              estado. El razonamiento es asimétrico a propósito: un pago completo{' '}
+              <em>sí</em> prueba que terminó, pero la ausencia de datos de pago{' '}
+              <em>no</em> prueba lo contrario, porque ese campo está muy incompleto.
+            </p>
+            <p>
+              Aun así evitamos la palabra "mora", que sugiere incumplimiento. Con la
+              definición amplia, el 81% de los contratos vigentes del país estaría
+              vencido — pero el 53% lo está desde hace más de un año, y en su mayoría son
+              contratos terminados cuyo registro nadie cerró. Por eso destacamos solo el
+              tramo de los últimos 6 meses y mostramos los tres por separado.
             </p>
           </Regla>
 
@@ -336,15 +354,15 @@ export function Transparencia() {
           contrato mal clasificado — avísanos. Que un tercero pueda corregirnos no es una
           debilidad de la plataforma: es lo que la hace confiable.
         </p>
-        <p className="text-textSecondary font-light">
+        <p className="text-textSecondary">
           Al reportar, ayuda mucho incluir el enlace a la sección donde viste el problema
           y, si aplica, la referencia del contrato.
         </p>
         <div className="pt-2">
           <a
-            href="https://github.com/CiudadanoKane/el-veedor/issues"
-            target="_blank"
-            rel="noopener noreferrer"
+            href={`mailto:${CORREO_REPORTES}?subject=${encodeURIComponent('El Veedor — reporte de error')}&body=${encodeURIComponent(
+              'Sección donde vi el problema:\n\nQué observé:\n\nReferencia del contrato (si aplica):\n\n',
+            )}`}
             className="inline-block border-2 border-textPrimary px-5 py-2.5 text-[14px] font-bold hover:bg-textPrimary hover:text-bg transition-colors"
           >
             Reportar un error o sugerencia

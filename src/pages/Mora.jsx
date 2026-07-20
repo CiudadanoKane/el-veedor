@@ -44,7 +44,7 @@ export function Mora() {
     { key: 'endDate', header: 'Fecha fin', render: (r) => formatDate(r.endDate) },
     {
       key: 'dias',
-      header: 'Días en mora',
+      header: "Días vencido",
       className: 'text-right tabular-nums',
       render: (r) => {
         const d = daysSince(r.endDate)
@@ -63,8 +63,8 @@ export function Mora() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Contratos en Mora"
-        subtitle="Contratos en ejecución cuyo plazo de finalización ya venció."
+        title="Contratos vencidos"
+        subtitle="Contratos que siguen en ejecución, cuyo plazo ya pasó y sin evidencia de que hayan terminado."
       />
       <GlobalFilters />
 
@@ -97,20 +97,27 @@ export function Mora() {
           />
         </div>
         <Methodology>
-          Un contrato aparece aquí si su <code>estado</code> es "En ejecución" y su{' '}
-          <code>fecha de fin</code> ya pasó. <strong>Importante:</strong> eso no siempre
-          significa retraso. De los 1,33 millones con plazo vencido en el país, el{' '}
-          <strong>53% venció hace más de un año</strong> — casi siempre son contratos que
-          ya terminaron pero cuyo estado la entidad nunca actualizó en SECOP. Por eso el
-          filtro de antigüedad viene por defecto en <strong>"Últimos 6 meses"</strong>:
-          esos son los que con mayor probabilidad están genuinamente retrasados. El
-          semáforo clasifica por días vencidos: verde &lt;30, ámbar 30–180, rojo &gt;180.
-          Se muestran hasta 100 casos.{' '}
-          <strong>Haz clic en cualquier fila para ver el detalle y la interpretación.</strong>
+          Un contrato aparece aquí si cumple tres condiciones: su{' '}
+          <code>estado</code> es "En ejecución", su <code>fecha de fin</code> ya pasó, y{' '}
+          <strong>no hay evidencia de que haya terminado</strong>. Ese último filtro
+          excluye los contratos con pago registrado del 100%: si ya se pagó todo, casi con
+          certeza se ejecutó, aunque nadie actualizara el estado. Son 13.939 casos menos
+          solo en el tramo reciente. El razonamiento es asimétrico a propósito: un pago
+          completo sí prueba que terminó, pero la <em>ausencia</em> de datos de pago no
+          prueba lo contrario, porque ese campo está muy incompleto.
+          <br />
+          <br />
+          Aun así, <strong>"vencido" no equivale a "retrasado"</strong>: el 53% de los
+          vencidos del país lo está desde hace más de un año, y en su mayoría son
+          contratos terminados cuyo registro nadie cerró. Por eso el filtro de antigüedad
+          viene en <strong>"Últimos 6 meses"</strong>, el tramo con más probabilidad de
+          ser retraso real. El semáforo clasifica por días vencidos: verde &lt;30, ámbar
+          30–180, rojo &gt;180. Se muestran hasta 100 casos.{' '}
+          <strong>Haz clic en cualquier fila para ver el detalle.</strong>
         </Methodology>
 
         <div className="mt-4">
-          <QueryState query={query} empty="No hay contratos en mora con estos filtros.">
+          <QueryState query={query} empty="No hay contratos vencidos con estos filtros.">
             {(rows) => (
               <DataTable
                 columns={columns}

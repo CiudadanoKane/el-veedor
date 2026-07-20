@@ -58,6 +58,57 @@ export function useContratosSinValor(filters = {}) {
   return { conteo, lista }
 }
 
+// ALERTA: contratos sin contratista identificado.
+// SECOP agrupa bajo "No Definido" los registros donde no quedó el NIT o la
+// cédula de quien recibió el dinero. No es un error de digitación menor: en
+// esos contratos es literalmente imposible saber a quién le pagó el Estado.
+const CONDICIONES_SIN_CONTRATISTA = [
+  soloContratosValidos(),
+  `documento_proveedor = 'No Definido'`,
+]
+
+export function useSinContratista(filters = {}) {
+  const conteo = useQuery({
+    queryKey: ['alerta', 'sincontratista', 'conteo', filters],
+    queryFn: () => {
+      const where = buildWhere(
+        whereFromFilters(filters, [
+          ...CONDICIONES_SIN_CONTRATISTA,
+          // Cota para que un valor mal digitado no distorsione el total
+          'valor_del_contrato < 1000000000000',
+        ]),
+      )
+      return socrataQuery(
+        DS,
+        `SELECT count(id_contrato) as n, sum(valor_del_contrato) as valor ${where} LIMIT 1`,
+      )
+    },
+    select: (rows) => ({
+      total: parseInt(rows[0]?.n ?? 0, 10),
+      valor: parseFloat(rows[0]?.valor ?? 0),
+    }),
+  })
+
+  const lista = useQuery({
+    queryKey: ['alerta', 'sincontratista', 'lista', filters],
+    queryFn: () => {
+      const where = buildWhere(
+        whereFromFilters(filters, [
+          ...CONDICIONES_SIN_CONTRATISTA,
+          'valor_del_contrato < 1000000000000',
+        ]),
+      )
+      return socrataQuery(
+        DS,
+        `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT 100`,
+      )
+    },
+    select: adaptList,
+  })
+
+  return { conteo, lista }
+}
+
 export function useFechasInconsistentes(filters = {}) {
   const conteo = useQuery({
     queryKey: ['alerta', 'fechas', 'conteo', filters],

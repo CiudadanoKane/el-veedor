@@ -7,7 +7,9 @@ import { ContractDetail } from '../components/ui/ContractDetail'
 import { AlertCard } from '../components/ui/AlertCard'
 import { Segmented } from '../components/ui/Segmented'
 import { useFilters } from '../context/FiltersContext'
-import { useFechasInconsistentes, useContratosSinValor } from '../hooks/useAlertas'
+import {
+  useFechasInconsistentes, useContratosSinValor, useSinContratista,
+} from '../hooks/useAlertas'
 import { useAdicionesCosto } from '../hooks/useAdiciones'
 import { formatCOP, formatDate } from '../lib/formatters'
 
@@ -244,7 +246,82 @@ function AlertaContratosSinValor() {
   )
 }
 
+function AlertaSinContratista() {
+  const { filters } = useFilters()
+  const { conteo, lista } = useSinContratista(filters)
+
+  const columns = [
+    {
+      key: 'entityName',
+      header: 'Entidad',
+      render: (r) => (
+        <div className="max-w-[240px]">
+          <div className="text-textPrimary">{r.entityName}</div>
+          <div className="text-xs text-textSecondary truncate">{r.description}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'contractorName',
+      header: 'Contratista',
+      render: (r) => (
+        <span className="text-danger">{r.contractorName || 'Sin nombre'}</span>
+      ),
+    },
+    {
+      key: 'contractorId',
+      header: 'Identificación',
+      render: () => <span className="text-danger font-medium">No Definido</span>,
+    },
+    {
+      key: 'contractValue',
+      header: 'Valor',
+      className: 'text-right tabular-nums',
+      render: (r) => formatCOP(r.contractValue),
+    },
+    { key: 'modality', header: 'Modalidad', render: (r) => r.modality || '—' },
+  ]
+
+  return (
+    <AlertCard
+      icon="alerta"
+      title="Contratos sin contratista identificado"
+      question="¿En qué contratos no se sabe quién recibió el dinero público?"
+      count={conteo.data?.total}
+      valueAtRisk={
+        conteo.data?.valor ? `${formatCOP(conteo.data.valor)} involucrados` : null
+      }
+      methodology={
+        <>
+          SECOP agrupa bajo la etiqueta <code>No Definido</code> los contratos donde no
+          quedó registrado el NIT o la cédula del contratista.{' '}
+          <strong>No es un error de digitación menor:</strong> en estos contratos es
+          literalmente imposible saber a quién le pagó el Estado, ni verificar si esa
+          persona o empresa tiene otros contratos, sanciones o vínculos. Un nombre suelto
+          sin identificación no permite ningún seguimiento, porque los nombres no están
+          normalizados en SECOP. Estos contratos también quedan excluidos del ranking de
+          contratistas: al agruparlos por identificación aparecían como un solo
+          contratista falso de tamaño enorme. Ordenados de mayor a menor cuantía; se
+          excluyen valores con errores de digitación evidentes.
+        </>
+      }
+    >
+      <QueryState query={lista} empty="No se detectaron contratos sin contratista identificado.">
+        {(rows) => (
+          <DataTable
+            columns={columns}
+            rows={rows}
+            keyField="id"
+            renderDetail={(row) => <ContractDetail contract={row} />}
+          />
+        )}
+      </QueryState>
+    </AlertCard>
+  )
+}
+
 const ALERTAS = [
+  { id: 'sincontratista', label: 'Sin contratista identificado', Componente: AlertaSinContratista },
   { id: 'fechas', label: 'Fechas inconsistentes', Componente: AlertaFechasInconsistentes },
   { id: 'sinvalor', label: 'Contratos sin valor', Componente: AlertaContratosSinValor },
   { id: 'digitacion', label: 'Valores implausibles', Componente: AlertaErrorDigitacion },
