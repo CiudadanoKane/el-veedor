@@ -41,9 +41,34 @@ body {
   margin: 0;
   background-color: rgb(var(--c-bg));
   color: rgb(var(--c-text));
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv05' 1, 'ss01' 1;
+}
+
+/* Titulares serif: ajustados y con buen color óptico */
+h1, h2, h3 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  letter-spacing: -0.011em;
+  line-height: 1.2;
+}
+
+/* Las cifras siempre alineadas en columnas */
+.tabular-nums,
+table {
+  font-variant-numeric: tabular-nums;
+}
+
+code {
+  font-size: 0.9em;
+  background: rgb(var(--c-muted));
+  border: 1px solid rgb(var(--c-border));
+  border-radius: 4px;
+  padding: 0.05em 0.35em;
 }
 
 ::-webkit-scrollbar {

@@ -33,7 +33,7 @@ export function ContractDetail({ contract: c }) {
       {/* Alerta: fecha de fin anterior a la de inicio (imposible lógicamente) */}
       {c.startDate && c.endDate && new Date(c.endDate) < new Date(c.startDate) && (
         <div className="rounded-lg bg-danger/10 border border-danger/30 p-4 text-sm">
-          <span className="text-danger font-medium">⚠ Fechas inconsistentes</span>
+          <span className="text-danger font-medium">Fechas inconsistentes</span>
           <p className="text-textSecondary mt-1 leading-relaxed">
             La fecha de fin (<strong className="text-textPrimary">{formatDate(c.endDate)}</strong>)
             es anterior a la de inicio (<strong className="text-textPrimary">{formatDate(c.startDate)}</strong>),

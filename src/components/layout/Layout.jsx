@@ -52,11 +52,15 @@ export function Layout() {
 // Encabezado de página reutilizable
 export function PageHeader({ title, subtitle }) {
   return (
-    <header className="mb-6">
-      <h1 className="font-display font-bold text-2xl md:text-3xl text-textPrimary">
+    <header className="mb-7 pb-5 border-b border-border">
+      <h1 className="font-display font-bold text-[1.75rem] md:text-[2.125rem] text-textPrimary leading-tight">
         {title}
       </h1>
-      {subtitle && <p className="text-textSecondary mt-1">{subtitle}</p>}
+      {subtitle && (
+        <p className="text-textSecondary mt-2 text-[15px] max-w-3xl leading-relaxed">
+          {subtitle}
+        </p>
+      )}
     </header>
   )
 }

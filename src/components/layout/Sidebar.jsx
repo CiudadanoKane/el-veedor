@@ -1,12 +1,13 @@
 import { NavLink } from 'react-router-dom'
+import { Icon } from '../ui/Icon'
 
 const NAV = [
-  { to: '/', label: 'Dashboard', icon: '◉', end: true },
-  { to: '/alertas', label: 'Alertas', icon: '🔴' },
-  { to: '/mora', label: 'Contratos en Mora', icon: '⏱' },
-  { to: '/adiciones', label: 'Adiciones', icon: '⊕' },
-  { to: '/categorias', label: '¿En qué se contrata?', icon: '◧' },
-  { to: '/rankings', label: 'Rankings', icon: '≡' },
+  { to: '/', label: 'Panorama', icon: 'dashboard', end: true },
+  { to: '/alertas', label: 'Alertas', icon: 'alerta' },
+  { to: '/mora', label: 'Contratos en mora', icon: 'reloj' },
+  { to: '/adiciones', label: 'Adiciones', icon: 'adiciones' },
+  { to: '/categorias', label: 'En qué se contrata', icon: 'categorias' },
+  { to: '/rankings', label: 'Rankings', icon: 'rankings' },
 ]
 
 // Panel oscuro sobre contenido claro: aporta contraste y jerarquía.
@@ -55,7 +56,7 @@ export function Sidebar({ abierto, onCerrar }) {
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+        <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-0.5">
           {NAV.map((item) => (
             <NavLink
               key={item.to}
@@ -63,23 +64,36 @@ export function Sidebar({ abierto, onCerrar }) {
               end={item.end}
               onClick={onCerrar}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                `relative flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${
                   isActive
-                    ? 'bg-sideHover text-sideActive font-medium'
-                    : 'text-sideSoft hover:bg-sideHover hover:text-white'
+                    ? 'bg-white/[0.07] text-white font-medium'
+                    : 'text-sideSoft hover:bg-white/[0.04] hover:text-white'
                 }`
               }
             >
-              <span className="text-base w-4 text-center shrink-0">{item.icon}</span>
-              <span className="truncate">{item.label}</span>
+              {({ isActive }) => (
+                <>
+                  {/* Marca de sección activa */}
+                  <span
+                    className={`absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-full transition-colors ${
+                      isActive ? 'bg-sideActive' : 'bg-transparent'
+                    }`}
+                  />
+                  <Icon name={item.icon} className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
 
-        <div className="px-6 py-4 border-t border-white/10 text-xs text-sideSoft leading-relaxed">
-          Datos públicos de SECOP II.
-          <br />
-          La plataforma señala patrones, no acusa.
+        <div className="px-5 py-5 border-t border-white/10">
+          <p className="text-xs text-sideSoft leading-relaxed">
+            Datos públicos de SECOP II
+          </p>
+          <p className="text-xs text-sideSoft/70 leading-relaxed mt-1">
+            La plataforma señala patrones, no acusa.
+          </p>
         </div>
       </aside>
     </>

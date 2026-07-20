@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react'
+import { Icon } from './Icon'
 
 // Tabla genérica. columns: [{ key, header, render?, className? }]
 // renderDetail?(row): si se pasa, cada fila es clicable y despliega un panel debajo.
@@ -9,21 +10,23 @@ export function DataTable({ columns, rows, keyField = 'id', renderDetail }) {
   const [openKey, setOpenKey] = useState(null)
   const expandable = typeof renderDetail === 'function'
   const cols = expandable
-    ? [...columns, { key: '_chev', header: '', className: 'w-8 text-center' }]
+    ? [...columns, { key: '_chev', header: '', className: 'w-10 text-center' }]
     : columns
 
   const toggle = (key) => setOpenKey((cur) => (cur === key ? null : key))
 
   return (
     <div>
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full min-w-[760px] text-sm">
+      <div className="overflow-x-auto rounded-lg border border-border">
+        <table className="w-full min-w-[760px] text-[13px]">
           <thead>
-            <tr className="bg-muted text-left text-textSecondary">
+            <tr className="bg-muted">
               {cols.map((c) => (
                 <th
                   key={c.key}
-                  className={`px-3 py-2.5 sm:px-4 sm:py-3 font-medium whitespace-nowrap ${c.className || ''}`}
+                  className={`px-4 py-3 font-medium text-[11px] uppercase tracking-label
+                              text-textSecondary text-left whitespace-nowrap
+                              border-b border-border ${c.className || ''}`}
                 >
                   {c.header}
                 </th>
@@ -39,31 +42,32 @@ export function DataTable({ columns, rows, keyField = 'id', renderDetail }) {
                 <Fragment key={key}>
                   <tr
                     onClick={expandable ? () => toggle(key) : undefined}
-                    className={`border-t border-border transition-colors ${
+                    className={`border-b border-border/60 last:border-0 transition-colors ${
                       expandable ? 'cursor-pointer' : ''
-                    } ${isOpen ? 'bg-muted' : 'hover:bg-muted'}`}
+                    } ${isOpen ? 'bg-muted' : 'hover:bg-muted/60'}`}
                   >
                     {columns.map((c) => (
                       <td
                         key={c.key}
-                        className={`px-3 py-2.5 sm:px-4 sm:py-3 align-top ${c.className || ''}`}
+                        className={`px-4 py-3 align-top leading-snug ${c.className || ''}`}
                       >
                         {c.render ? c.render(row) : row[c.key] ?? '—'}
                       </td>
                     ))}
                     {expandable && (
-                      <td className="px-3 py-2.5 sm:px-4 sm:py-3 align-top text-center text-textSecondary">
-                        <span
-                          className={`inline-block transition-transform ${isOpen ? 'rotate-90' : ''}`}
-                        >
-                          ▸
-                        </span>
+                      <td className="px-4 py-3 align-top text-center text-textSecondary">
+                        <Icon
+                          name="chevron"
+                          className={`h-4 w-4 inline-block transition-transform ${
+                            isOpen ? 'rotate-90' : ''
+                          }`}
+                        />
                       </td>
                     )}
                   </tr>
                   {expandable && isOpen && (
-                    <tr className="bg-muted">
-                      <td colSpan={cols.length} className="px-3 pb-4 pt-1 sm:px-4">
+                    <tr className="bg-muted border-b border-border">
+                      <td colSpan={cols.length} className="px-4 pb-5 pt-1">
                         {renderDetail(row)}
                       </td>
                     </tr>
@@ -75,7 +79,7 @@ export function DataTable({ columns, rows, keyField = 'id', renderDetail }) {
         </table>
       </div>
       <p className="mt-2 text-xs text-textSecondary sm:hidden">
-        ← Desliza la tabla para ver todas las columnas
+        Desliza la tabla para ver todas las columnas
         {expandable && ' · toca una fila para el detalle'}
       </p>
     </div>

@@ -22,8 +22,13 @@ export default {
         sideActive:    'rgb(var(--c-side-active) / <alpha-value>)',
       },
       fontFamily: {
-        display: ['Space Grotesk', 'sans-serif'],
-        body:    ['Inter', 'sans-serif'],
+        // Serif editorial para títulos: da gravedad institucional.
+        // Sans para datos y UI: máxima legibilidad en tablas y cifras.
+        display: ['"Source Serif 4"', 'Georgia', 'serif'],
+        body:    ['Inter', 'system-ui', 'sans-serif'],
+      },
+      letterSpacing: {
+        label: '0.08em',
       },
     },
   },

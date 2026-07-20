@@ -231,8 +231,8 @@ export function Adiciones() {
             value={tab}
             onChange={setTab}
             options={[
-              { value: 'tiempo', label: '⏱ Por tiempo' },
-              { value: 'costo', label: '💰 Por costo' },
+              { value: 'tiempo', label: 'Por tiempo' },
+              { value: 'costo', label: 'Por costo' },
             ]}
           />
         </div>

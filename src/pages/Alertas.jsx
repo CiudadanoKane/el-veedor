@@ -63,7 +63,7 @@ function AlertaFechasInconsistentes() {
 
   return (
     <AlertCard
-      icon="📅"
+      icon="calendario"
       title="Fechas inconsistentes"
       question="¿Qué contratos tienen una fecha de fin anterior a su fecha de inicio?"
       count={conteo.data?.total}
@@ -135,7 +135,7 @@ function AlertaErrorDigitacion() {
 
   return (
     <AlertCard
-      icon="🔢"
+      icon="digitos"
       title="Valores implausibles (posible error de digitación)"
       question="¿Qué contratos registran un valor que no puede ser una adición real?"
       count={query.isLoading ? null : anomalias.length}
@@ -207,7 +207,7 @@ function AlertaContratosSinValor() {
 
   return (
     <AlertCard
-      icon="💸"
+      icon="billete"
       title="Contratos en $0 con presupuesto comprometido"
       question="¿Qué contratos figuran sin valor, pese a tener recursos reservados?"
       count={conteo.data?.total}
@@ -245,9 +245,9 @@ function AlertaContratosSinValor() {
 }
 
 const ALERTAS = [
-  { id: 'fechas', label: '📅 Fechas inconsistentes', Componente: AlertaFechasInconsistentes },
-  { id: 'sinvalor', label: '💸 Contratos en $0', Componente: AlertaContratosSinValor },
-  { id: 'digitacion', label: '🔢 Valores implausibles', Componente: AlertaErrorDigitacion },
+  { id: 'fechas', label: 'Fechas inconsistentes', Componente: AlertaFechasInconsistentes },
+  { id: 'sinvalor', label: 'Contratos sin valor', Componente: AlertaContratosSinValor },
+  { id: 'digitacion', label: 'Valores implausibles', Componente: AlertaErrorDigitacion },
 ]
 
 export function Alertas() {
