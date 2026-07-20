@@ -1,10 +1,11 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { PageHeader } from '../components/layout/Layout'
 import { GlobalFilters } from '../components/layout/GlobalFilters'
 import { StatCard } from '../components/ui/StatCard'
 import { QueryState } from '../components/ui/QueryState'
 import { Methodology } from '../components/ui/Methodology'
 import { ListaBarra } from '../components/ui/ListaBarra'
+import { EvolucionMensual } from '../components/ui/EvolucionMensual'
 import { useFilters } from '../context/FiltersContext'
 import { useDashboardStats } from '../hooks/useDashboard'
 import { formatCOP, formatCOPFull, pct, formatPct } from '../lib/formatters'
@@ -30,16 +31,18 @@ function Detalle({ titulo, intro, metodologia, children }) {
 
 export function Dashboard() {
   const { filters } = useFilters()
-  const [abiertas, setAbiertas] = useState(() => new Set())
+  // Acordeón: una sola cifra desplegada a la vez. Abrir otra cierra la anterior.
+  const [activa, setActiva] = useState(null)
 
   const alternar = useCallback((clave) => {
-    setAbiertas((prev) => {
-      const siguiente = new Set(prev)
-      if (siguiente.has(clave)) siguiente.delete(clave)
-      else siguiente.add(clave)
-      return siguiente
-    })
+    setActiva((prev) => (prev === clave ? null : clave))
   }, [])
+
+  // El hook recibe un conjunto para decidir qué consultas disparar
+  const abiertas = useMemo(
+    () => new Set(activa ? [activa] : []),
+    [activa],
+  )
 
   const {
     generales, porEstado, mora, vencidosPorAntiguedad, ejecucionVencidos,
@@ -58,7 +61,7 @@ export function Dashboard() {
   const pctRiesgoNum = pct(mora.data?.riesgo, generales.data?.valor)
   const pctRiesgo = pctRiesgoNum != null ? formatPct(pctRiesgoNum) : null
 
-  const abierta = (k) => abiertas.has(k)
+  const abierta = (k) => activa === k
 
   return (
     <div>
@@ -113,7 +116,10 @@ export function Dashboard() {
         />
       </div>
 
-      {/* Detalles desplegados, en el orden de las cifras */}
+      {/* Serie de tiempo: el gráfico que sí aporta lo que una lista no puede */}
+      <EvolucionMensual filters={filters} />
+
+      {/* Detalle desplegado (uno a la vez) */}
       <div className="space-y-2">
         {abierta('contratos') && (
           <Detalle
