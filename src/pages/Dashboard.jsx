@@ -177,6 +177,11 @@ export function Dashboard() {
                     label: s.name,
                     valor: s.value,
                     valorTexto: formatCOP(s.value),
+                    // La categoría más confusa se explica en su propia fila,
+                    // no en una nota al pie que nadie lee.
+                    nota: /no aplica|no pertenece/i.test(s.name)
+                      ? 'No es un dato faltante: "sector" es una estructura del gobierno nacional, y las alcaldías y gobernaciones no pertenecen a ninguno. Cerca del 87% de este grupo son entidades territoriales.'
+                      : undefined,
                   }))}
                 />
               )}
