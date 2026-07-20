@@ -31,15 +31,17 @@ export function Sidebar({ abierto, onCerrar }) {
       >
         <div className="px-7 pt-8 pb-7 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <img
-              src="/icono-el-veedor-blanco.png"
-              alt=""
-              className="h-8 w-8 mb-3"
-            />
-            <div className="font-display text-[1.35rem] font-extrabold tracking-tight leading-none text-white">
-              El Veedor
+            <div className="flex items-center gap-2.5">
+              <img
+                src="/icono-el-veedor-blanco.png"
+                alt=""
+                className="h-8 w-8 shrink-0"
+              />
+              <span className="font-display text-[1.35rem] font-extrabold tracking-tight leading-none text-white">
+                El Veedor
+              </span>
             </div>
-            <div className="text-xs text-sideSoft mt-1.5 leading-snug font-light">
+            <div className="text-xs text-sideSoft mt-2.5 leading-snug">
               Veeduría ciudadana de la
               <br />
               contratación pública
