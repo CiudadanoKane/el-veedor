@@ -30,11 +30,20 @@ export function Sidebar({ abierto, onCerrar }) {
           lg:flex lg:sticky lg:top-0 lg:h-screen lg:z-auto lg:shrink-0 lg:shadow-none
         `}
       >
-        <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between">
-          <div>
-            <div className="font-display font-bold text-xl text-white">El Veedor</div>
-            <div className="text-xs text-sideSoft mt-0.5">
-              Veeduría ciudadana · SECOP II
+        <div className="px-5 py-5 border-b border-white/10 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <img
+              src="/icono-el-veedor-blanco.png"
+              alt=""
+              className="h-9 w-9 shrink-0"
+            />
+            <div className="min-w-0">
+              <div className="font-display font-bold text-xl text-white leading-tight">
+                El Veedor
+              </div>
+              <div className="text-xs text-sideSoft">
+                Veeduría ciudadana · SECOP II
+              </div>
             </div>
           </div>
           <button

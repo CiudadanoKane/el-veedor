@@ -32,6 +32,7 @@ export function Layout() {
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
+          <img src="/icono-el-veedor-blanco.png" alt="" className="h-7 w-7" />
           <span className="font-display font-bold text-lg">El Veedor</span>
         </header>
 

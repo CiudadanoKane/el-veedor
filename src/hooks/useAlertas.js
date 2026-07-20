@@ -15,6 +15,49 @@ const CONDICIONES_FECHAS = [
   'fecha_de_fin_del_contrato < fecha_de_inicio_del_contrato',
 ]
 
+// ALERTA: contratos registrados en $0 que SÍ tienen presupuesto comprometido.
+// Muchos $0 son legítimos (comodatos, convenios de "aunar esfuerzos", acuerdos
+// marco). Pero si la entidad reservó presupuesto vía CDP y aun así dejó el valor
+// del contrato en cero, hay una contradicción objetiva: sí hay recursos públicos
+// involucrados y el monto no quedó registrado.
+// La cota superior del CDP descarta valores basura (hay registros con cifras
+// imposibles que distorsionarían el total).
+const CDP_MAX = 1e12
+
+const CONDICIONES_SIN_VALOR = [
+  soloContratosValidos(),
+  'valor_del_contrato = 0',
+  'saldo_cdp > 0',
+  `saldo_cdp < ${CDP_MAX}`,
+]
+
+export function useContratosSinValor(filters = {}) {
+  const conteo = useQuery({
+    queryKey: ['alerta', 'sinvalor', 'conteo', filters],
+    queryFn: () => {
+      const where = buildWhere(whereFromFilters(filters, CONDICIONES_SIN_VALOR))
+      // Solo el conteo: sumar los CDP inflaría la cifra, porque un mismo
+      // certificado presupuestal suele amparar varios contratos.
+      return socrataQuery(DS, `SELECT count(id_contrato) as n ${where} LIMIT 1`)
+    },
+    select: (rows) => ({ total: parseInt(rows[0]?.n ?? 0, 10) }),
+  })
+
+  const lista = useQuery({
+    queryKey: ['alerta', 'sinvalor', 'lista', filters],
+    queryFn: () => {
+      const where = buildWhere(whereFromFilters(filters, CONDICIONES_SIN_VALOR))
+      return socrataQuery(
+        DS,
+        `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY saldo_cdp DESC LIMIT 100`,
+      )
+    },
+    select: adaptList,
+  })
+
+  return { conteo, lista }
+}
+
 export function useFechasInconsistentes(filters = {}) {
   const conteo = useQuery({
     queryKey: ['alerta', 'fechas', 'conteo', filters],

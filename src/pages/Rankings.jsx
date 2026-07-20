@@ -155,7 +155,7 @@ export function Rankings() {
       />
       <GlobalFilters />
 
-      <div className="bg-surface rounded-xl border border-border p-5">
+      <div className="bg-surface rounded-xl border border-border p-5 shadow-sm">
         <div className="flex gap-2 mb-4 border-b border-border pb-4">
           <TabButton active={tab === 'contratistas'} onClick={() => setTab('contratistas')}>
             Contratistas

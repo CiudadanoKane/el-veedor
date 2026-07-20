@@ -5,16 +5,16 @@
 /* Tema claro: sobrio e institucional. Los valores son RGB sin coma para que
    Tailwind pueda aplicarles opacidad (bg-surface/50, etc.). */
 :root {
-  --c-bg:        248 250 252;  /* gris muy claro, no blanco puro */
-  --c-surface:   255 255 255;  /* tarjetas */
-  --c-muted:     241 245 249;  /* rellenos sutiles, filas alternas */
-  --c-border:    226 232 240;  /* bordes */
-  --c-primary:     2 132 199;  /* azul institucional, legible sobre claro */
-  --c-danger:    220  38  38;
-  --c-warning:   217 119   6;
-  --c-success:     5 150 105;
-  --c-text:       15  23  42;  /* casi negro, alto contraste */
-  --c-text-soft: 100 116 139;  /* texto secundario */
+  --c-bg:        226 232 240;  /* gris definido: separa las tarjetas del fondo */
+  --c-surface:   255 255 255;  /* tarjetas, blanco puro para máximo contraste */
+  --c-muted:     241 245 249;  /* rellenos sutiles, encabezados de tabla */
+  --c-border:    203 213 225;  /* bordes visibles, no fantasmales */
+  --c-primary:     3 105 161;  /* azul institucional profundo */
+  --c-danger:    185  28  28;
+  --c-warning:   180  83   9;
+  --c-success:     4 120  87;
+  --c-text:        2   6  23;  /* casi negro */
+  --c-text-soft:  71  85 105;  /* secundario, más oscuro para mejor lectura */
 
   /* Barra lateral oscura: aporta contraste y jerarquía sobre el contenido claro */
   --c-side:        15  23  42;  /* azul noche institucional */

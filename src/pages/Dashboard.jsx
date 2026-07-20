@@ -31,7 +31,7 @@ function TreemapCell(props) {
 // Desglose por estado: barra proporcional + lista, para que el total no sea opaco.
 function DesgloseEstados({ query }) {
   return (
-    <section className="bg-surface rounded-xl border border-border p-5">
+    <section className="bg-surface rounded-xl border border-border p-5 shadow-sm">
       <h2 className="font-display font-semibold text-lg mb-1">
         ¿En qué estado están esos contratos?
       </h2>
@@ -104,7 +104,7 @@ function VencidosPorAntiguedad({ query, total, enEjecucion, pctVencidos }) {
   ]
 
   return (
-    <section className="bg-surface rounded-xl border border-border p-5">
+    <section className="bg-surface rounded-xl border border-border p-5 shadow-sm">
       <h2 className="font-display font-semibold text-lg mb-1">
         ¿Cuántos están realmente retrasados?
       </h2>
@@ -172,7 +172,7 @@ function EjecucionVencidos({ query }) {
   ]
 
   return (
-    <section className="bg-surface rounded-xl border border-border p-5">
+    <section className="bg-surface rounded-xl border border-border p-5 shadow-sm">
       <h2 className="font-display font-semibold text-lg mb-1">
         ¿Cuánto se ejecutó de los contratos vencidos?
       </h2>
@@ -302,7 +302,7 @@ export function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Treemap por sector */}
-        <section className="bg-surface rounded-xl border border-border p-5">
+        <section className="bg-surface rounded-xl border border-border p-5 shadow-sm">
           <h2 className="font-display font-semibold text-lg mb-4">
             Distribución de valor por sector
           </h2>
@@ -330,7 +330,7 @@ export function Dashboard() {
         </section>
 
         {/* Entidades con más contratos en mora */}
-        <section className="bg-surface rounded-xl border border-border p-5">
+        <section className="bg-surface rounded-xl border border-border p-5 shadow-sm">
           <h2 className="font-display font-semibold text-lg mb-4">
             Entidades con más contratos en mora
           </h2>

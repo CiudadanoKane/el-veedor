@@ -18,7 +18,7 @@ export function AlertCard({
   children,
 }) {
   return (
-    <section className="bg-surface rounded-xl border border-border overflow-hidden">
+    <section className="bg-surface rounded-xl border border-border overflow-hidden shadow-sm">
       <div className="p-5 border-b border-border">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">

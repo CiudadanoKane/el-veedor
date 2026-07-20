@@ -8,7 +8,7 @@ const TONE = {
 
 export function StatCard({ label, value, sub, pct, tone = 'default', loading }) {
   return (
-    <div className="rounded-xl bg-surface border border-border p-5">
+    <div className="rounded-xl bg-surface border border-border p-5 shadow-sm">
       <div className="text-xs uppercase tracking-wide text-textSecondary mb-2">
         {label}
       </div>
