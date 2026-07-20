@@ -1,10 +1,13 @@
 import { PageHeader } from '../components/layout/Layout'
 
-// Canal para recibir correcciones. OJO: debe ser un correo real y atendido.
-// El correo "noreply" de GitHub no sirve — esa dirección descarta todo lo que
-// le llega; existe justamente para ocultar el correo personal.
-const CORREO_REPORTES =
-  import.meta.env.VITE_CORREO_REPORTES || 'elveedor.co@gmail.com'
+// Canal para recibir correcciones. Va por variable de entorno para poder
+// cambiarlo sin tocar el código. Sin valor por defecto a propósito: si no está
+// configurada, el botón no se muestra. Es preferible no ofrecer canal a
+// ofrecer uno que nadie atiende.
+//
+// Nota: el correo "noreply" de GitHub no sirve aquí — esa dirección descarta
+// todo lo que le llega; existe para ocultar el correo personal.
+const CORREO_REPORTES = import.meta.env.VITE_CORREO_REPORTES
 
 /* ---------------------------------------------------------------------------
    Sección de transparencia metodológica.
@@ -358,16 +361,27 @@ export function Transparencia() {
           Al reportar, ayuda mucho incluir el enlace a la sección donde viste el problema
           y, si aplica, la referencia del contrato.
         </p>
-        <div className="pt-2">
-          <a
-            href={`mailto:${CORREO_REPORTES}?subject=${encodeURIComponent('El Veedor — reporte de error')}&body=${encodeURIComponent(
-              'Sección donde vi el problema:\n\nQué observé:\n\nReferencia del contrato (si aplica):\n\n',
-            )}`}
-            className="inline-block border-2 border-textPrimary px-5 py-2.5 text-[14px] font-bold hover:bg-textPrimary hover:text-bg transition-colors"
-          >
-            Reportar un error o sugerencia
-          </a>
-        </div>
+        {CORREO_REPORTES && (
+          <div className="pt-2">
+            <a
+              href={`mailto:${CORREO_REPORTES}?subject=${encodeURIComponent('El Veedor — reporte de error')}&body=${encodeURIComponent(
+                'Sección donde vi el problema:\n\nQué observé:\n\nReferencia del contrato (si aplica):\n\n',
+              )}`}
+              className="inline-block border-2 border-textPrimary px-5 py-2.5 text-[14px] font-bold hover:bg-textPrimary hover:text-bg transition-colors"
+            >
+              Reportar un error o sugerencia
+            </a>
+            <p className="text-[13px] text-textSecondary mt-3">
+              O escríbenos directamente a{' '}
+              <a
+                href={`mailto:${CORREO_REPORTES}`}
+                className="text-primary font-semibold enlace-sutil"
+              >
+                {CORREO_REPORTES}
+              </a>
+            </p>
+          </div>
+        )}
       </Bloque>
 
       <p className="text-[13px] text-textSecondary pt-2">
