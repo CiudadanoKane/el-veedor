@@ -8,6 +8,12 @@ import {
 
 const DS = DATASETS.CONTRATOS
 
+// Modalidades donde no hubo concurso: el Estado escoge al contratista
+// directamente. Es la vía legítima en muchos casos (servicios profesionales,
+// urgencias), pero su peso relativo es un indicador de veeduría.
+export const MODALIDADES_SIN_COMPETENCIA =
+  `modalidad_de_contratacion IN ('Contratación directa', 'Contratación Directa (con ofertas)')`
+
 // `abiertas` es el conjunto de cifras desplegadas. Las consultas de detalle
 // solo se disparan cuando el usuario abre la cifra correspondiente: así el
 // Panorama carga más rápido y no gasta peticiones en lo que nadie mira.
@@ -18,15 +24,65 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
     queryKey: ['dash', 'generales', filters],
     queryFn: () => {
       const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
+      // El conteo de contratación directa va en la misma consulta: sale gratis
       return socrataQuery(
         DS,
-        `SELECT count(id_contrato) as total, sum(valor_del_contrato) as valor ${where} LIMIT 1`,
+        `SELECT count(id_contrato) as total, sum(valor_del_contrato) as valor,
+                sum(case(${MODALIDADES_SIN_COMPETENCIA}, 1, true, 0)) as directa
+         ${where} LIMIT 1`,
       )
     },
     select: (rows) => ({
       total: parseInt(rows[0]?.total ?? 0, 10),
       valor: parseFloat(rows[0]?.valor ?? 0),
+      directa: parseInt(rows[0]?.directa ?? 0, 10),
     }),
+  })
+
+  // Escala del sistema: cuántos actores participan
+  const actores = useQuery({
+    queryKey: ['dash', 'actores', filters],
+    queryFn: () => {
+      const where = buildWhere(
+        whereFromFilters(filters, [
+          soloContratosValidos(),
+          `documento_proveedor != 'No Definido'`,
+        ]),
+      )
+      return socrataQuery(
+        DS,
+        `SELECT count(distinct nombre_entidad) as entidades,
+                count(distinct documento_proveedor) as contratistas
+         ${where} LIMIT 1`,
+      )
+    },
+    select: (rows) => ({
+      entidades: parseInt(rows[0]?.entidades ?? 0, 10),
+      contratistas: parseInt(rows[0]?.contratistas ?? 0, 10),
+    }),
+  })
+
+  // Desglose por modalidad — detalle de la cifra "sin competencia"
+  const porModalidad = useQuery({
+    queryKey: ['dash', 'modalidad', filters],
+    enabled: abiertas.has('competencia'),
+    queryFn: () => {
+      const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
+      return socrataQuery(
+        DS,
+        `SELECT modalidad_de_contratacion, count(id_contrato) as n,
+                sum(valor_del_contrato) as valor
+         ${where} GROUP BY modalidad_de_contratacion ORDER BY n DESC LIMIT 25`,
+      )
+    },
+    select: (rows) =>
+      rows
+        .filter((r) => r.modalidad_de_contratacion)
+        .map((r) => ({
+          modalidad: r.modalidad_de_contratacion,
+          n: parseInt(r.n ?? 0, 10),
+          valor: parseFloat(r.valor ?? 0),
+        })),
   })
 
   // Desglose por estado: da el panorama completo y aporta el denominador
@@ -158,7 +214,7 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
   })
 
   return {
-    generales, porEstado, mora, vencidosPorAntiguedad, ejecucionVencidos,
-    porSector, entidadesMora,
+    generales, actores, porEstado, mora, vencidosPorAntiguedad, ejecucionVencidos,
+    porSector, entidadesMora, porModalidad,
   }
 }

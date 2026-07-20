@@ -46,8 +46,8 @@ export function Dashboard() {
   )
 
   const {
-    generales, porEstado, mora, vencidosPorAntiguedad, ejecucionVencidos,
-    porSector, entidadesMora,
+    generales, actores, porEstado, mora, vencidosPorAntiguedad, ejecucionVencidos,
+    porSector, entidadesMora, porModalidad,
   } = useDashboardStats(filters, abiertas)
 
   const scope = filters.city || filters.department || 'Colombia'
@@ -61,6 +61,8 @@ export function Dashboard() {
   const pctVencidos = pctVencidosNum != null ? formatPct(pctVencidosNum) : null
   const pctRiesgoNum = pct(mora.data?.riesgo, generales.data?.valor)
   const pctRiesgo = pctRiesgoNum != null ? formatPct(pctRiesgoNum) : null
+  const pctDirectaNum = pct(generales.data?.directa, generales.data?.total)
+  const pctDirecta = pctDirectaNum != null ? formatPct(pctDirectaNum) : null
 
   const abierta = (k) => activa === k
 
@@ -114,6 +116,32 @@ export function Dashboard() {
           onToggle={() => alternar('riesgo')}
           abierta={abierta('riesgo')}
           detalle="Ver ejecución"
+        />
+        <StatCard
+          label="Sin competencia"
+          value={pctDirecta ?? '—'}
+          sub={
+            generales.data?.directa
+              ? `${generales.data.directa.toLocaleString('es-CO')} contratos adjudicados de forma directa`
+              : 'Contratos adjudicados sin concurso'
+          }
+          tone="warning"
+          loading={generales.isLoading}
+          onToggle={() => alternar('competencia')}
+          abierta={abierta('competencia')}
+          detalle="Ver modalidades"
+        />
+        <StatCard
+          label="Entidades contratantes"
+          value={actores.data?.entidades?.toLocaleString('es-CO') ?? '—'}
+          sub="Organismos públicos que firmaron contratos"
+          loading={actores.isLoading}
+        />
+        <StatCard
+          label="Contratistas"
+          value={actores.data?.contratistas?.toLocaleString('es-CO') ?? '—'}
+          sub="Personas y empresas distintas, contadas por NIT o cédula"
+          loading={actores.isLoading}
         />
       </div>
 
@@ -181,6 +209,44 @@ export function Dashboard() {
                     // no en una nota al pie que nadie lee.
                     nota: /no aplica|no pertenece/i.test(s.name)
                       ? 'No es un dato faltante: "sector" es una estructura del gobierno nacional, y las alcaldías y gobernaciones no pertenecen a ninguno. Cerca del 87% de este grupo son entidades territoriales.'
+                      : undefined,
+                  }))}
+                />
+              )}
+            </QueryState>
+          </Detalle>
+        )}
+
+        {abierta('competencia') && (
+          <Detalle
+            titulo="¿Cómo se escoge a quién contrata el Estado?"
+            intro="Cuánto se adjudica por concurso y cuánto de forma directa."
+            metodologia={
+              <>
+                Contamos como <strong>sin competencia</strong> las modalidades
+                "Contratación directa" y "Contratación Directa (con ofertas)": ahí la
+                entidad escoge al contratista sin un concurso abierto.{' '}
+                <strong>Que sea directa no la hace irregular</strong> — la ley la permite
+                para servicios profesionales, urgencias y otros casos. Lo que importa es
+                su <em>peso relativo</em>: cuando tres de cada cuatro contratos del país
+                se adjudican así, vale la pena preguntarse por qué. La "urgencia
+                manifiesta" no aparece como modalidad propia en SECOP II: es una causal
+                dentro de la contratación directa.
+              </>
+            }
+          >
+            <QueryState query={porModalidad} empty="Sin datos de modalidad.">
+              {(data) => (
+                <ListaBarra
+                  apilada
+                  colores={SECTOR_COLORS}
+                  items={data.map((m) => ({
+                    clave: m.modalidad,
+                    label: m.modalidad,
+                    valor: m.n,
+                    secundario: formatCOP(m.valor),
+                    nota: /directa/i.test(m.modalidad)
+                      ? 'Sin concurso abierto: la entidad escoge al contratista'
                       : undefined,
                   }))}
                 />
