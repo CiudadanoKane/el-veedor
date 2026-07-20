@@ -74,7 +74,23 @@ export function Sidebar({ abierto, onCerrar }) {
           ))}
         </nav>
 
-        <div className="px-7 py-7">
+        {/* Transparencia va aparte: no es un módulo de datos sino el manual
+            de cómo se construyen todos los demás. */}
+        <div className="px-7 pt-5 pb-7">
+          <NavLink
+            to="/transparencia"
+            onClick={onCerrar}
+            className={({ isActive }) =>
+              `block -ml-7 pl-7 pr-3 py-2 mb-4 text-[13px] border-l-2 ${
+                isActive
+                  ? 'border-white text-white font-extrabold'
+                  : 'border-transparent text-sideSoft hover:text-white hover:border-sideSoft hover:translate-x-1'
+              }`
+            }
+          >
+            Cómo funciona
+          </NavLink>
+
           <p className="text-[11px] text-sideSoft leading-relaxed">
             Datos públicos de SECOP II
           </p>

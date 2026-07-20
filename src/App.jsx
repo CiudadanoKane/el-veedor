@@ -7,6 +7,7 @@ import { Mora } from './pages/Mora'
 import { Adiciones } from './pages/Adiciones'
 import { Categorias } from './pages/Categorias'
 import { Rankings } from './pages/Rankings'
+import { Transparencia } from './pages/Transparencia'
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
             <Route path="adiciones" element={<Adiciones />} />
             <Route path="categorias" element={<Categorias />} />
             <Route path="rankings" element={<Rankings />} />
+            <Route path="transparencia" element={<Transparencia />} />
           </Route>
         </Routes>
       </FiltersProvider>
