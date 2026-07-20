@@ -6,7 +6,6 @@ import { GlobalFilters } from '../components/layout/GlobalFilters'
 import { StatCard } from '../components/ui/StatCard'
 import { QueryState } from '../components/ui/QueryState'
 import { Methodology } from '../components/ui/Methodology'
-import { SectionTitle } from '../components/ui/SectionTitle'
 import { useFilters } from '../context/FiltersContext'
 import { useDashboardStats } from '../hooks/useDashboard'
 import { formatCOP, formatCOPFull, pct, formatPct } from '../lib/formatters'
@@ -33,7 +32,9 @@ function TreemapCell(props) {
 function DesgloseEstados({ query }) {
   return (
     <section className="border-b border-border pb-8">
-      <SectionTitle eyebrow="Composición" title="¿En qué estado están esos contratos?" />
+      <h2 className="font-display font-semibold text-lg mb-1">
+        ¿En qué estado están esos contratos?
+      </h2>
       <Methodology>
         El total agrupa contratos en distintas etapas. Solo los que están{' '}
         <strong>En ejecución</strong> pueden estar en mora — por eso ese es el
@@ -104,15 +105,14 @@ function VencidosPorAntiguedad({ query, total, enEjecucion, pctVencidos }) {
 
   return (
     <section className="border-b border-border pb-8">
-      <SectionTitle
-        eyebrow="Lectura crítica"
-        title="¿Cuántos están realmente retrasados?"
-        subtitle={
-          total != null && enEjecucion
-            ? `${total.toLocaleString('es-CO')} contratos (${pctVencidos} de los vigentes) tienen el plazo vencido — pero no todos son retrasos reales.`
-            : 'Distribución de los contratos con plazo vencido según su antigüedad.'
-        }
-      />
+      <h2 className="font-display font-semibold text-lg mb-1">
+        ¿Cuántos están realmente retrasados?
+      </h2>
+      <p className="text-sm text-textSecondary mb-1">
+        {total != null && enEjecucion
+          ? `${total.toLocaleString('es-CO')} contratos (${pctVencidos} de los vigentes) tienen el plazo vencido — pero no todos son retrasos reales.`
+          : 'Distribución de los contratos con plazo vencido según su antigüedad.'}
+      </p>
       <Methodology>
         Un contrato figura con <strong>plazo vencido</strong> si su estado es "En
         ejecución" y su fecha de fin ya pasó. Pero eso mezcla dos situaciones muy
@@ -173,11 +173,12 @@ function EjecucionVencidos({ query }) {
 
   return (
     <section className="border-b border-border pb-8">
-      <SectionTitle
-        eyebrow="Ejecución"
-        title="¿Cuánto se ejecutó de los contratos vencidos?"
-        subtitle="El pago reportado es la mejor pista sobre si un contrato realmente avanzó."
-      />
+      <h2 className="font-display font-semibold text-lg mb-1">
+        ¿Cuánto se ejecutó de los contratos vencidos?
+      </h2>
+      <p className="text-sm text-textSecondary mb-1">
+        El pago reportado es la mejor pista sobre si un contrato realmente avanzó.
+      </p>
       <Methodology>
         Comparamos <code>valor_pagado</code> contra <code>valor_del_contrato</code> en los
         contratos con plazo vencido. <strong>Advertencia importante:</strong> este campo
@@ -254,8 +255,8 @@ export function Dashboard() {
       />
       <GlobalFilters />
 
-      {/* Banda oscura con las cifras clave: punto focal de la página */}
-      <div className="bg-ink -mx-5 sm:-mx-8 lg:mx-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Tarjetas de cifras clave */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Contratos registrados"
           value={generales.data?.total?.toLocaleString('es-CO') ?? '—'}
@@ -302,7 +303,9 @@ export function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Treemap por sector */}
         <section className="border-b border-border pb-8">
-          <SectionTitle eyebrow="Sectores" title="Distribución de valor por sector" />
+          <h2 className="font-display font-semibold text-lg mb-4">
+            Distribución de valor por sector
+          </h2>
           <QueryState query={porSector} empty="Sin datos de sector.">
             {(data) => (
               <ResponsiveContainer width="100%" height={280}>
@@ -328,7 +331,9 @@ export function Dashboard() {
 
         {/* Entidades con más contratos en mora */}
         <section className="border-b border-border pb-8">
-          <SectionTitle eyebrow="Ranking" title="Entidades con más contratos en mora" />
+          <h2 className="font-display font-semibold text-lg mb-4">
+            Entidades con más contratos en mora
+          </h2>
           <QueryState query={entidadesMora} empty="Sin contratos en mora.">
             {(data) => (
               <ResponsiveContainer width="100%" height={280}>

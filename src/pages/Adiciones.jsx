@@ -5,7 +5,6 @@ import { QueryState } from '../components/ui/QueryState'
 import { DataTable } from '../components/ui/DataTable'
 import { ContractDetail } from '../components/ui/ContractDetail'
 import { Methodology } from '../components/ui/Methodology'
-import { SectionTitle } from '../components/ui/SectionTitle'
 import { Segmented } from '../components/ui/Segmented'
 import { useFilters } from '../context/FiltersContext'
 import { useAdicionesTiempo, useAdicionesCosto } from '../hooks/useAdiciones'
@@ -91,7 +90,7 @@ function AdicionesTiempo({ filters }) {
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-[10px] uppercase tracking-label text-accent font-bold">
+        <h3 className="text-textSecondary text-sm">
           {query.data ? `${query.data.length} contratos con adición de plazo` : 'Cargando…'}
         </h3>
         <Segmented
@@ -174,7 +173,7 @@ function AdicionesCosto({ filters }) {
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-[10px] uppercase tracking-label text-accent font-bold">
+        <h3 className="text-textSecondary text-sm">
           {query.data
             ? `${query.data.adiciones.length} contratos cuyo valor creció tras la firma`
             : 'Cargando…'}

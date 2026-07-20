@@ -10,16 +10,12 @@
   --c-surface:   255 255 255;  /* sin distinción: no hay "tarjetas" */
   --c-muted:     247 247 245;  /* relleno mínimo, apenas perceptible */
   --c-border:    224 224 220;  /* líneas finas, cálidas */
-  --c-primary:    11  74 156;  /* azul tinta, para enlaces y datos */
-  --c-accent:    198  57  35;  /* bermellón: color de marca, con medida */
+  --c-primary:    17  61 122;  /* azul tinta, sobrio */
   --c-danger:    178  32  32;
-  --c-warning:   181  95  10;
+  --c-warning:   166  85  10;
   --c-success:    21 104  73;
   --c-text:       17  17  17;  /* negro tinta */
   --c-text-soft: 106 106 100;  /* gris cálido para texto secundario */
-
-  /* Banda oscura del bloque de cifras: da contraste y punto focal */
-  --c-ink:        22  24  28;
 
   /* Navegación */
   --c-side:      255 255 255;

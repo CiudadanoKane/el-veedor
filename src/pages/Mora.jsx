@@ -6,7 +6,6 @@ import { DataTable } from '../components/ui/DataTable'
 import { Semaforo } from '../components/ui/Semaforo'
 import { ContractDetail } from '../components/ui/ContractDetail'
 import { Methodology } from '../components/ui/Methodology'
-import { SectionTitle } from '../components/ui/SectionTitle'
 import { Segmented } from '../components/ui/Segmented'
 import { useFilters } from '../context/FiltersContext'
 import { useMora } from '../hooks/useMora'
@@ -70,20 +69,19 @@ export function Mora() {
       <GlobalFilters />
 
       <div className="border-b border-border pb-8">
-        <SectionTitle
-          eyebrow="Resultados"
-          title={query.data ? `${query.data.length} contratos mostrados` : 'Cargando…'}
-          right={
-            <Segmented
-              value={orden}
-              onChange={setOrden}
-              options={[
-                { value: 'fecha', label: 'Más antiguos' },
-                { value: 'valor', label: 'Mayor cuantía' },
-              ]}
-            />
-          }
-        />
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <h2 className="font-display font-semibold text-lg">
+            {query.data ? `${query.data.length} contratos mostrados` : 'Resultados'}
+          </h2>
+          <Segmented
+            value={orden}
+            onChange={setOrden}
+            options={[
+              { value: 'fecha', label: 'Más antiguos' },
+              { value: 'valor', label: 'Mayor cuantía' },
+            ]}
+          />
+        </div>
 
         <div className="flex flex-wrap items-center gap-2 mb-1">
           <span className="text-xs text-textSecondary">Antigüedad del vencimiento:</span>

@@ -8,7 +8,6 @@ import { QueryState } from '../components/ui/QueryState'
 import { DataTable } from '../components/ui/DataTable'
 import { Segmented } from '../components/ui/Segmented'
 import { Methodology } from '../components/ui/Methodology'
-import { SectionTitle } from '../components/ui/SectionTitle'
 import { useFilters } from '../context/FiltersContext'
 import { useCategorias } from '../hooks/useCategorias'
 import { formatCOP, formatCOPFull, formatPct, pct } from '../lib/formatters'
@@ -74,20 +73,17 @@ export function Categorias() {
       <GlobalFilters />
 
       <div className="border-b border-border pb-8">
-        <SectionTitle
-          eyebrow="Clasificación UNSPSC"
-          title="Categorías de contratación"
-          right={
-            <Segmented
-              value={metric}
-              onChange={setMetric}
-              options={[
-                { value: 'valor', label: 'Por valor' },
-                { value: 'contratos', label: 'Por cantidad' },
-              ]}
-            />
-          }
-        />
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-1">
+          <h2 className="font-display font-semibold text-lg">Categorías de contratación</h2>
+          <Segmented
+            value={metric}
+            onChange={setMetric}
+            options={[
+              { value: 'valor', label: 'Por valor' },
+              { value: 'contratos', label: 'Por cantidad' },
+            ]}
+          />
+        </div>
         <Methodology>
           A diferencia del "sector" (que solo aplica al gobierno nacional), esta vista usa
           el código <code>UNSPSC</code> (<code>codigo_de_categoria_principal</code>), un
