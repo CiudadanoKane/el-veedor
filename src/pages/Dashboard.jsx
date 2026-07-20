@@ -6,6 +6,7 @@ import { QueryState } from '../components/ui/QueryState'
 import { Methodology } from '../components/ui/Methodology'
 import { ListaBarra } from '../components/ui/ListaBarra'
 import { EvolucionMensual } from '../components/ui/EvolucionMensual'
+import { MapaColombia } from '../components/ui/MapaColombia'
 import { useFilters } from '../context/FiltersContext'
 import { useDashboardStats } from '../hooks/useDashboard'
 import { formatCOP, formatCOPFull, pct, formatPct } from '../lib/formatters'
@@ -116,8 +117,9 @@ export function Dashboard() {
         />
       </div>
 
-      {/* Serie de tiempo: el gráfico que sí aporta lo que una lista no puede */}
+      {/* Los dos gráficos que aportan lo que una lista no puede: tiempo y geografía */}
       <EvolucionMensual filters={filters} />
+      <MapaColombia />
 
       {/* Detalle desplegado (uno a la vez) */}
       <div className="space-y-2">
