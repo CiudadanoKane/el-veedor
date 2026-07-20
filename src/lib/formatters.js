@@ -13,6 +13,11 @@ export function formatCOP(value) {
   if (value == null) return '—'
   const abs = Math.abs(value)
   if (abs >= 1e12) return `$${es(value / 1e12)} billones`
+  // Escalón intermedio: sin él, un contrato de 6×10¹¹ se lee "$600.728,9
+  // millones", seis dígitos que nadie procesa de un vistazo. Solo aplica desde
+  // 100 mil millones porque debajo de ahí "3.500 millones" sigue siendo la
+  // forma más natural en español, y es como lo dice la prensa.
+  if (abs >= 1e11) return `$${es(value / 1e9, 0)} mil millones`
   if (abs >= 1e6) return `$${es(value / 1e6)} millones`
   if (abs >= 1e3) return `$${es(value / 1e3, 0)} mil`
   return COP.format(value)

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { FiltersProvider } from './context/FiltersContext'
 import { Layout } from './components/layout/Layout'
 import { Dashboard } from './pages/Dashboard'
+import { Buscar } from './pages/Buscar'
 import { Alertas } from './pages/Alertas'
 import { Mora } from './pages/Mora'
 import { Adiciones } from './pages/Adiciones'
@@ -17,6 +18,7 @@ function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
+            <Route path="buscar" element={<Buscar />} />
             <Route path="alertas" element={<Alertas />} />
             <Route path="mora" element={<Mora />} />
             <Route path="adiciones" element={<Adiciones />} />

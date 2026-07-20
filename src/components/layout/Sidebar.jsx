@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 
 const NAV = [
   { to: '/', label: 'Panorama', end: true },
+  { to: '/buscar', label: 'Buscar contratos' },
   { to: '/alertas', label: 'Alertas' },
   { to: '/mora', label: 'Contratos vencidos' },
   { to: '/adiciones', label: 'Adiciones' },

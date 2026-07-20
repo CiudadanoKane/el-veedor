@@ -49,21 +49,36 @@ Va primero porque protege la credibilidad de todo lo demás.
 - **Alerta: Adición de Tiempo Excesiva** — el cálculo del % ya existe; falta la
   tarjeta de alerta.
 - **Mapa coroplético de Colombia** por índice de mora.
-- **Replantear "Urgencia Manifiesta":** no existe como modalidad en SECOP II. Es
-  una causal dentro de "Contratación directa" — que por sí sola es el **74% de
-  toda la contratación del país** (4.053.262 contratos sin competencia). Ese dato
-  merece visibilidad propia.
+- ~~**Replantear "Urgencia Manifiesta"**~~ ✅ — resuelto como filtro dentro del
+  buscador (punto 3). No existe como modalidad en SECOP II: es una causal dentro
+  de "Contratación directa", que por sí sola es el **74% de toda la contratación
+  del país** (4.053.262 contratos sin competencia). Se descartó publicar un
+  ranking de "quién más la usa": los primeros puestos son entidades creadas para
+  atender desastres (Nasa Kiwe, Mocoa), y el ranking habría sido difamatorio.
 
-### 3. Búsqueda y filtros por contenido
+### 3. Búsqueda y filtros por contenido ✅
 
-Poder preguntarle a los datos *"¿quién contrata en vías?"*, *"¿quién en
-hospitales?"*.
+Módulo **Buscar contratos**: palabra o frase, con elección de ámbito (solo el
+objeto, o también entidad y contratista), más filtros de modalidad, tipo de
+contrato y causal para no licitar. Combinable con los filtros geográficos, y
+todo el estado va en la URL para poder compartir un hallazgo.
 
-- Filtro por **palabra clave** en el objeto del contrato
-- Filtro por **sector** y por categoría UNSPSC
-- Combinable con los filtros geográficos existentes
+Absorbe la **urgencia manifiesta** como filtro, con una nota que advierte que es
+una figura legal usada sobre todo por entidades de atención de emergencias.
 
-Va antes que los dos siguientes porque ambos se apoyan en esta capa.
+Dos hallazgos que definieron el diseño:
+
+- **La API distingue tildes.** Buscar `educacion` devuelve 41.825 contratos y
+  `educación` devuelve 157.470: quien escriba sin tildes vería una fracción de
+  lo que existe. Se resuelve generando todas las escrituras posibles de la frase
+  y buscándolas juntas (el español admite a lo sumo una tilde por palabra).
+- **La forma de la consulta importa más que su tamaño.** Un `AND` entre grupos
+  de variantes, junto con `ORDER BY`, tarda **55 segundos**; la misma búsqueda
+  como frase — un solo grupo `OR` — tarda **1,4 segundos**. Por eso la búsqueda
+  es por frase y no por palabras sueltas.
+
+No se muestra el total exacto de coincidencias: contarlas cuesta ~14 segundos y
+no vale esa espera. Se entregan los primeros 100 y se dice que hay más.
 
 ### 4. Rankings de contratistas
 
