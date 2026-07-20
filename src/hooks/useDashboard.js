@@ -8,7 +8,10 @@ import {
 
 const DS = DATASETS.CONTRATOS
 
-export function useDashboardStats(filters = {}) {
+// `abiertas` es el conjunto de cifras desplegadas. Las consultas de detalle
+// solo se disparan cuando el usuario abre la cifra correspondiente: así el
+// Panorama carga más rápido y no gasta peticiones en lo que nadie mira.
+export function useDashboardStats(filters = {}, abiertas = new Set()) {
   // Cifras generales (solo contratos vigentes: sin borradores, cancelados ni
   // los que están en trámite de aprobación)
   const generales = useQuery({
@@ -80,6 +83,7 @@ export function useDashboardStats(filters = {}) {
   // separamos "sin registro de pago" de "no se pagó": no son lo mismo.
   const ejecucionVencidos = useQuery({
     queryKey: ['dash', 'ejecucion', filters],
+    enabled: abiertas.has('riesgo'),
     queryFn: async () => {
       const contar = async (extra) => {
         const where = buildWhere(
@@ -120,6 +124,7 @@ export function useDashboardStats(filters = {}) {
   // Distribución de valor por sector
   const porSector = useQuery({
     queryKey: ['dash', 'sector', filters],
+    enabled: abiertas.has('valor'),
     queryFn: () => {
       const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
       return socrataQuery(
@@ -136,6 +141,7 @@ export function useDashboardStats(filters = {}) {
   // Top entidades con más contratos en mora
   const entidadesMora = useQuery({
     queryKey: ['dash', 'entidadesMora', filters],
+    enabled: abiertas.has('vencidos'),
     queryFn: () => {
       const where = buildWhere(whereFromFilters(filters, moraConditions()))
       return socrataQuery(
