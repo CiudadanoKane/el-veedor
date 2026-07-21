@@ -538,7 +538,7 @@ export function Dashboard() {
       <GlobalFilters />
 
       {/* Cifras clave: cada una es la puerta de entrada a su detalle */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-8 mb-10">
+      <div data-tour="cifras" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-8 mb-10">
         {tarjetas.map((t, i) => (
           <Fragment key={t.clave ?? `fija-${i}`}>
             {t.nodo}

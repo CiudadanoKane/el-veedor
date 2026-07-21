@@ -1,7 +1,9 @@
 import { NavLink } from 'react-router-dom'
+import { useTour } from '../ui/Tour'
 
 const NAV = [
   { to: '/', label: 'Panorama', end: true },
+  { to: '/noticias', label: 'Noticias' },
   { to: '/buscar', label: 'Buscar' },
   { to: '/alertas', label: 'Alertas' },
   { to: '/errores', label: 'Errores en SECOP' },
@@ -12,6 +14,8 @@ const NAV = [
 // Navegación sobre banda oscura: descansa la vista del blanco del contenido.
 // La sección activa se marca con una línea vertical y peso tipográfico.
 export function Sidebar({ abierto, onCerrar }) {
+  const { iniciar } = useTour()
+
   return (
     <>
       {abierto && (
@@ -56,13 +60,14 @@ export function Sidebar({ abierto, onCerrar }) {
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-7 py-2">
+        <nav data-tour="nav" className="flex-1 overflow-y-auto px-7 py-2">
           {NAV.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.end}
               onClick={onCerrar}
+              data-tour={item.to === '/noticias' ? 'noticias' : undefined}
               className={({ isActive }) =>
                 `block -ml-7 pl-7 pr-3 py-2 text-[14px] border-l-2 ${
                   isActive
@@ -103,6 +108,19 @@ export function Sidebar({ abierto, onCerrar }) {
               {etiqueta}
             </NavLink>
           ))}
+
+          <button
+            data-tour="guia"
+            onClick={() => { onCerrar(); iniciar() }}
+            className="flex items-center gap-2 -ml-7 pl-7 pr-3 py-2 mt-1 w-full text-left text-[13px]
+                       text-sideSoft hover:text-white border-l-2 border-transparent hover:border-sideSoft
+                       hover:translate-x-1 transition-all"
+          >
+            <span className="grid place-items-center h-4 w-4 rounded-full border border-current text-[10px] font-bold shrink-0">
+              ?
+            </span>
+            Guía rápida
+          </button>
 
           <p className="text-[11px] text-sideSoft leading-relaxed mt-4">
             Datos públicos de SECOP II

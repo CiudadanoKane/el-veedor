@@ -3,6 +3,7 @@ import { socrataQuery } from '../lib/socrataClient'
 import { DATASETS } from '../lib/constants'
 import { esc, whereFromFilters, buildWhere, soloContratosValidos } from '../lib/soql'
 import { valorMasFrecuente, documentoIdentifica } from '../lib/identidad'
+import { MODALIDADES_SIN_COMPETENCIA } from './useDashboard'
 
 const DS = DATASETS.CONTRATOS
 
@@ -132,4 +133,116 @@ export function useRankingEntidades(filters = {}) {
         proveedores: parseInt(r.proveedores_distintos ?? 0, 10),
       })),
   })
+}
+
+// Resuelve nombre y tipo de documento de un conjunto de contratistas por su
+// documento. El nombre se toma por frecuencia y no con max() —que devuelve el
+// alfabéticamente último—; ver valorMasFrecuente. Es una consulta liviana (IN
+// por lotes) aunque el ranking que la alimenta sea pesado.
+async function resolverNombres(documentos) {
+  if (!documentos.length) return new Map()
+  const lista = documentos.map((d) => `'${esc(d)}'`).join(', ')
+  const filas = await socrataQuery(
+    DS,
+    `SELECT documento_proveedor, proveedor_adjudicado, tipodocproveedor,
+            count(id_contrato) as n
+     WHERE ${soloContratosValidos()} AND documento_proveedor IN (${lista})
+     GROUP BY documento_proveedor, proveedor_adjudicado, tipodocproveedor`,
+  )
+  const por = new Map()
+  for (const r of filas) {
+    if (!por.has(r.documento_proveedor)) por.set(r.documento_proveedor, [])
+    por.get(r.documento_proveedor).push(r)
+  }
+  const out = new Map()
+  for (const [doc, suyas] of por) {
+    out.set(doc, {
+      nombre: valorMasFrecuente(suyas, 'proveedor_adjudicado')?.valor,
+      tipoDocumento: valorMasFrecuente(suyas, 'tipodocproveedor')?.valor,
+    })
+  }
+  return out
+}
+
+// NOTICIAS — Concentración con una sola entidad.
+//
+// Empresas cuyos contratos, en TODO el país, van a una única entidad. Se mide a
+// nivel nacional a propósito: dentro de un solo departamento tener un único
+// contratante suele ser la norma (la lección de Vaupés). Por eso ignora el
+// filtro geográfico. El nivel de empresa vs. persona se decide luego, en cliente.
+export function concentracionEntidadQueryOptions() {
+  return {
+    queryKey: ['noticias', 'concentracion'],
+    queryFn: async () => {
+      const filas = await socrataQuery(
+        DS,
+        `SELECT documento_proveedor,
+                count(id_contrato) as contratos,
+                sum(valor_del_contrato) as valor,
+                max(nombre_entidad) as entidad
+         WHERE ${soloContratosValidos()} AND ${documentoIdentifica()}
+         GROUP BY documento_proveedor
+         HAVING count(distinct nombre_entidad) = 1 AND count(id_contrato) >= 3
+         ORDER BY valor DESC
+         LIMIT 30`,
+      )
+      const nombres = await resolverNombres(
+        filas.map((r) => r.documento_proveedor).filter(Boolean),
+      )
+      return filas.map((r) => ({
+        documento: r.documento_proveedor,
+        ...nombres.get(r.documento_proveedor),
+        contratos: parseInt(r.contratos, 10),
+        valor: parseFloat(r.valor ?? 0),
+        entidad: r.entidad,
+      }))
+    },
+  }
+}
+
+export function useConcentracionEntidad() {
+  return useQuery(concentracionEntidadQueryOptions())
+}
+
+// NOTICIAS — Contratación directa de gran cuantía.
+//
+// Empresas que más valor reciben por contratos SIN concurso (contratación
+// directa). Ojo con la atribución: la modalidad la elige la entidad, no el
+// contratista — es un patrón de adjudicación, no un acto del contratista.
+export function directaGranCuantiaQueryOptions(filters = {}) {
+  return {
+    queryKey: ['noticias', 'directa', filters],
+    queryFn: async () => {
+      const where = buildWhere(
+        whereFromFilters(filters, [
+          soloContratosValidos(),
+          documentoIdentifica(),
+          MODALIDADES_SIN_COMPETENCIA,
+        ]),
+      )
+      const filas = await socrataQuery(
+        DS,
+        `SELECT documento_proveedor,
+                count(id_contrato) as contratos,
+                sum(valor_del_contrato) as valor
+         ${where}
+         GROUP BY documento_proveedor
+         ORDER BY valor DESC
+         LIMIT 30`,
+      )
+      const nombres = await resolverNombres(
+        filas.map((r) => r.documento_proveedor).filter(Boolean),
+      )
+      return filas.map((r) => ({
+        documento: r.documento_proveedor,
+        ...nombres.get(r.documento_proveedor),
+        contratos: parseInt(r.contratos, 10),
+        valor: parseFloat(r.valor ?? 0),
+      }))
+    },
+  }
+}
+
+export function useDirectaGranCuantia(filters = {}) {
+  return useQuery(directaGranCuantiaQueryOptions(filters))
 }

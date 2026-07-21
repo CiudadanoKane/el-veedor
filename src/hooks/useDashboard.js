@@ -15,6 +15,30 @@ const DS = DATASETS.CONTRATOS
 export const MODALIDADES_SIN_COMPETENCIA =
   `modalidad_de_contratacion IN ('Contratación directa', 'Contratación Directa (con ofertas)')`
 
+// Proporción de contratos adjudicados sin concurso (contratación directa). Es la
+// misma cifra que la tarjeta "Sin competencia" del Panorama, aislada en una
+// consulta ligera de una sola fila para el feed de Noticias — sin arrastrar todo
+// useDashboardStats, que dispara media docena de consultas.
+export function useSinCompetencia(filters = {}) {
+  return useQuery({
+    queryKey: ['noticias', 'competencia', filters],
+    queryFn: () => {
+      const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
+      return socrataQuery(
+        DS,
+        `SELECT count(id_contrato) as total,
+                sum(case(${MODALIDADES_SIN_COMPETENCIA}, 1, true, 0)) as directa
+         ${where} LIMIT 1`,
+      )
+    },
+    select: (rows) => {
+      const total = parseInt(rows[0]?.total ?? 0, 10)
+      const directa = parseInt(rows[0]?.directa ?? 0, 10)
+      return { total, directa, pct: total ? (directa / total) * 100 : null }
+    },
+  })
+}
+
 // `abiertas` es el conjunto de cifras desplegadas. Las consultas de detalle
 // solo se disparan cuando el usuario abre la cifra correspondiente: así el
 // Panorama carga más rápido y no gasta peticiones en lo que nadie mira.

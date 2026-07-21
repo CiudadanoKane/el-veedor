@@ -1,14 +1,41 @@
 import { useState, useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { Sidebar } from './Sidebar'
 import { ErrorBoundary } from '../ui/ErrorBoundary'
+import { ejecucionContratistasQueryOptions } from '../../hooks/useEjecucionContratistas'
+import {
+  concentracionEntidadQueryOptions,
+  directaGranCuantiaQueryOptions,
+} from '../../hooks/useRankings'
 
 export function Layout() {
   const { pathname } = useLocation()
   const [menuAbierto, setMenuAbierto] = useState(false)
+  const queryClient = useQueryClient()
 
   // Cierra el menú al cambiar de sección y evita el scroll de fondo
   useEffect(() => setMenuAbierto(false), [pathname])
+
+  // Precarga en segundo plano las consultas pesadas de contratista del feed de
+  // Noticias (agrupan por NIT sobre millones de registros, ~30s cada una). Se
+  // disparan en paralelo cuando el navegador está ocioso, una sola vez y a nivel
+  // nacional, para que Noticias las encuentre tibias sin importar en qué página
+  // esté el usuario. Corren concurrentes: el reloj de pared es ~30s, no la suma.
+  useEffect(() => {
+    const nacional = { department: '', city: '', entity: '' }
+    const correr = () => {
+      queryClient.prefetchQuery(ejecucionContratistasQueryOptions(nacional, 'peor', 'prorroga'))
+      queryClient.prefetchQuery(concentracionEntidadQueryOptions())
+      queryClient.prefetchQuery(directaGranCuantiaQueryOptions(nacional))
+    }
+    if ('requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(correr, { timeout: 5000 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const id = setTimeout(correr, 2000)
+    return () => clearTimeout(id)
+  }, [queryClient])
   useEffect(() => {
     document.body.classList.toggle('menu-abierto', menuAbierto)
     return () => document.body.classList.remove('menu-abierto')

@@ -34,7 +34,7 @@ export function GlobalFilters() {
   const hasFilters = filters.department || filters.city || filters.entity
 
   return (
-    <div className="pb-7 mb-8 border-b border-border">
+    <div data-tour="filtros" className="pb-7 mb-8 border-b border-border">
       {/* El filtro por entidad no tiene selector propio: son más de 5.000 y
           buscarlas cuesta entre 16 y 25 segundos por el GROUP BY sobre los 5,3
           millones. Se activa al hacer clic en una entidad del índice de calidad,

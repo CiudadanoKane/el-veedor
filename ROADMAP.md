@@ -19,6 +19,10 @@ deploy en Vercel.
 - Módulo "¿En qué contrata el Estado?" (clasificación UNSPSC)
 - Historial real de modificaciones por contrato
 - Interpretación en lenguaje llano por contrato
+- **Noticias basadas en datos** (punto 7) — feed en vivo de notas factuales
+- **Guía rápida (tour)** — recorrido a medida con foco tipo spotlight, sin
+  librería; arranca en la primera visita y se reabre desde el pie de la barra
+  lateral
 
 ---
 
@@ -271,10 +275,25 @@ El bloque "Cómo leer una señal" enfrenta lo que una cifra **no** dice contra l
 preguntas que sí valen la pena, y es el que sostiene el principio de la
 plataforma: encontrar algo llamativo no es encontrar corrupción.
 
-### 7. Noticias basadas en datos
+### 7. Noticias basadas en datos ✅
 
-Sección de notas cortas y sencillas generadas a partir de los datos actualizados.
-Aprovecha todo lo anterior: alertas, búsqueda por sector, rankings.
+Feed de notas cortas y factuales, generadas en vivo desde SECOP y recalculadas en
+cada visita. Reutiliza las consultas ya blindadas de Alertas, Errores y Rankings
+—no inventa consultas nuevas— y cada nota enlaza a su evidencia. Es la puerta de
+entrada que narra las señales que la plataforma ya calcula. Filtro-aware: se
+localiza por departamento/ciudad.
+
+Tipos de nota:
+- **De caso específico** (nombran un contrato): la mayor adición de tiempo y la
+  obra vencida con más dinero sin ejecutar. Muestran también el 2.º y 3.º por si
+  el primero es un dato atípico.
+- **Agregadas** (conteos del ámbito): cerrados sin pago, sin contratista, sin
+  competencia, fechas imposibles.
+- **De patrón de contratista** (solo empresas/NIT, nunca personas naturales):
+  prórrogas repetidas frente a varias entidades, concentración con una sola
+  entidad (siempre nacional, por la lección de Vaupés), y contratación directa de
+  gran cuantía. Son consultas pesadas (~30 s), así que se **precargan** en segundo
+  plano desde el Layout (`requestIdleCallback`) para que estén tibias al llegar.
 
 Enfoque algorítmico y neutral, coherente con el resto de la plataforma: describir
 hechos ("el contrato X creció 229% sobre lo adjudicado"), nunca emitir juicios.

@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { FiltersProvider } from './context/FiltersContext'
+import { TourProvider } from './components/ui/Tour'
 import { Layout } from './components/layout/Layout'
 import { Dashboard } from './pages/Dashboard'
+import { Noticias } from './pages/Noticias'
 import { Buscar } from './pages/Buscar'
 import { Alertas } from './pages/Alertas'
 import { Errores } from './pages/Errores'
@@ -17,9 +19,11 @@ function App() {
   return (
     <BrowserRouter>
       <FiltersProvider>
+        <TourProvider>
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
+            <Route path="noticias" element={<Noticias />} />
             <Route path="buscar" element={<Buscar />} />
             <Route path="alertas" element={<Alertas />} />
             <Route path="errores" element={<Errores />} />
@@ -39,6 +43,7 @@ function App() {
             <Route path="adiciones" element={<Navigate to="/alertas" replace />} />
           </Route>
         </Routes>
+        </TourProvider>
       </FiltersProvider>
     </BrowserRouter>
   )

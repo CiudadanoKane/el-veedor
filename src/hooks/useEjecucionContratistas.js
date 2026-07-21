@@ -82,10 +82,12 @@ const numero = (v) => {
 }
 const tasa = (parte, total) => (total ? (parte / total) * 100 : 0)
 
-export function useEjecucionContratistas(filters = {}, extremo = 'peor', metrica = 'prorroga') {
+// Opciones de consulta reutilizables: las comparten el hook y el prefetch del
+// Layout, para que el mismo queryKey garantice el acierto de caché.
+export function ejecucionContratistasQueryOptions(filters = {}, extremo = 'peor', metrica = 'prorroga') {
   const activa = METRICAS[metrica] || METRICAS.prorroga
 
-  return useQuery({
+  return {
     queryKey: ['ejecucion', 'contratistas', filters, extremo, metrica],
     queryFn: async () => {
       const where = buildWhere(whereFromFilters(filters, condicionesEvaluables()))
@@ -188,5 +190,9 @@ export function useEjecucionContratistas(filters = {}, extremo = 'peor', metrica
         },
       }
     },
-  })
+  }
+}
+
+export function useEjecucionContratistas(filters = {}, extremo = 'peor', metrica = 'prorroga') {
+  return useQuery(ejecucionContratistasQueryOptions(filters, extremo, metrica))
 }
