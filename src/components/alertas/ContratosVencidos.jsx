@@ -121,7 +121,7 @@ export function ContratosVencidos() {
         prueba lo contrario, porque ese campo está muy incompleto.
         <br />
         <br />
-        Aun así, <strong>"vencido" no equivale a "retrasado"</strong>: el 53% de los
+        Aun así, <strong>"vencido" no equivale a "retrasado"</strong>: el 65% de los
         vencidos del país lo está desde hace más de un año, y en su mayoría son
         contratos terminados cuyo registro nadie cerró. Por eso el filtro de antigüedad
         viene en <strong>"Últimos 6 meses"</strong>, el tramo con más probabilidad de

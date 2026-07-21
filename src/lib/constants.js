@@ -17,12 +17,6 @@ export const ESTADO = {
 // Estado que cuenta como "activo / vigente"
 export const ESTADO_ACTIVO = ESTADO.EN_EJECUCION
 
-// Umbrales legales de contratación 2024 (COP)
-export const UMBRAL = {
-  MINIMA_CUANTIA: 40_000_000,
-  LICITACION: 200_000_000,
-}
-
 // Semáforo de mora (días)
 export const SEMAFORO = {
   VERDE_MAX: 30,

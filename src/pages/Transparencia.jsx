@@ -214,7 +214,8 @@ export function Transparencia() {
             <p>
               Cuando el valor registrado es exactamente ×100, ×1.000 o ×10.000 el valor
               original del proceso, o cuando creció más de 500%, lo tratamos como error de
-              digitación y no como adición. Estos casos se muestran aparte en Alertas.
+              digitación y no como adición. Estos casos se muestran aparte en Errores en
+              SECOP.
             </p>
           </Regla>
 
@@ -245,7 +246,7 @@ export function Transparencia() {
             <p>
               Aun así evitamos la palabra "mora", que sugiere incumplimiento. Con la
               definición amplia, el 81% de los contratos vigentes del país estaría
-              vencido — pero el 53% lo está desde hace más de un año, y en su mayoría son
+              vencido — pero el 65% lo está desde hace más de un año, y en su mayoría son
               contratos terminados cuyo registro nadie cerró. Por eso destacamos solo el
               tramo de los últimos 6 meses y mostramos los tres por separado.
             </p>

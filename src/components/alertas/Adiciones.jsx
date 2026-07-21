@@ -190,7 +190,8 @@ export function AdicionesCosto() {
         adjudicación porque no hubo competencia). Cada fila indica cuál se usó. Se
         descartan los contratos cuyo valor es un múltiplo exacto de 10 del original
         (×100, ×1.000, ×10.000): no son adiciones sino errores de digitación, y los
-        mostramos aparte en <strong>Alertas</strong>. Ordenado por monto de adición.
+        mostramos aparte en <strong>Errores en SECOP</strong>. Ordenado por monto de
+        adición.
       </Methodology>
       <div className="mt-4">
         <QueryState query={query} empty="Sin adiciones de costo detectables con estos filtros.">

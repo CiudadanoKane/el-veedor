@@ -1,3 +1,5 @@
+import { SEMAFORO } from './constants'
+
 const COP = new Intl.NumberFormat('es-CO', {
   style: 'currency',
   currency: 'COP',
@@ -34,10 +36,13 @@ export function daysSince(dateStr) {
   return Math.floor(diff / 86_400_000)
 }
 
+// Los umbrales viven en constants.js. Estaban escritos a mano aquí además de
+// allá, así que cambiar la constante no cambiaba nada: dos fuentes de verdad
+// para el mismo número, y una de ellas muerta.
 export function semaforo(days) {
   if (days == null || days <= 0) return null
-  if (days <= 30) return 'verde'
-  if (days <= 180) return 'ambar'
+  if (days <= SEMAFORO.VERDE_MAX) return 'verde'
+  if (days <= SEMAFORO.AMBAR_MAX) return 'ambar'
   return 'rojo'
 }
 

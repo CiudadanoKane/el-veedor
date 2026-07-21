@@ -35,27 +35,6 @@ export function useMora(filters = {}, limit = 100, orden = 'fecha', rango = 'tod
   })
 }
 
-// Ranking de entidades con más contratos en mora
-export function useMoraPorEntidad(filters = {}) {
-  return useQuery({
-    queryKey: ['mora', 'entidades', filters],
-    queryFn: () => {
-      const where = buildWhere(whereFromFilters(filters, moraConditions()))
-      return socrataQuery(
-        DS,
-        `SELECT nombre_entidad, count(id_contrato) as n,
-                sum(valor_pendiente_de_ejecucion) as riesgo
-         ${where}
-         GROUP BY nombre_entidad
-         ORDER BY n DESC
-         LIMIT 20`,
-      )
-    },
-    select: (rows) =>
-      rows.map((r) => ({
-        entidad: r.nombre_entidad,
-        n: parseInt(r.n, 10),
-        riesgo: parseFloat(r.riesgo ?? 0),
-      })),
-  })
-}
+// El ranking de entidades en mora vive en useDashboard (entidadesMora): lo
+// consume el desplegable de Panorama y se carga de forma diferida. Aquí había
+// una segunda versión que nadie usaba.
