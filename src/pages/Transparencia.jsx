@@ -42,6 +42,7 @@ const INDICE = [
   ['exclusiones', 'Qué excluimos y por qué'],
   ['calculos', 'Cómo se calcula cada cifra'],
   ['limites', 'Lo que estos datos NO permiten concluir'],
+  ['construccion', 'Cómo se construyó la plataforma'],
   ['correcciones', 'Cómo corregirnos'],
 ]
 
@@ -49,7 +50,7 @@ export function Transparencia() {
   return (
     <div>
       <PageHeader
-        title="Cómo funciona El Veedor"
+        title="Metodología y límites"
         subtitle="Toda la metodología, abierta. Si encuentras un error, queremos saberlo: es la única forma de que esta plataforma sea confiable."
       />
 
@@ -338,6 +339,33 @@ export function Transparencia() {
         </ul>
       </Bloque>
 
+      <Bloque id="construccion" titulo="Cómo se construyó la plataforma">
+        <p>
+          El código de esta plataforma fue{' '}
+          <strong>desarrollado con asistencia de Claude</strong>, el modelo de lenguaje de
+          Anthropic. Lo decimos porque es información que un lector crítico querría tener,
+          y porque cambia dónde conviene buscar errores.
+        </p>
+        <p>
+          Ahora bien, conviene precisar qué significa y qué no.{' '}
+          <strong>Ninguna cifra de este sitio proviene de una estimación de un modelo.</strong>{' '}
+          La plataforma no consulta ninguna inteligencia artificial cuando la usas: tu
+          navegador le pregunta directamente a la API de datos abiertos del Estado y
+          muestra lo que responde. Lo que se escribió con asistencia de IA es el{' '}
+          <em>código</em> que arma esas preguntas — igual que se escribe con un editor de
+          texto o cualquier otra herramienta.
+        </p>
+        <p>
+          La consecuencia práctica es que{' '}
+          <strong>el riesgo está en los criterios, no en los números</strong>: si una
+          consulta está mal planteada, devolverá con toda exactitud una cifra que responde
+          a la pregunta equivocada. Por eso cada criterio de cálculo está escrito en esta
+          página, y por eso varias cifras que parecían obvias se corrigieron al
+          verificarlas contra la fuente. Esa verificación es lo que sostiene el dato — no
+          la herramienta con la que se escribió el código.
+        </p>
+      </Bloque>
+
       <Bloque id="correcciones" titulo="Cómo corregirnos">
         <p>
           <strong>Es probable que en algo estemos equivocados.</strong> Trabajamos sobre
@@ -358,7 +386,7 @@ export function Transparencia() {
             to="/reportar"
             className="inline-block border-2 border-textPrimary px-5 py-2.5 text-[14px] font-bold hover:bg-textPrimary hover:text-bg transition-colors"
           >
-            Reportar un error o sugerencia
+            Enviarnos una corrección
           </Link>
         </div>
       </Bloque>

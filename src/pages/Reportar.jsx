@@ -16,9 +16,12 @@ const TIPOS = [
   'Otro',
 ]
 
+// Debe reflejar el menú actual. Contratos vencidos y Adiciones dejaron de ser
+// secciones propias y ahora son pestañas dentro de Alertas.
 const SECCIONES = [
-  'Panorama', 'Alertas', 'Contratos vencidos', 'Adiciones',
-  'En qué se contrata', 'Rankings', 'Cómo funciona', 'No aplica',
+  'Panorama', 'Buscar contratos', 'Alertas', 'Errores en SECOP',
+  'En qué se contrata', 'Rankings', 'Perfil de un contratista',
+  'Metodología y límites', 'No aplica',
 ]
 
 function Campo({ etiqueta, ayuda, children, requerido }) {
@@ -105,7 +108,7 @@ export function Reportar() {
   return (
     <div>
       <PageHeader
-        title="Reportar un error"
+        title="Corrígenos"
         subtitle="Es probable que en algo estemos equivocados. Que puedas corregirnos no es una debilidad de la plataforma: es lo que la hace confiable."
       />
 

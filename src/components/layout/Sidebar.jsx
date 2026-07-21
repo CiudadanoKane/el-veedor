@@ -80,8 +80,12 @@ export function Sidebar({ abierto, onCerrar }) {
             plataforma y el canal para corregirla. */}
         <div className="px-7 pt-5 pb-7">
           {[
-            ['/transparencia', 'Cómo funciona'],
-            ['/reportar', 'Reportar un error'],
+            // "Cómo funciona" sonaba a manual de uso, y "Reportar un error" a
+            // reporte técnico. Ninguna de las dos es eso: una es la metodología
+            // con sus límites declarados, y la otra el canal para que un tercero
+            // nos corrija.
+            ['/transparencia', 'Metodología y límites'],
+            ['/reportar', 'Corrígenos'],
           ].map(([ruta, etiqueta]) => (
             <NavLink
               key={ruta}
