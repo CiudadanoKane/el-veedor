@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
 import { PageHeader } from '../components/layout/Layout'
 import { Proceso } from '../components/ui/Proceso'
+import { DiagramaProceso } from '../components/ui/DiagramaProceso'
+import { LineaTiempo } from '../components/ui/LineaTiempo'
 import { Glosario } from '../components/ui/Glosario'
 import { ListaBarra } from '../components/ui/ListaBarra'
 
@@ -30,6 +32,7 @@ function Bloque({ id, titulo, intro, children }) {
 
 const INDICE = [
   ['recorrido', 'El recorrido de un contrato'],
+  ['desenlaces', 'Cómo termina un contrato'],
   ['seleccion', 'Cómo se escoge al contratista'],
   ['glosario', 'Las palabras que verás'],
   ['leer', 'Cómo leer una señal'],
@@ -148,8 +151,8 @@ export function Aprender() {
   return (
     <div>
       <PageHeader
-        title="Cómo se contrata"
-        subtitle="Una guía para leer la contratación pública sin ser experto. No se puede reconocer algo raro sin tener idea de cómo se ve lo normal."
+        title="Aprende a leer la contratación"
+        subtitle="Una guía para entenderla sin ser experto. No se puede reconocer algo raro sin tener idea de cómo se ve lo normal — y con eso claro, cualquiera puede hacer veeduría."
       />
 
       <nav className="mb-12 flex flex-wrap gap-x-5 gap-y-2">
@@ -167,9 +170,32 @@ export function Aprender() {
       <Bloque
         id="recorrido"
         titulo="El recorrido de un contrato"
-        intro="Todo contrato público pasa por las mismas seis etapas. En cada una hay algo que puede salir bien y algo que puede fallar — y casi todas las señales de esta plataforma nacen de una de ellas."
+        intro="Todo contrato público pasa por las mismas seis etapas. En la tercera se parte en dos caminos que llevan al mismo sitio con muy distinta exigencia."
       >
+        <DiagramaProceso />
+
+        <p className="text-[14px] text-textSecondary leading-relaxed mt-6 mb-8 max-w-2xl">
+          Abajo, qué debería pasar en cada etapa y qué puede fallar. Casi todas las
+          señales de esta plataforma nacen de una de ellas, y cada etapa enlaza con la
+          parte del sitio que la mide.
+        </p>
+
         <Proceso etapas={ETAPAS} />
+      </Bloque>
+
+      <Bloque
+        id="desenlaces"
+        titulo="Cómo termina un contrato"
+        intro="Tres finales posibles. La diferencia entre ellos es la que más se malinterpreta al leer datos de contratación."
+      >
+        <LineaTiempo />
+
+        <p className="text-[14.5px] leading-relaxed text-textPrimary mt-8 max-w-2xl border-l-2 border-textPrimary pl-4">
+          El tercer caso es el más común del país, y es el que hay que leer con más
+          cuidado: <strong>que la línea se corte no significa que la obra se abandonó</strong>.
+          Significa que dejó de haber información. La mayoría de las veces el trabajo se
+          hizo y nadie cerró el registro.
+        </p>
       </Bloque>
 
       <Bloque

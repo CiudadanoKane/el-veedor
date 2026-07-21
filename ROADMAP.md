@@ -236,10 +236,20 @@ Colombia Compra Eficiente— hace la crítica más sólida y más difícil de de
 
 ### 6. Sección educativa ✅
 
-Ruta `/aprender`, "Cómo se contrata" en el menú. Cinco bloques: el recorrido de
-un contrato en seis etapas, cómo se escoge al contratista, un glosario
-desplegable, cómo leer una señal sin sacar conclusiones, y qué hace y qué no
-hace la plataforma.
+Ruta `/aprender`, **"Aprende"** en el menú. Seis bloques: el recorrido de un
+contrato con su diagrama de flujo, cómo termina un contrato con tres líneas de
+tiempo, cómo se escoge al contratista, un glosario desplegable, cómo leer una
+señal sin sacar conclusiones, y qué hace y qué no hace la plataforma.
+
+**Dos piezas gráficas propias**, ambas en SVG con las variables del tema:
+
+- *Diagrama de flujo* de las seis etapas, con la bifurcación en la selección.
+  Dibujarla hace evidente lo que una lista numerada no puede: que hay dos
+  caminos al mismo sitio y que 92 de cada 100 contratos toman el corto.
+- *Tres líneas de tiempo* — se cumple, se prorroga, vence sin cerrar. La tercera
+  se vuelve punteada y nunca se resuelve, que es exactamente lo que significa un
+  contrato vencido sin cerrar: no que la obra se abandonó, sino que dejó de
+  haber información.
 
 **Cada etapa del proceso enlaza con la parte de la plataforma que la mide**, así
 lo aprendido se usa de inmediato: la reserva presupuestal lleva a los contratos
