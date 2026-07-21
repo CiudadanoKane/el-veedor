@@ -234,29 +234,32 @@ diseño. Muchos de estos errores serían imposibles con validación básica. Dis
 entre descuido de la entidad y falla de SECOP como plataforma —responsabilidad de
 Colombia Compra Eficiente— hace la crítica más sólida y más difícil de descartar.
 
-### 6. Sección educativa
+### 6. Sección educativa ✅
 
-**Para qué:** hoy la plataforma asume que quien llega ya sabe qué es una
-licitación, una adición o una urgencia manifiesta. Quien no lo sabe —que es la
-mayoría de ciudadanos— puede leer todas las cifras sin entender qué debería
-pasar en un proceso correcto, y sin eso no hay veeduría posible: no se puede
-detectar una anomalía sin saber cómo se ve lo normal.
+Ruta `/aprender`, "Cómo se contrata" en el menú. Cinco bloques: el recorrido de
+un contrato en seis etapas, cómo se escoge al contratista, un glosario
+desplegable, cómo leer una señal sin sacar conclusiones, y qué hace y qué no
+hace la plataforma.
 
-Contenido:
-- Cómo debería funcionar una contratación pública, paso a paso
-- Los tipos de contratación y cuándo corresponde cada uno; por qué la
-  contratación directa es legal y en qué casos deja de ser razonable
-- Qué es una adición, un CDP, una interventoría, la urgencia manifiesta
-- **Qué se ve cuando algo va bien**, no solo cuando va mal
-- Para qué sirve esta plataforma y qué NO hace (no acusa, no investiga casos)
+**Cada etapa del proceso enlaza con la parte de la plataforma que la mide**, así
+lo aprendido se usa de inmediato: la reserva presupuestal lleva a los contratos
+en $0 con CDP, la firma a los contratos sin contratista identificado, el cierre
+a los cerrados sin pago.
 
-**Es la sección que más libertad visual pide de todo el proyecto.** Diagramas del
-flujo de un proceso, ilustraciones, líneas de tiempo, comparaciones lado a lado.
-El resto del sitio es deliberadamente sobrio porque presenta cifras; aquí el
-objetivo es que se entienda, y para eso lo ilustrativo ayuda más que lo austero.
+Dos decisiones de contenido:
 
-Nota: es el único módulo que no depende de la API. Se puede construir sin
-consultas, lo que lo hace independiente del resto del roadmap.
+- **Cifras redondeadas.** SECOP suma contratos a diario y un conteo exacto
+  envejece en semanas — es el mismo problema del "53% de vencidos" que resultó
+  ser 65% en el repaso. La página explica proporciones y remite al Panorama
+  para las cifras vivas.
+- **Régimen especial va aparte de la contratación directa.** El primer borrador
+  las sumaba bajo "sin concurso", pero son cosas distintas: el 77,7% es solo
+  directa, y el régimen especial son otros ~745 mil contratos con reglas
+  propias. Verificado contra la API.
+
+El bloque "Cómo leer una señal" enfrenta lo que una cifra **no** dice contra las
+preguntas que sí valen la pena, y es el que sostiene el principio de la
+plataforma: encontrar algo llamativo no es encontrar corrupción.
 
 ### 7. Noticias basadas en datos
 

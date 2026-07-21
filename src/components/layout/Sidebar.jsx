@@ -84,6 +84,7 @@ export function Sidebar({ abierto, onCerrar }) {
             // reporte técnico. Ninguna de las dos es eso: una es la metodología
             // con sus límites declarados, y la otra un canal abierto — llegan
             // correcciones, pero también sugerencias, preguntas y desacuerdos.
+            ['/aprender', 'Cómo se contrata'],
             ['/transparencia', 'Metodología y límites'],
             ['/reportar', 'Escríbenos'],
           ].map(([ruta, etiqueta]) => (
