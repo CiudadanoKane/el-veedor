@@ -175,9 +175,9 @@ export function Aprender() {
         <DiagramaProceso />
 
         <p className="text-[14px] text-textSecondary leading-relaxed mt-6 mb-8 max-w-2xl">
-          Abajo, qué debería pasar en cada etapa y qué puede fallar. Casi todas las
-          señales de esta plataforma nacen de una de ellas, y cada etapa enlaza con la
-          parte del sitio que la mide.
+          Toca cualquier etapa del diagrama para ir a su explicación. Abajo, qué debería
+          pasar en cada una y qué puede fallar: casi todas las señales de esta plataforma
+          nacen de una de ellas, y cada etapa enlaza con la parte del sitio que la mide.
         </p>
 
         <Proceso etapas={ETAPAS} />

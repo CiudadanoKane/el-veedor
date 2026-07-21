@@ -93,7 +93,9 @@ export function DiagramaProceso() {
       >
         {ETAPAS.map((t, i) => (
           <g key={t}>
-            <Caja x={xs[i]} y={y} numero={i + 1} texto={t} />
+            <a href={`#etapa-${i + 1}`} className="paso-caja" aria-label={`Ir a la explicación de ${t}`}>
+              <Caja x={xs[i]} y={y} numero={i + 1} texto={t} />
+            </a>
             {i < ETAPAS.length - 1 && <Flecha x={xs[i] + W} y={y + 26} />}
           </g>
         ))}
@@ -147,8 +149,8 @@ export function DiagramaProceso() {
         {/* Ambos caminos vuelven a subir hacia Firma */}
         <path
           d={`M ${xRama + RAMA_W} ${yArriba + ALTO_RAMA / 2} L ${xRama + RAMA_W + 26} ${yArriba + ALTO_RAMA / 2}
-              L ${xRama + RAMA_W + 26} ${y + 64}
               M ${xRama + RAMA_W} ${yAbajo + ALTO_RAMA / 2} L ${xRama + RAMA_W + 26} ${yAbajo + ALTO_RAMA / 2}
+              M ${xRama + RAMA_W + 26} ${yAbajo + ALTO_RAMA / 2} L ${xRama + RAMA_W + 26} ${y + 64}
               M ${xRama + RAMA_W + 22} ${y + 68} l 4 -6 l 4 6`}
           stroke="rgb(var(--c-border))"
           strokeWidth="1.5"

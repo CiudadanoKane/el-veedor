@@ -17,7 +17,11 @@ export function Proceso({ etapas }) {
       />
 
       {etapas.map((etapa, i) => (
-        <li key={etapa.titulo} className="relative pl-12 pb-10 last:pb-0">
+        <li
+          key={etapa.titulo}
+          id={`etapa-${i + 1}`}
+          className="etapa-objetivo scroll-mt-24 lg:scroll-mt-12 relative pl-12 pb-10 last:pb-0"
+        >
           <span
             aria-hidden
             className="absolute left-0 top-0 flex h-8 w-8 items-center justify-center

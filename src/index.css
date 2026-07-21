@@ -34,6 +34,7 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -116,4 +117,31 @@ code {
 /* Evita que el fondo se desplace con el menú móvil abierto */
 body.menu-abierto {
   overflow: hidden;
+}
+
+/* Diagrama del recorrido: cada etapa enlaza con su explicación de abajo.
+   El hover y el foco tiñen la caja para que se note que es clicable. */
+.paso-caja {
+  cursor: pointer;
+}
+.paso-caja rect:first-of-type {
+  transition: fill 160ms ease, stroke 160ms ease;
+}
+.paso-caja:hover rect:first-of-type,
+.paso-caja:focus-visible rect:first-of-type {
+  fill: rgb(var(--c-primary) / 0.06);
+  stroke: rgb(var(--c-primary));
+}
+.paso-caja:focus {
+  outline: none;
+}
+
+/* Al saltar a una etapa desde el diagrama, su marcador numérico destella un
+   instante para ubicar la vista. */
+@keyframes resaltar-etapa {
+  from { box-shadow: 0 0 0 5px rgb(var(--c-primary) / 0.30); }
+  to   { box-shadow: 0 0 0 5px rgb(var(--c-primary) / 0); }
+}
+.etapa-objetivo:target > span {
+  animation: resaltar-etapa 1.6s ease-out;
 }
