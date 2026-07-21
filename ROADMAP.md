@@ -119,9 +119,35 @@ SoQL devuelve el valor alfabéticamente último, no el más frecuente. La Previs
 (6 contratos) y como persona natural, porque 4 registros dicen `Otro` y eso gana
 sobre `NIT` al ordenar. Ver `valorMasFrecuente` en `src/lib/identidad.js`.
 
-Pendiente:
+**Índice de ejecución del contratista** (pendiente). A diferencia del registro,
+la ejecución **sí** depende del contratista, así que aquí el índice tiene
+sentido. Medir:
+
+- Cumplimiento de plazos: % de sus contratos vencidos sin evidencia de cierre, y
+  días de atraso ponderados por cuantía (atrasar una obra de $50 mil millones no
+  es igual que un contrato de $5 millones)
+- Calidad de la planeación: % de contratos que necesitaron adición de plazo, y
+  su magnitud típica. Si a todos les añaden 80% de tiempo, el problema no fue
+  una obra difícil sino cómo se dimensionó
+- Adición de tiempo **y** de presupuesto a la vez: la señal más fuerte de que lo
+  pactado no era realista
+- Ejecución financiera: % del valor que quedó sin ejecutar en contratos vencidos
+
+**Precauciones acordadas, y no son opcionales:**
+
+- **No incluir datos basura.** El atraso solo se puede medir sobre contratos con
+  fechas y valores plausibles. Un contrato con fecha de fin en el año 205 o valor
+  ×1.000 mal digitado produciría un atraso falso, y el contratista cargaría con
+  un error de la entidad. Filtrar antes de medir, como en mora.
+- Umbral mínimo de contratos: con uno solo atrasado la tasa da 100%.
+- Ordenar por tasa, nunca por conteo.
+- **Declarar que el atraso puede no ser suyo:** predios sin entregar, licencias
+  que no salen, pagos que la entidad no gira. Conviene mostrar junto a cada
+  contratista **con qué entidades** ocurre — si se atrasa con todas, apunta a él;
+  si solo con una, apunta a esa relación.
+
+Otros pendientes:
 - Señales adicionales: crecimiento anómalo año a año
-- Enlazar el perfil también desde los resultados de búsqueda
 - El ranking nacional tarda ~30s en cargar (GROUP BY sobre 5,3M). Deuda conocida.
 
 ### 5. Errores en SECOP — sección propia
@@ -189,7 +215,31 @@ diseño. Muchos de estos errores serían imposibles con validación básica. Dis
 entre descuido de la entidad y falla de SECOP como plataforma —responsabilidad de
 Colombia Compra Eficiente— hace la crítica más sólida y más difícil de descartar.
 
-### 6. Noticias basadas en datos
+### 6. Sección educativa
+
+**Para qué:** hoy la plataforma asume que quien llega ya sabe qué es una
+licitación, una adición o una urgencia manifiesta. Quien no lo sabe —que es la
+mayoría de ciudadanos— puede leer todas las cifras sin entender qué debería
+pasar en un proceso correcto, y sin eso no hay veeduría posible: no se puede
+detectar una anomalía sin saber cómo se ve lo normal.
+
+Contenido:
+- Cómo debería funcionar una contratación pública, paso a paso
+- Los tipos de contratación y cuándo corresponde cada uno; por qué la
+  contratación directa es legal y en qué casos deja de ser razonable
+- Qué es una adición, un CDP, una interventoría, la urgencia manifiesta
+- **Qué se ve cuando algo va bien**, no solo cuando va mal
+- Para qué sirve esta plataforma y qué NO hace (no acusa, no investiga casos)
+
+**Es la sección que más libertad visual pide de todo el proyecto.** Diagramas del
+flujo de un proceso, ilustraciones, líneas de tiempo, comparaciones lado a lado.
+El resto del sitio es deliberadamente sobrio porque presenta cifras; aquí el
+objetivo es que se entienda, y para eso lo ilustrativo ayuda más que lo austero.
+
+Nota: es el único módulo que no depende de la API. Se puede construir sin
+consultas, lo que lo hace independiente del resto del roadmap.
+
+### 7. Noticias basadas en datos
 
 Sección de notas cortas y sencillas generadas a partir de los datos actualizados.
 Aprovecha todo lo anterior: alertas, búsqueda por sector, rankings.

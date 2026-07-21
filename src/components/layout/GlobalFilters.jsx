@@ -35,9 +35,10 @@ export function GlobalFilters() {
 
   return (
     <div className="pb-7 mb-8 border-b border-border">
-      {/* El filtro por entidad no tiene selector: son más de 5.000 y no cabrían
-          en una lista. Se activa al llegar desde otra pantalla, así que aquí
-          solo se muestra y se puede quitar. */}
+      {/* El filtro por entidad no tiene selector propio: son más de 5.000 y
+          buscarlas cuesta entre 16 y 25 segundos por el GROUP BY sobre los 5,3
+          millones. Se activa al hacer clic en una entidad del índice de calidad,
+          y aquí solo se muestra para poder quitarlo. */}
       {filters.entity && (
         <div className="flex items-center gap-3 mb-5">
           <span className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">

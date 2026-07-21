@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
-import { DATASETS, ESTADO_ACTIVO } from '../lib/constants'
+import { DATASETS, ESTADO_ACTIVO, HOY } from '../lib/constants'
 import {
   whereFromFilters, buildWhere, moraConditions, soloContratosValidos,
   RANGOS_VENCIMIENTO,
@@ -213,8 +213,56 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
       })),
   })
 
+  // ¿Cuántos contratos se cierran bien?
+  //
+  // El universo son los contratos cuyo plazo YA TERMINÓ: solo esos pueden estar
+  // cerrados, y meter los vigentes haría ver mal a quien simplemente sigue
+  // trabajando. De ahí se mira cuántos quedaron con el expediente completo
+  // —estado cerrado y pago registrado por el total— frente a los que quedaron a
+  // medias, y de qué forma.
+  const cierre = useQuery({
+    queryKey: ['dash', 'cierre', filters],
+    queryFn: async () => {
+      const cerrado = `estado_contrato IN ('Cerrado', 'terminado')`
+      const conValor = `valor_del_contrato > 0`
+      const where = buildWhere(
+        whereFromFilters(filters, [
+          soloContratosValidos(),
+          `fecha_de_fin_del_contrato >= '2000-01-01T00:00:00'`,
+          `fecha_de_fin_del_contrato < '${HOY()}T00:00:00'`,
+        ]),
+      )
+      const rows = await socrataQuery(
+        DS,
+        `SELECT count(id_contrato) as total,
+                sum(case(${cerrado} AND ${conValor} AND valor_pagado >= valor_del_contrato, 1, true, 0)) as completo,
+                sum(case(${cerrado} AND ${conValor} AND valor_pagado > 0 AND valor_pagado < valor_del_contrato, 1, true, 0)) as parcial,
+                sum(case(${cerrado} AND ${conValor} AND (valor_pagado IS NULL OR valor_pagado <= 0), 1, true, 0)) as sin_pago,
+                sum(case(estado_contrato = '${ESTADO_ACTIVO}', 1, true, 0)) as sin_cerrar
+         ${where}`,
+      )
+      const r = rows[0] || {}
+      const n = (v) => parseInt(v ?? 0, 10)
+      const total = n(r.total)
+      const completo = n(r.completo)
+      const parcial = n(r.parcial)
+      const sinPago = n(r.sin_pago)
+      const sinCerrar = n(r.sin_cerrar)
+      return {
+        total,
+        completo,
+        parcial,
+        sinPago,
+        sinCerrar,
+        // El resto son estados intermedios (suspendido, modificado) y contratos
+        // sin cuantía registrada, donde "pago completo" no significa nada.
+        otros: Math.max(0, total - completo - parcial - sinPago - sinCerrar),
+      }
+    },
+  })
+
   return {
     generales, actores, porEstado, mora, vencidosPorAntiguedad, ejecucionVencidos,
-    porSector, entidadesMora, porModalidad,
+    porSector, entidadesMora, porModalidad, cierre,
   }
 }

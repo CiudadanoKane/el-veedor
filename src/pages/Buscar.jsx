@@ -8,13 +8,14 @@ import { ContractDetail } from '../components/ui/ContractDetail'
 import { Methodology } from '../components/ui/Methodology'
 import { Segmented } from '../components/ui/Segmented'
 import { useFilters } from '../context/FiltersContext'
+import { BuscadorContratista } from '../components/ui/BuscadorContratista'
 import { useBusqueda, hayBusqueda, AMBITOS, ORDENES, LIMITE } from '../hooks/useBusqueda'
 import { MODALIDADES, TIPOS_CONTRATO, CAUSALES } from '../lib/catalogos'
 import { formatCOP, formatDate } from '../lib/formatters'
 
 // Parámetros de URL que le pertenecen al buscador. Todo lo demás en la URL es
 // de otro módulo (hoy, los filtros geográficos) y no se toca desde aquí.
-const PARAMS_BUSQUEDA = ['q', 'en', 'modalidad', 'tipo', 'causal', 'orden']
+const PARAMS_BUSQUEDA = ['q', 'en', 'modalidad', 'tipo', 'causal', 'orden', 'modo']
 
 // Búsquedas de arranque: la página en blanco no sugiere nada, y el punto de la
 // plataforma es que alguien sin saber qué buscar encuentre por dónde empezar.
@@ -53,6 +54,8 @@ export function Buscar() {
   // algo puede mandar el enlace y el otro ve exactamente lo mismo.
   const [params, setParams] = useSearchParams()
 
+  const modo = params.get('modo') === 'contratistas' ? 'contratistas' : 'contratos'
+
   const criterios = useMemo(() => ({
     texto: params.get('q') || '',
     ambito: AMBITOS[params.get('en')] ? params.get('en') : 'objeto',
@@ -80,6 +83,7 @@ export function Buscar() {
       tipo: siguiente.tipo,
       causal: siguiente.causal,
       orden: siguiente.orden === 'valor' ? '' : siguiente.orden,
+      modo: (cambios.modo ?? modo) === 'contratos' ? '' : 'contratistas',
     }
     setParams((prev) => {
       const next = new URLSearchParams(prev)
@@ -147,11 +151,29 @@ export function Buscar() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Buscar contratos"
-        subtitle="Busca por palabra en 5,3 millones de contratos y filtra por cómo se adjudicaron."
+        title="Buscar"
+        subtitle="Busca por palabra en 5,3 millones de contratos, o encuentra a un contratista por nombre."
       />
       <GlobalFilters />
 
+      {/* Dos búsquedas distintas conviven aquí porque es donde la gente viene a
+          buscar. Antes el de contratistas estaba en Rankings, lejos de donde se
+          lo espera. */}
+      <div className="overflow-x-auto -mx-1 px-1">
+        <Segmented
+          value={modo}
+          onChange={(v) => actualizar({ modo: v })}
+          options={[
+            { value: 'contratos', label: 'Contratos' },
+            { value: 'contratistas', label: 'Contratistas' },
+          ]}
+        />
+      </div>
+
+      {modo === 'contratistas' ? (
+        <BuscadorContratista />
+      ) : (
+       <>
       <form
         onSubmit={(e) => { e.preventDefault(); actualizar({ texto: borrador }) }}
         className="border-b border-border pb-7"
@@ -350,6 +372,8 @@ export function Buscar() {
           </div>
         )}
       </div>
+       </>
+      )}
     </div>
   )
 }

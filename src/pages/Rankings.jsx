@@ -6,7 +6,6 @@ import { QueryState } from '../components/ui/QueryState'
 import { DataTable } from '../components/ui/DataTable'
 import { Methodology } from '../components/ui/Methodology'
 import { Segmented } from '../components/ui/Segmented'
-import { BuscadorContratista } from '../components/ui/BuscadorContratista'
 import { useFilters } from '../context/FiltersContext'
 import { useRankingContratistas, useRankingEntidades } from '../hooks/useRankings'
 import { formatCOP } from '../lib/formatters'
@@ -82,8 +81,6 @@ function RankingContratistas({ filters }) {
 
   return (
     <>
-      <BuscadorContratista />
-
       <Encabezado titulo="Quién recibe más recursos públicos">
         <Segmented
           value={orderBy}
@@ -97,7 +94,12 @@ function RankingContratistas({ filters }) {
 
       <p className="text-[14.5px] text-textSecondary font-light -mt-1 mb-4 max-w-2xl leading-relaxed">
         Haz clic en el nombre de un contratista para ver su perfil: con qué entidades
-        contrata, cómo se le adjudica y su historial completo.
+        contrata, cómo se le adjudica y su historial completo. Esta tabla solo muestra
+        los 30 primeros —{' '}
+        <Link to="/buscar?modo=contratistas" className="text-primary enlace-sutil font-semibold">
+          búscalo por nombre
+        </Link>{' '}
+        si no está aquí.
       </p>
 
       <Methodology>

@@ -38,8 +38,14 @@ function columnaDefecto(defecto) {
       if (!n) return <span className="text-textSecondary">0</span>
       if (!defecto.pestana) return n.toLocaleString('es-CO')
       const destino = `/errores?t=${defecto.pestana}&entidad=${encodeURIComponent(fila.entidad)}`
+      // Subrayado permanente, no solo al pasar el cursor: sin él las cifras no
+      // se leen como enlaces y nadie descubre que llevan a los casos.
       return (
-        <Link to={destino} className="text-textPrimary enlace-sutil font-medium">
+        <Link
+          to={destino}
+          className="text-primary font-semibold underline underline-offset-2
+                     decoration-primary/40 hover:decoration-primary"
+        >
           {n.toLocaleString('es-CO')}
         </Link>
       )
@@ -117,7 +123,15 @@ export function IndiceCalidad() {
       header: 'Entidad',
       render: (r) => (
         <div className="max-w-[280px]">
-          <div className="text-textPrimary">{r.entidad}</div>
+          {/* Filtra toda la sección por esta entidad, sin salir del índice: las
+              cuatro pestañas de casos pasan a mostrar solo lo suyo. */}
+          <Link
+            to={`/errores?entidad=${encodeURIComponent(r.entidad)}`}
+            className="text-primary font-semibold underline underline-offset-2
+                       decoration-primary/40 hover:decoration-primary"
+          >
+            {r.entidad}
+          </Link>
           <div className="text-xs text-textSecondary">NIT: {r.nit}</div>
         </div>
       ),
@@ -174,6 +188,11 @@ export function IndiceCalidad() {
           <p className="text-[13px] text-textSecondary mt-3 leading-relaxed">
             Esas son las varas para leer la tabla: lo que llama la atención no es tener
             defectos, sino estar muy por encima del resto.
+          </p>
+          <p className="text-[13.5px] text-textPrimary mt-3 leading-relaxed">
+            <strong>Todo lo subrayado lleva a los contratos concretos.</strong> Haz clic
+            en el nombre de una entidad para filtrar toda la sección por ella, o en un
+            conteo para ir directo a esos casos.
           </p>
         </div>
       )}

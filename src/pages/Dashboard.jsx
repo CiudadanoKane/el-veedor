@@ -46,7 +46,7 @@ export function Dashboard() {
 
   const {
     generales, actores, porEstado, mora, vencidosPorAntiguedad, ejecucionVencidos,
-    porSector, entidadesMora, porModalidad,
+    porSector, entidadesMora, porModalidad, cierre,
   } = useDashboardStats(filters, abiertas)
 
   const scope = filters.city || filters.department || 'Colombia'
@@ -149,6 +149,23 @@ export function Dashboard() {
       ),
     },
     {
+      clave: 'cierre',
+      nodo: (
+        <StatCard
+          label="Se cierran bien"
+          value={
+            cierre.data ? formatPct(pct(cierre.data.completo, cierre.data.total)) : '—'
+          }
+          sub="De los contratos cuyo plazo ya terminó, los que quedaron cerrados y con el pago completo registrado"
+          tone="success"
+          loading={cierre.isLoading}
+          onToggle={() => alternar('cierre')}
+          abierta={abierta('cierre')}
+          detalle="Ver cómo terminan"
+        />
+      ),
+    },
+    {
       clave: null,
       nodo: (
         <StatCard
@@ -173,6 +190,79 @@ export function Dashboard() {
   ]
 
   const detalles = {
+    cierre: (
+      <Detalle
+        titulo="¿Cómo terminan los contratos?"
+        intro="De cada contrato cuyo plazo ya venció, qué rastro quedó en SECOP."
+        metodologia={
+          <>
+            Solo entran los contratos <strong>cuyo plazo ya terminó</strong>: los vigentes
+            no pueden estar cerrados todavía, e incluirlos haría ver mal a quien
+            simplemente sigue trabajando.
+            <br />
+            <br />
+            Un contrato cuenta como <strong>bien cerrado</strong> cuando cumple las dos
+            cosas: su estado es "Cerrado" o "terminado", <em>y</em> el pago registrado
+            cubre el valor del contrato. Cualquiera de las dos por separado no basta —
+            un estado actualizado sin pago registrado deja el expediente igual de mudo.
+            <br />
+            <br />
+            <strong>Esto mide el registro, no la ejecución.</strong> Un contrato puede
+            haberse ejecutado y pagado impecablemente y figurar aquí como "sin registrar
+            pago" porque la entidad nunca subió el dato. No sabemos cuál de los dos pasó,
+            y por eso la etiqueta dice "sin registrar" y no "sin pagar". Lo que sí muestra
+            es qué proporción de la contratación pública queda sin un cierre verificable.
+          </>
+        }
+      >
+        <QueryState query={cierre} empty="Sin contratos con plazo vencido.">
+          {(d) => (
+            <ListaBarra
+              apilada
+              total={d.total}
+              items={[
+                {
+                  clave: 'completo',
+                  label: 'Cerrado y con el pago completo registrado',
+                  valor: d.completo,
+                  color: 'rgb(var(--c-success))',
+                  nota: 'El expediente quedó completo: es el cierre correcto',
+                },
+                {
+                  clave: 'parcial',
+                  label: 'Cerrado, pero con pago parcial',
+                  valor: d.parcial,
+                  color: 'rgb(var(--c-warning))',
+                  nota: 'Se dio por terminado quedando dinero sin desembolsar',
+                },
+                {
+                  clave: 'sinPago',
+                  label: 'Cerrado sin registrar ningún pago',
+                  valor: d.sinPago,
+                  color: 'rgb(var(--c-danger))',
+                  nota: 'Imposible en la práctica: casi siempre es el dato que falta, no el pago',
+                },
+                {
+                  clave: 'sinCerrar',
+                  label: 'Sigue figurando "en ejecución"',
+                  valor: d.sinCerrar,
+                  color: 'rgb(var(--c-text-soft))',
+                  nota: 'El plazo venció y nadie actualizó el registro',
+                },
+                {
+                  clave: 'otros',
+                  label: 'Otros estados o sin cuantía registrada',
+                  valor: d.otros,
+                  color: 'rgb(var(--c-border))',
+                  nota: 'Suspendidos, modificados, y contratos en $0 donde "pago completo" no significa nada',
+                },
+              ]}
+            />
+          )}
+        </QueryState>
+      </Detalle>
+    ),
+
     contratos: (
       <Detalle
         titulo="¿En qué estado están esos contratos?"
