@@ -1,4 +1,5 @@
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { Volver } from '../components/ui/Volver'
 import { PageHeader } from '../components/layout/Layout'
 import { QueryState } from '../components/ui/QueryState'
 import { DataTable } from '../components/ui/DataTable'
@@ -235,12 +236,7 @@ export function Contratista() {
 
   return (
     <div>
-      <Link
-        to="/rankings"
-        className="text-[13px] text-textSecondary hover:text-textPrimary enlace-sutil inline-block mb-6"
-      >
-        ← Volver a rankings
-      </Link>
+      <Volver a="/rankings" etiqueta="Volver a rankings" />
       <QueryState query={query} empty="No encontramos contratos con este documento.">
         {(perfil) =>
           perfil.totalContratos === 0 ? (

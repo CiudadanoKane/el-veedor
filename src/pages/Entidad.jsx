@@ -1,4 +1,5 @@
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { Volver } from '../components/ui/Volver'
 import { PageHeader } from '../components/layout/Layout'
 import { QueryState } from '../components/ui/QueryState'
 import { DataTable } from '../components/ui/DataTable'
@@ -263,12 +264,7 @@ export function Entidad() {
 
   return (
     <div>
-      <Link
-        to="/errores"
-        className="text-[13px] text-textSecondary hover:text-textPrimary enlace-sutil inline-block mb-6"
-      >
-        ← Volver a Errores en SECOP
-      </Link>
+      <Volver a="/errores" etiqueta="Volver a Errores en SECOP" />
       <QueryState query={query} empty="No encontramos contratos de esta entidad.">
         {(perfil) =>
           perfil.totalContratos === 0 ? (
