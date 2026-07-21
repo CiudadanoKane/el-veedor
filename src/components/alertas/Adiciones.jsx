@@ -1,14 +1,15 @@
+// Adiciones de plazo y de presupuesto. Eran una pestaña propia del menú; una
+// adición es también un patrón que merece atención, así que ahora conviven con
+// las demás alertas en vez de vivir aparte.
 import { useState } from 'react'
-import { PageHeader } from '../components/layout/Layout'
-import { GlobalFilters } from '../components/layout/GlobalFilters'
-import { QueryState } from '../components/ui/QueryState'
-import { DataTable } from '../components/ui/DataTable'
-import { ContractDetail } from '../components/ui/ContractDetail'
-import { Methodology } from '../components/ui/Methodology'
-import { Segmented } from '../components/ui/Segmented'
-import { useFilters } from '../context/FiltersContext'
-import { useAdicionesTiempo, useAdicionesCosto } from '../hooks/useAdiciones'
-import { formatCOP, humanDuration } from '../lib/formatters'
+import { QueryState } from '../ui/QueryState'
+import { DataTable } from '../ui/DataTable'
+import { ContractDetail } from '../ui/ContractDetail'
+import { Methodology } from '../ui/Methodology'
+import { Segmented } from '../ui/Segmented'
+import { useFilters } from '../../context/FiltersContext'
+import { useAdicionesTiempo, useAdicionesCosto } from '../../hooks/useAdiciones'
+import { formatCOP, humanDuration } from '../../lib/formatters'
 
 function PctBadge({ pct }) {
   if (pct == null) return <span className="text-textSecondary">—</span>
@@ -37,7 +38,8 @@ const colContratista = {
 
 /* ------------------------------ POR TIEMPO ------------------------------ */
 
-function AdicionesTiempo({ filters }) {
+export function AdicionesTiempo() {
+  const { filters } = useFilters()
   const [orden, setOrden] = useState('dias')
   const query = useAdicionesTiempo(filters, 50, orden)
 
@@ -129,7 +131,8 @@ function AdicionesTiempo({ filters }) {
 
 /* ------------------------------- POR COSTO ------------------------------ */
 
-function AdicionesCosto({ filters }) {
+export function AdicionesCosto() {
+  const { filters } = useFilters()
   const query = useAdicionesCosto(filters)
 
   const columns = [
@@ -211,38 +214,3 @@ function AdicionesCosto({ filters }) {
   )
 }
 
-/* --------------------------------- PAGE --------------------------------- */
-
-export function Adiciones() {
-  const { filters } = useFilters()
-  const [tab, setTab] = useState('tiempo')
-
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Adiciones"
-        subtitle="Contratos modificados después de firmados: en plazo y en presupuesto."
-      />
-      <GlobalFilters />
-
-      <div className="border-b border-border pb-8">
-        <div className="flex gap-2 mb-4 border-b border-border pb-4">
-          <Segmented
-            value={tab}
-            onChange={setTab}
-            options={[
-              { value: 'tiempo', label: 'Por tiempo' },
-              { value: 'costo', label: 'Por costo' },
-            ]}
-          />
-        </div>
-
-        {tab === 'tiempo' ? (
-          <AdicionesTiempo filters={filters} />
-        ) : (
-          <AdicionesCosto filters={filters} />
-        )}
-      </div>
-    </div>
-  )
-}

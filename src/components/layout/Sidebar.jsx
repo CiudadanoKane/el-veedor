@@ -4,8 +4,7 @@ const NAV = [
   { to: '/', label: 'Panorama', end: true },
   { to: '/buscar', label: 'Buscar contratos' },
   { to: '/alertas', label: 'Alertas' },
-  { to: '/mora', label: 'Contratos vencidos' },
-  { to: '/adiciones', label: 'Adiciones' },
+  { to: '/errores', label: 'Errores en SECOP' },
   { to: '/categorias', label: 'En qué se contrata' },
   { to: '/rankings', label: 'Rankings' },
 ]
