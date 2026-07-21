@@ -6,6 +6,7 @@ import { QueryState } from '../components/ui/QueryState'
 import { DataTable } from '../components/ui/DataTable'
 import { Methodology } from '../components/ui/Methodology'
 import { Segmented } from '../components/ui/Segmented'
+import { BuscadorContratista } from '../components/ui/BuscadorContratista'
 import { useFilters } from '../context/FiltersContext'
 import { useRankingContratistas, useRankingEntidades } from '../hooks/useRankings'
 import { formatCOP } from '../lib/formatters'
@@ -81,6 +82,8 @@ function RankingContratistas({ filters }) {
 
   return (
     <>
+      <BuscadorContratista />
+
       <Encabezado titulo="Quién recibe más recursos públicos">
         <Segmented
           value={orderBy}

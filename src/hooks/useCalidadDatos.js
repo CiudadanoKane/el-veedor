@@ -1,43 +1,88 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
-import { DATASETS } from '../lib/constants'
-import { whereFromFilters, buildWhere, soloContratosValidos } from '../lib/soql'
+import { DATASETS, ESTADO_ACTIVO } from '../lib/constants'
+import { whereFromFilters, buildWhere, soloContratosValidos, haceDias } from '../lib/soql'
 
 const DS = DATASETS.CONTRATOS
 
-// Defectos objetivos de registro. Los tres son verificables sin interpretar
-// nada: o el campo contradice a otro, o falta un dato que la entidad tenía.
+// La calidad del registro tiene dos fallas de naturaleza distinta, y medirlas
+// juntas no funciona: son 19.181 casos frente a 1.429.084, así que la primera
+// desaparecería bajo la segunda. Además no van de la mano — hay entidades con
+// 96% de información incompleta y 0,00% de errores.
 //
-// Deliberadamente NO incluye los contratos vencidos sin cerrar. Son 874.112
-// casos frente a 17.698 de estos, así que al mezclarlos taparían por completo
-// la señal fina. Además son cosas distintas: no cerrar un registro es no
-// mantenerlo al día, mientras que estos son datos mal escritos de entrada.
-export const DEFECTOS = {
+//   ERRORES        el dato se contradice a sí mismo. Alguien escribió mal.
+//   INCOMPLETA     el registro nunca se terminó. Nadie volvió a tocarlo.
+//
+// Separadas, cada tasa responde una pregunta distinta: ¿escriben mal? y
+// ¿terminan de registrar?
+
+export const ERRORES = {
   sinContratista: {
     label: 'Sin contratista identificado',
     campo: 'sin_contratista',
+    pestana: 'sincontratista',
     condicion: `documento_proveedor = 'No Definido'`,
   },
   fechas: {
     label: 'Fecha de fin anterior al inicio',
     campo: 'fechas',
+    pestana: 'fechas',
     condicion: `fecha_de_fin_del_contrato < fecha_de_inicio_del_contrato`,
   },
   sinValor: {
     label: 'En $0 con presupuesto comprometido',
     campo: 'sin_valor',
+    pestana: 'sinvalor',
     condicion: `(valor_del_contrato <= 0 AND saldo_cdp > 0)`,
+  },
+  // Pagar más de lo contratado es una contradicción aritmética. El margen de
+  // un millón evita marcar redondeos y ajustes menores.
+  sobrepago: {
+    label: 'Pagado por encima del valor del contrato',
+    campo: 'sobrepago',
+    pestana: null,
+    condicion: `(valor_del_contrato > 0 AND valor_pagado - valor_del_contrato > 1000000)`,
   },
 }
 
-const CUALQUIER_DEFECTO = Object.values(DEFECTOS)
-  .map((d) => d.condicion)
-  .join(' OR ')
+export const INCOMPLETOS = {
+  cerradoSinPago: {
+    label: 'Cerrado sin registrar ningún pago',
+    campo: 'cerrado_sin_pago',
+    condicion: `(estado_contrato = 'Cerrado' AND valor_del_contrato > 0 AND (valor_pagado IS NULL OR valor_pagado <= 0))`,
+  },
+  vencidoSinCerrar: {
+    label: 'Vencido hace más de un año y sigue "en ejecución"',
+    campo: 'vencido_sin_cerrar',
+    condicion: `(estado_contrato = '${ESTADO_ACTIVO}' AND fecha_de_fin_del_contrato >= '2000-01-01T00:00:00' AND fecha_de_fin_del_contrato < '${haceDias(365)}')`,
+  },
+}
 
-// Un contrato cuenta una sola vez aunque acumule varios defectos: la tasa es
-// "qué proporción de lo que registra esta entidad tiene algún problema", no una
-// suma de problemas, que podría pasar del 100%.
-const CON_DEFECTO = `sum(case(${CUALQUIER_DEFECTO}, 1, true, 0))`
+const unir = (grupo) =>
+  Object.values(grupo)
+    .map((d) => d.condicion)
+    .join(' OR ')
+
+// Un contrato cuenta una sola vez aunque acumule varios defectos del mismo
+// grupo: la tasa es "qué proporción tiene algún problema", no una suma que
+// podría pasar del 100%.
+const SUMA_ERRORES = `sum(case(${unir(ERRORES)}, 1, true, 0))`
+const SUMA_INCOMPLETOS = `sum(case(${unir(INCOMPLETOS)}, 1, true, 0))`
+
+export const METRICAS = {
+  errores: {
+    label: 'Errores',
+    descripcion: 'El dato se contradice a sí mismo',
+    suma: SUMA_ERRORES,
+    campo: 'errores',
+  },
+  incompleta: {
+    label: 'Información incompleta',
+    descripcion: 'El registro nunca se terminó',
+    suma: SUMA_INCOMPLETOS,
+    campo: 'incompletos',
+  },
+}
 
 // Umbral mínimo de contratos para entrar al índice.
 //
@@ -46,35 +91,18 @@ const CON_DEFECTO = `sum(case(${CUALQUIER_DEFECTO}, 1, true, 0))`
 // aquí es señalar prácticas sostenidas de registro, no un desliz aislado.
 export const UMBRAL_CONTRATOS = 500
 
-const numero = (v) => {
-  const n = parseFloat(v)
-  return isNaN(n) ? 0 : n
-}
+const entero = (v) => parseInt(v ?? 0, 10) || 0
+const tasa = (parte, total) => (total ? (parte / total) * 100 : 0)
 
-function adaptar(filas) {
-  return filas.map((r) => {
-    const total = parseInt(r.n, 10)
-    const conDefecto = parseInt(r.con_defecto ?? 0, 10)
-    return {
-      entidad: r.nombre_entidad,
-      nit: r.nit_entidad,
-      total,
-      conDefecto,
-      tasa: total ? (conDefecto / total) * 100 : 0,
-      sinContratista: numero(r.sin_contratista),
-      fechas: numero(r.fechas),
-      sinValor: numero(r.sin_valor),
-    }
-  })
-}
+export function useCalidadDatos(filters = {}, extremo = 'peor', metrica = 'errores') {
+  const activa = METRICAS[metrica] || METRICAS.errores
 
-export function useCalidadDatos(filters = {}, extremo = 'peor') {
   return useQuery({
-    queryKey: ['calidad', 'entidades', filters, extremo],
+    queryKey: ['calidad', 'entidades', filters, extremo, metrica],
     queryFn: async () => {
       const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
 
-      const columnas = Object.values(DEFECTOS)
+      const columnas = [...Object.values(ERRORES), ...Object.values(INCOMPLETOS)]
         .map((d) => `sum(case(${d.condicion}, 1, true, 0)) as ${d.campo}`)
         .join(',\n                ')
 
@@ -83,15 +111,16 @@ export function useCalidadDatos(filters = {}, extremo = 'peor') {
       // largo de miles de contratos, no a quien tuvo suerte con quinientos.
       const orden =
         extremo === 'peor'
-          ? `${CON_DEFECTO} / count(id_contrato) DESC`
-          : `${CON_DEFECTO} / count(id_contrato) ASC, count(id_contrato) DESC`
+          ? `${activa.suma} / count(id_contrato) DESC`
+          : `${activa.suma} / count(id_contrato) ASC, count(id_contrato) DESC`
 
       const [entidades, nacional] = await Promise.all([
         socrataQuery(
           DS,
           `SELECT nombre_entidad, nit_entidad, count(id_contrato) as n,
                   ${columnas},
-                  ${CON_DEFECTO} as con_defecto
+                  ${SUMA_ERRORES} as errores,
+                  ${SUMA_INCOMPLETOS} as incompletos
            ${where}
            GROUP BY nombre_entidad, nit_entidad
            HAVING count(id_contrato) >= ${UMBRAL_CONTRATOS}
@@ -100,20 +129,40 @@ export function useCalidadDatos(filters = {}, extremo = 'peor') {
         ),
         socrataQuery(
           DS,
-          `SELECT count(id_contrato) as n, ${CON_DEFECTO} as con_defecto ${where}`,
+          `SELECT count(id_contrato) as n,
+                  ${SUMA_ERRORES} as errores,
+                  ${SUMA_INCOMPLETOS} as incompletos
+           ${where}`,
         ),
       ])
 
       const g = nacional[0] || {}
-      const totalPais = parseInt(g.n ?? 0, 10)
-      const defectoPais = parseInt(g.con_defecto ?? 0, 10)
+      const totalPais = entero(g.n)
 
       return {
-        entidades: adaptar(entidades),
+        entidades: entidades.map((r) => {
+          const total = entero(r.n)
+          const detalle = {}
+          for (const d of [...Object.values(ERRORES), ...Object.values(INCOMPLETOS)]) {
+            detalle[d.campo] = entero(r[d.campo])
+          }
+          return {
+            entidad: r.nombre_entidad,
+            nit: r.nit_entidad,
+            total,
+            errores: entero(r.errores),
+            incompletos: entero(r.incompletos),
+            tasaErrores: tasa(entero(r.errores), total),
+            tasaIncompletos: tasa(entero(r.incompletos), total),
+            ...detalle,
+          }
+        }),
         referencia: {
           total: totalPais,
-          conDefecto: defectoPais,
-          tasa: totalPais ? (defectoPais / totalPais) * 100 : 0,
+          errores: entero(g.errores),
+          incompletos: entero(g.incompletos),
+          tasaErrores: tasa(entero(g.errores), totalPais),
+          tasaIncompletos: tasa(entero(g.incompletos), totalPais),
         },
       }
     },
