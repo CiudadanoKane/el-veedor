@@ -9,7 +9,7 @@ import {
   useEjecucionContratistas, UMBRAL_CONTRATOS, METRICAS,
 } from '../../hooks/useEjecucionContratistas'
 import { documentoVisible, etiquetaDocumento } from '../../lib/identidad'
-import { formatPct } from '../../lib/formatters'
+import { formatCOP, formatPct } from '../../lib/formatters'
 
 // Índice de ejecución de contratistas.
 //
@@ -63,6 +63,29 @@ export function IndiceEjecucion() {
   const colExcesiva = (d) =>
     columnaTasa('tasaExcesiva', 'excesivas', 'Prórroga mayor al plazo', referencia?.tasaExcesiva, d)
 
+  // La misma prórroga, medida sobre el dinero. Un contratista puede prorrogar
+  // pocos contratos y casi toda su cuantía si los grandes son los que se
+  // extienden — y esa diferencia es justo lo que la tasa por número esconde.
+  const colCuantia = (d) => ({
+    key: 'tasaCuantia',
+    header: 'Del valor contratado',
+    className: 'text-right tabular-nums',
+    render: (r) => (
+      <div>
+        <div
+          className={
+            d ? tonoRelativo(r.tasaCuantia, referencia?.tasaCuantia) : 'text-textSecondary'
+          }
+        >
+          {formatPct(r.tasaCuantia, 1)}
+        </div>
+        <div className="text-[11px] text-textSecondary">
+          {formatCOP(r.valorProrrogado)} de {formatCOP(r.valorTotal)}
+        </div>
+      </div>
+    ),
+  })
+
   const columns = [
     { key: 'rank', header: '#', className: 'text-textSecondary tabular-nums', render: (r) => r._rank },
     {
@@ -84,9 +107,12 @@ export function IndiceEjecucion() {
         </div>
       ),
     },
-    ...(metrica === 'prorroga'
-      ? [colProrroga(true), colExcesiva(false)]
-      : [colExcesiva(true), colProrroga(false)]),
+    // La métrica elegida va primero y con color; las otras dan contexto.
+    ...(metrica === 'cuantia'
+      ? [colCuantia(true), colProrroga(false), colExcesiva(false)]
+      : metrica === 'excesiva'
+        ? [colExcesiva(true), colProrroga(false), colCuantia(false)]
+        : [colProrroga(true), colCuantia(false), colExcesiva(false)]),
     {
       key: 'intensidad',
       header: 'Días añadidos por 100 pactados',
@@ -94,6 +120,16 @@ export function IndiceEjecucion() {
       render: (r) => (
         <span className="text-textPrimary">
           {Math.round(r.intensidad).toLocaleString('es-CO')}
+        </span>
+      ),
+    },
+    {
+      key: 'tasaSinEjecutar',
+      header: 'Valor sin ejecutar',
+      className: 'text-right tabular-nums',
+      render: (r) => (
+        <span className={r.tasaSinEjecutar >= 50 ? 'text-warning font-medium' : 'text-textPrimary'}>
+          {formatPct(r.tasaSinEjecutar, 1)}
         </span>
       ),
     },
@@ -190,6 +226,21 @@ export function IndiceEjecucion() {
         con uno solo prorrogado la tasa daría 100%. "Días añadidos por 100 pactados" suma
         todos los días de prórroga contra todo el plazo originalmente acordado — 30
         significa que por cada 100 días pactados se añadieron 30.
+        <br />
+        <br />
+        <strong>Conviene comparar las dos primeras columnas.</strong> Una mide qué
+        proporción de sus <em>contratos</em> se prorrogó; la otra, qué proporción de su{' '}
+        <em>dinero</em>. Cuando difieren mucho, dicen algo que ninguna sola revela: hay
+        contratistas que prorrogan el 11% de sus contratos y el 98% de su cuantía, porque
+        lo que se extiende son los grandes. Ordenar por cuantía saca a la luz a quienes la
+        tasa por número deja en mitad de tabla.
+        <br />
+        <br />
+        <strong>"Valor sin ejecutar"</strong> es la proporción del dinero contratado que
+        SECOP reporta como pendiente de ejecución al terminar el plazo. Es el indicador
+        más frágil de la tabla y hay que leerlo con cautela: recoge tanto trabajo que no
+        se hizo como registros que la entidad no actualizó, y no distinguimos entre los
+        dos. Se muestra como contexto, no como cargo.
       </Methodology>
 
       <div className="mt-4">

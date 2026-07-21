@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
 import { DATASETS, ESTADO_ACTIVO } from '../lib/constants'
 import { whereFromFilters, buildWhere, soloContratosValidos, haceDias } from '../lib/soql'
+import { documentoIdentifica } from '../lib/identidad'
 
 const DS = DATASETS.CONTRATOS
 
@@ -21,7 +22,7 @@ export const ERRORES = {
     label: 'Sin contratista identificado',
     campo: 'sin_contratista',
     pestana: 'sincontratista',
-    condicion: `documento_proveedor = 'No Definido'`,
+    condicion: `NOT (${documentoIdentifica()})`,
   },
   fechas: {
     label: 'Fecha de fin anterior al inicio',

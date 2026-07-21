@@ -13,6 +13,7 @@ import { BuscadorEntidad } from '../components/ui/BuscadorEntidad'
 import { useDirectorioEntidades } from '../hooks/useDirectorioEntidades'
 import { useBusqueda, hayBusqueda, AMBITOS, ORDENES, LIMITE } from '../hooks/useBusqueda'
 import { MODALIDADES, TIPOS_CONTRATO, CAUSALES } from '../lib/catalogos'
+import { DOCUMENTOS_SIN_IDENTIDAD } from '../lib/identidad'
 import { formatCOP, formatDate } from '../lib/formatters'
 
 // Parámetros de URL que le pertenecen al buscador. Todo lo demás en la URL es
@@ -142,7 +143,9 @@ export function Buscar() {
       // La fila entera despliega el detalle del contrato, así que el enlace al
       // perfil tiene que frenar el clic para no hacer las dos cosas a la vez.
       render: (r) =>
-        r.contractorName && r.contractorId && r.contractorId !== 'No Definido' ? (
+        r.contractorName &&
+        r.contractorId &&
+        !DOCUMENTOS_SIN_IDENTIDAD.includes(r.contractorId) ? (
           <Link
             to={`/contratista/${encodeURIComponent(r.contractorId)}`}
             onClick={(e) => e.stopPropagation()}

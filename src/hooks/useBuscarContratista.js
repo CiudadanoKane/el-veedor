@@ -3,7 +3,7 @@ import { socrataQuery } from '../lib/socrataClient'
 import { DATASETS } from '../lib/constants'
 import { esc, soloContratosValidos } from '../lib/soql'
 import { condicionBusqueda, tieneTextoBuscable } from '../lib/acentos'
-import { valorMasFrecuente } from '../lib/identidad'
+import { valorMasFrecuente, documentoIdentifica } from '../lib/identidad'
 
 const DS = DATASETS.CONTRATOS
 
@@ -36,8 +36,7 @@ export function useBuscarContratista(texto = '') {
         `SELECT documento_proveedor, proveedor_adjudicado, tipodocproveedor,
                 count(id_contrato) as n, sum(valor_del_contrato) as valor
          WHERE ${soloContratosValidos()}
-               AND documento_proveedor IS NOT NULL
-               AND documento_proveedor != 'No Definido'
+               AND ${documentoIdentifica()}
                AND (${filtro})
          GROUP BY documento_proveedor, proveedor_adjudicado, tipodocproveedor
          ORDER BY sum(valor_del_contrato) DESC

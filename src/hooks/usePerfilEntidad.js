@@ -4,7 +4,7 @@ import { DATASETS, CONTRACT_FIELDS } from '../lib/constants'
 import { esc, soloContratosValidos } from '../lib/soql'
 import { MODALIDADES_SIN_COMPETENCIA } from './useDashboard'
 import { ERRORES, INCOMPLETOS } from './useCalidadDatos'
-import { valorMasFrecuente } from '../lib/identidad'
+import { valorMasFrecuente, documentoIdentifica } from '../lib/identidad'
 import { adaptList } from '../adapters/secop2Adapter'
 
 const DS = DATASETS.CONTRATOS
@@ -73,7 +73,7 @@ export function usePerfilEntidad(nombre) {
             DS,
             `SELECT proveedor_adjudicado as nombre, documento_proveedor as documento,
                     count(id_contrato) as n, sum(valor_del_contrato) as valor
-             WHERE ${F} AND documento_proveedor != 'No Definido'
+             WHERE ${F} AND ${documentoIdentifica()}
              GROUP BY nombre, documento ORDER BY valor DESC LIMIT 15`,
           ),
           socrataQuery(

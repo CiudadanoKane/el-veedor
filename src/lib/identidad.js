@@ -39,6 +39,30 @@ export function valorMasFrecuente(filas, campo, campoConteo = 'n') {
   return { ...dominante, total, proporcion: total ? dominante.n / total : 0 }
 }
 
+// Documentos que no identifican a nadie.
+//
+// "No Definido" es el más conocido —14.838 contratos de 13.623 contratistas
+// distintos—, pero no es el único: hay entidades que rellenan el campo con
+// ceros, con un uno o con "N/A". El '000000000' agrupa 137 contratos de 75
+// organizaciones sin relación entre sí: ETICOS, Uniandes, varios consorcios.
+//
+// Agruparlos crea contratistas falsos de tamaño artificial, que se cuelan en
+// los rankings como si fueran uno solo. Se detectaron buscando documentos con
+// un número absurdo de nombres asociados: un contratista real tiene unas pocas
+// variantes de su razón social, no decenas de razones sociales ajenas.
+//
+// No se excluyen los NIT compartidos reales, como el 899999061 de Bogotá, que
+// varias dependencias usan legítimamente. Ese caso se advierte en el perfil.
+export const DOCUMENTOS_SIN_IDENTIDAD = [
+  'No Definido', 'N/A', 'NA', '0', '1',
+  '000000', '0000000', '00000000', '000000000', '0000000000',
+]
+
+export function documentoIdentifica(campo = 'documento_proveedor') {
+  const lista = DOCUMENTOS_SIN_IDENTIDAD.map((d) => `'${d}'`).join(', ')
+  return `${campo} IS NOT NULL AND ${campo} NOT IN (${lista})`
+}
+
 export function esPersonaJuridica(tipoDocumento) {
   return tipoDocumento === 'NIT'
 }

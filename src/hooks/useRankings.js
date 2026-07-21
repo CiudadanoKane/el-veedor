@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
 import { DATASETS } from '../lib/constants'
 import { esc, whereFromFilters, buildWhere, soloContratosValidos } from '../lib/soql'
-import { valorMasFrecuente } from '../lib/identidad'
+import { valorMasFrecuente, documentoIdentifica } from '../lib/identidad'
 
 const DS = DATASETS.CONTRATOS
 
@@ -23,14 +23,10 @@ export function useRankingContratistas(filters = {}, orderBy = 'valor_total') {
   return useQuery({
     queryKey: ['rank', 'contratistas', filters, orderBy],
     queryFn: async () => {
-      // Excluir el bucket "No Definido" (registros sin NIT/cédula): agrupa
-      // decenas de miles de contratos ajenos en un contratista falso.
+      // Excluir los documentos que no identifican a nadie: agrupan contratos
+      // ajenos en contratistas falsos. Ver DOCUMENTOS_SIN_IDENTIDAD.
       const where = buildWhere(
-        whereFromFilters(filters, [
-          soloContratosValidos(),
-          `documento_proveedor IS NOT NULL`,
-          `documento_proveedor != 'No Definido'`,
-        ]),
+        whereFromFilters(filters, [soloContratosValidos(), documentoIdentifica()]),
       )
       const filas = await socrataQuery(
         DS,

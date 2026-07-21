@@ -5,6 +5,7 @@ import {
   whereFromFilters, buildWhere, soloContratosValidos, haceDias,
 } from '../lib/soql'
 import { adaptList } from '../adapters/secop2Adapter'
+import { documentoIdentifica } from '../lib/identidad'
 
 const DS = DATASETS.CONTRATOS
 
@@ -108,12 +109,18 @@ export function useContratosSinValor(filters = {}) {
 }
 
 // ALERTA: contratos sin contratista identificado.
+//
 // SECOP agrupa bajo "No Definido" los registros donde no quedó el NIT o la
 // cédula de quien recibió el dinero. No es un error de digitación menor: en
 // esos contratos es literalmente imposible saber a quién le pagó el Estado.
+//
+// Incluye también los documentos de relleno —ceros, un uno, "N/A"—, que no
+// identifican a nadie igual que la etiqueta de SECOP. Son pocos, unos 300, pero
+// dejarlos fuera de la alerta mientras se excluyen de los rankings sería medir
+// con dos varas. Ver DOCUMENTOS_SIN_IDENTIDAD.
 const CONDICIONES_SIN_CONTRATISTA = [
   soloContratosValidos(),
-  `documento_proveedor = 'No Definido'`,
+  `NOT (${documentoIdentifica()})`,
 ]
 
 export function useSinContratista(filters = {}) {

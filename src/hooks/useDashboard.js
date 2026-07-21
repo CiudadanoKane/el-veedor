@@ -5,6 +5,7 @@ import {
   whereFromFilters, buildWhere, moraConditions, soloContratosValidos,
   RANGOS_VENCIMIENTO,
 } from '../lib/soql'
+import { documentoIdentifica } from '../lib/identidad'
 
 const DS = DATASETS.CONTRATOS
 
@@ -44,10 +45,7 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
     queryKey: ['dash', 'actores', filters],
     queryFn: () => {
       const where = buildWhere(
-        whereFromFilters(filters, [
-          soloContratosValidos(),
-          `documento_proveedor != 'No Definido'`,
-        ]),
+        whereFromFilters(filters, [soloContratosValidos(), documentoIdentifica()]),
       )
       return socrataQuery(
         DS,

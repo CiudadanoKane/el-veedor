@@ -144,15 +144,26 @@ mayores a diez años; umbral de 50 contratos; orden por tasa; y una columna de
 "entidades distintas" con la instrucción explícita de mirarla siempre, porque un
 patrón frente a una o dos entidades dice más de esa relación que del contratista.
 
+**Ponderación por cuantía** ✅ — tercera métrica de orden. Resultó revelar más
+que la tasa por número: MONTAGAS prorroga el **11,6% de sus contratos pero el
+98,5% de su cuantía**, porque lo que se extiende son los grandes. Ordenar por
+cuantía saca a la luz a quienes la tasa por número deja a mitad de tabla.
+
+**Valor sin ejecutar** ✅ — columna de contexto. El campo resultó sólido: cero
+nulos y cero valores imposibles sobre 4,7 millones. Se declara como el indicador
+más frágil de la tabla, porque recoge tanto trabajo no hecho como registros sin
+actualizar, y no distinguimos entre los dos.
+
 Pendiente de este índice:
 
 - **Adición de tiempo y de presupuesto a la vez**, la señal más fuerte de que lo
-  pactado no era realista. Requiere cruzar con el dataset de Procesos, que no se
-  puede agregar por contratista en una sola consulta — la misma limitación que
+  pactado no era realista. Requiere cruzar con el dataset de Procesos: se
+  verificó que el dataset de contratos no tiene ningún campo de adición
+  presupuestal, solo `valor_del_contrato` ya actualizado. Misma limitación que
   deja los valores implausibles fuera del índice de entidades.
-- Ejecución financiera: % del valor que quedó sin ejecutar en contratos vencidos
-- Ponderar el atraso por cuantía: atrasar una obra de $50 mil millones no es
-  igual que un contrato de $5 millones
+- **Rendimiento:** ordenar por cuantía tarda ~50s. El `GROUP BY` sobre 4,7
+  millones con sumas condicionales es caro. Deuda conocida, igual que el ranking
+  nacional.
 
 Otros pendientes:
 - Señales adicionales: crecimiento anómalo año a año

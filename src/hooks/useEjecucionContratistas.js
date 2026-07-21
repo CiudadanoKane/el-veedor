@@ -3,7 +3,7 @@ import { socrataQuery } from '../lib/socrataClient'
 import { DATASETS } from '../lib/constants'
 import { whereFromFilters, buildWhere, soloContratosValidos } from '../lib/soql'
 import { HOY } from '../lib/constants'
-import { valorMasFrecuente } from '../lib/identidad'
+import { valorMasFrecuente, documentoIdentifica } from '../lib/identidad'
 
 const DS = DATASETS.CONTRATOS
 
@@ -19,7 +19,7 @@ const DS = DATASETS.CONTRATOS
 export function condicionesEvaluables() {
   return [
     soloContratosValidos(),
-    `documento_proveedor != 'No Definido'`,
+    documentoIdentifica(),
     'fecha_de_inicio_del_contrato IS NOT NULL',
     'fecha_de_fin_del_contrato IS NOT NULL',
     // Fechas coherentes y dentro de un rango posible
@@ -43,6 +43,9 @@ const PRORROGA_MAYOR_AL_PLAZO =
 
 const SUMA_PRORROGADOS = `sum(case(${CON_PRORROGA}, 1, true, 0))`
 const SUMA_EXCESIVAS = `sum(case(${PRORROGA_MAYOR_AL_PLAZO}, 1, true, 0))`
+const SUMA_VALOR_PRORROGADO = `sum(case(${CON_PRORROGA}, valor_del_contrato, true, 0))`
+const SUMA_VALOR = 'sum(valor_del_contrato)'
+const CONTEO = 'count(id_contrato)'
 
 // Mínimo de contratos evaluables para entrar al índice.
 //
@@ -51,22 +54,32 @@ const SUMA_EXCESIVAS = `sum(case(${PRORROGA_MAYOR_AL_PLAZO}, 1, true, 0))`
 // del índice de entidades.
 export const UMBRAL_CONTRATOS = 50
 
+// Cada métrica define su propia razón, porque no todas se dividen entre el
+// número de contratos: la ponderada por cuantía se divide entre el valor.
+//
+// Esa distinción no es un tecnicismo. MONTAGAS prorroga el 11,6% de sus
+// contratos pero el 98,5% de su cuantía: se prorrogan los grandes y no los
+// pequeños, un patrón que la tasa por número esconde por completo.
 export const METRICAS = {
   prorroga: {
-    label: 'Necesitaron prórroga',
-    suma: SUMA_PRORROGADOS,
-    campo: 'prorrogados',
-    tasa: 'tasaProrroga',
+    label: 'Por número de contratos',
+    razon: `${SUMA_PRORROGADOS} / ${CONTEO}`,
+  },
+  cuantia: {
+    label: 'Por cuantía',
+    razon: `${SUMA_VALOR_PRORROGADO} / ${SUMA_VALOR}`,
   },
   excesiva: {
     label: 'Prórroga mayor al plazo',
-    suma: SUMA_EXCESIVAS,
-    campo: 'excesivas',
-    tasa: 'tasaExcesiva',
+    razon: `${SUMA_EXCESIVAS} / ${CONTEO}`,
   },
 }
 
 const entero = (v) => parseInt(v ?? 0, 10) || 0
+const numero = (v) => {
+  const n = parseFloat(v)
+  return isNaN(n) ? 0 : n
+}
 const tasa = (parte, total) => (total ? (parte / total) * 100 : 0)
 
 export function useEjecucionContratistas(filters = {}, extremo = 'peor', metrica = 'prorroga') {
@@ -80,8 +93,8 @@ export function useEjecucionContratistas(filters = {}, extremo = 'peor', metrica
 
       const orden =
         extremo === 'peor'
-          ? `${activa.suma} / count(id_contrato) DESC`
-          : `${activa.suma} / count(id_contrato) ASC, count(id_contrato) DESC`
+          ? `${activa.razon} DESC`
+          : `${activa.razon} ASC, ${CONTEO} DESC`
 
       const [filas, nacional] = await Promise.all([
         socrataQuery(
@@ -90,6 +103,9 @@ export function useEjecucionContratistas(filters = {}, extremo = 'peor', metrica
                   count(distinct nombre_entidad) as entidades,
                   ${SUMA_PRORROGADOS} as prorrogados,
                   ${SUMA_EXCESIVAS} as excesivas,
+                  ${SUMA_VALOR_PRORROGADO} as valor_prorrogado,
+                  ${SUMA_VALOR} as valor_total,
+                  sum(valor_pendiente_de_ejecucion) as sin_ejecutar,
                   sum(dias_adicionados) as dias_anadidos,
                   sum(date_diff_d(fecha_de_fin_del_contrato, fecha_de_inicio_del_contrato)) as dias_totales
            ${where}
@@ -102,7 +118,10 @@ export function useEjecucionContratistas(filters = {}, extremo = 'peor', metrica
           DS,
           `SELECT count(id_contrato) as n,
                   ${SUMA_PRORROGADOS} as prorrogados,
-                  ${SUMA_EXCESIVAS} as excesivas
+                  ${SUMA_EXCESIVAS} as excesivas,
+                  ${SUMA_VALOR_PRORROGADO} as valor_prorrogado,
+                  ${SUMA_VALOR} as valor_total,
+                  sum(valor_pendiente_de_ejecucion) as sin_ejecutar
            ${sinFiltro}`,
         ),
       ])
@@ -141,6 +160,7 @@ export function useEjecucionContratistas(filters = {}, extremo = 'peor', metrica
           const suyas = porContratista.get(r.documento_proveedor) || []
           // Plazo originalmente pactado = duración total − lo que se añadió
           const pactados = Math.max(0, totales - anadidos)
+          const valorTotal = numero(r.valor_total)
           return {
             documento: r.documento_proveedor,
             nombre: valorMasFrecuente(suyas, 'proveedor_adjudicado')?.valor,
@@ -151,6 +171,10 @@ export function useEjecucionContratistas(filters = {}, extremo = 'peor', metrica
             excesivas: entero(r.excesivas),
             tasaProrroga: tasa(entero(r.prorrogados), n),
             tasaExcesiva: tasa(entero(r.excesivas), n),
+            valorTotal,
+            valorProrrogado: numero(r.valor_prorrogado),
+            tasaCuantia: tasa(numero(r.valor_prorrogado), valorTotal),
+            tasaSinEjecutar: tasa(numero(r.sin_ejecutar), valorTotal),
             // Días añadidos por cada 100 originalmente pactados
             intensidad: pactados ? (anadidos / pactados) * 100 : 0,
           }
@@ -159,6 +183,8 @@ export function useEjecucionContratistas(filters = {}, extremo = 'peor', metrica
           total: totalPais,
           tasaProrroga: tasa(entero(g.prorrogados), totalPais),
           tasaExcesiva: tasa(entero(g.excesivas), totalPais),
+          tasaCuantia: tasa(numero(g.valor_prorrogado), numero(g.valor_total)),
+          tasaSinEjecutar: tasa(numero(g.sin_ejecutar), numero(g.valor_total)),
         },
       }
     },
