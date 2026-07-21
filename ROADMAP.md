@@ -101,11 +101,28 @@ Decisiones tomadas (jul 2026), ya aplicadas al ranking existente:
 - **La concentración se mide a nivel nacional**, ignorando el filtro geográfico
   (ver `useRankings.js`).
 
-Pendiente de construir:
-- Perfil de empresa: historial completo, entidades con las que contrata,
-  concentración, adiciones acumuladas
-- Señales: crecimiento anómalo, concentración de contratación directa
-- Cruce con los filtros por palabra clave del punto 3
+**Perfil de contratista** ✅ — ruta `/contratista/:documento`, enlazada desde el
+ranking. Resumen, concentración por entidad, modalidades, evolución anual y los
+50 contratos de mayor cuantía. Carga en menos de un segundo: filtrar por
+documento es barato, a diferencia de la búsqueda por texto.
+
+Un hallazgo obligó a diseñar con cuidado: **un documento no siempre identifica a
+una organización.** El NIT 899999061 agrupa 34 nombres —Secretaría de Seguridad,
+Secretaría General, Bomberos, alcaldías locales de Bogotá— que son entidades
+distintas. Cuando ningún nombre concentra más del 90% de los contratos, la página
+lo advierte, lista las organizaciones y **no usa el nombre de ninguna como
+titular**, para no atribuirle cifras ajenas.
+
+De paso se corrigió una clase de error que afectaba a varios campos: `max()` en
+SoQL devuelve el valor alfabéticamente último, no el más frecuente. La Previsora
+(3.779 contratos) se mostraba como "UT PREVISORA-SOLIDARIA DEQUIN LP 003 2025"
+(6 contratos) y como persona natural, porque 4 registros dicen `Otro` y eso gana
+sobre `NIT` al ordenar. Ver `valorMasFrecuente` en `src/lib/identidad.js`.
+
+Pendiente:
+- Señales adicionales: crecimiento anómalo año a año
+- Enlazar el perfil también desde los resultados de búsqueda
+- El ranking nacional tarda ~30s en cargar (GROUP BY sobre 5,3M). Deuda conocida.
 
 ### 5. Errores en SECOP — sección propia
 

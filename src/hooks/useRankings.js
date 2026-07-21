@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
 import { DATASETS } from '../lib/constants'
 import { esc, whereFromFilters, buildWhere, soloContratosValidos } from '../lib/soql'
+import { valorMasFrecuente } from '../lib/identidad'
 
 const DS = DATASETS.CONTRATOS
 
@@ -34,7 +35,6 @@ export function useRankingContratistas(filters = {}, orderBy = 'valor_total') {
       const filas = await socrataQuery(
         DS,
         `SELECT documento_proveedor,
-                max(tipodocproveedor) as tipo_documento,
                 count(id_contrato) as total_contratos,
                 sum(valor_del_contrato) as valor_total,
                 sum(dias_adicionados) as dias_adicionales
@@ -59,38 +59,39 @@ export function useRankingContratistas(filters = {}, orderBy = 'valor_total') {
            WHERE ${enLista}
            GROUP BY documento_proveedor`,
         ),
-        // El nombre no es estable por documento: una empresa aparece con su
-        // razón social en casi todos sus contratos, y con el nombre de la unión
-        // temporal en los pocos donde se presentó asociada. Tomar max() elegía
-        // uno arbitrario — La Previsora, con 3.779 contratos, salía como
-        // "UT PREVISORA-SOLIDARIA DEQUIN LP 003 2025", que son 6. Nos quedamos
-        // con el nombre que más veces aparece.
+        // Ni el nombre ni el tipo de documento son estables por documento, y
+        // max() devuelve el alfabéticamente último en vez del más común. La
+        // Previsora salía como "UT PREVISORA-SOLIDARIA DEQUIN LP 003 2025"
+        // (6 de sus 3.779 contratos) y como persona natural, porque 4 registros
+        // dicen 'Otro' y eso gana sobre 'NIT' al ordenar. Ver valorMasFrecuente.
         socrataQuery(
           DS,
-          `SELECT documento_proveedor, proveedor_adjudicado, count(id_contrato) as n
+          `SELECT documento_proveedor, proveedor_adjudicado, tipodocproveedor,
+                  count(id_contrato) as n
            WHERE ${enLista}
-           GROUP BY documento_proveedor, proveedor_adjudicado`,
+           GROUP BY documento_proveedor, proveedor_adjudicado, tipodocproveedor`,
         ),
       ])
 
       const porDocumento = new Map(nacional.map((r) => [r.documento_proveedor, r]))
 
-      const nombreMasUsado = new Map()
+      const porContratista = new Map()
       for (const r of nombres) {
-        const actual = nombreMasUsado.get(r.documento_proveedor)
-        if (!actual || parseInt(r.n, 10) > actual.n) {
-          nombreMasUsado.set(r.documento_proveedor, {
-            nombre: r.proveedor_adjudicado,
-            n: parseInt(r.n, 10),
-          })
+        if (!porContratista.has(r.documento_proveedor)) {
+          porContratista.set(r.documento_proveedor, [])
         }
+        porContratista.get(r.documento_proveedor).push(r)
       }
 
-      return filas.map((r) => ({
-        ...r,
-        nombre: nombreMasUsado.get(r.documento_proveedor)?.nombre,
-        pais: porDocumento.get(r.documento_proveedor),
-      }))
+      return filas.map((r) => {
+        const suyas = porContratista.get(r.documento_proveedor) || []
+        return {
+          ...r,
+          nombre: valorMasFrecuente(suyas, 'proveedor_adjudicado')?.valor,
+          tipo_documento: valorMasFrecuente(suyas, 'tipodocproveedor')?.valor,
+          pais: porDocumento.get(r.documento_proveedor),
+        }
+      })
     },
     select: (rows) =>
       rows

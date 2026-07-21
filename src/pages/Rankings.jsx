@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { PageHeader } from '../components/layout/Layout'
 import { GlobalFilters } from '../components/layout/GlobalFilters'
 import { QueryState } from '../components/ui/QueryState'
@@ -34,7 +35,12 @@ function RankingContratistas({ filters }) {
       header: 'Contratista',
       render: (r) => (
         <div>
-          <div className="text-textPrimary">{r.nombre || '(sin nombre)'}</div>
+          <Link
+            to={`/contratista/${encodeURIComponent(r.documento)}`}
+            className="text-textPrimary enlace-sutil font-medium"
+          >
+            {r.nombre || '(sin nombre)'}
+          </Link>
           <div className="text-xs text-textSecondary">
             {etiquetaDocumento(r.tipoDocumento)}: {documentoVisible(r.documento, r.tipoDocumento)}
           </div>
