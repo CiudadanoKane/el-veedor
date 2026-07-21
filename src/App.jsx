@@ -8,6 +8,7 @@ import { Errores } from './pages/Errores'
 import { Categorias } from './pages/Categorias'
 import { Rankings } from './pages/Rankings'
 import { Contratista } from './pages/Contratista'
+import { Entidad } from './pages/Entidad'
 import { Transparencia } from './pages/Transparencia'
 import { Reportar } from './pages/Reportar'
 
@@ -24,6 +25,7 @@ function App() {
             <Route path="categorias" element={<Categorias />} />
             <Route path="rankings" element={<Rankings />} />
             <Route path="contratista/:documento" element={<Contratista />} />
+            <Route path="entidad/:nombre" element={<Entidad />} />
             <Route path="transparencia" element={<Transparencia />} />
             <Route path="reportar" element={<Reportar />} />
 

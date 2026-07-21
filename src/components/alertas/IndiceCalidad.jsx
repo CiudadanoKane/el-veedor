@@ -6,7 +6,7 @@ import { Methodology } from '../ui/Methodology'
 import { Segmented } from '../ui/Segmented'
 import { useFilters } from '../../context/FiltersContext'
 import {
-  useCalidadDatos, UMBRAL_CONTRATOS, METRICAS, ERRORES, INCOMPLETOS,
+  useCalidadDatos, UMBRAL_CONTRATOS, METRICAS, ERRORES,
 } from '../../hooks/useCalidadDatos'
 import { formatPct } from '../../lib/formatters'
 
@@ -59,32 +59,6 @@ function columnaDefecto(defecto) {
 // que ya se estaba viendo. Hay que saltar a los casos. Y se elige la pestaña
 // donde esa entidad tiene más contratos, porque mandarla siempre a la misma
 // aterrizaría en una lista vacía cuando su problema es otro.
-const DEFECTOS_ENLAZABLES = [ERRORES.sinContratista, ERRORES.fechas, ERRORES.sinValor]
-
-function destinoDeEntidad(fila) {
-  const entidad = `entidad=${encodeURIComponent(fila.entidad)}`
-
-  let mejor = null
-  for (const d of DEFECTOS_ENLAZABLES) {
-    const n = fila[d.campo] || 0
-    if (n > 0 && (!mejor || n > mejor.n)) mejor = { pestana: d.pestana, n }
-  }
-  if (mejor) return `/errores?t=${mejor.pestana}&${entidad}`
-
-  // Sin errores enlazables, pero puede estar aquí por información incompleta,
-  // que no tiene pestaña propia en esta sección. Los vencidos sin cerrar sí
-  // tienen dónde verse: en Alertas. Hay que pedir el rango "antiguos" porque
-  // esos son, por definición, los de más de un año, y esa pestaña viene
-  // filtrada a los últimos 6 meses.
-  if (fila[INCOMPLETOS.vencidoSinCerrar.campo] > 0) {
-    return `/alertas?t=vencidos&rango=antiguos&${entidad}`
-  }
-
-  // Solo le quedan contratos cerrados sin registrar pago, que no se listan en
-  // ninguna parte todavía. Mejor no ofrecer un enlace que no lleva a nada.
-  return null
-}
-
 // El color se decide contra la referencia nacional, no con umbrales
 // inventados: lo que dice algo es estar muy por encima del resto.
 function tonoRelativo(valor, referencia) {
@@ -153,25 +127,21 @@ export function IndiceCalidad() {
     {
       key: 'entidad',
       header: 'Entidad',
-      render: (r) => {
-        const destino = destinoDeEntidad(r)
-        return (
-          <div className="max-w-[280px]">
-            {destino ? (
-              <Link
-                to={destino}
-                className="text-primary font-semibold underline underline-offset-2
-                           decoration-primary/40 hover:decoration-primary"
-              >
-                {r.entidad}
-              </Link>
-            ) : (
-              <span className="text-textPrimary">{r.entidad}</span>
-            )}
-            <div className="text-xs text-textSecondary">NIT: {r.nit}</div>
-          </div>
-        )
-      },
+      render: (r) => (
+        <div className="max-w-[280px]">
+          {/* Al perfil de la entidad. Antes filtraba la sección por ella, lo
+              que obligaba a recorrer pestañas sueltas para armarse una idea;
+              el perfil presenta lo mismo con su contexto. */}
+          <Link
+            to={`/entidad/${encodeURIComponent(r.entidad)}`}
+            className="text-primary font-semibold underline underline-offset-2
+                       decoration-primary/40 hover:decoration-primary"
+          >
+            {r.entidad}
+          </Link>
+          <div className="text-xs text-textSecondary">NIT: {r.nit}</div>
+        </div>
+      ),
     },
     ...columnasTasa,
     columnaDefecto({ ...ERRORES.sinContratista, encabezado: 'Sin contratista' }),
@@ -227,9 +197,9 @@ export function IndiceCalidad() {
             defectos, sino estar muy por encima del resto.
           </p>
           <p className="text-[13.5px] text-textPrimary mt-3 leading-relaxed">
-            <strong>Todo lo subrayado lleva a los contratos concretos.</strong> Haz clic
-            en el nombre de una entidad para ver sus casos, o en un conteo para ir
-            directo a ese tipo de error.
+            <strong>Todo lo subrayado lleva a más información.</strong> Haz clic en el
+            nombre de una entidad para ver su perfil completo, o en un conteo para ir
+            directo a esos contratos.
           </p>
         </div>
       )}
