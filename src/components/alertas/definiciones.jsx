@@ -12,7 +12,7 @@ import { Segmented } from '../ui/Segmented'
 import { useFilters } from '../../context/FiltersContext'
 import {
   useFechasInconsistentes, useContratosSinValor, useSinContratista,
-  useObraParalizada, useAdicionTiempoExcesiva, NIVELES_ADICION,
+  useObraParalizada, useAdicionTiempoExcesiva, useCerradoSinPago, NIVELES_ADICION,
 } from '../../hooks/useAlertas'
 import { useAdicionesCosto } from '../../hooks/useAdiciones'
 import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/formatters'
@@ -173,6 +173,83 @@ export function AlertaErrorDigitacion() {
             />
           )
         }
+      </QueryState>
+    </AlertCard>
+  )
+}
+
+export function AlertaCerradoSinPago() {
+  const { filters } = useFilters()
+  const { conteo, lista } = useCerradoSinPago(filters)
+
+  const columns = [
+    {
+      key: 'entityName',
+      header: 'Entidad',
+      render: (r) => (
+        <div className="max-w-[220px]">
+          <div className="text-textPrimary">{r.entityName}</div>
+          <div className="text-xs text-textSecondary truncate">{r.description}</div>
+        </div>
+      ),
+    },
+    { key: 'contractorName', header: 'Contratista', render: (r) => r.contractorName || '—' },
+    {
+      key: 'contractValue',
+      header: 'Valor del contrato',
+      className: 'text-right tabular-nums',
+      render: (r) => formatCOP(r.contractValue),
+    },
+    {
+      key: 'valuePaid',
+      header: 'Pago registrado',
+      className: 'text-right tabular-nums',
+      render: () => <span className="text-danger font-medium">$ 0</span>,
+    },
+    { key: 'endDate', header: 'Fecha fin', render: (r) => formatDate(r.endDate) },
+  ]
+
+  return (
+    <AlertCard
+      icon="billete"
+      title="Cerrados sin registrar ningún pago"
+      question="¿Qué contratos se dieron por terminados sin que conste un solo peso pagado?"
+      count={conteo.data?.total}
+      valueAtRisk={
+        conteo.data?.valor ? `${formatCOP(conteo.data.valor)} sin rastro de pago` : null
+      }
+      tone="warning"
+      methodology={
+        <>
+          Contratos cuyo estado es <strong>"Cerrado"</strong>, con una cuantía registrada
+          mayor a cero, y que no reportan <strong>ningún pago</strong>. Es una
+          contradicción: si de verdad no se pagó nada, el contrato no debería figurar como
+          cerrado sino como cancelado.
+          <br />
+          <br />
+          <strong>Casi siempre falta el dato, no el pago.</strong> Por eso la alerta se
+          llama "sin registrar" y no "sin pagar": no tenemos forma de distinguir un
+          contrato que nadie pagó de uno que se pagó y nadie reportó. Esa es exactamente
+          la razón por la que importa — mientras el campo esté vacío,{' '}
+          <em>nadie puede verificar a dónde fue el dinero</em>, ni siquiera para
+          descartar que todo estuvo bien.
+          <br />
+          <br />
+          Es el defecto de registro más extendido del país: <strong>el 34%</strong> de
+          todos los contratos cerrados con cuantía. Ordenados de mayor a menor valor; se
+          muestran hasta 100.
+        </>
+      }
+    >
+      <QueryState query={lista} empty="No se detectaron contratos cerrados sin pago registrado.">
+        {(rows) => (
+          <DataTable
+            columns={columns}
+            rows={rows}
+            keyField="id"
+            renderDetail={(row) => <ContractDetail contract={row} />}
+          />
+        )}
       </QueryState>
     </AlertCard>
   )

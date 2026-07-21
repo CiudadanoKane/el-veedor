@@ -49,6 +49,7 @@ export const INCOMPLETOS = {
   cerradoSinPago: {
     label: 'Cerrado sin registrar ningún pago',
     campo: 'cerrado_sin_pago',
+    pestana: 'cerradosinpago',
     condicion: `(estado_contrato = 'Cerrado' AND valor_del_contrato > 0 AND (valor_pagado IS NULL OR valor_pagado <= 0))`,
   },
   vencidoSinCerrar: {

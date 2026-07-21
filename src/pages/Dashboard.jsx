@@ -67,6 +67,8 @@ export function Dashboard() {
 
   // Las tarjetas van en una lista para poder intercalar el detalle en la
   // posición correcta. Las dos últimas no despliegan nada.
+  // Primero los totales: qué hay. Después los indicadores: qué tan bien va.
+  // Mezclarlos obligaba a saltar entre dos tipos de lectura en la misma fila.
   const tarjetas = [
     {
       clave: 'contratos',
@@ -79,6 +81,28 @@ export function Dashboard() {
           onToggle={() => alternar('contratos')}
           abierta={abierta('contratos')}
           detalle="Ver composición"
+        />
+      ),
+    },
+    {
+      clave: null,
+      nodo: (
+        <StatCard
+          label="Contratistas"
+          value={actores.data?.contratistas?.toLocaleString('es-CO') ?? '—'}
+          sub="Personas y empresas distintas, contadas por NIT o cédula"
+          loading={actores.isLoading}
+        />
+      ),
+    },
+    {
+      clave: null,
+      nodo: (
+        <StatCard
+          label="Entidades contratantes"
+          value={actores.data?.entidades?.toLocaleString('es-CO') ?? '—'}
+          sub="Organismos públicos que firmaron contratos"
+          loading={actores.isLoading}
         />
       ),
     },
@@ -162,28 +186,6 @@ export function Dashboard() {
           onToggle={() => alternar('cierre')}
           abierta={abierta('cierre')}
           detalle="Ver cómo terminan"
-        />
-      ),
-    },
-    {
-      clave: null,
-      nodo: (
-        <StatCard
-          label="Entidades contratantes"
-          value={actores.data?.entidades?.toLocaleString('es-CO') ?? '—'}
-          sub="Organismos públicos que firmaron contratos"
-          loading={actores.isLoading}
-        />
-      ),
-    },
-    {
-      clave: null,
-      nodo: (
-        <StatCard
-          label="Contratistas"
-          value={actores.data?.contratistas?.toLocaleString('es-CO') ?? '—'}
-          sub="Personas y empresas distintas, contadas por NIT o cédula"
-          loading={actores.isLoading}
         />
       ),
     },

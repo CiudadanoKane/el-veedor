@@ -2,6 +2,7 @@ import { SeccionConPestanas } from '../components/alertas/SeccionConPestanas'
 import { IndiceCalidad } from '../components/alertas/IndiceCalidad'
 import {
   AlertaSinContratista,
+  AlertaCerradoSinPago,
   AlertaFechasInconsistentes,
   AlertaContratosSinValor,
   AlertaErrorDigitacion,
@@ -19,6 +20,7 @@ const ERRORES = [
   // son los casos concretos que lo sustentan.
   { id: 'indice', label: 'Índice por entidad', Componente: IndiceCalidad },
   { id: 'sincontratista', label: 'Sin contratista identificado', Componente: AlertaSinContratista },
+  { id: 'cerradosinpago', label: 'Cerrados sin pago registrado', Componente: AlertaCerradoSinPago },
   { id: 'fechas', label: 'Fechas imposibles', Componente: AlertaFechasInconsistentes },
   { id: 'sinvalor', label: 'Contratos sin valor', Componente: AlertaContratosSinValor },
   { id: 'digitacion', label: 'Valores implausibles', Componente: AlertaErrorDigitacion },

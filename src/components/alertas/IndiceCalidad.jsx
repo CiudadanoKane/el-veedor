@@ -6,7 +6,7 @@ import { Methodology } from '../ui/Methodology'
 import { Segmented } from '../ui/Segmented'
 import { useFilters } from '../../context/FiltersContext'
 import {
-  useCalidadDatos, UMBRAL_CONTRATOS, METRICAS, ERRORES,
+  useCalidadDatos, UMBRAL_CONTRATOS, METRICAS, ERRORES, INCOMPLETOS,
 } from '../../hooks/useCalidadDatos'
 import { formatPct } from '../../lib/formatters'
 
@@ -147,6 +147,7 @@ export function IndiceCalidad() {
     columnaDefecto({ ...ERRORES.sinContratista, encabezado: 'Sin contratista' }),
     columnaDefecto({ ...ERRORES.fechas, encabezado: 'Fechas imposibles' }),
     columnaDefecto({ ...ERRORES.sinValor, encabezado: 'En $0 con CDP' }),
+    columnaDefecto({ ...INCOMPLETOS.cerradoSinPago, encabezado: 'Cerrado sin pago' }),
   ]
 
   return (

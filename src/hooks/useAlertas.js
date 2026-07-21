@@ -33,6 +33,53 @@ const CONDICIONES_SIN_VALOR = [
   `saldo_cdp < ${CDP_MAX}`,
 ]
 
+// ALERTA: contratos cerrados que no reportan ningún pago.
+//
+// Es el defecto de registro más extendido del país —554.195 casos, el 34% de
+// todos los cerrados con cuantía— y hasta ahora no se podía ver ni uno solo:
+// el índice de calidad lo contaba, pero no existía dónde mirar los contratos.
+//
+// Un contrato cerrado con $0 pagado es imposible en la práctica: si de verdad
+// no se pagó nada, no debería figurar como cerrado sino como cancelado. Casi
+// siempre es el dato de pago el que falta, no el pago.
+const CONDICIONES_CERRADO_SIN_PAGO = [
+  soloContratosValidos(),
+  `estado_contrato = 'Cerrado'`,
+  'valor_del_contrato > 0',
+  '(valor_pagado IS NULL OR valor_pagado <= 0)',
+]
+
+export function useCerradoSinPago(filters = {}) {
+  const conteo = useQuery({
+    queryKey: ['alerta', 'cerradosinpago', 'conteo', filters],
+    queryFn: () => {
+      const where = buildWhere(whereFromFilters(filters, CONDICIONES_CERRADO_SIN_PAGO))
+      return socrataQuery(
+        DS,
+        `SELECT count(id_contrato) as n, sum(valor_del_contrato) as valor ${where} LIMIT 1`,
+      )
+    },
+    select: (rows) => ({
+      total: parseInt(rows[0]?.n ?? 0, 10),
+      valor: parseFloat(rows[0]?.valor ?? 0),
+    }),
+  })
+
+  const lista = useQuery({
+    queryKey: ['alerta', 'cerradosinpago', 'lista', filters],
+    queryFn: () => {
+      const where = buildWhere(whereFromFilters(filters, CONDICIONES_CERRADO_SIN_PAGO))
+      return socrataQuery(
+        DS,
+        `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT 100`,
+      )
+    },
+    select: adaptList,
+  })
+
+  return { conteo, lista }
+}
+
 export function useContratosSinValor(filters = {}) {
   const conteo = useQuery({
     queryKey: ['alerta', 'sinvalor', 'conteo', filters],

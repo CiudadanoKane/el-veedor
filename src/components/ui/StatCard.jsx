@@ -38,8 +38,12 @@ export function StatCard({
         )}
       </div>
 
-      {/* Fila 2: la cifra, siempre a la misma altura en todas las tarjetas */}
-      <div className="flex items-start pt-3">
+      {/* Fila 2: la cifra.
+          Reserva la altura de dos líneas siempre. Cifras como "$891,6 billones"
+          no caben en el ancho de una columna y bajan la palabra a un segundo
+          renglón; sin esta reserva, esa tarjeta empujaba su propio contenido y
+          rompía la alineación horizontal de toda la fila. */}
+      <div className="flex items-start pt-3 min-h-[4.25rem] xl:min-h-[5rem]">
         {loading ? (
           <div className="h-8 w-32 bg-muted animate-pulse" />
         ) : (
@@ -53,9 +57,16 @@ export function StatCard({
         )}
       </div>
 
-      {/* Fila 3: porcentaje (reserva su espacio aunque no exista) */}
-      <div className="pt-2">
-        {pct && <div className={`text-[13px] font-bold ${TONE[tone]}`}>{pct}</div>}
+      {/* Fila 3: porcentaje.
+          Reserva la altura de una línea aunque la tarjeta no tenga porcentaje.
+          Sin la reserva, un div vacío mide cero y las tarjetas sin porcentaje
+          subían su texto de contexto respecto a las que sí lo tienen. */}
+      <div className="pt-2 min-h-[1.75rem]">
+        {pct && (
+          // Interlineado fijo: heredado daba 21px y la reserva de arriba 20,
+          // dejando un descuadre de un píxel entre tarjetas con y sin porcentaje.
+          <div className={`text-[13px] leading-5 font-bold ${TONE[tone]}`}>{pct}</div>
+        )}
       </div>
 
       {/* Fila 4: contexto, crece hacia abajo sin mover lo de arriba */}
