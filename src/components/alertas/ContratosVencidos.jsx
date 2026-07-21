@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { QueryState } from '../ui/QueryState'
 import { DataTable } from '../ui/DataTable'
 import { Semaforo } from '../ui/Semaforo'
@@ -12,10 +13,28 @@ import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/forma
 // Antes era una pestaña propia del menú. Es una alerta como las demás — un
 // plazo vencido es exactamente el tipo de patrón que esta sección reúne — así
 // que pasó a convivir con ellas en vez de repetirse en dos lugares.
+const RANGOS = ['recientes', 'medios', 'antiguos', 'todos']
+
 export function ContratosVencidos() {
   const { filters } = useFilters()
   const [orden, setOrden] = useState('fecha')
-  const [rango, setRango] = useState('recientes')
+
+  // El rango viaja en la URL porque otras pantallas necesitan apuntar a uno
+  // concreto. El índice de calidad enlaza aquí a los vencidos hace más de un
+  // año, y con el filtro por defecto —últimos 6 meses— caía en una lista vacía.
+  const [params, setParams] = useSearchParams()
+  const pedido = params.get('rango')
+  const rango = RANGOS.includes(pedido) ? pedido : 'recientes'
+
+  const cambiarRango = (valor) => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (valor === 'recientes') next.delete('rango')
+      else next.set('rango', valor)
+      return next
+    })
+  }
+
   const query = useMora(filters, 100, orden, rango)
 
   const columns = [
@@ -81,7 +100,7 @@ export function ContratosVencidos() {
         <span className="text-xs text-textSecondary">Antigüedad del vencimiento:</span>
         <Segmented
           value={rango}
-          onChange={setRango}
+          onChange={cambiarRango}
           options={[
             { value: 'recientes', label: 'Últimos 6 meses' },
             { value: 'medios', label: '6 meses a 1 año' },

@@ -6,7 +6,7 @@ import { Methodology } from '../ui/Methodology'
 import { Segmented } from '../ui/Segmented'
 import { useFilters } from '../../context/FiltersContext'
 import {
-  useCalidadDatos, UMBRAL_CONTRATOS, METRICAS, ERRORES,
+  useCalidadDatos, UMBRAL_CONTRATOS, METRICAS, ERRORES, INCOMPLETOS,
 } from '../../hooks/useCalidadDatos'
 import { formatPct } from '../../lib/formatters'
 
@@ -51,6 +51,38 @@ function columnaDefecto(defecto) {
       )
     },
   }
+}
+
+// A dónde lleva el nombre de una entidad.
+//
+// Filtrar y quedarse en el índice no sirve: la tabla se reduce a una sola fila
+// que ya se estaba viendo. Hay que saltar a los casos. Y se elige la pestaña
+// donde esa entidad tiene más contratos, porque mandarla siempre a la misma
+// aterrizaría en una lista vacía cuando su problema es otro.
+const DEFECTOS_ENLAZABLES = [ERRORES.sinContratista, ERRORES.fechas, ERRORES.sinValor]
+
+function destinoDeEntidad(fila) {
+  const entidad = `entidad=${encodeURIComponent(fila.entidad)}`
+
+  let mejor = null
+  for (const d of DEFECTOS_ENLAZABLES) {
+    const n = fila[d.campo] || 0
+    if (n > 0 && (!mejor || n > mejor.n)) mejor = { pestana: d.pestana, n }
+  }
+  if (mejor) return `/errores?t=${mejor.pestana}&${entidad}`
+
+  // Sin errores enlazables, pero puede estar aquí por información incompleta,
+  // que no tiene pestaña propia en esta sección. Los vencidos sin cerrar sí
+  // tienen dónde verse: en Alertas. Hay que pedir el rango "antiguos" porque
+  // esos son, por definición, los de más de un año, y esa pestaña viene
+  // filtrada a los últimos 6 meses.
+  if (fila[INCOMPLETOS.vencidoSinCerrar.campo] > 0) {
+    return `/alertas?t=vencidos&rango=antiguos&${entidad}`
+  }
+
+  // Solo le quedan contratos cerrados sin registrar pago, que no se listan en
+  // ninguna parte todavía. Mejor no ofrecer un enlace que no lleva a nada.
+  return null
 }
 
 // El color se decide contra la referencia nacional, no con umbrales
@@ -121,20 +153,25 @@ export function IndiceCalidad() {
     {
       key: 'entidad',
       header: 'Entidad',
-      render: (r) => (
-        <div className="max-w-[280px]">
-          {/* Filtra toda la sección por esta entidad, sin salir del índice: las
-              cuatro pestañas de casos pasan a mostrar solo lo suyo. */}
-          <Link
-            to={`/errores?entidad=${encodeURIComponent(r.entidad)}`}
-            className="text-primary font-semibold underline underline-offset-2
-                       decoration-primary/40 hover:decoration-primary"
-          >
-            {r.entidad}
-          </Link>
-          <div className="text-xs text-textSecondary">NIT: {r.nit}</div>
-        </div>
-      ),
+      render: (r) => {
+        const destino = destinoDeEntidad(r)
+        return (
+          <div className="max-w-[280px]">
+            {destino ? (
+              <Link
+                to={destino}
+                className="text-primary font-semibold underline underline-offset-2
+                           decoration-primary/40 hover:decoration-primary"
+              >
+                {r.entidad}
+              </Link>
+            ) : (
+              <span className="text-textPrimary">{r.entidad}</span>
+            )}
+            <div className="text-xs text-textSecondary">NIT: {r.nit}</div>
+          </div>
+        )
+      },
     },
     ...columnasTasa,
     columnaDefecto({ ...ERRORES.sinContratista, encabezado: 'Sin contratista' }),
@@ -191,8 +228,8 @@ export function IndiceCalidad() {
           </p>
           <p className="text-[13.5px] text-textPrimary mt-3 leading-relaxed">
             <strong>Todo lo subrayado lleva a los contratos concretos.</strong> Haz clic
-            en el nombre de una entidad para filtrar toda la sección por ella, o en un
-            conteo para ir directo a esos casos.
+            en el nombre de una entidad para ver sus casos, o en un conteo para ir
+            directo a ese tipo de error.
           </p>
         </div>
       )}
