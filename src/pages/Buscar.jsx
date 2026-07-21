@@ -9,6 +9,8 @@ import { Methodology } from '../components/ui/Methodology'
 import { Segmented } from '../components/ui/Segmented'
 import { useFilters } from '../context/FiltersContext'
 import { BuscadorContratista } from '../components/ui/BuscadorContratista'
+import { BuscadorEntidad } from '../components/ui/BuscadorEntidad'
+import { useDirectorioEntidades } from '../hooks/useDirectorioEntidades'
 import { useBusqueda, hayBusqueda, AMBITOS, ORDENES, LIMITE } from '../hooks/useBusqueda'
 import { MODALIDADES, TIPOS_CONTRATO, CAUSALES } from '../lib/catalogos'
 import { formatCOP, formatDate } from '../lib/formatters'
@@ -16,6 +18,14 @@ import { formatCOP, formatDate } from '../lib/formatters'
 // Parámetros de URL que le pertenecen al buscador. Todo lo demás en la URL es
 // de otro módulo (hoy, los filtros geográficos) y no se toca desde aquí.
 const PARAMS_BUSQUEDA = ['q', 'en', 'modalidad', 'tipo', 'causal', 'orden', 'modo']
+
+// Tres búsquedas distintas conviven aquí porque es donde la gente viene a
+// buscar. Antes las de contratistas y entidades no existían o estaban lejos.
+const MODOS = [
+  { value: 'contratos', label: 'Contratos' },
+  { value: 'contratistas', label: 'Contratistas' },
+  { value: 'entidades', label: 'Entidades' },
+]
 
 // Búsquedas de arranque: la página en blanco no sugiere nada, y el punto de la
 // plataforma es que alguien sin saber qué buscar encuentre por dónde empezar.
@@ -54,7 +64,13 @@ export function Buscar() {
   // algo puede mandar el enlace y el otro ve exactamente lo mismo.
   const [params, setParams] = useSearchParams()
 
-  const modo = params.get('modo') === 'contratistas' ? 'contratistas' : 'contratos'
+  const pedido = params.get('modo')
+  const modo = MODOS.some((m) => m.value === pedido) ? pedido : 'contratos'
+
+  // El directorio de entidades tarda entre 6 y 16 segundos en llegar, así que
+  // se pide desde que alguien entra al buscador, sin importar el modo. Para
+  // cuando cambie a "Entidades" lo más probable es que ya esté.
+  useDirectorioEntidades()
 
   const criterios = useMemo(() => ({
     texto: params.get('q') || '',
@@ -156,22 +172,14 @@ export function Buscar() {
       />
       <GlobalFilters />
 
-      {/* Dos búsquedas distintas conviven aquí porque es donde la gente viene a
-          buscar. Antes el de contratistas estaba en Rankings, lejos de donde se
-          lo espera. */}
       <div className="overflow-x-auto -mx-1 px-1">
-        <Segmented
-          value={modo}
-          onChange={(v) => actualizar({ modo: v })}
-          options={[
-            { value: 'contratos', label: 'Contratos' },
-            { value: 'contratistas', label: 'Contratistas' },
-          ]}
-        />
+        <Segmented value={modo} onChange={(v) => actualizar({ modo: v })} options={MODOS} />
       </div>
 
       {modo === 'contratistas' ? (
         <BuscadorContratista />
+      ) : modo === 'entidades' ? (
+        <BuscadorEntidad />
       ) : (
        <>
       <form

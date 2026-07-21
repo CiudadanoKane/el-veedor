@@ -18,7 +18,7 @@ const TONE = {
 // las cifras queden alineadas entre sí aunque los subtítulos midan distinto.
 export function StatCard({
   label, value, sub, pct, tone = 'default', loading,
-  onToggle, abierta, detalle,
+  onToggle, abierta, detalle, accion, reservaPct = true,
 }) {
   const desplegable = typeof onToggle === 'function'
 
@@ -57,10 +57,11 @@ export function StatCard({
       </div>
 
       {/* Fila 3: porcentaje.
-          Reserva la altura de una línea aunque la tarjeta no tenga porcentaje.
-          Sin la reserva, un div vacío mide cero y las tarjetas sin porcentaje
-          subían su texto de contexto respecto a las que sí lo tienen. */}
-      <div className="pt-2 min-h-[1.75rem]">
+          Reserva la altura de una línea para que las tarjetas de una misma fila
+          alineen su texto de contexto, tengan porcentaje o no. Pero la reserva
+          se puede desactivar: en una fila donde NINGUNA lo tiene, el hueco
+          vacío solo separa la cifra de su explicación sin motivo. */}
+      <div className={reservaPct ? 'pt-2 min-h-[1.75rem]' : 'pt-2 empty:pt-0'}>
         {pct && (
           // Interlineado fijo: heredado daba 21px y la reserva de arriba 20,
           // dejando un descuadre de un píxel entre tarjetas con y sin porcentaje.
@@ -75,13 +76,16 @@ export function StatCard({
         )}
       </div>
 
-      {/* Fila 5: acción, anclada abajo */}
+      {/* Fila 5: acción, anclada abajo.
+          Una tarjeta desplegable la usa para su propio detalle; una que no lo
+          es puede recibir un enlace a donde continúa esa cifra. */}
       <div className="flex items-end pt-3">
         {desplegable && (
           <span className="text-[11px] font-semibold text-primary enlace-sutil">
             {abierta ? 'Ocultar detalle' : detalle || 'Ver detalle'}
           </span>
         )}
+        {!desplegable && accion}
       </div>
     </>
   )

@@ -1,4 +1,5 @@
 import { Fragment, useState, useCallback, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { PageHeader } from '../components/layout/Layout'
 import { GlobalFilters } from '../components/layout/GlobalFilters'
 import { StatCard } from '../components/ui/StatCard'
@@ -81,6 +82,7 @@ export function Dashboard() {
           onToggle={() => alternar('contratos')}
           abierta={abierta('contratos')}
           detalle="Ver composición"
+          reservaPct={false}
         />
       ),
     },
@@ -92,6 +94,15 @@ export function Dashboard() {
           value={actores.data?.contratistas?.toLocaleString('es-CO') ?? '—'}
           sub="Personas y empresas distintas, contadas por NIT o cédula"
           loading={actores.isLoading}
+          reservaPct={false}
+          accion={
+            <Link
+              to="/buscar?modo=contratistas"
+              className="text-[11px] font-semibold text-primary enlace-sutil"
+            >
+              Buscar un contratista
+            </Link>
+          }
         />
       ),
     },
@@ -103,6 +114,15 @@ export function Dashboard() {
           value={actores.data?.entidades?.toLocaleString('es-CO') ?? '—'}
           sub="Organismos públicos que firmaron contratos"
           loading={actores.isLoading}
+          reservaPct={false}
+          accion={
+            <Link
+              to="/buscar?modo=entidades"
+              className="text-[11px] font-semibold text-primary enlace-sutil"
+            >
+              Buscar una entidad
+            </Link>
+          }
         />
       ),
     },
@@ -118,6 +138,7 @@ export function Dashboard() {
           onToggle={() => alternar('valor')}
           abierta={abierta('valor')}
           detalle="Ver por sector"
+          reservaPct={false}
         />
       ),
     },
@@ -165,9 +186,12 @@ export function Dashboard() {
         <StatCard
           label="Sin competencia"
           value={pctDirecta ?? '—'}
+          // Un porcentaje suelto no dice nada: la base va en la misma línea que
+          // en las demás tarjetas, para que las cinco se lean igual.
+          pct={generales.data?.total ? 'de todos los contratos' : null}
           sub={
             generales.data?.directa
-              ? `${generales.data.directa.toLocaleString('es-CO')} contratos adjudicados de forma directa`
+              ? `${generales.data.directa.toLocaleString('es-CO')} de ${generales.data.total.toLocaleString('es-CO')} se adjudicaron de forma directa, sin concurso abierto`
               : 'Contratos adjudicados sin concurso'
           }
           tone="warning"
@@ -186,7 +210,12 @@ export function Dashboard() {
           value={
             cierre.data ? formatPct(pct(cierre.data.completo, cierre.data.total)) : '—'
           }
-          sub="De los contratos cuyo plazo ya terminó, los que quedaron cerrados y con el pago completo registrado"
+          pct={cierre.data?.total ? 'de los que ya vencieron' : null}
+          sub={
+            cierre.data
+              ? `${cierre.data.completo.toLocaleString('es-CO')} de ${cierre.data.total.toLocaleString('es-CO')} quedaron cerrados y con el pago completo registrado`
+              : 'Contratos cerrados y con el pago completo registrado'
+          }
           tone="success"
           loading={cierre.isLoading}
           onToggle={() => alternar('cierre')}
