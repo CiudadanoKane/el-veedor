@@ -11,6 +11,10 @@ export function whereFromFilters(filters = {}, extra = []) {
   const parts = [...extra]
   if (filters.department) parts.push(`departamento = '${esc(filters.department)}'`)
   if (filters.city) parts.push(`ciudad = '${esc(filters.city)}'`)
+  // Filtro por entidad. No tiene selector propio porque son más de 5.000: se
+  // activa al llegar desde otra pantalla, como el índice de calidad, donde ya
+  // se sabe qué entidad interesa.
+  if (filters.entity) parts.push(`nombre_entidad = '${esc(filters.entity)}'`)
   return parts
 }
 

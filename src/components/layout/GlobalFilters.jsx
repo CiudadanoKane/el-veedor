@@ -31,35 +31,58 @@ export function GlobalFilters() {
   const departamentos = useDepartamentos()
   const ciudades = useCiudades(filters.department)
 
-  const hasFilters = filters.department || filters.city
+  const hasFilters = filters.department || filters.city || filters.entity
 
   return (
-    <div className="flex flex-wrap items-end gap-5 pb-7 mb-8 border-b border-border">
-      <Select
-        label="Departamento"
-        value={filters.department}
-        onChange={(v) => setFilter('department', v)}
-        options={departamentos.data || []}
-        loading={departamentos.isLoading}
-        placeholder="Todo Colombia"
-      />
-      <Select
-        label="Ciudad"
-        value={filters.city}
-        onChange={(v) => setFilter('city', v)}
-        options={ciudades.data || []}
-        loading={ciudades.isLoading}
-        placeholder="Todas las ciudades"
-        disabled={!filters.department}
-      />
-      {hasFilters && (
-        <button
-          onClick={clearFilters}
-          className="text-sm text-textSecondary hover:text-textPrimary underline pb-2"
-        >
-          Limpiar filtros
-        </button>
+    <div className="pb-7 mb-8 border-b border-border">
+      {/* El filtro por entidad no tiene selector: son más de 5.000 y no cabrían
+          en una lista. Se activa al llegar desde otra pantalla, así que aquí
+          solo se muestra y se puede quitar. */}
+      {filters.entity && (
+        <div className="flex items-center gap-3 mb-5">
+          <span className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+            Entidad
+          </span>
+          <span className="inline-flex items-center gap-2 border border-textPrimary px-3 py-1.5 text-[14px]">
+            <span className="text-textPrimary">{filters.entity}</span>
+            <button
+              onClick={() => setFilter('entity', '')}
+              className="text-textSecondary hover:text-textPrimary text-base leading-none"
+              aria-label="Quitar filtro de entidad"
+            >
+              ×
+            </button>
+          </span>
+        </div>
       )}
+
+      <div className="flex flex-wrap items-end gap-5">
+        <Select
+          label="Departamento"
+          value={filters.department}
+          onChange={(v) => setFilter('department', v)}
+          options={departamentos.data || []}
+          loading={departamentos.isLoading}
+          placeholder="Todo Colombia"
+        />
+        <Select
+          label="Ciudad"
+          value={filters.city}
+          onChange={(v) => setFilter('city', v)}
+          options={ciudades.data || []}
+          loading={ciudades.isLoading}
+          placeholder="Todas las ciudades"
+          disabled={!filters.department}
+        />
+        {hasFilters && (
+          <button
+            onClick={clearFilters}
+            className="text-sm text-textSecondary hover:text-textPrimary underline pb-2"
+          >
+            Limpiar filtros
+          </button>
+        )}
+      </div>
     </div>
   )
 }

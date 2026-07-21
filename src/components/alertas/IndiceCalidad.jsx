@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { QueryState } from '../ui/QueryState'
 import { DataTable } from '../ui/DataTable'
 import { Methodology } from '../ui/Methodology'
@@ -18,6 +19,28 @@ import { formatPct } from '../../lib/formatters'
 //    un error entre tres registros.
 // 3. Muestra los dos extremos. Reconocer a quien registra bien es tan útil como
 //    señalar a quien no, y evita que la sección se lea como una lista negra.
+// Cada conteo es un enlace a los contratos que lo componen: la pestaña de ese
+// defecto, filtrada por la entidad. Sin esto la tabla afirma "264 contratos sin
+// contratista" y deja al lector sin forma de comprobarlo, que es justo lo que
+// esta plataforma le reprocha a las cifras oficiales.
+function columnaDefecto(clave, encabezado, pestana) {
+  return {
+    key: clave,
+    header: encabezado,
+    className: 'text-right tabular-nums',
+    render: (fila) => {
+      const n = fila[clave]
+      if (!n) return <span className="text-textSecondary">0</span>
+      const destino = `/errores?t=${pestana}&entidad=${encodeURIComponent(fila.entidad)}`
+      return (
+        <Link to={destino} className="text-textPrimary enlace-sutil font-medium">
+          {n.toLocaleString('es-CO')}
+        </Link>
+      )
+    },
+  }
+}
+
 export function IndiceCalidad() {
   const { filters } = useFilters()
   const [extremo, setExtremo] = useState('peor')
@@ -63,24 +86,9 @@ export function IndiceCalidad() {
         )
       },
     },
-    {
-      key: 'sinContratista',
-      header: 'Sin contratista',
-      className: 'text-right tabular-nums',
-      render: (r) => r.sinContratista.toLocaleString('es-CO'),
-    },
-    {
-      key: 'fechas',
-      header: 'Fechas imposibles',
-      className: 'text-right tabular-nums',
-      render: (r) => r.fechas.toLocaleString('es-CO'),
-    },
-    {
-      key: 'sinValor',
-      header: 'En $0 con CDP',
-      className: 'text-right tabular-nums',
-      render: (r) => r.sinValor.toLocaleString('es-CO'),
-    },
+    columnaDefecto('sinContratista', 'Sin contratista', 'sincontratista'),
+    columnaDefecto('fechas', 'Fechas imposibles', 'fechas'),
+    columnaDefecto('sinValor', 'En $0 con CDP', 'sinvalor'),
   ]
 
   return (
@@ -124,8 +132,10 @@ export function IndiceCalidad() {
         Un contrato cuenta <strong>una sola vez</strong> aunque acumule varios defectos.
         Se miden tres problemas objetivos, verificables sin interpretar nada: contratista
         sin identificación, fecha de fin anterior a la de inicio, y valor en $0 pese a
-        tener presupuesto comprometido. Cada uno tiene su pestaña con los contratos
-        concretos.
+        tener presupuesto comprometido.{' '}
+        <strong>
+          Haz clic en cualquier conteo para ver los contratos concretos de esa entidad.
+        </strong>
         <br />
         <br />
         <strong>No incluimos los contratos vencidos sin cerrar</strong>, que son 874.112

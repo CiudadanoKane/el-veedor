@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom'
 
 const FiltersContext = createContext(null)
 
+const PARAMS = { department: 'departamento', city: 'ciudad', entity: 'entidad' }
+
 export function FiltersProvider({ children }) {
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -10,6 +12,7 @@ export function FiltersProvider({ children }) {
     () => ({
       department: searchParams.get('departamento') || '',
       city: searchParams.get('ciudad') || '',
+      entity: searchParams.get('entidad') || '',
     }),
     [searchParams],
   )
@@ -19,7 +22,8 @@ export function FiltersProvider({ children }) {
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev)
-          const param = key === 'department' ? 'departamento' : 'ciudad'
+          const param = PARAMS[key]
+          if (!param) return next
           if (value) next.set(param, value)
           else next.delete(param)
           // Si cambia el departamento, limpiar ciudad
@@ -32,14 +36,13 @@ export function FiltersProvider({ children }) {
     [setSearchParams],
   )
 
-  // Limpia la ubicación y nada más. Borrar la URL entera se llevaba por delante
+  // Limpia los filtros y nada más. Borrar la URL entera se llevaba por delante
   // el estado de otros módulos que también viaja ahí, como la búsqueda.
   const clearFilters = useCallback(() => {
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev)
-        next.delete('departamento')
-        next.delete('ciudad')
+        for (const param of Object.values(PARAMS)) next.delete(param)
         return next
       },
       { replace: true },
