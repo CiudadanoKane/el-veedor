@@ -82,10 +82,10 @@ export function Sidebar({ abierto, onCerrar }) {
           {[
             // "Cómo funciona" sonaba a manual de uso, y "Reportar un error" a
             // reporte técnico. Ninguna de las dos es eso: una es la metodología
-            // con sus límites declarados, y la otra el canal para que un tercero
-            // nos corrija.
+            // con sus límites declarados, y la otra un canal abierto — llegan
+            // correcciones, pero también sugerencias, preguntas y desacuerdos.
             ['/transparencia', 'Metodología y límites'],
-            ['/reportar', 'Corrígenos'],
+            ['/reportar', 'Escríbenos'],
           ].map(([ruta, etiqueta]) => (
             <NavLink
               key={ruta}

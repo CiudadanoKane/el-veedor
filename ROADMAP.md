@@ -152,8 +152,22 @@ reales y —lo más importante— **qué le impide saber a un ciudadano**. Ejemp
 "2.134 contratos con presupuesto asignado no aparecen en ninguna estadística de
 gasto público".
 
-**b. Índice de calidad de datos por entidad.** El corazón de la sección: convierte
-la queja técnica en rendición de cuentas con nombre propio.
+**b. Índice de calidad de datos por entidad.** ✅ Construido. Convierte la queja
+técnica en rendición de cuentas con nombre propio.
+
+Línea base nacional: **0,33%** de los contratos tiene algún defecto de registro
+(17.698 de 5.305.844). Esa cifra es la vara: lo que llama la atención no es
+tener errores sino estar muy por encima del resto.
+
+Hallazgo notable: **Colombia Compra Eficiente** — la agencia que administra
+SECOP — aparece tercera por peor registro, con 6,12%, dieciocho veces la media
+nacional. Refuerza el punto (d) de más abajo: el problema no es solo de las
+entidades que registran, sino del sistema que recibe.
+
+En el otro extremo, las direcciones territoriales del DANE sostienen **cero
+defectos en más de 19.000 contratos**.
+
+Criterios aplicados:
 - Medir **tasas, no conteos** (verificado: las entidades grandes tienen tasas
   bajísimas, ~0,07%; un ranking por conteo solo mostraría a las que más contratan)
 - **Umbral mínimo de contratos** para no castigar a entidades pequeñas

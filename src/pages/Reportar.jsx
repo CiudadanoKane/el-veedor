@@ -13,6 +13,7 @@ const TIPOS = [
   'Un contrato aparece mal clasificado',
   'Algo no funciona en la página',
   'Sugerencia de mejora',
+  'Una pregunta',
   'Otro',
 ]
 
@@ -108,8 +109,8 @@ export function Reportar() {
   return (
     <div>
       <PageHeader
-        title="Corrígenos"
-        subtitle="Es probable que en algo estemos equivocados. Que puedas corregirnos no es una debilidad de la plataforma: es lo que la hace confiable."
+        title="Escríbenos"
+        subtitle="Correcciones, sugerencias, preguntas o desacuerdos con la metodología. Es probable que en algo estemos equivocados, y que puedas decírnoslo no es una debilidad de la plataforma: es lo que la hace confiable."
       />
 
       {!CLAVE_FORMULARIO ? (

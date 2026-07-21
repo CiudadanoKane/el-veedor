@@ -1,4 +1,5 @@
 import { SeccionConPestanas } from '../components/alertas/SeccionConPestanas'
+import { IndiceCalidad } from '../components/alertas/IndiceCalidad'
 import {
   AlertaSinContratista,
   AlertaFechasInconsistentes,
@@ -14,6 +15,9 @@ import {
 // formulario. Son problemas de naturaleza diferente y con responsables
 // diferentes.
 const ERRORES = [
+  // El índice va primero: es la lectura de conjunto, y las pestañas siguientes
+  // son los casos concretos que lo sustentan.
+  { id: 'indice', label: 'Índice por entidad', Componente: IndiceCalidad },
   { id: 'sincontratista', label: 'Sin contratista identificado', Componente: AlertaSinContratista },
   { id: 'fechas', label: 'Fechas imposibles', Componente: AlertaFechasInconsistentes },
   { id: 'sinvalor', label: 'Contratos sin valor', Componente: AlertaContratosSinValor },
