@@ -119,32 +119,40 @@ SoQL devuelve el valor alfabéticamente último, no el más frecuente. La Previs
 (6 contratos) y como persona natural, porque 4 registros dicen `Otro` y eso gana
 sobre `NIT` al ordenar. Ver `valorMasFrecuente` en `src/lib/identidad.js`.
 
-**Índice de ejecución del contratista** (pendiente). A diferencia del registro,
-la ejecución **sí** depende del contratista, así que aquí el índice tiene
-sentido. Medir:
+**Índice de ejecución del contratista** ✅ — pestaña "Cómo ejecutan" en Rankings.
 
-- Cumplimiento de plazos: % de sus contratos vencidos sin evidencia de cierre, y
-  días de atraso ponderados por cuantía (atrasar una obra de $50 mil millones no
-  es igual que un contrato de $5 millones)
-- Calidad de la planeación: % de contratos que necesitaron adición de plazo, y
-  su magnitud típica. Si a todos les añaden 80% de tiempo, el problema no fue
-  una obra difícil sino cómo se dimensionó
-- Adición de tiempo **y** de presupuesto a la vez: la señal más fuerte de que lo
-  pactado no era realista
+Mide **prórrogas de plazo**, y esa elección salió de comparar las dos
+alternativas con datos antes de construir:
+
+| Métrica candidata | Entidades de los 20 peores |
+|---|---|
+| Vencido y nunca cerrado | **5 de 20 trabajan con una sola** |
+| Necesitó prórroga | los primeros abarcan 23, 35, 57 |
+
+Cerrar un contrato en SECOP es un acto de la entidad, así que la primera medía
+la costumbre de quien registra y no el desempeño de quien ejecuta — habría sido
+el mismo error de atribución del caso Vaupés. Una prórroga es un acuerdo
+bilateral sobre el trabajo, y repetirlo frente a decenas de contratantes ya no
+se explica por la costumbre de uno solo.
+
+Línea base nacional: **13,5%** de los contratos evaluables necesitó prórroga y
+**0,89%** se prorrogó por más tiempo del pactado.
+
+Precauciones aplicadas: universo evaluable de 4.727.389 contratos (89% del
+total) tras descartar fechas imposibles, contratos sin cuantía y prórrogas
+mayores a diez años; umbral de 50 contratos; orden por tasa; y una columna de
+"entidades distintas" con la instrucción explícita de mirarla siempre, porque un
+patrón frente a una o dos entidades dice más de esa relación que del contratista.
+
+Pendiente de este índice:
+
+- **Adición de tiempo y de presupuesto a la vez**, la señal más fuerte de que lo
+  pactado no era realista. Requiere cruzar con el dataset de Procesos, que no se
+  puede agregar por contratista en una sola consulta — la misma limitación que
+  deja los valores implausibles fuera del índice de entidades.
 - Ejecución financiera: % del valor que quedó sin ejecutar en contratos vencidos
-
-**Precauciones acordadas, y no son opcionales:**
-
-- **No incluir datos basura.** El atraso solo se puede medir sobre contratos con
-  fechas y valores plausibles. Un contrato con fecha de fin en el año 205 o valor
-  ×1.000 mal digitado produciría un atraso falso, y el contratista cargaría con
-  un error de la entidad. Filtrar antes de medir, como en mora.
-- Umbral mínimo de contratos: con uno solo atrasado la tasa da 100%.
-- Ordenar por tasa, nunca por conteo.
-- **Declarar que el atraso puede no ser suyo:** predios sin entregar, licencias
-  que no salen, pagos que la entidad no gira. Conviene mostrar junto a cada
-  contratista **con qué entidades** ocurre — si se atrasa con todas, apunta a él;
-  si solo con una, apunta a esa relación.
+- Ponderar el atraso por cuantía: atrasar una obra de $50 mil millones no es
+  igual que un contrato de $5 millones
 
 Otros pendientes:
 - Señales adicionales: crecimiento anómalo año a año

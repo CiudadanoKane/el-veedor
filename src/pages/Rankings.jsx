@@ -6,6 +6,7 @@ import { QueryState } from '../components/ui/QueryState'
 import { DataTable } from '../components/ui/DataTable'
 import { Methodology } from '../components/ui/Methodology'
 import { Segmented } from '../components/ui/Segmented'
+import { IndiceEjecucion } from '../components/alertas/IndiceEjecucion'
 import { useFilters } from '../context/FiltersContext'
 import { useRankingContratistas, useRankingEntidades } from '../hooks/useRankings'
 import { formatCOP } from '../lib/formatters'
@@ -202,7 +203,7 @@ export function Rankings() {
     <div className="space-y-6">
       <PageHeader
         title="Rankings"
-        subtitle="¿Quién recibe más recursos públicos y quién los entrega?"
+        subtitle="Quién recibe más recursos públicos, quién los entrega, y cómo se ejecuta lo contratado."
       />
       <GlobalFilters />
 
@@ -211,18 +212,17 @@ export function Rankings() {
           value={tab}
           onChange={setTab}
           options={[
-            { value: 'contratistas', label: 'Contratistas' },
-            { value: 'entidades', label: 'Entidades' },
+            { value: 'contratistas', label: 'Quién recibe más' },
+            { value: 'entidades', label: 'Quién entrega más' },
+            { value: 'ejecucion', label: 'Cómo ejecutan' },
           ]}
         />
       </div>
 
       <div className="border-b border-border pb-8">
-        {tab === 'contratistas' ? (
-          <RankingContratistas filters={filters} />
-        ) : (
-          <RankingEntidades filters={filters} />
-        )}
+        {tab === 'contratistas' && <RankingContratistas filters={filters} />}
+        {tab === 'entidades' && <RankingEntidades filters={filters} />}
+        {tab === 'ejecucion' && <IndiceEjecucion />}
       </div>
     </div>
   )
