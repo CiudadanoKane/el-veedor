@@ -38,12 +38,11 @@ export function StatCard({
         )}
       </div>
 
-      {/* Fila 2: la cifra.
-          Reserva la altura de dos líneas siempre. Cifras como "$891,6 billones"
-          no caben en el ancho de una columna y bajan la palabra a un segundo
-          renglón; sin esta reserva, esa tarjeta empujaba su propio contenido y
-          rompía la alineación horizontal de toda la fila. */}
-      <div className="flex items-start pt-3 min-h-[4.25rem] xl:min-h-[5rem]">
+      {/* Fila 2: la cifra, a una sola línea.
+          Las cifras largas se abrevian en el origen (ver formatCOPCorto) en vez
+          de reservar aquí la altura de dos renglones: reservar espacio que casi
+          nunca se usa separa las tarjetas de su contexto sin necesidad. */}
+      <div className="flex items-start pt-3 min-h-[2.5rem] xl:min-h-[2.875rem]">
         {loading ? (
           <div className="h-8 w-32 bg-muted animate-pulse" />
         ) : (

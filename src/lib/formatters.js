@@ -25,6 +25,30 @@ export function formatCOP(value) {
   return COP.format(value)
 }
 
+// Versión abreviada, solo para las cifras destacadas del Panorama.
+//
+// "$891,6 billones" no cabe en el ancho de una columna y parte la palabra en un
+// segundo renglón, lo que desalinea la fila entera de tarjetas. Con la letra
+// cabe de sobra y no hay que reservar altura para dos líneas.
+//
+// Usa una letra por escala: B para billones, M para millones. No abrevia el
+// tramo intermedio de "mil millones" porque inventar una unidad como "mM"
+// obligaría al lector a descifrarla. Ese tramo se expresa en millones —
+// "$182.555,7 M"— que es largo pero cabe en una línea y no pierde precisión.
+// Expresarlo en billones daría "$0,2 B", que ahorra espacio a costa de volver
+// ilegible la cifra de un departamento entero.
+//
+// En todo lo demás —tablas, listas, perfiles, texto corrido— se sigue usando
+// formatCOP con la palabra completa, que es más legible y ahí sí hay espacio.
+export function formatCOPCorto(value) {
+  if (value == null) return '—'
+  const abs = Math.abs(value)
+  if (abs >= 1e12) return `$${es(value / 1e12)} B`
+  if (abs >= 1e6) return `$${es(value / 1e6)} M`
+  if (abs >= 1e3) return `$${es(value / 1e3, 0)} k`
+  return COP.format(value)
+}
+
 export function formatCOPFull(value) {
   if (value == null) return '—'
   return COP.format(value)

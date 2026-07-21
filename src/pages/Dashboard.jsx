@@ -10,7 +10,7 @@ import { MapaColombia } from '../components/ui/MapaColombia'
 import { useFilters } from '../context/FiltersContext'
 import { useDashboardStats } from '../hooks/useDashboard'
 import { useColumnas } from '../hooks/useColumnas'
-import { formatCOP, formatCOPFull, pct, formatPct } from '../lib/formatters'
+import { formatCOP, formatCOPCorto, formatCOPFull, pct, formatPct } from '../lib/formatters'
 import { SECTOR_COLORS } from '../lib/chartTheme'
 
 // Panel que se despliega bajo la fila de la cifra que lo originó.
@@ -111,7 +111,7 @@ export function Dashboard() {
       nodo: (
         <StatCard
           label="Valor comprometido"
-          value={formatCOP(generales.data?.valor)}
+          value={formatCOPCorto(generales.data?.valor)}
           sub={formatCOPFull(generales.data?.valor)}
           tone="primary"
           loading={generales.isLoading}
@@ -142,9 +142,15 @@ export function Dashboard() {
       nodo: (
         <StatCard
           label="Valor en riesgo"
-          value={formatCOP(mora.data?.riesgo)}
+          value={formatCOPCorto(mora.data?.riesgo)}
           pct={pctRiesgo ? `${pctRiesgo} del comprometido` : null}
-          sub="Pendiente de ejecución en contratos vencidos"
+          // La forma con la palabra completa va debajo: la abreviatura resuelve
+          // el ancho, pero no debería ser lo único que el lector recibe.
+          sub={
+            mora.data?.riesgo
+              ? `${formatCOP(mora.data.riesgo)} pendientes de ejecución en contratos vencidos`
+              : 'Pendiente de ejecución en contratos vencidos'
+          }
           tone="warning"
           loading={mora.isLoading || generales.isLoading}
           onToggle={() => alternar('riesgo')}
