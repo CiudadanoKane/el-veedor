@@ -92,6 +92,11 @@ function RankingContratistas({ filters }) {
         />
       </Encabezado>
 
+      <p className="text-[14.5px] text-textSecondary font-light -mt-1 mb-4 max-w-2xl leading-relaxed">
+        Haz clic en el nombre de un contratista para ver su perfil: con qué entidades
+        contrata, cómo se le adjudica y su historial completo.
+      </p>
+
       <Methodology>
         Agrupamos por <code>documento_proveedor</code> (NIT/cédula), nunca por nombre —
         los nombres no están normalizados en SECOP ("XYZ SAS" ≠ "X.Y.Z. S.A.S.").

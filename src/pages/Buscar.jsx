@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../components/layout/Layout'
 import { GlobalFilters } from '../components/layout/GlobalFilters'
 import { QueryState } from '../components/ui/QueryState'
@@ -116,7 +116,24 @@ export function Buscar() {
         </div>
       ),
     },
-    { key: 'contractorName', header: 'Contratista', render: (r) => r.contractorName || '—' },
+    {
+      key: 'contractorName',
+      header: 'Contratista',
+      // La fila entera despliega el detalle del contrato, así que el enlace al
+      // perfil tiene que frenar el clic para no hacer las dos cosas a la vez.
+      render: (r) =>
+        r.contractorName && r.contractorId && r.contractorId !== 'No Definido' ? (
+          <Link
+            to={`/contratista/${encodeURIComponent(r.contractorId)}`}
+            onClick={(e) => e.stopPropagation()}
+            className="text-textPrimary enlace-sutil"
+          >
+            {r.contractorName}
+          </Link>
+        ) : (
+          r.contractorName || '—'
+        ),
+    },
     {
       key: 'contractValue',
       header: 'Valor',

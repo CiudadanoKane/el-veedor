@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { Fragment, useState, useCallback, useMemo } from 'react'
 import { PageHeader } from '../components/layout/Layout'
 import { GlobalFilters } from '../components/layout/GlobalFilters'
 import { StatCard } from '../components/ui/StatCard'
@@ -9,13 +9,14 @@ import { EvolucionMensual } from '../components/ui/EvolucionMensual'
 import { MapaColombia } from '../components/ui/MapaColombia'
 import { useFilters } from '../context/FiltersContext'
 import { useDashboardStats } from '../hooks/useDashboard'
+import { useColumnas } from '../hooks/useColumnas'
 import { formatCOP, formatCOPFull, pct, formatPct } from '../lib/formatters'
 import { SECTOR_COLORS } from '../lib/chartTheme'
 
-// Panel que se despliega bajo la fila de cifras.
+// Panel que se despliega bajo la fila de la cifra que lo originó.
 function Detalle({ titulo, intro, metodologia, children }) {
   return (
-    <section className="border-t-2 border-textPrimary pt-5 pb-8">
+    <section className="border-t-2 border-textPrimary pt-5 pb-2">
       <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] leading-tight">
         {titulo}
       </h2>
@@ -34,16 +35,14 @@ export function Dashboard() {
   const { filters } = useFilters()
   // Acordeón: una sola cifra desplegada a la vez. Abrir otra cierra la anterior.
   const [activa, setActiva] = useState(null)
+  const columnas = useColumnas()
 
   const alternar = useCallback((clave) => {
     setActiva((prev) => (prev === clave ? null : clave))
   }, [])
 
   // El hook recibe un conjunto para decidir qué consultas disparar
-  const abiertas = useMemo(
-    () => new Set(activa ? [activa] : []),
-    [activa],
-  )
+  const abiertas = useMemo(() => new Set(activa ? [activa] : []), [activa])
 
   const {
     generales, actores, porEstado, mora, vencidosPorAntiguedad, ejecucionVencidos,
@@ -66,16 +65,12 @@ export function Dashboard() {
 
   const abierta = (k) => activa === k
 
-  return (
-    <div>
-      <PageHeader
-        title="Panorama de la contratación"
-        subtitle={`¿Cómo está contratando ${scope} hoy? Cada cifra se puede desplegar para ver de dónde sale.`}
-      />
-      <GlobalFilters />
-
-      {/* Cifras clave: cada una es la puerta de entrada a su detalle */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-8 mb-10">
+  // Las tarjetas van en una lista para poder intercalar el detalle en la
+  // posición correcta. Las dos últimas no despliegan nada.
+  const tarjetas = [
+    {
+      clave: 'contratos',
+      nodo: (
         <StatCard
           label="Contratos registrados"
           value={generales.data?.total?.toLocaleString('es-CO') ?? '—'}
@@ -85,6 +80,11 @@ export function Dashboard() {
           abierta={abierta('contratos')}
           detalle="Ver composición"
         />
+      ),
+    },
+    {
+      clave: 'valor',
+      nodo: (
         <StatCard
           label="Valor comprometido"
           value={formatCOP(generales.data?.valor)}
@@ -95,6 +95,11 @@ export function Dashboard() {
           abierta={abierta('valor')}
           detalle="Ver por sector"
         />
+      ),
+    },
+    {
+      clave: 'vencidos',
+      nodo: (
         <StatCard
           label="Vencidos hace poco"
           value={ant?.recientes?.toLocaleString('es-CO') ?? '—'}
@@ -106,6 +111,11 @@ export function Dashboard() {
           abierta={abierta('vencidos')}
           detalle="Ver antigüedad"
         />
+      ),
+    },
+    {
+      clave: 'riesgo',
+      nodo: (
         <StatCard
           label="Valor en riesgo"
           value={formatCOP(mora.data?.riesgo)}
@@ -117,6 +127,11 @@ export function Dashboard() {
           abierta={abierta('riesgo')}
           detalle="Ver ejecución"
         />
+      ),
+    },
+    {
+      clave: 'competencia',
+      nodo: (
         <StatCard
           label="Sin competencia"
           value={pctDirecta ?? '—'}
@@ -131,241 +146,280 @@ export function Dashboard() {
           abierta={abierta('competencia')}
           detalle="Ver modalidades"
         />
+      ),
+    },
+    {
+      clave: null,
+      nodo: (
         <StatCard
           label="Entidades contratantes"
           value={actores.data?.entidades?.toLocaleString('es-CO') ?? '—'}
           sub="Organismos públicos que firmaron contratos"
           loading={actores.isLoading}
         />
+      ),
+    },
+    {
+      clave: null,
+      nodo: (
         <StatCard
           label="Contratistas"
           value={actores.data?.contratistas?.toLocaleString('es-CO') ?? '—'}
           sub="Personas y empresas distintas, contadas por NIT o cédula"
           loading={actores.isLoading}
         />
-      </div>
+      ),
+    },
+  ]
 
-      {/* Detalle desplegado (uno a la vez), pegado a las cifras que lo originan */}
-      <div className="space-y-2">
-        {abierta('contratos') && (
-          <Detalle
-            titulo="¿En qué estado están esos contratos?"
-            intro="El total agrupa contratos en etapas distintas. Solo los que están en ejecución pueden tener el plazo vencido."
-            metodologia={
-              <>
-                Quedan excluidos de todas las cifras los <strong>borradores</strong>,{' '}
-                <strong>cancelados</strong> y los que siguen en trámite de aprobación,
-                porque no representan contratación real. Los cancelados por sí solos
-                sumaban $1.156 billones e inflaban el valor nacional en más del 130%.
-              </>
-            }
-          >
-            <QueryState query={porEstado} empty="Sin datos de estados.">
-              {(data) => (
-                <ListaBarra
-                  apilada
-                  colores={SECTOR_COLORS}
-                  items={data.lista.map((e) => ({
-                    clave: e.estado,
-                    label: e.estado,
-                    valor: e.n,
-                    secundario: formatCOP(e.valor),
-                  }))}
-                />
-              )}
-            </QueryState>
-          </Detalle>
-        )}
+  const detalles = {
+    contratos: (
+      <Detalle
+        titulo="¿En qué estado están esos contratos?"
+        intro="El total agrupa contratos en etapas distintas. Solo los que están en ejecución pueden tener el plazo vencido."
+        metodologia={
+          <>
+            Quedan excluidos de todas las cifras los <strong>borradores</strong>,{' '}
+            <strong>cancelados</strong> y los que siguen en trámite de aprobación,
+            porque no representan contratación real. Los cancelados por sí solos
+            sumaban $1.156 billones e inflaban el valor nacional en más del 130%.
+          </>
+        }
+      >
+        <QueryState query={porEstado} empty="Sin datos de estados.">
+          {(data) => (
+            <ListaBarra
+              apilada
+              colores={SECTOR_COLORS}
+              items={data.lista.map((e) => ({
+                clave: e.estado,
+                label: e.estado,
+                valor: e.n,
+                secundario: formatCOP(e.valor),
+              }))}
+            />
+          )}
+        </QueryState>
+      </Detalle>
+    ),
 
-        {abierta('valor') && (
-          <Detalle
-            titulo="Distribución de valor por sector"
-            intro="En qué áreas del Estado se concentra el dinero comprometido."
-            metodologia={
-              <>
-                "Sector" corresponde a la estructura del gobierno <strong>nacional</strong>.
-                Las entidades <strong>territoriales</strong> (alcaldías y gobernaciones) no
-                pertenecen a un sector nacional, por lo que figuran como "No aplica/No
-                pertenece" — cerca del 87% de ese grupo. No es un dato faltante: buena
-                parte de la contratación pública ocurre a nivel municipal y departamental.
-              </>
-            }
-          >
-            <QueryState query={porSector} empty="Sin datos de sector.">
-              {(data) => (
-                <ListaBarra
-                  apilada
-                  colores={SECTOR_COLORS}
-                  items={data.map((s) => ({
-                    clave: s.name,
-                    label: s.name,
-                    valor: s.value,
-                    valorTexto: formatCOP(s.value),
-                    // La categoría más confusa se explica en su propia fila,
-                    // no en una nota al pie que nadie lee.
-                    nota: /no aplica|no pertenece/i.test(s.name)
-                      ? 'No es un dato faltante: "sector" es una estructura del gobierno nacional, y las alcaldías y gobernaciones no pertenecen a ninguno. Cerca del 87% de este grupo son entidades territoriales.'
-                      : undefined,
-                  }))}
-                />
-              )}
-            </QueryState>
-          </Detalle>
-        )}
+    valor: (
+      <Detalle
+        titulo="Distribución de valor por sector"
+        intro="En qué áreas del Estado se concentra el dinero comprometido."
+        metodologia={
+          <>
+            "Sector" corresponde a la estructura del gobierno <strong>nacional</strong>.
+            Las entidades <strong>territoriales</strong> (alcaldías y gobernaciones) no
+            pertenecen a un sector nacional, por lo que figuran como "No aplica/No
+            pertenece" — cerca del 87% de ese grupo. No es un dato faltante: buena
+            parte de la contratación pública ocurre a nivel municipal y departamental.
+          </>
+        }
+      >
+        <QueryState query={porSector} empty="Sin datos de sector.">
+          {(data) => (
+            <ListaBarra
+              apilada
+              colores={SECTOR_COLORS}
+              items={data.map((s) => ({
+                clave: s.name,
+                label: s.name,
+                valor: s.value,
+                valorTexto: formatCOP(s.value),
+                // La categoría más confusa se explica en su propia fila,
+                // no en una nota al pie que nadie lee.
+                nota: /no aplica|no pertenece/i.test(s.name)
+                  ? 'No es un dato faltante: "sector" es una estructura del gobierno nacional, y las alcaldías y gobernaciones no pertenecen a ninguno. Cerca del 87% de este grupo son entidades territoriales.'
+                  : undefined,
+              }))}
+            />
+          )}
+        </QueryState>
+      </Detalle>
+    ),
 
-        {abierta('competencia') && (
-          <Detalle
-            titulo="¿Cómo se escoge a quién contrata el Estado?"
-            intro="Cuánto se adjudica por concurso y cuánto de forma directa."
-            metodologia={
-              <>
-                Contamos como <strong>sin competencia</strong> las modalidades
-                "Contratación directa" y "Contratación Directa (con ofertas)": ahí la
-                entidad escoge al contratista sin un concurso abierto.{' '}
-                <strong>Que sea directa no la hace irregular</strong> — la ley la permite
-                para servicios profesionales, urgencias y otros casos. Lo que importa es
-                su <em>peso relativo</em>: cuando tres de cada cuatro contratos del país
-                se adjudican así, vale la pena preguntarse por qué. La "urgencia
-                manifiesta" no aparece como modalidad propia en SECOP II: es una causal
-                dentro de la contratación directa.
-              </>
-            }
-          >
-            <QueryState query={porModalidad} empty="Sin datos de modalidad.">
-              {(data) => (
-                <ListaBarra
-                  apilada
-                  colores={SECTOR_COLORS}
-                  items={data.map((m) => ({
-                    clave: m.modalidad,
-                    label: m.modalidad,
-                    valor: m.n,
-                    secundario: formatCOP(m.valor),
-                    nota: /directa/i.test(m.modalidad)
-                      ? 'Sin concurso abierto: la entidad escoge al contratista'
-                      : undefined,
-                  }))}
-                />
-              )}
-            </QueryState>
-          </Detalle>
-        )}
+    competencia: (
+      <Detalle
+        titulo="¿Cómo se escoge a quién contrata el Estado?"
+        intro="Cuánto se adjudica por concurso y cuánto de forma directa."
+        metodologia={
+          <>
+            Contamos como <strong>sin competencia</strong> las modalidades
+            "Contratación directa" y "Contratación Directa (con ofertas)": ahí la
+            entidad escoge al contratista sin un concurso abierto.{' '}
+            <strong>Que sea directa no la hace irregular</strong> — la ley la permite
+            para servicios profesionales, urgencias y otros casos. Lo que importa es
+            su <em>peso relativo</em>: cuando tres de cada cuatro contratos del país
+            se adjudican así, vale la pena preguntarse por qué. La "urgencia
+            manifiesta" no aparece como modalidad propia en SECOP II: es una causal
+            dentro de la contratación directa.
+          </>
+        }
+      >
+        <QueryState query={porModalidad} empty="Sin datos de modalidad.">
+          {(data) => (
+            <ListaBarra
+              apilada
+              colores={SECTOR_COLORS}
+              items={data.map((m) => ({
+                clave: m.modalidad,
+                label: m.modalidad,
+                valor: m.n,
+                secundario: formatCOP(m.valor),
+                nota: /directa/i.test(m.modalidad)
+                  ? 'Sin concurso abierto: la entidad escoge al contratista'
+                  : undefined,
+              }))}
+            />
+          )}
+        </QueryState>
+      </Detalle>
+    ),
 
-        {abierta('vencidos') && (
-          <Detalle
-            titulo="¿Cuántos están realmente retrasados?"
-            intro={
-              mora.data?.total && enEjecucion
-                ? `${mora.data.total.toLocaleString('es-CO')} contratos (${pctVencidos} de los vigentes) tienen el plazo vencido — pero no todos son retrasos reales.`
-                : 'Distribución de los contratos con plazo vencido según su antigüedad.'
-            }
-            metodologia={
-              <>
-                Un contrato figura con <strong>plazo vencido</strong> si su estado es "En
-                ejecución" y su fecha de fin ya pasó. Pero eso mezcla dos situaciones muy
-                distintas: uno vencido hace un mes probablemente está genuinamente
-                retrasado, mientras que uno vencido hace cinco años casi con certeza{' '}
-                <strong>ya terminó y la entidad nunca actualizó el registro</strong>. Por
-                eso la cifra destacada arriba usa solo los vencidos en los últimos 6 meses:
-                sumarlo todo bajo la etiqueta "mora" sería exagerar.
-              </>
-            }
-          >
-            <QueryState query={vencidosPorAntiguedad} empty="Sin contratos con plazo vencido.">
-              {(data) => (
-                <ListaBarra
-                  items={[
-                    {
-                      clave: 'recientes',
-                      label: 'Vencidos hace menos de 6 meses',
-                      valor: data.recientes,
-                      color: 'rgb(var(--c-danger))',
-                      nota: 'Muy probablemente retrasos reales y activos',
-                    },
-                    {
-                      clave: 'medios',
-                      label: 'Vencidos entre 6 meses y 1 año',
-                      valor: data.medios,
-                      color: 'rgb(var(--c-warning))',
-                      nota: 'Zona mixta: retrasos largos o registros rezagados',
-                    },
-                    {
-                      clave: 'antiguos',
-                      label: 'Vencidos hace más de 1 año',
-                      valor: data.antiguos,
-                      color: 'rgb(var(--c-text-soft))',
-                      nota: 'Casi siempre contratos terminados que nadie cerró en SECOP',
-                    },
-                  ]}
-                />
-              )}
-            </QueryState>
+    vencidos: (
+      <Detalle
+        titulo="¿Cuántos están realmente retrasados?"
+        intro={
+          mora.data?.total && enEjecucion
+            ? `${mora.data.total.toLocaleString('es-CO')} contratos (${pctVencidos} de los vigentes) tienen el plazo vencido — pero no todos son retrasos reales.`
+            : 'Distribución de los contratos con plazo vencido según su antigüedad.'
+        }
+        metodologia={
+          <>
+            Un contrato figura con <strong>plazo vencido</strong> si su estado es "En
+            ejecución" y su fecha de fin ya pasó. Pero eso mezcla dos situaciones muy
+            distintas: uno vencido hace un mes probablemente está genuinamente
+            retrasado, mientras que uno vencido hace cinco años casi con certeza{' '}
+            <strong>ya terminó y la entidad nunca actualizó el registro</strong>. Por
+            eso la cifra destacada arriba usa solo los vencidos en los últimos 6 meses:
+            sumarlo todo bajo la etiqueta "mora" sería exagerar.
+          </>
+        }
+      >
+        <QueryState query={vencidosPorAntiguedad} empty="Sin contratos con plazo vencido.">
+          {(data) => (
+            <ListaBarra
+              items={[
+                {
+                  clave: 'recientes',
+                  label: 'Vencidos hace menos de 6 meses',
+                  valor: data.recientes,
+                  color: 'rgb(var(--c-danger))',
+                  nota: 'Muy probablemente retrasos reales y activos',
+                },
+                {
+                  clave: 'medios',
+                  label: 'Vencidos entre 6 meses y 1 año',
+                  valor: data.medios,
+                  color: 'rgb(var(--c-warning))',
+                  nota: 'Zona mixta: retrasos largos o registros rezagados',
+                },
+                {
+                  clave: 'antiguos',
+                  label: 'Vencidos hace más de 1 año',
+                  valor: data.antiguos,
+                  color: 'rgb(var(--c-text-soft))',
+                  nota: 'Casi siempre contratos terminados que nadie cerró en SECOP',
+                },
+              ]}
+            />
+          )}
+        </QueryState>
 
-            <h3 className="font-display font-extrabold text-[1.05rem] tracking-[-0.02em] mt-8 mb-3">
-              Entidades con más contratos vencidos
-            </h3>
-            <QueryState query={entidadesMora} empty="Sin contratos vencidos.">
-              {(data) => (
-                <ListaBarra
-                  items={data.map((e) => ({
-                    clave: e.entidad,
-                    label: e.entidad,
-                    valor: e.n,
-                    secundario: `${formatCOP(e.riesgo)} en riesgo`,
-                  }))}
-                />
-              )}
-            </QueryState>
-          </Detalle>
-        )}
+        <h3 className="font-display font-extrabold text-[1.05rem] tracking-[-0.02em] mt-8 mb-3">
+          Entidades con más contratos vencidos
+        </h3>
+        <QueryState query={entidadesMora} empty="Sin contratos vencidos.">
+          {(data) => (
+            <ListaBarra
+              items={data.map((e) => ({
+                clave: e.entidad,
+                label: e.entidad,
+                valor: e.n,
+                secundario: `${formatCOP(e.riesgo)} en riesgo`,
+              }))}
+            />
+          )}
+        </QueryState>
+      </Detalle>
+    ),
 
-        {abierta('riesgo') && (
-          <Detalle
-            titulo="¿Cuánto se ejecutó de los contratos vencidos?"
-            intro="El pago reportado es la mejor pista sobre si un contrato realmente avanzó."
-            metodologia={
-              <>
-                Comparamos <code>valor_pagado</code> contra <code>valor_del_contrato</code>{' '}
-                en los contratos con plazo vencido. <strong>Advertencia importante:</strong>{' '}
-                este campo está muy incompleto en SECOP — incluso entre contratos en estado
-                "Cerrado", el <strong>34% reporta $0 pagado</strong>, lo cual es imposible
-                en la práctica. Por eso el tercer grupo se llama <em>"sin registro de
-                pago"</em> y no <em>"no pagado"</em>: la ausencia de dato no es evidencia
-                de que no hubo desembolso.
-              </>
-            }
-          >
-            <QueryState query={ejecucionVencidos} empty="Sin datos de ejecución.">
-              {(data) => (
-                <ListaBarra
-                  items={[
-                    {
-                      clave: 'completo',
-                      label: 'Con pago registrado completo',
-                      valor: data.completo,
-                      color: 'rgb(var(--c-success))',
-                      nota: 'Se pagó el 100% o más del valor: sugiere que ya se ejecutó',
-                    },
-                    {
-                      clave: 'parcial',
-                      label: 'Con pago parcial registrado',
-                      valor: data.parcial,
-                      color: 'rgb(var(--c-warning))',
-                      nota: 'Quedó dinero sin desembolsar: obra o servicio a medias',
-                    },
-                    {
-                      clave: 'sinDato',
-                      label: 'Sin registro de pago',
-                      valor: data.sinDato,
-                      color: 'rgb(var(--c-text-soft))',
-                      nota: 'La entidad no reportó pagos. No significa que no se pagó',
-                    },
-                  ]}
-                />
-              )}
-            </QueryState>
-          </Detalle>
-        )}
+    riesgo: (
+      <Detalle
+        titulo="¿Cuánto se ejecutó de los contratos vencidos?"
+        intro="El pago reportado es la mejor pista sobre si un contrato realmente avanzó."
+        metodologia={
+          <>
+            Comparamos <code>valor_pagado</code> contra <code>valor_del_contrato</code>{' '}
+            en los contratos con plazo vencido. <strong>Advertencia importante:</strong>{' '}
+            este campo está muy incompleto en SECOP — incluso entre contratos en estado
+            "Cerrado", el <strong>34% reporta $0 pagado</strong>, lo cual es imposible
+            en la práctica. Por eso el tercer grupo se llama <em>"sin registro de
+            pago"</em> y no <em>"no pagado"</em>: la ausencia de dato no es evidencia
+            de que no hubo desembolso.
+          </>
+        }
+      >
+        <QueryState query={ejecucionVencidos} empty="Sin datos de ejecución.">
+          {(data) => (
+            <ListaBarra
+              items={[
+                {
+                  clave: 'completo',
+                  label: 'Con pago registrado completo',
+                  valor: data.completo,
+                  color: 'rgb(var(--c-success))',
+                  nota: 'Se pagó el 100% o más del valor: sugiere que ya se ejecutó',
+                },
+                {
+                  clave: 'parcial',
+                  label: 'Con pago parcial registrado',
+                  valor: data.parcial,
+                  color: 'rgb(var(--c-warning))',
+                  nota: 'Quedó dinero sin desembolsar: obra o servicio a medias',
+                },
+                {
+                  clave: 'sinDato',
+                  label: 'Sin registro de pago',
+                  valor: data.sinDato,
+                  color: 'rgb(var(--c-text-soft))',
+                  nota: 'La entidad no reportó pagos. No significa que no se pagó',
+                },
+              ]}
+            />
+          )}
+        </QueryState>
+      </Detalle>
+    ),
+  }
+
+  // El detalle se intercala al final de la fila donde está la tarjeta abierta,
+  // para que salga justo debajo de su cifra y no al pie de toda la sección.
+  const indiceActiva = tarjetas.findIndex((t) => t.clave && t.clave === activa)
+  const finDeFila =
+    indiceActiva < 0
+      ? -1
+      : Math.min((Math.floor(indiceActiva / columnas) + 1) * columnas - 1, tarjetas.length - 1)
+
+  return (
+    <div>
+      <PageHeader
+        title="Panorama de la contratación"
+        subtitle={`¿Cómo está contratando ${scope} hoy? Cada cifra se puede desplegar para ver de dónde sale.`}
+      />
+      <GlobalFilters />
+
+      {/* Cifras clave: cada una es la puerta de entrada a su detalle */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-8 mb-10">
+        {tarjetas.map((t, i) => (
+          <Fragment key={t.clave ?? `fija-${i}`}>
+            {t.nodo}
+            {i === finDeFila && activa && (
+              <div className="col-span-full">{detalles[activa]}</div>
+            )}
+          </Fragment>
+        ))}
       </div>
 
       {/* Los dos gráficos que aportan lo que una lista no puede: tiempo y geografía */}
