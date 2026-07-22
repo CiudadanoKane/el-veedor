@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation, Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Sidebar } from './Sidebar'
 import { ErrorBoundary } from '../ui/ErrorBoundary'
@@ -59,8 +59,10 @@ export function Layout() {
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
-          <img src="/icono-el-veedor.png" alt="" className="h-6 w-6" />
-          <span className="font-display font-semibold text-lg tracking-tight">El Veedor</span>
+          <Link to="/" aria-label="El Veedor — ir al Panorama" className="flex items-center gap-3">
+            <img src="/icono-el-veedor.png" alt="" className="h-6 w-6" />
+            <span className="font-display font-semibold text-lg tracking-tight">El Veedor</span>
+          </Link>
         </header>
 
         <main className="flex-1 px-5 py-8 sm:px-8 lg:px-14 lg:py-12">
