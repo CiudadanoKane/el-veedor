@@ -15,6 +15,36 @@ import { useColumnas } from '../hooks/useColumnas'
 import { formatCOP, formatCOPCorto, formatCOPFull, pct, formatPct } from '../lib/formatters'
 import { SECTOR_COLORS } from '../lib/chartTheme'
 
+// Bajo el total histórico, cuánto está realmente vivo. Dos cortes: "En
+// ejecución" (el estado activo, aunque muchos ya tengan el plazo vencido) y su
+// subconjunto genuinamente activo, con plazo aún por vencer.
+function SubVivo({ data, tipo, nota }) {
+  if (!data) return null
+  const fmt =
+    tipo === 'valor'
+      ? (n, v) => formatCOPCorto(v)
+      : (n) => n.toLocaleString('es-CO')
+  const filas = [
+    { label: 'En ejecución', a: data.nEjecucion, b: data.valorEjecucion },
+    { label: 'Con plazo vigente', a: data.nVigente, b: data.valorVigente },
+  ]
+  return (
+    <div>
+      <div className="space-y-0.5">
+        {filas.map((f) => (
+          <div key={f.label} className="flex items-baseline justify-between gap-3">
+            <span>{f.label}</span>
+            <span className="tabular-nums font-medium text-textPrimary">
+              {fmt(f.a, f.b)}
+            </span>
+          </div>
+        ))}
+      </div>
+      {nota && <div className="mt-1.5 text-[11.5px]">{nota}</div>}
+    </div>
+  )
+}
+
 // Panel que se despliega bajo la fila de la cifra que lo originó.
 function Detalle({ titulo, intro, metodologia, children }) {
   return (
@@ -87,7 +117,7 @@ export function Dashboard() {
 
   const {
     generales, actores, porEstado, mora, vencidosPorAntiguedad, ejecucionVencidos,
-    porSector, entidadesMora, porModalidad, cierre,
+    porSector, entidadesMora, porModalidad, cierre, ejecucion,
   } = useDashboardStats(filters, abiertas)
 
   const scope = filters.city || filters.department || 'Colombia'
@@ -117,7 +147,13 @@ export function Dashboard() {
         <StatCard
           label="Contratos registrados"
           value={generales.data?.total?.toLocaleString('es-CO') ?? '—'}
-          sub="Excluye borradores y cancelados"
+          sub={
+            <SubVivo
+              data={ejecucion.data}
+              tipo="conteo"
+              nota="Total histórico. Excluye borradores y cancelados."
+            />
+          }
           loading={generales.isLoading}
           onToggle={() => alternar('contratos')}
           abierta={abierta('contratos')}
@@ -170,9 +206,15 @@ export function Dashboard() {
       clave: 'valor',
       nodo: (
         <StatCard
-          label="Valor comprometido"
+          label="Valor contratado"
           value={formatCOPCorto(generales.data?.valor)}
-          sub={formatCOPFull(generales.data?.valor)}
+          sub={
+            <SubVivo
+              data={ejecucion.data}
+              tipo="valor"
+              nota={`Total histórico: ${formatCOPFull(generales.data?.valor)}`}
+            />
+          }
           tone="primary"
           loading={generales.isLoading}
           onToggle={() => alternar('valor')}

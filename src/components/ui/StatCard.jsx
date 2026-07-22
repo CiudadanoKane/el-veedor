@@ -69,10 +69,12 @@ export function StatCard({
         )}
       </div>
 
-      {/* Fila 4: contexto, crece hacia abajo sin mover lo de arriba */}
+      {/* Fila 4: contexto, crece hacia abajo sin mover lo de arriba.
+          Es un div y no un p para poder recibir contenido de bloque (varias
+          líneas de submétricas), no solo texto. */}
       <div className="pt-1.5">
         {sub && (
-          <p className="text-[13px] text-textSecondary leading-snug">{sub}</p>
+          <div className="text-[13px] text-textSecondary leading-snug">{sub}</div>
         )}
       </div>
 

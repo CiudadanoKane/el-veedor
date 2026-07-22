@@ -283,8 +283,41 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
     },
   })
 
+  // Cuánto del total está realmente vivo, en dos cortes.
+  //
+  // El total del Panorama es actividad histórica acumulada: incluye contratos
+  // terminados, cerrados y "Modificado" (que en un 86% ya venció). Esta consulta
+  // saca la parte viva, para mostrarla junto a la cifra grande. Son dos cortes
+  // porque "En ejecución" no es de fiar: la mayoría también tiene el plazo
+  // vencido y sigue así solo porque nadie cerró el registro. El corte estricto
+  // —en ejecución Y con plazo aún por vencer— es el único genuinamente activo.
+  const ejecucion = useQuery({
+    queryKey: ['dash', 'ejecucion-resumen', filters],
+    queryFn: async () => {
+      const hoy = `${HOY()}T00:00:00`
+      const vivo = `estado_contrato = '${ESTADO_ACTIVO}'`
+      const vigente = `${vivo} AND fecha_de_fin_del_contrato >= '${hoy}'`
+      const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
+      const rows = await socrataQuery(
+        DS,
+        `SELECT sum(case(${vivo}, 1, true, 0)) as n_ejec,
+                sum(case(${vivo}, valor_del_contrato, true, 0)) as v_ejec,
+                sum(case(${vigente}, 1, true, 0)) as n_vig,
+                sum(case(${vigente}, valor_del_contrato, true, 0)) as v_vig
+         ${where}`,
+      )
+      const r = rows[0] || {}
+      return {
+        nEjecucion: parseInt(r.n_ejec ?? 0, 10),
+        valorEjecucion: parseFloat(r.v_ejec ?? 0),
+        nVigente: parseInt(r.n_vig ?? 0, 10),
+        valorVigente: parseFloat(r.v_vig ?? 0),
+      }
+    },
+  })
+
   return {
     generales, actores, porEstado, mora, vencidosPorAntiguedad, ejecucionVencidos,
-    porSector, entidadesMora, porModalidad, cierre,
+    porSector, entidadesMora, porModalidad, cierre, ejecucion,
   }
 }
