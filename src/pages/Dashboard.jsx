@@ -32,11 +32,14 @@ function SubVivo({ data, tipo, nota }) {
     <div>
       <div className="space-y-0.5">
         {filas.map((f) => (
-          <div key={f.label} className="flex items-baseline justify-between gap-3">
-            <span>{f.label}</span>
-            <span className="tabular-nums font-medium text-textPrimary">
+          <div key={f.label} className="flex items-baseline gap-2">
+            {/* El número a la izquierda, en columna de ancho fijo, para que
+                quede alineado bajo la cifra grande y las etiquetas empiecen
+                todas al mismo punto. */}
+            <span className="tabular-nums font-medium text-textPrimary min-w-[5.5rem]">
               {fmt(f.a, f.b)}
             </span>
+            <span>{f.label}</span>
           </div>
         ))}
       </div>
