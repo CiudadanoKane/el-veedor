@@ -24,6 +24,13 @@ export const AMBITOS = {
     ayuda: 'También en el nombre de la entidad y del contratista. Más hallazgos.',
     campos: ['descripcion_del_proceso', 'nombre_entidad', 'proveedor_adjudicado'],
   },
+  // Busca dentro de los documentos anexos del proceso, no en el registro del
+  // contrato. Otro dataset, otra ruta: la maneja useBusquedaDocumentos.
+  documentos: {
+    label: 'Documentos anexos',
+    ayuda: 'En los nombres de los archivos del proceso. Encuentra lo que el objeto no menciona.',
+    docs: true,
+  },
 }
 
 // Lista blanca: nunca interpolar texto libre en la cláusula ORDER BY.
@@ -68,7 +75,8 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
   const { texto = '', ambito = 'objeto', orden = 'valor' } = criterios
   const campos = (AMBITOS[ambito] || AMBITOS.objeto).campos
   const orderBy = (ORDENES[orden] || ORDENES.valor).soql
-  const activa = hayBusqueda(criterios)
+  // El modo "documentos" lo atiende otro hook; aquí se apaga para no consultar.
+  const activa = hayBusqueda(criterios) && ambito !== 'documentos'
   const porId = esIdentificador(texto)
 
   return useQuery({

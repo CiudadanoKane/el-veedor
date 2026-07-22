@@ -10,6 +10,7 @@ import { Segmented } from '../components/ui/Segmented'
 import { useFilters } from '../context/FiltersContext'
 import { BuscadorContratista } from '../components/ui/BuscadorContratista'
 import { BuscadorEntidad } from '../components/ui/BuscadorEntidad'
+import { useBusquedaDocumentos, LIMITE as LIMITE_DOCS } from '../hooks/useBusquedaDocumentos'
 import { useDirectorioEntidades } from '../hooks/useDirectorioEntidades'
 import { useBusqueda, hayBusqueda, AMBITOS, ORDENES, LIMITE } from '../hooks/useBusqueda'
 import { MODALIDADES, TIPOS_CONTRATO, CAUSALES } from '../lib/catalogos'
@@ -122,7 +123,10 @@ export function Buscar() {
     })
   }
 
-  const query = useBusqueda(criterios, filters)
+  const esDocumentos = criterios.ambito === 'documentos'
+  const queryContratos = useBusqueda(criterios, filters)
+  const queryDocumentos = useBusquedaDocumentos(criterios, filters)
+  const query = esDocumentos ? queryDocumentos : queryContratos
   const activa = hayBusqueda(criterios)
   const hayFiltros = criterios.modalidad || criterios.tipo || criterios.causal
 
@@ -134,6 +138,14 @@ export function Buscar() {
         <div className="max-w-[320px]">
           <div className="text-textPrimary">{r.entityName}</div>
           <div className="text-xs text-textSecondary line-clamp-2">{r.description}</div>
+          {/* En la búsqueda por documentos, el archivo que hizo coincidir: es
+              la prueba de por qué este contrato aparece pese a que su objeto no
+              mencione lo buscado. */}
+          {r.documentos?.length > 0 && (
+            <div className="mt-1 text-[11px] text-primary">
+              Encontrado en: {r.documentos.join(' · ')}
+            </div>
+          )}
         </div>
       ),
     },
@@ -238,27 +250,33 @@ export function Buscar() {
         </div>
 
         <div className="mt-5 flex flex-wrap items-end gap-5">
-          <Campo
-            label="Modalidad"
-            value={criterios.modalidad}
-            onChange={(v) => actualizar({ modalidad: v })}
-            options={MODALIDADES}
-            placeholder="Todas las modalidades"
-          />
-          <Campo
-            label="Tipo de contrato"
-            value={criterios.tipo}
-            onChange={(v) => actualizar({ tipo: v })}
-            options={TIPOS_CONTRATO}
-            placeholder="Todos los tipos"
-          />
-          <Campo
-            label="Causal para no licitar"
-            value={criterios.causal}
-            onChange={(v) => actualizar({ causal: v })}
-            options={CAUSALES}
-            placeholder="Cualquier causal"
-          />
+          {/* Los filtros de lista viven en el registro del contrato, no en los
+              documentos anexos, así que no aplican a esa búsqueda. */}
+          {!esDocumentos && (
+            <>
+              <Campo
+                label="Modalidad"
+                value={criterios.modalidad}
+                onChange={(v) => actualizar({ modalidad: v })}
+                options={MODALIDADES}
+                placeholder="Todas las modalidades"
+              />
+              <Campo
+                label="Tipo de contrato"
+                value={criterios.tipo}
+                onChange={(v) => actualizar({ tipo: v })}
+                options={TIPOS_CONTRATO}
+                placeholder="Todos los tipos"
+              />
+              <Campo
+                label="Causal para no licitar"
+                value={criterios.causal}
+                onChange={(v) => actualizar({ causal: v })}
+                options={CAUSALES}
+                placeholder="Cualquier causal"
+              />
+            </>
+          )}
           {(hayFiltros || criterios.texto) && (
             <button
               type="button"
@@ -320,7 +338,7 @@ export function Buscar() {
               <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em]">
                 {query.data
                   ? query.data.hayMas
-                    ? `Más de ${LIMITE} resultados`
+                    ? `Más de ${esDocumentos ? LIMITE_DOCS : LIMITE} resultados`
                     : `${query.data.contratos.length} ${query.data.contratos.length === 1 ? 'resultado' : 'resultados'}`
                   : 'Resultados'}
               </h2>
@@ -331,29 +349,48 @@ export function Buscar() {
               />
             </div>
 
-            <Methodology>
-              La búsqueda <strong>ignora las tildes</strong>: escribir{' '}
-              <code>educacion</code> o <code>educación</code> da lo mismo. Es necesario
-              porque SECOP mezcla ambas escrituras, y buscar solo la forma sin tilde
-              dejaría fuera cerca del 79% de los contratos.
-              <br />
-              <br />
-              Si escribes varias palabras, se buscan{' '}
-              <strong>juntas y en ese orden</strong>, como una frase: "vias terciarias"
-              encuentra "vías terciarias" pero no un contrato que mencione las dos
-              palabras separadas. Es una restricción de velocidad, no de capricho —
-              buscarlas por separado obliga a un tipo de consulta que tarda casi un minuto
-              sobre 5,3 millones de registros, mientras que la frase tarda un segundo. Si
-              no encuentras algo, prueba con menos palabras.
-              <br />
-              <br />
-              Se excluyen borradores, cancelados y contratos sin formalizar, igual que en
-              el resto de la plataforma. <strong>Se muestran hasta {LIMITE} resultados</strong>{' '}
-              ordenados por el criterio que elijas — cuando hay más, no decimos cuántos:
-              contarlos exactamente toma unos 14 segundos, y preferimos entregar los
-              resultados de inmediato. Afina con los filtros para ver un conjunto más
-              acotado. <strong>Haz clic en cualquier fila para ver el detalle.</strong>
-            </Methodology>
+            {esDocumentos ? (
+              <Methodology>
+                Esta es la búsqueda más potente de la plataforma, y la que resuelve el
+                problema más frustrante de SECOP. El nombre coloquial de una obra —"calle
+                72"— casi nunca está en el objeto del contrato, que dice algo como "malla
+                vial en el distrito". Pero <strong>sí está en los documentos anexos</strong>{' '}
+                del proceso: el presupuesto, el anexo técnico. Aquí se busca dentro de los
+                nombres de esos archivos y se te devuelve el contrato al que pertenecen.
+                <br />
+                <br />
+                Cubre los procesos <strong>recientes (desde 2025)</strong>, que es donde
+                están publicados los archivos. Si escribes varias palabras deben aparecer
+                todas en el nombre del documento, en cualquier orden. Cada resultado
+                muestra <strong>el archivo que lo hizo coincidir</strong>, para que veas por
+                qué aparece. <strong>Haz clic en cualquier fila para ver el detalle.</strong>
+              </Methodology>
+            ) : (
+              <Methodology>
+                La búsqueda <strong>ignora las tildes</strong>: escribir{' '}
+                <code>educacion</code> o <code>educación</code> da lo mismo. Es necesario
+                porque SECOP mezcla ambas escrituras, y buscar solo la forma sin tilde
+                dejaría fuera cerca del 79% de los contratos.
+                <br />
+                <br />
+                Si escribes varias palabras, se buscan{' '}
+                <strong>juntas y en ese orden</strong>, como una frase: "vias terciarias"
+                encuentra "vías terciarias" pero no un contrato que mencione las dos
+                palabras separadas. Es una restricción de velocidad, no de capricho —
+                buscarlas por separado obliga a un tipo de consulta que tarda casi un minuto
+                sobre 5,3 millones de registros, mientras que la frase tarda un segundo. Si
+                no encuentras algo, prueba con menos palabras, o busca en{' '}
+                <strong>Documentos anexos</strong>.
+                <br />
+                <br />
+                Se excluyen borradores, cancelados y contratos sin formalizar, igual que en
+                el resto de la plataforma. <strong>Se muestran hasta {LIMITE} resultados</strong>{' '}
+                ordenados por el criterio que elijas — cuando hay más, no decimos cuántos:
+                contarlos exactamente toma unos 14 segundos, y preferimos entregar los
+                resultados de inmediato. Afina con los filtros para ver un conjunto más
+                acotado. <strong>Haz clic en cualquier fila para ver el detalle.</strong>
+              </Methodology>
+            )}
 
             <div className="mt-4">
               {/* El caso vacío se maneja adentro: la query devuelve un objeto,
@@ -362,7 +399,13 @@ export function Buscar() {
                 {(data) =>
                   data.contratos.length === 0 ? (
                     <div className="py-6 max-w-2xl">
-                      {data.porId ? (
+                      {esDocumentos ? (
+                        <p className="text-[15px] text-textPrimary leading-relaxed">
+                          Ningún documento anexo coincide. Prueba con menos palabras o con
+                          otro término —el nombre exacto del proyecto, una dirección—. Ten
+                          en cuenta que solo cubre procesos recientes (desde 2025).
+                        </p>
+                      ) : data.porId ? (
                         <p className="text-[15px] text-textPrimary leading-relaxed">
                           Ningún contrato tiene ese identificador. Verifica el número, o
                           busca a la empresa por su nombre en la pestaña{' '}

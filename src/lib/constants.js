@@ -2,6 +2,12 @@
 
 export const DATASETS = {
   CONTRATOS: import.meta.env.VITE_SECOP2_CONTRATOS || 'jbjy-vk9h',
+  // Archivos anexos de los procesos (nombre del documento + enlace de descarga),
+  // enlazados al contrato y al proceso. Es la clave para encontrar contratos por
+  // el contenido de sus documentos, que es donde vive el nombre coloquial de una
+  // obra ("calle 72") cuando el objeto oficial solo dice "malla vial". Cubre
+  // procesos recientes (desde 2025).
+  ARCHIVOS: 'dmgg-8hin',
 }
 
 // Estados reales de estado_contrato (NO existe 'Activo')
