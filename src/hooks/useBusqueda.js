@@ -2,10 +2,20 @@ import { useQuery } from '@tanstack/react-query'
 import { socrataQuery, socrataBusqueda } from '../lib/socrataClient'
 import { DATASETS, CONTRACT_FIELDS } from '../lib/constants'
 import { esc, whereFromFilters, soloContratosValidos } from '../lib/soql'
-import { variantesDeFrase, tieneTextoBuscable } from '../lib/acentos'
+import { variantesDeFrase, tieneTextoBuscable, palabrasDeFrase } from '../lib/acentos'
 import { adaptList } from '../adapters/secop2Adapter'
 
 const DS = DATASETS.CONTRATOS
+
+// Campos de texto visibles donde se exige la frase contigua en las búsquedas de
+// varias palabras. Son los que el ciudadano ve en la fila, así que si el término
+// aparece aquí, la coincidencia es explicable a simple vista.
+const CAMPOS_FRASE = [
+  'objeto_del_contrato',
+  'descripcion_del_proceso',
+  'nombre_entidad',
+  'proveedor_adjudicado',
+]
 
 // Lista blanca: nunca interpolar texto libre en la cláusula ORDER BY.
 export const ORDENES = {
@@ -64,9 +74,17 @@ function comparar(orden) {
 // $q tiene dos comportamientos que hay que manejar:
 //   1. Distingue tildes ("educacion" ≠ "educación"). Se lanza cada escritura
 //      posible de la frase (variantesDeFrase) en paralelo y se unen los ids.
-//   2. Hace AND de las palabras y busca en TODOS los campos de texto (objeto,
-//      entidad, contratista), no solo el objeto. Es más amplio, lo que para un
-//      ciudadano suele ser mejor: "hospital" también trae a la entidad Hospital X.
+//   2. Hace AND de las palabras sueltas (no de la frase) y busca en TODOS los
+//      campos de texto. Con una sola palabra es ideal: "hospital" trae también a
+//      la entidad Hospital X. Pero con varias palabras es demasiado laxo: "calle
+//      72" trae cualquier contrato que en algún campo tenga "calle" y en algún
+//      otro "72" —53 mil registros, casi todos ruido— y entierra los que de
+//      verdad dicen "calle 72". Por eso, cuando hay más de una palabra, $q se usa
+//      solo como prefiltro rápido (el índice acota a esos miles) y se le suma un
+//      caseless_contains que exige la frase CONTIGUA en un campo visible. El
+//      índice hace la consulta rápida (~0,6s) y el caseless la vuelve precisa.
+//      caseless_contains también distingue tildes, así que va por variante igual
+//      que el $q.
 export function useBusqueda(criterios = {}, filtrosGeo = {}) {
   const { texto = '', orden = 'valor' } = criterios
   const orderBy = (ORDENES[orden] || ORDENES.valor).soql
@@ -110,13 +128,25 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
         return { filas, hayMas: filas.length > LIMITE, porId: false }
       }
 
-      // Una $q por cada escritura de tilde, en paralelo, y se unen deduplicando
-      // por id. Cada consulta pide su tope ordenado, así el conjunto reunido
-      // tiene los candidatos correctos; el orden final se rehace en cliente.
+      // Con más de una palabra se exige la frase contigua: el $q prefiltra por el
+      // índice y el caseless_contains descarta los registros donde las palabras
+      // solo aparecen sueltas. Con una sola palabra no hace falta —$q ya es
+      // preciso— y se deja amplio para que "hospital" alcance también a la entidad.
+      const esFrase = palabrasDeFrase(texto).length > 1
+      const fraseEn = (v) =>
+        '(' + CAMPOS_FRASE.map((c) => `caseless_contains(${c}, '${esc(v)}')`).join(' OR ') + ')'
+
+      // Una consulta por cada escritura de tilde, en paralelo, y se unen
+      // deduplicando por id. Cada consulta pide su tope ordenado, así el conjunto
+      // reunido tiene los candidatos correctos; el orden final se rehace en cliente.
       const respuestas = await Promise.all(
         variantes.map((v) =>
           socrataBusqueda(DS, {
-            q: v, where, select: CONTRACT_FIELDS, order: orderBy, limit: LIMITE + 1,
+            q: v,
+            where: esFrase ? `${where} AND ${fraseEn(v)}` : where,
+            select: CONTRACT_FIELDS,
+            order: orderBy,
+            limit: LIMITE + 1,
           }),
         ),
       )
