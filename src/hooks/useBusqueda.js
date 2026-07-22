@@ -9,27 +9,23 @@ import { adaptList } from '../adapters/secop2Adapter'
 
 const DS = DATASETS.CONTRATOS
 
-// Dónde mirar el texto. La diferencia importa: buscar "educación" en el objeto
-// encuentra contratos *sobre* educación; buscarlo en todo el registro encuentra
-// además los firmados *por* las secretarías de educación, aunque el objeto sea
-// papelería. Ninguno de los dos es el correcto siempre, así que decide quien busca.
+// Dónde mirar el texto. Por defecto solo en el objeto del contrato, que es lo
+// más rápido: cada caseless_contains es un escaneo completo de columna sobre 5,3
+// millones de registros, así que sumar campos multiplica el tiempo. Ampliar a
+// entidad y contratista (el ámbito "todo") triplica los escaneos y puede tardar
+// decenas de segundos; por eso es un filtro opcional, no el default. Para buscar
+// por nombre conviene más la pestaña Contratistas. Los documentos anexos se
+// buscan aparte y en automático (useBusquedaDocumentos), ya no como ámbito.
 export const AMBITOS = {
   objeto: {
-    label: 'Objeto del contrato',
-    ayuda: 'Solo en la descripción de lo contratado. Más preciso.',
+    label: 'En el objeto del contrato',
+    ayuda: 'Solo la descripción de lo contratado. Es lo más rápido.',
     campos: ['descripcion_del_proceso'],
   },
   todo: {
-    label: 'Todo el registro',
-    ayuda: 'También en el nombre de la entidad y del contratista. Más hallazgos.',
+    label: 'Objeto, entidad y contratista',
+    ayuda: 'También los nombres. Encuentra más, pero tarda bastante más.',
     campos: ['descripcion_del_proceso', 'nombre_entidad', 'proveedor_adjudicado'],
-  },
-  // Busca dentro de los documentos anexos del proceso, no en el registro del
-  // contrato. Otro dataset, otra ruta: la maneja useBusquedaDocumentos.
-  documentos: {
-    label: 'Documentos anexos',
-    ayuda: 'En los nombres de los archivos del proceso. Encuentra lo que el objeto no menciona.',
-    docs: true,
   },
 }
 
@@ -75,8 +71,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
   const { texto = '', ambito = 'objeto', orden = 'valor' } = criterios
   const campos = (AMBITOS[ambito] || AMBITOS.objeto).campos
   const orderBy = (ORDENES[orden] || ORDENES.valor).soql
-  // El modo "documentos" lo atiende otro hook; aquí se apaga para no consultar.
-  const activa = hayBusqueda(criterios) && ambito !== 'documentos'
+  const activa = hayBusqueda(criterios)
   const porId = esIdentificador(texto)
 
   return useQuery({
