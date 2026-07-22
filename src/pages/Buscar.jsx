@@ -202,11 +202,15 @@ export function Buscar() {
               type="search"
               value={borrador}
               onChange={(e) => setBorrador(e.target.value)}
-              placeholder="alimentación escolar, acueducto, ambulancias…"
+              placeholder="alimentación escolar, acueducto, o el número del proceso…"
               className="bg-bg border-0 border-b border-border px-0 py-1.5 text-[15px]
                          text-textPrimary placeholder:text-textSecondary/60
                          focus:border-textPrimary focus:outline-none w-full"
             />
+            <span className="text-[12px] text-textSecondary mt-1">
+              ¿Tienes el número del proceso o el código SECOP? Pégalo y va directo al
+              contrato.
+            </span>
           </div>
           <button
             type="submit"
@@ -357,10 +361,53 @@ export function Buscar() {
               <QueryState query={query}>
                 {(data) =>
                   data.contratos.length === 0 ? (
-                    <p className="text-[15px] text-textSecondary py-8">
-                      Ningún contrato coincide. Prueba con una palabra más general, o
-                      cambia a “Todo el registro”.
-                    </p>
+                    <div className="py-6 max-w-2xl">
+                      {data.porId ? (
+                        <p className="text-[15px] text-textPrimary leading-relaxed">
+                          Ningún contrato tiene ese identificador. Verifica el número, o
+                          busca a la empresa por su nombre en la pestaña{' '}
+                          <button
+                            type="button"
+                            onClick={() => actualizar({ modo: 'contratistas' })}
+                            className="text-primary enlace-sutil font-semibold"
+                          >
+                            Contratistas
+                          </button>
+                          .
+                        </p>
+                      ) : (
+                        <>
+                          <p className="text-[15px] text-textPrimary leading-relaxed">
+                            Ningún contrato coincide. Antes de rendirte, tres cosas que
+                            ayudan:
+                          </p>
+                          <ul className="mt-3 space-y-2 text-[14.5px] text-textPrimary leading-relaxed">
+                            <li>
+                              Esta búsqueda mira el <strong>objeto del contrato</strong> y
+                              los nombres, no los documentos anexos del proceso. Una obra
+                              puede llamarse "malla vial" en SECOP aunque tú la conozcas
+                              como "la de la calle 72".
+                            </li>
+                            <li>
+                              Si buscas a una empresa, usa la pestaña{' '}
+                              <button
+                                type="button"
+                                onClick={() => actualizar({ modo: 'contratistas' })}
+                                className="text-primary enlace-sutil font-semibold"
+                              >
+                                Contratistas
+                              </button>
+                              : encuentra por nombre parcial.
+                            </li>
+                            <li>
+                              Prueba con menos palabras, cambia a{' '}
+                              <strong>“Todo el registro”</strong>, o pega el número del
+                              proceso si lo tienes.
+                            </li>
+                          </ul>
+                        </>
+                      )}
+                    </div>
                   ) : (
                     <>
                       <DataTable

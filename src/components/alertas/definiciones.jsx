@@ -515,21 +515,31 @@ export function AlertaAdicionTiempo() {
     {
       key: 'plazoOriginal',
       header: 'Plazo pactado',
-      className: 'text-right tabular-nums',
-      render: (r) =>
-        r.plazoOriginal != null
-          ? `${r.plazoOriginal.toLocaleString('es-CO')} d`
-          : '—',
+      className: 'text-right tabular-nums whitespace-nowrap',
+      render: (r) => {
+        if (r.plazoOriginal == null) return '—'
+        const h = humanDuration(r.plazoOriginal)
+        return (
+          <span>
+            {r.plazoOriginal.toLocaleString('es-CO')} d
+            {h && <span className="text-textSecondary"> ({h})</span>}
+          </span>
+        )
+      },
     },
     {
       key: 'daysAdded',
       header: 'Días añadidos',
-      className: 'text-right tabular-nums',
-      render: (r) => (
-        <span className="text-warning font-medium">
-          +{r.daysAdded?.toLocaleString('es-CO')}
-        </span>
-      ),
+      className: 'text-right tabular-nums whitespace-nowrap',
+      render: (r) => {
+        const h = humanDuration(r.daysAdded)
+        return (
+          <span className="text-warning font-medium">
+            +{r.daysAdded?.toLocaleString('es-CO')}
+            {h && <span className="text-textSecondary font-normal"> ({h})</span>}
+          </span>
+        )
+      },
     },
     {
       key: 'pct',

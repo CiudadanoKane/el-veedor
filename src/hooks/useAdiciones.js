@@ -90,19 +90,39 @@ export function useAdicionesTiempo(filters = {}, limit = 50, orden = 'dias') {
 //                                pero sí presupuesto oficial del proceso)
 // Cota superior de 1 billón para descartar valores absurdos mal digitados.
 // ---------------------------------------------------------------------------
+// Devuelve un mapa id_del_portafolio → { adjudicado, base }.
+//
+// Agrupa con GROUP BY porque un mismo proceso tiene VARIAS filas en el dataset
+// de Procesos (una por fase: apertura, selección, adjudicación...). Antes se
+// traían las filas crudas con un LIMIT por lote, y ese límite las cortaba: un
+// lote de 60 procesos generaba ~256 filas, se pedían 180, y los procesos del
+// final quedaban sin cruce. Así desaparecían contratos reales de la lista —
+// entre ellos el de la malla vial de la calle 72 en Barranquilla, con 12.600
+// millones de adición. Con GROUP BY cada proceso ocupa una sola fila y el
+// LIMIT vuelve a ser exacto. max() además resuelve qué valor gana entre fases:
+// nos quedamos con el mayor adjudicado y el mayor precio base registrados.
 async function traerProcesos(ids) {
-  const procesos = []
-  const CHUNK = 60 // mantiene la URL en un tamaño razonable
+  const mapa = new Map()
+  const CHUNK = 75
   for (let i = 0; i < ids.length; i += CHUNK) {
     const lote = ids.slice(i, i + CHUNK).map((x) => `'${esc(x)}'`).join(',')
     const rows = await socrataQuery(
       DS_PROCESOS,
-      `SELECT id_del_portafolio, valor_total_adjudicacion, precio_base
-       WHERE id_del_portafolio IN (${lote}) LIMIT ${CHUNK * 3}`,
+      `SELECT id_del_portafolio,
+              max(valor_total_adjudicacion) as adjudicado,
+              max(precio_base) as base
+       WHERE id_del_portafolio IN (${lote})
+       GROUP BY id_del_portafolio
+       LIMIT ${CHUNK}`,
     )
-    procesos.push(...rows)
+    for (const r of rows) {
+      mapa.set(r.id_del_portafolio, {
+        adjudicado: parseFloat(r.adjudicado ?? 0),
+        base: parseFloat(r.base ?? 0),
+      })
+    }
   }
-  return procesos
+  return mapa
 }
 
 export function useAdicionesCosto(filters = {}, limit = 150) {
@@ -124,15 +144,7 @@ export function useAdicionesCosto(filters = {}, limit = 150) {
       const adaptados = adaptList(contratos)
 
       const ids = [...new Set(adaptados.map((c) => c.processId).filter(Boolean))]
-      const procesos = ids.length ? await traerProcesos(ids) : []
-
-      const mapa = new Map()
-      for (const p of procesos) {
-        mapa.set(p.id_del_portafolio, {
-          adjudicado: parseFloat(p.valor_total_adjudicacion ?? 0),
-          base: parseFloat(p.precio_base ?? 0),
-        })
-      }
+      const mapa = ids.length ? await traerProcesos(ids) : new Map()
 
       const adiciones = []
       const anomalias = []

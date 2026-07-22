@@ -6,6 +6,7 @@ import { StatCard } from '../components/ui/StatCard'
 import { QueryState } from '../components/ui/QueryState'
 import { Methodology } from '../components/ui/Methodology'
 import { ListaBarra } from '../components/ui/ListaBarra'
+import { Segmented } from '../components/ui/Segmented'
 import { EvolucionMensual } from '../components/ui/EvolucionMensual'
 import { MapaColombia } from '../components/ui/MapaColombia'
 import { useFilters } from '../context/FiltersContext'
@@ -29,6 +30,45 @@ function Detalle({ titulo, intro, metodologia, children }) {
       {metodologia && <Methodology>{metodologia}</Methodology>}
       <div className="mt-5">{children}</div>
     </section>
+  )
+}
+
+// Desglose que se puede leer por cantidad de contratos o por cuantía. Cada
+// item trae { clave, label, n, valor, nota? }. Reordena en el cliente según la
+// vista elegida, así la lista siempre queda en orden descendente de lo que se
+// está mirando — nunca a medias.
+function DesgloseConteoCuantia({ items, colores }) {
+  const [orden, setOrden] = useState('cantidad')
+  const porCuantia = orden === 'cuantia'
+  const ordenados = [...items].sort((a, b) => (porCuantia ? b.valor - a.valor : b.n - a.n))
+
+  return (
+    <>
+      <div className="flex justify-end -mt-2 mb-4">
+        <Segmented
+          value={orden}
+          onChange={setOrden}
+          options={[
+            { value: 'cantidad', label: 'Por cantidad' },
+            { value: 'cuantia', label: 'Por cuantía' },
+          ]}
+        />
+      </div>
+      <ListaBarra
+        apilada
+        colores={colores}
+        items={ordenados.map((e) => ({
+          clave: e.clave,
+          label: e.label,
+          nota: e.nota,
+          valor: porCuantia ? e.valor : e.n,
+          valorTexto: porCuantia ? formatCOP(e.valor) : undefined,
+          secundario: porCuantia
+            ? `${e.n.toLocaleString('es-CO')} contratos`
+            : formatCOP(e.valor),
+        }))}
+      />
+    </>
   )
 }
 
@@ -315,14 +355,13 @@ export function Dashboard() {
       >
         <QueryState query={porEstado} empty="Sin datos de estados.">
           {(data) => (
-            <ListaBarra
-              apilada
+            <DesgloseConteoCuantia
               colores={SECTOR_COLORS}
               items={data.lista.map((e) => ({
                 clave: e.estado,
                 label: e.estado,
-                valor: e.n,
-                secundario: formatCOP(e.valor),
+                n: e.n,
+                valor: e.valor,
               }))}
             />
           )}
@@ -386,14 +425,13 @@ export function Dashboard() {
       >
         <QueryState query={porModalidad} empty="Sin datos de modalidad.">
           {(data) => (
-            <ListaBarra
-              apilada
+            <DesgloseConteoCuantia
               colores={SECTOR_COLORS}
               items={data.map((m) => ({
                 clave: m.modalidad,
                 label: m.modalidad,
-                valor: m.n,
-                secundario: formatCOP(m.valor),
+                n: m.n,
+                valor: m.valor,
                 nota: /directa/i.test(m.modalidad)
                   ? 'Sin concurso abierto: la entidad escoge al contratista'
                   : undefined,

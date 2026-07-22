@@ -45,6 +45,19 @@ const CAMPOS_LISTA = {
   causal: 'justificacion_modalidad_de',
 }
 
+// Campos por los que se identifica un contrato o su proceso de forma exacta.
+// La búsqueda por texto no sirve para estos: son códigos, no palabras.
+const CAMPOS_ID = ['referencia_del_contrato', 'proceso_de_compra', 'id_contrato']
+
+// ¿El texto parece un identificador y no una frase? Un número de proceso como
+// "LP-024-2024" o un código SECOP como "CO1.PCCNTR.7491513": sin espacios, con
+// dígitos y con puntos, guiones o barras. Se buscan por coincidencia exacta
+// (0,5s), no con caseless_contains, que sobre estos campos tarda 17 segundos.
+export function esIdentificador(texto) {
+  const t = (texto || '').trim()
+  return /^[A-Za-z0-9._\-/]+$/.test(t) && /\d/.test(t) && /[.\-/]/.test(t) && t.length >= 5
+}
+
 export function hayBusqueda(criterios = {}) {
   const conTexto = tieneTextoBuscable(criterios.texto || '')
   const conFiltro = Object.keys(CAMPOS_LISTA).some((k) => criterios[k])
@@ -56,6 +69,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
   const campos = (AMBITOS[ambito] || AMBITOS.objeto).campos
   const orderBy = (ORDENES[orden] || ORDENES.valor).soql
   const activa = hayBusqueda(criterios)
+  const porId = esIdentificador(texto)
 
   return useQuery({
     // Solo consulta cuando hay algo que buscar: sin criterios, la consulta
@@ -63,6 +77,18 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
     enabled: activa,
     queryKey: ['busqueda', criterios, filtrosGeo],
     queryFn: () => {
+      // Búsqueda por identificador: coincidencia exacta contra los códigos, sin
+      // filtros geográficos ni de estado. Si alguien pega el número de un
+      // proceso quiere ese contrato exacto, aunque esté cerrado o en otra ciudad.
+      if (porId) {
+        const valor = esc(texto.trim())
+        const ors = CAMPOS_ID.map((c) => `${c} = '${valor}'`).join(' OR ')
+        return socrataQuery(
+          DS,
+          `SELECT ${CONTRACT_FIELDS} WHERE ${ors} ORDER BY ${orderBy} LIMIT ${LIMITE + 1}`,
+        )
+      }
+
       const condiciones = [soloContratosValidos()]
 
       const texto_ = condicionBusqueda(campos, texto)
@@ -84,6 +110,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
     select: (filas) => ({
       contratos: adaptList(filas.slice(0, LIMITE)),
       hayMas: filas.length > LIMITE,
+      porId,
     }),
   })
 }

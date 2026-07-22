@@ -1,7 +1,7 @@
 // Adiciones de plazo y de presupuesto. Eran una pestaña propia del menú; una
 // adición es también un patrón que merece atención, así que ahora conviven con
 // las demás alertas en vez de vivir aparte.
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { QueryState } from '../ui/QueryState'
 import { DataTable } from '../ui/DataTable'
 import { ContractDetail } from '../ui/ContractDetail'
@@ -131,9 +131,23 @@ export function AdicionesTiempo() {
 
 /* ------------------------------- POR COSTO ------------------------------ */
 
+// Cómo ordenar la lista de adiciones de presupuesto. Todo llega al cliente, así
+// que se reordena sin volver a consultar la API.
+const ORDENES_COSTO = {
+  adicion: { label: 'Mayor adición ($)', fn: (a, b) => b.adicion - a.adicion },
+  pct: { label: 'Mayor % de adición', fn: (a, b) => b.pctAdicion - a.pctAdicion },
+  valor: { label: 'Mayor cuantía', fn: (a, b) => b.contractValue - a.contractValue },
+}
+
 export function AdicionesCosto() {
   const { filters } = useFilters()
+  const [orden, setOrden] = useState('adicion')
   const query = useAdicionesCosto(filters)
+
+  const filas = useMemo(() => {
+    const base = query.data?.adiciones ?? []
+    return [...base].sort(ORDENES_COSTO[orden].fn)
+  }, [query.data, orden])
 
   const columns = [
     colEntidad,
@@ -181,6 +195,11 @@ export function AdicionesCosto() {
             ? `${query.data.adiciones.length} contratos cuyo valor creció tras la firma`
             : 'Cargando…'}
         </h3>
+        <Segmented
+          value={orden}
+          onChange={setOrden}
+          options={Object.entries(ORDENES_COSTO).map(([v, o]) => ({ value: v, label: o.label }))}
+        />
       </div>
       <Methodology>
         <strong>Adición = valor actual del contrato − valor original del proceso.</strong>{' '}
@@ -190,8 +209,7 @@ export function AdicionesCosto() {
         adjudicación porque no hubo competencia). Cada fila indica cuál se usó. Se
         descartan los contratos cuyo valor es un múltiplo exacto de 10 del original
         (×100, ×1.000, ×10.000): no son adiciones sino errores de digitación, y los
-        mostramos aparte en <strong>Errores en SECOP</strong>. Ordenado por monto de
-        adición.
+        mostramos aparte en <strong>Errores en SECOP</strong>.
       </Methodology>
       <div className="mt-4">
         <QueryState query={query} empty="Sin adiciones de costo detectables con estos filtros.">
@@ -203,7 +221,7 @@ export function AdicionesCosto() {
             ) : (
               <DataTable
                 columns={columns}
-                rows={data.adiciones}
+                rows={filas}
                 keyField="id"
                 renderDetail={(row) => <ContractDetail contract={row} />}
               />
