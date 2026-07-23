@@ -27,6 +27,16 @@ export function ModificationHistory({ idContrato }) {
   const diasTotales = mods.reduce((acc, m) => acc + (m.dias || 0), 0)
   const valorFinal = mods[mods.length - 1]?.valorResultante
 
+  // valorResultante es el acumulado tras cada modificación, no lo que esa
+  // modificación en particular sumó. La adición de esta modificación es la
+  // diferencia con el acumulado anterior; de la primera no hay forma de saberlo
+  // sin el valor previo a toda modificación, que este dataset no trae, así que
+  // no se le calcula tarjeta de adición (sí se ve su acumulado, como siempre).
+  const conAdicion = mods.map((m, i) => ({
+    ...m,
+    adicionValor: i === 0 ? null : m.valorResultante - mods[i - 1].valorResultante,
+  }))
+
   return (
     <div>
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-3">
@@ -40,7 +50,7 @@ export function ModificationHistory({ idContrato }) {
       </div>
 
       <ol className="space-y-3 border-l border-border pl-4">
-        {mods.map((m) => (
+        {conAdicion.map((m) => (
           <li key={m.id} className="relative">
             <span className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-warning" />
             <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -48,6 +58,11 @@ export function ModificationHistory({ idContrato }) {
               {m.dias > 0 && (
                 <span className="rounded bg-warning/15 text-warning px-2 py-0.5 text-xs whitespace-nowrap">
                   +{m.dias.toLocaleString('es-CO')} días
+                </span>
+              )}
+              {m.adicionValor > 0 && (
+                <span className="rounded bg-danger/15 text-danger px-2 py-0.5 text-xs whitespace-nowrap">
+                  +{formatCOP(m.adicionValor)}
                 </span>
               )}
               <span className="rounded bg-muted text-textSecondary px-2 py-0.5 text-xs whitespace-nowrap">
