@@ -181,17 +181,14 @@ export function Buscar() {
         <div className="max-w-[320px]">
           <div className="text-textPrimary">{r.entityName}</div>
           <div className="text-xs text-textSecondary line-clamp-2">{r.description}</div>
-          {/* Cuando el término no está en el objeto que se ve arriba sino en la
-              entidad o el contratista, se dice dónde: así la fila no parece un
-              resultado suelto sin relación con lo buscado. */}
+          {/* Misma etiqueta y color para toda pista de "por qué apareció esta
+              fila", venga de un campo del registro o de un documento anexo: es
+              la misma promesa —explicar la coincidencia— sin importar la fuente. */}
           {r.coincideEn && (
-            <div className="mt-1 text-[11px] text-textSecondary">
-              Coincide en: {r.coincideEn}
+            <div className="mt-1 text-[11px] text-primary">
+              Encontrado en: {r.coincideEn}
             </div>
           )}
-          {/* Solo en las filas que salieron por sus documentos: el archivo que
-              hizo coincidir, la prueba de por qué aparece pese a que el objeto no
-              mencione lo buscado. */}
           {r.documentos?.length > 0 && (
             <div className="mt-1 text-[11px] text-primary">
               Encontrado en: {r.documentos.join(' · ')}
@@ -367,12 +364,13 @@ export function Buscar() {
                   <code>educación</code> dan lo mismo. Con <strong>una sola palabra</strong> busca
                   en todo el registro —objeto, entidad y contratista—; con{' '}
                   <strong>varias palabras</strong> exige que aparezcan <strong>juntas, como una
-                  frase</strong>, para no traer contratos donde solo coinciden sueltas. Cuando el
-                  término está en la entidad o el contratista y no en el objeto, la fila lo señala
-                  con <em>«coincide en»</em>. Además se busca en el <strong>nombre de los documentos
-                  anexos</strong> del proceso (2021→hoy), marcados con <em>«encontrado en»</em> —los
-                  que el buscador oficial no trae porque su objeto no menciona lo buscado—. Se
-                  excluyen borradores y cancelados, y se muestran hasta <strong>{LIMITE}</strong>{' '}
+                  frase</strong>, para no traer contratos donde solo coinciden sueltas. Además se
+                  busca en el <strong>nombre de los documentos anexos</strong> del proceso
+                  (2021→hoy) —lo que el buscador oficial no trae porque el objeto no lo menciona—.
+                  Cuando lo buscado no está a la vista en la fila, aparece marcado con{' '}
+                  <em>«encontrado en»</em>, diga dónde diga: el nombre de la entidad, el
+                  contratista, un documento anexo, u otro campo del registro. Se excluyen
+                  borradores y cancelados, y se muestran hasta <strong>{LIMITE}</strong>{' '}
                   resultados. <strong>Haz clic en una fila</strong> para ver el detalle.
                 </Methodology>
 
