@@ -149,29 +149,6 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
     },
   })
 
-  // Vencidos por antigüedad. Separarlos es clave: los de más de un año casi
-  // siempre son registros sin cerrar, no retrasos activos.
-  const vencidosPorAntiguedad = useQuery({
-    queryKey: ['dash', 'antiguedad', filters],
-    queryFn: async () => {
-      const contar = async (rango) => {
-        const where = buildWhere(
-          whereFromFilters(filters, [...moraConditions(), ...RANGOS_VENCIMIENTO[rango]]),
-        )
-        const rows = await socrataQuery(
-          DS,
-          `SELECT count(id_contrato) as n ${where} LIMIT 1`,
-        )
-        return parseInt(rows[0]?.n ?? 0, 10)
-      }
-      const [recientes, medios, antiguos] = await Promise.all([
-        contar('recientes'),
-        contar('medios'),
-        contar('antiguos'),
-      ])
-      return { recientes, medios, antiguos }
-    },
-  })
 
   // Ejecución financiera de los contratos con plazo vencido. Es la evidencia
   // más dura disponible... pero el campo valor_pagado está muy incompleto:
@@ -201,20 +178,38 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
     },
   })
 
-  // Contratos en mora
+  // Contratos en mora, con su desglose por antigüedad en la misma consulta.
+  // Antes eran 4 peticiones (total+riesgo, y una por franja); combinadas en una
+  // sola con sum(case()) por franja, igual que ya hacen cierre y ejecucion más
+  // abajo. No es que cada consulta suelta fuera lenta por sí sola —de hecho son
+  // baratas—, sino que las nueve o diez peticiones del Panorama compiten entre
+  // sí al dispararse todas juntas: medido en vivo, consultas de 2-5s en
+  // solitario pasan a 19-28s cuando compiten con el resto. Menos peticiones
+  // totales es lo que de verdad baja el tiempo de carga.
   const mora = useQuery({
     queryKey: ['dash', 'mora', filters],
-    queryFn: () => {
+    queryFn: async () => {
       const where = buildWhere(whereFromFilters(filters, moraConditions()))
-      return socrataQuery(
+      const condicion = (rango) => RANGOS_VENCIMIENTO[rango].join(' AND ')
+      const rows = await socrataQuery(
         DS,
-        `SELECT count(id_contrato) as total, sum(valor_pendiente_de_ejecucion) as riesgo ${where} LIMIT 1`,
+        `SELECT count(id_contrato) as total,
+                sum(valor_pendiente_de_ejecucion) as riesgo,
+                sum(case(${condicion('recientes')}, 1, true, 0)) as recientes,
+                sum(case(${condicion('medios')}, 1, true, 0)) as medios,
+                sum(case(${condicion('antiguos')}, 1, true, 0)) as antiguos
+         ${where}`,
       )
+      const r = rows[0] || {}
+      const n = (v) => parseInt(v ?? 0, 10)
+      return {
+        total: n(r.total),
+        riesgo: parseFloat(r.riesgo ?? 0),
+        recientes: n(r.recientes),
+        medios: n(r.medios),
+        antiguos: n(r.antiguos),
+      }
     },
-    select: (rows) => ({
-      total: parseInt(rows[0]?.total ?? 0, 10),
-      riesgo: parseFloat(rows[0]?.riesgo ?? 0),
-    }),
   })
 
   // Distribución de valor por sector
@@ -335,7 +330,7 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
   })
 
   return {
-    generales, entidadesActoras, contratistasActores, porEstado, mora, vencidosPorAntiguedad,
+    generales, entidadesActoras, contratistasActores, porEstado, mora,
     ejecucionVencidos, porSector, entidadesMora, porModalidad, cierre, ejecucion,
   }
 }

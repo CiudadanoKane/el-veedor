@@ -119,7 +119,7 @@ export function Dashboard() {
   const abiertas = useMemo(() => new Set(activa ? [activa] : []), [activa])
 
   const {
-    generales, entidadesActoras, contratistasActores, porEstado, mora, vencidosPorAntiguedad,
+    generales, entidadesActoras, contratistasActores, porEstado, mora,
     ejecucionVencidos, porSector, entidadesMora, porModalidad, cierre, ejecucion,
   } = useDashboardStats(filters, abiertas)
 
@@ -127,8 +127,7 @@ export function Dashboard() {
 
   // Solo los contratos En ejecución pueden tener el plazo vencido.
   const enEjecucion = porEstado.data?.enEjecucion
-  const ant = vencidosPorAntiguedad.data
-  const pctRecienteNum = pct(ant?.recientes, enEjecucion)
+  const pctRecienteNum = pct(mora.data?.recientes, enEjecucion)
   const pctReciente = pctRecienteNum != null ? formatPct(pctRecienteNum) : null
   const pctVencidosNum = pct(mora.data?.total, enEjecucion)
   const pctVencidos = pctVencidosNum != null ? formatPct(pctVencidosNum) : null
@@ -232,11 +231,11 @@ export function Dashboard() {
       nodo: (
         <StatCard
           label="Vencidos hace poco"
-          value={ant?.recientes?.toLocaleString('es-CO') ?? '—'}
+          value={mora.data?.recientes?.toLocaleString('es-CO') ?? '—'}
           pct={pctReciente ? `${pctReciente} de los vigentes` : null}
           sub="Plazo vencido en los últimos 6 meses. No todos los vencidos son retrasos reales."
           tone="danger"
-          loading={vencidosPorAntiguedad.isLoading || porEstado.isLoading}
+          loading={mora.isLoading || porEstado.isLoading}
           onToggle={() => alternar('vencidos')}
           abierta={abierta('vencidos')}
           detalle="Ver antigüedad"
@@ -507,7 +506,7 @@ export function Dashboard() {
           </>
         }
       >
-        <QueryState query={vencidosPorAntiguedad} empty="Sin contratos con plazo vencido.">
+        <QueryState query={mora} empty="Sin contratos con plazo vencido.">
           {(data) => (
             <ListaBarra
               items={[
