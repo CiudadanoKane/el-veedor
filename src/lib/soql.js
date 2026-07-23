@@ -91,3 +91,16 @@ export function soloContratosValidos() {
   return `estado_contrato NOT IN (${lista})`
 }
 
+// Cláusula de estado para el buscador, donde el ciudadano puede elegir uno o
+// varios estados (acumulable, OR). Si eligió alguno, se filtra por esos
+// exactamente —incluido Cancelado o Borrador si los pide, porque son
+// precisamente los que alguien haciendo veeduría querría revisar—. Si no
+// eligió ninguno, se mantiene el filtro por defecto que excluye los que no son
+// contratos vigentes.
+export function condicionEstado(estados) {
+  if (estados?.length) {
+    return `estado_contrato IN (${estados.map((e) => `'${esc(e)}'`).join(', ')})`
+  }
+  return soloContratosValidos()
+}
+

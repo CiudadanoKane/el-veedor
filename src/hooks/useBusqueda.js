@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery, socrataBusqueda } from '../lib/socrataClient'
 import { DATASETS, CONTRACT_FIELDS } from '../lib/constants'
-import { esc, whereFromFilters, soloContratosValidos } from '../lib/soql'
+import { esc, whereFromFilters, condicionEstado } from '../lib/soql'
 import { variantesDeFrase, tieneTextoBuscable, palabrasDeFrase } from '../lib/acentos'
 import { adaptList } from '../adapters/secop2Adapter'
 
@@ -50,7 +50,8 @@ export function esIdentificador(texto) {
 
 export function hayBusqueda(criterios = {}) {
   const conTexto = tieneTextoBuscable(criterios.texto || '')
-  const conFiltro = Object.keys(CAMPOS_LISTA).some((k) => criterios[k])
+  const conFiltro =
+    Object.keys(CAMPOS_LISTA).some((k) => criterios[k]) || criterios.estados?.length > 0
   return conTexto || conFiltro
 }
 
@@ -110,9 +111,10 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
         return { filas, hayMas: filas.length > LIMITE, porId: true }
       }
 
-      // $where compartido por todas las variantes: solo contratos válidos, más
-      // los filtros de lista y los geográficos.
-      const partes = [soloContratosValidos()]
+      // $where compartido por todas las variantes: el filtro de estado (el
+      // elegido a mano, o el de "contratos válidos" por defecto), más los
+      // filtros de lista y los geográficos.
+      const partes = [condicionEstado(criterios.estados)]
       for (const [clave, campo] of Object.entries(CAMPOS_LISTA)) {
         if (criterios[clave]) partes.push(`${campo} = '${esc(criterios[clave])}'`)
       }

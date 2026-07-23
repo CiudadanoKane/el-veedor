@@ -34,6 +34,28 @@ export const TIPOS_CONTRATO = [
   'Otro',
 ]
 
+// Estados reales de estado_contrato, por frecuencia (verificado jul 2026). La
+// capitalización y los acentos importan tal cual: la API es sensible a ambos y
+// así los devuelve ("terminado" en minúscula, "cedido" en minúscula). Incluye
+// los que el resto de la plataforma excluye por defecto de las cifras agregadas
+// (Borrador, Cancelado, enviado Proveedor, En aprobación) a propósito: acá el
+// ciudadano elige a mano, y revisar justo esos es buena parte del punto de una
+// veeduría.
+export const ESTADOS_CONTRATO = [
+  'En ejecución',
+  'Cerrado',
+  'Modificado',
+  'terminado',
+  'Borrador',
+  'Aprobado',
+  'Cancelado',
+  'enviado Proveedor',
+  'cedido',
+  'En aprobación',
+  'Suspendido',
+  'Prorrogado',
+]
+
 // Causal invocada para no licitar. Es el filtro con más carga interpretativa
 // del buscador: "Urgencia manifiesta" permite contratar sin proceso alguno, y
 // es legítima ante un desastre — por eso quien la usa más son las entidades de

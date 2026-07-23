@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery, socrataBusqueda } from '../lib/socrataClient'
 import { DATASETS, DATASETS_ARCHIVOS, CONTRACT_FIELDS } from '../lib/constants'
-import { esc, whereFromFilters, buildWhere, soloContratosValidos } from '../lib/soql'
+import { esc, whereFromFilters, buildWhere, condicionEstado } from '../lib/soql'
 import { tieneTextoBuscable } from '../lib/acentos'
 import { esIdentificador } from './useBusqueda'
 import { adaptList } from '../adapters/secop2Adapter'
@@ -41,7 +41,7 @@ export function useBusquedaDocumentos(criterios = {}, filtrosGeo = {}) {
 
   return useQuery({
     enabled: activa,
-    queryKey: ['busqueda-docs', texto, orden, filtrosGeo],
+    queryKey: ['busqueda-docs', texto, orden, criterios.estados, filtrosGeo],
     queryFn: async () => {
       // Paso 1: archivos cuyo nombre coincide, en los cinco datasets a la vez.
       // $q hace AND entre palabras y busca sobre el nombre y la descripción del
@@ -89,7 +89,7 @@ export function useBusquedaDocumentos(criterios = {}, filtrosGeo = {}) {
         claves.push(`proceso_de_compra IN (${idsProceso.map((x) => `'${esc(x)}'`).join(',')})`)
       }
       const where = buildWhere(
-        whereFromFilters(filtrosGeo, [soloContratosValidos(), `(${claves.join(' OR ')})`]),
+        whereFromFilters(filtrosGeo, [condicionEstado(criterios.estados), `(${claves.join(' OR ')})`]),
       )
       const orderBy =
         orden === 'reciente' ? 'fecha_de_firma DESC' : 'valor_del_contrato DESC'

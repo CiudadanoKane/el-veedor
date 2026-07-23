@@ -13,7 +13,7 @@ import { BuscadorEntidad } from '../components/ui/BuscadorEntidad'
 import { useBusquedaDocumentos } from '../hooks/useBusquedaDocumentos'
 import { useDirectorioEntidades } from '../hooks/useDirectorioEntidades'
 import { useBusqueda, hayBusqueda, ORDENES, LIMITE } from '../hooks/useBusqueda'
-import { MODALIDADES, TIPOS_CONTRATO } from '../lib/catalogos'
+import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO } from '../lib/catalogos'
 import { DOCUMENTOS_SIN_IDENTIDAD } from '../lib/identidad'
 import { sinTildes } from '../lib/acentos'
 import { formatCOP, formatDate } from '../lib/formatters'
@@ -44,7 +44,7 @@ function coincidenciaVisible(contrato, texto) {
 
 // Parámetros de URL que le pertenecen al buscador. Todo lo demás en la URL es
 // de otro módulo (hoy, los filtros geográficos) y no se toca desde aquí.
-const PARAMS_BUSQUEDA = ['q', 'modalidad', 'tipo', 'orden', 'modo']
+const PARAMS_BUSQUEDA = ['q', 'modalidad', 'tipo', 'estado', 'orden', 'modo']
 
 // Nivel superior: buscar contratos por palabra, o encontrar un contratista o
 // entidad por nombre (que se buscan mejor por nombre que por palabra suelta).
@@ -80,6 +80,40 @@ function Campo({ label, value, onChange, options, placeholder }) {
   )
 }
 
+// Selector acumulable (varios a la vez, OR): a diferencia de Campo, que es de
+// una sola opción, este alterna cada valor de forma independiente. Sirve para
+// "estado", donde tiene sentido pedir por ejemplo En ejecución + Modificado
+// a la vez.
+function Chips({ label, seleccionados, onToggle, options }) {
+  return (
+    <div className="flex flex-col gap-1 w-full">
+      <span className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+        {label}
+      </span>
+      <div className="flex flex-wrap gap-1.5">
+        {options.map((o) => {
+          const activo = seleccionados.includes(o)
+          return (
+            <button
+              key={o}
+              type="button"
+              onClick={() => onToggle(o)}
+              aria-pressed={activo}
+              className={`px-2.5 py-1 text-[12.5px] border whitespace-nowrap transition-colors ${
+                activo
+                  ? 'bg-textPrimary text-bg border-textPrimary font-medium'
+                  : 'border-border text-textSecondary hover:border-textPrimary hover:text-textPrimary'
+              }`}
+            >
+              {o}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export function Buscar() {
   const { filters } = useFilters()
   // La búsqueda vive en la URL para que se pueda compartir: quien encuentre
@@ -97,6 +131,7 @@ export function Buscar() {
     texto: params.get('q') || '',
     modalidad: params.get('modalidad') || '',
     tipo: params.get('tipo') || '',
+    estados: (params.get('estado') || '').split(',').filter(Boolean),
     orden: ORDENES[params.get('orden')] ? params.get('orden') : 'valor',
   }), [params])
 
@@ -108,7 +143,7 @@ export function Buscar() {
   // Filtros avanzados, plegados por defecto. Se abren solos si llega uno activo
   // por la URL (p. ej. un enlace compartido que ya trae una modalidad).
   const [avanzados, setAvanzados] = useState(
-    () => !!(criterios.modalidad || criterios.tipo),
+    () => !!(criterios.modalidad || criterios.tipo || criterios.estados.length),
   )
 
   // Se toca solo lo propio del buscador y se conserva el resto de la URL (los
@@ -119,6 +154,7 @@ export function Buscar() {
       q: sig.texto,
       modalidad: sig.modalidad,
       tipo: sig.tipo,
+      estado: sig.estados.length ? sig.estados.join(',') : '',
       orden: sig.orden === 'valor' ? '' : sig.orden,
       modo: sig.modo === 'contratos' ? '' : sig.modo,
     }
@@ -148,7 +184,14 @@ export function Buscar() {
   const queryContratos = useBusqueda(criterios, filters)
   const queryDocumentos = useBusquedaDocumentos(criterios, filters)
   const activa = hayBusqueda(criterios)
-  const hayFiltros = criterios.modalidad || criterios.tipo
+  const hayFiltros = criterios.modalidad || criterios.tipo || criterios.estados.length > 0
+
+  const toggleEstado = (estado) => {
+    const set = new Set(criterios.estados)
+    if (set.has(estado)) set.delete(estado)
+    else set.add(estado)
+    actualizar({ estados: [...set] })
+  }
 
   // Lista unificada: primero lo que trajo la búsqueda del objeto, y luego lo que
   // la de documentos encontró y esa no —contratos cuyo término solo vive en el
@@ -291,20 +334,28 @@ export function Buscar() {
                 {avanzados ? '– Filtros avanzados' : '+ Filtros avanzados'}
               </button>
               {avanzados && (
-                <div className="mt-4 flex flex-wrap items-end gap-5">
-                  <Campo
-                    label="Modalidad"
-                    value={criterios.modalidad}
-                    onChange={(v) => actualizar({ modalidad: v })}
-                    options={MODALIDADES}
-                    placeholder="Todas las modalidades"
-                  />
-                  <Campo
-                    label="Tipo de contrato"
-                    value={criterios.tipo}
-                    onChange={(v) => actualizar({ tipo: v })}
-                    options={TIPOS_CONTRATO}
-                    placeholder="Todos los tipos"
+                <div className="mt-4 space-y-4">
+                  <div className="flex flex-wrap items-end gap-5">
+                    <Campo
+                      label="Modalidad"
+                      value={criterios.modalidad}
+                      onChange={(v) => actualizar({ modalidad: v })}
+                      options={MODALIDADES}
+                      placeholder="Todas las modalidades"
+                    />
+                    <Campo
+                      label="Tipo de contrato"
+                      value={criterios.tipo}
+                      onChange={(v) => actualizar({ tipo: v })}
+                      options={TIPOS_CONTRATO}
+                      placeholder="Todos los tipos"
+                    />
+                  </div>
+                  <Chips
+                    label="Estado del contrato"
+                    seleccionados={criterios.estados}
+                    onToggle={toggleEstado}
+                    options={ESTADOS_CONTRATO}
                   />
                 </div>
               )}
@@ -334,7 +385,7 @@ export function Buscar() {
                   {EJEMPLOS.map((t) => (
                     <button
                       key={t}
-                      onClick={() => actualizar({ texto: t, modalidad: '', tipo: '' })}
+                      onClick={() => actualizar({ texto: t, modalidad: '', tipo: '', estados: [] })}
                       className="border border-border px-4 py-2 text-[14px] text-textPrimary
                                  hover:border-textPrimary hover:bg-muted transition-colors"
                     >
@@ -366,8 +417,10 @@ export function Buscar() {
                   (2021→hoy) —lo que el buscador oficial no trae porque el objeto no lo menciona—.
                   Cuando lo buscado no está a la vista en la fila, aparece marcado con{' '}
                   <em>«encontrado en»</em>, diga dónde diga: el nombre de la entidad, el
-                  contratista, un documento anexo, u otro campo del registro. Se excluyen
-                  borradores y cancelados, y se muestran hasta <strong>{LIMITE}</strong>{' '}
+                  contratista, un documento anexo, u otro campo del registro. Por defecto se
+                  excluyen borradores y cancelados; en <strong>Filtros avanzados</strong> puedes
+                  elegir uno o varios <strong>estados</strong> a la vez —incluidos esos, si es
+                  justo lo que quieres revisar—. Se muestran hasta <strong>{LIMITE}</strong>{' '}
                   resultados. <strong>Haz clic en una fila</strong> para ver el detalle.
                 </Methodology>
 
