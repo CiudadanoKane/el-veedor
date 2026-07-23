@@ -1,7 +1,29 @@
 import { interpretContract } from '../../lib/interpret'
-import { formatCOP, formatDate } from '../../lib/formatters'
+import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/formatters'
 import { SecopLink } from './SecopLink'
 import { ModificationHistory } from './ModificationHistory'
+
+// Estados donde la fecha de fin pasada no es una alerta: el contrato ya cerró
+// como corresponde, o nunca llegó a ejecutarse. En cualquier otro estado
+// (En ejecución, Modificado, Suspendido…) sigue corriendo, así que si la fecha
+// —que ya incluye las prórrogas, SECOP la actualiza con cada una— ya pasó, es
+// un atraso real.
+const ESTADOS_SIN_ATRASO = [
+  'Cerrado', 'terminado', 'Borrador', 'Cancelado', 'enviado Proveedor', 'En aprobación',
+]
+
+// Días de atraso sobre la fecha de fin, o null si no aplica. Mismas guardas de
+// calidad de dato que la sección de Mora: descarta años basura (< 2000) y
+// fechas invertidas (fin antes que inicio), que si no producirían "atrasos" de
+// cientos de años.
+function diasAtraso(c) {
+  if (!c.endDate || ESTADOS_SIN_ATRASO.includes(c.status)) return null
+  const fin = new Date(c.endDate)
+  if (fin < new Date('2000-01-01')) return null
+  if (c.startDate && fin < new Date(c.startDate)) return null
+  const dias = daysSince(c.endDate)
+  return dias > 0 ? dias : null
+}
 
 function Fact({ label, value }) {
   return (
@@ -15,6 +37,7 @@ function Fact({ label, value }) {
 // Panel que se despliega bajo una fila: interpretación en lenguaje llano + ficha de datos.
 export function ContractDetail({ contract: c }) {
   const sentences = interpretContract(c)
+  const atraso = diasAtraso(c)
 
   return (
     <div className="bg-muted rounded-none p-4 space-y-4">
@@ -72,7 +95,21 @@ export function ContractDetail({ contract: c }) {
         <Fact label="Sector" value={c.sector} />
         <Fact label="Fecha de firma" value={formatDate(c.signDate)} />
         <Fact label="Inicio" value={formatDate(c.startDate)} />
-        <Fact label="Fin previsto" value={formatDate(c.endDate)} />
+        <Fact
+          label="Fin previsto"
+          value={
+            atraso != null ? (
+              <span className="text-danger font-medium">
+                {formatDate(c.endDate)}
+                <span className="block text-xs font-normal">
+                  {humanDuration(atraso) || `${atraso.toLocaleString('es-CO')} días`} de atraso
+                </span>
+              </span>
+            ) : (
+              formatDate(c.endDate)
+            )
+          }
+        />
         <Fact
           label="Días adicionados"
           value={c.daysAdded ? `+${c.daysAdded.toLocaleString('es-CO')}` : '0'}
