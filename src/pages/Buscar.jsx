@@ -21,27 +21,24 @@ import { formatCOP, formatDate } from '../lib/formatters'
 // Normaliza texto para comparar sin importar tildes ni espacios de más.
 const norm = (s) => sinTildes(s || '').replace(/\s+/g, ' ').trim()
 
-// Cuántos caracteres del objeto alcanza a leerse en la fila antes de que
-// line-clamp-2 lo corte (celda de ~320px, texto pequeño): una estimación
-// deliberadamente corta, porque es preferible una anotación de más que dejar
-// una coincidencia real invisible.
-const LARGO_VISIBLE = 90
-
-// ¿Dónde apareció lo buscado, si no está a la vista en la fila? Con una sola
-// palabra la búsqueda es amplia —$q mira todos los campos de Socrata, no solo
-// los que se muestran—, así que una fila puede coincidir por su sector, ciudad,
-// modalidad o NIT sin que ningún texto visible lo explique. Se revisan primero
-// los campos que si aparecen se pueden nombrar con precisión, y si ninguno
-// coincide pero igual llegó como resultado, se avisa de forma genérica: es
-// preferible una etiqueta imprecisa a una fila sin ninguna explicación.
+// ¿Dónde apareció lo buscado, si no está a la vista en la fila? La entidad y el
+// contratista se muestran completos, sin recortar, así que un acierto ahí ya es
+// visible. El objeto, en cambio, se corta a dos líneas (line-clamp-2), y cuánto
+// texto alcanza a verse depende del ancho de pantalla de quien mira —no hay
+// forma fiable de adivinarlo—, así que un acierto ahí se explica siempre, aunque
+// a veces sea redundante con lo que ya se alcanza a leer: es preferible una
+// anotación de más que dejar una coincidencia real invisible por un recorte de
+// CSS. Con una sola palabra la búsqueda es además amplia —$q mira todos los
+// campos de Socrata, no solo los que se muestran—, así que una fila puede
+// coincidir por su sector, ciudad, modalidad o NIT sin que ningún texto visible
+// lo explique; para esos casos se avisa de forma genérica.
 function coincidenciaVisible(contrato, texto) {
   const aguja = norm(texto)
   if (!aguja) return null
-  if (norm(contrato.description).slice(0, LARGO_VISIBLE).includes(aguja)) return null
-  if (norm(contrato.entityName).includes(aguja)) return 'el nombre de la entidad'
-  if (norm(contrato.contractorName).includes(aguja)) return 'el nombre del contratista'
+  if (norm(contrato.entityName).includes(aguja)) return null
+  if (norm(contrato.contractorName).includes(aguja)) return null
   if (norm(contrato.department).includes(aguja)) return 'el departamento'
-  if (norm(contrato.description).includes(aguja)) return 'el objeto del contrato, más abajo del resumen'
+  if (norm(contrato.description).includes(aguja)) return 'el objeto del contrato'
   return 'otro campo del registro — ábrelo para ver el detalle'
 }
 
