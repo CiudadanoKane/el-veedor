@@ -64,24 +64,42 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
     }),
   })
 
-  // Escala del sistema: cuántos actores participan
-  const actores = useQuery({
-    queryKey: ['dash', 'actores', filters],
+  // Escala del sistema: cuántos actores participan.
+  //
+  // Dos consultas separadas, no una combinada: Socrata igual calcula cada
+  // count(distinct) por su cuenta internamente, así que combinarlas en una sola
+  // petición no ahorra nada y obliga a esperar a la más lenta de las dos para
+  // tener cualquiera de las dos cifras. Medido sobre 5,3 millones de registros:
+  // 35s la consulta combinada, ~11s la más lenta de las dos por separado.
+  //
+  // Entidades cuenta por nit_entidad, no por nombre_entidad: además de ser ~2×
+  // más rápido, es más correcto — el mismo NIT aparece escrito de formas
+  // distintas (mayúsculas, tildes), lo que inflaba el conteo por nombre en 671
+  // "entidades" que en realidad son la misma. nit_entidad es numérico en
+  // Socrata, así que no admite el filtro de "documento sin identidad" que sí
+  // usa documento_proveedor (ese es de texto): comparar un número contra
+  // 'No Definido' revienta la consulta con un error de tipo.
+  const entidadesActoras = useQuery({
+    queryKey: ['dash', 'entidades', filters],
+    queryFn: () => {
+      const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
+      return socrataQuery(DS, `SELECT count(distinct nit_entidad) as entidades ${where} LIMIT 1`)
+    },
+    select: (rows) => parseInt(rows[0]?.entidades ?? 0, 10),
+  })
+
+  const contratistasActores = useQuery({
+    queryKey: ['dash', 'contratistas', filters],
     queryFn: () => {
       const where = buildWhere(
         whereFromFilters(filters, [soloContratosValidos(), documentoIdentifica()]),
       )
       return socrataQuery(
         DS,
-        `SELECT count(distinct nombre_entidad) as entidades,
-                count(distinct documento_proveedor) as contratistas
-         ${where} LIMIT 1`,
+        `SELECT count(distinct documento_proveedor) as contratistas ${where} LIMIT 1`,
       )
     },
-    select: (rows) => ({
-      entidades: parseInt(rows[0]?.entidades ?? 0, 10),
-      contratistas: parseInt(rows[0]?.contratistas ?? 0, 10),
-    }),
+    select: (rows) => parseInt(rows[0]?.contratistas ?? 0, 10),
   })
 
   // Desglose por modalidad — detalle de la cifra "sin competencia"
@@ -317,7 +335,7 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
   })
 
   return {
-    generales, actores, porEstado, mora, vencidosPorAntiguedad, ejecucionVencidos,
-    porSector, entidadesMora, porModalidad, cierre, ejecucion,
+    generales, entidadesActoras, contratistasActores, porEstado, mora, vencidosPorAntiguedad,
+    ejecucionVencidos, porSector, entidadesMora, porModalidad, cierre, ejecucion,
   }
 }

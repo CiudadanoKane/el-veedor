@@ -119,8 +119,8 @@ export function Dashboard() {
   const abiertas = useMemo(() => new Set(activa ? [activa] : []), [activa])
 
   const {
-    generales, actores, porEstado, mora, vencidosPorAntiguedad, ejecucionVencidos,
-    porSector, entidadesMora, porModalidad, cierre, ejecucion,
+    generales, entidadesActoras, contratistasActores, porEstado, mora, vencidosPorAntiguedad,
+    ejecucionVencidos, porSector, entidadesMora, porModalidad, cierre, ejecucion,
   } = useDashboardStats(filters, abiertas)
 
   const scope = filters.city || filters.department || 'Colombia'
@@ -170,9 +170,9 @@ export function Dashboard() {
       nodo: (
         <StatCard
           label="Contratistas"
-          value={actores.data?.contratistas?.toLocaleString('es-CO') ?? '—'}
+          value={contratistasActores.data?.toLocaleString('es-CO') ?? '—'}
           sub="Personas y empresas distintas, contadas por NIT o cédula"
-          loading={actores.isLoading}
+          loading={contratistasActores.isLoading}
           reservaPct={false}
           accion={
             <Link
@@ -190,9 +190,9 @@ export function Dashboard() {
       nodo: (
         <StatCard
           label="Entidades contratantes"
-          value={actores.data?.entidades?.toLocaleString('es-CO') ?? '—'}
+          value={entidadesActoras.data?.toLocaleString('es-CO') ?? '—'}
           sub="Organismos públicos que firmaron contratos"
-          loading={actores.isLoading}
+          loading={entidadesActoras.isLoading}
           reservaPct={false}
           accion={
             <Link
