@@ -10,12 +10,22 @@ export function secop2Adapter(raw) {
   // urlproceso viene como objeto { url: "..." } en la API real
   const processUrl = raw.urlproceso?.url ?? null
 
+  // descripcion_del_proceso y objeto_del_contrato no son el mismo texto: SECOP
+  // los guarda con topes distintos (300 y 500 caracteres medido jul 2026), así
+  // que en objetos largos descripcion_del_proceso llega cortado a media palabra
+  // mientras objeto_del_contrato conserva más texto. Preferir siempre el más
+  // largo evita perder información —y perder coincidencias de búsqueda— por
+  // quedarse con el campo que resultó estar presente primero.
+  const desc = v('descripcion_del_proceso')
+  const obj = v('objeto_del_contrato')
+  const description = (desc?.length ?? 0) >= (obj?.length ?? 0) ? desc : obj
+
   return {
     id:               v('id_contrato'),
     reference:        v('referencia_del_contrato'),
     processId:        v('proceso_de_compra'),
     processUrl,
-    description:      v('descripcion_del_proceso') ?? v('objeto_del_contrato'),
+    description,
 
     entityName:       v('nombre_entidad'),
     entityNit:        v('nit_entidad'),

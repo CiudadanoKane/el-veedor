@@ -21,16 +21,28 @@ import { formatCOP, formatDate } from '../lib/formatters'
 // Normaliza texto para comparar sin importar tildes ni espacios de más.
 const norm = (s) => sinTildes(s || '').replace(/\s+/g, ' ').trim()
 
-// ¿En qué campo visible apareció lo buscado, si no fue en el objeto? El objeto ya
-// se muestra en la fila, así que solo vale la pena señalarlo cuando la coincidencia
-// está en la entidad o el contratista —donde el ojo no la buscaría—. Devuelve la
-// etiqueta a mostrar, o null si está a la vista (o no aplica).
+// Cuántos caracteres del objeto alcanza a leerse en la fila antes de que
+// line-clamp-2 lo corte (celda de ~320px, texto pequeño): una estimación
+// deliberadamente corta, porque es preferible una anotación de más que dejar
+// una coincidencia real invisible.
+const LARGO_VISIBLE = 90
+
+// ¿Dónde apareció lo buscado, si no está a la vista en la fila? Con una sola
+// palabra la búsqueda es amplia —$q mira todos los campos de Socrata, no solo
+// los que se muestran—, así que una fila puede coincidir por su sector, ciudad,
+// modalidad o NIT sin que ningún texto visible lo explique. Se revisan primero
+// los campos que si aparecen se pueden nombrar con precisión, y si ninguno
+// coincide pero igual llegó como resultado, se avisa de forma genérica: es
+// preferible una etiqueta imprecisa a una fila sin ninguna explicación.
 function coincidenciaVisible(contrato, texto) {
   const aguja = norm(texto)
-  if (!aguja || norm(contrato.description).includes(aguja)) return null
+  if (!aguja) return null
+  if (norm(contrato.description).slice(0, LARGO_VISIBLE).includes(aguja)) return null
   if (norm(contrato.entityName).includes(aguja)) return 'el nombre de la entidad'
   if (norm(contrato.contractorName).includes(aguja)) return 'el nombre del contratista'
-  return null
+  if (norm(contrato.department).includes(aguja)) return 'el departamento'
+  if (norm(contrato.description).includes(aguja)) return 'el objeto del contrato, más abajo del resumen'
+  return 'otro campo del registro — ábrelo para ver el detalle'
 }
 
 // Parámetros de URL que le pertenecen al buscador. Todo lo demás en la URL es
