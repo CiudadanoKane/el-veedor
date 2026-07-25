@@ -315,12 +315,29 @@ llegaron a formalizarse (`Convocado`, `Borrador`, `Descartado`). Filtrando a
 los que sí son contrato (`Celebrado` + `Liquidado` + `Terminado sin Liquidar`)
 quedan **5,81 millones**, orden comparable a los 5,3M de SECOP II.
 
-**Lo que no se puede traer, y por qué:** SECOP I no reporta ejecución
-financiera. No existen `valor_pagado`, `valor_pendiente_de_ejecucion` ni
-`saldo_cdp`. Eso deja fuera, para esta fuente, tres piezas ya construidas:
-"Cerrados sin pago", "Valor sin ejecutar" y el método exacto de adiciones de
-valor. Se documentará como limitación de la fuente, no se inventará un
-sustituto.
+**Antes de aceptar la ausencia, se revisó si se podía deducir de otras
+columnas.** Parte sí, parte no — verificado, no supuesto:
+
+- **Adiciones de valor: más fácil que en SECOP II, no más difícil.**
+  `valor_total_de_adiciones` y `valor_contrato_con_adiciones` vienen directos.
+  No hace falta el método de cruce con Procesos que SECOP II sí necesitó
+  (`saldo_cdp` resultó inservible ahí).
+- **Cierre confiable: no hace falta el mismo campo, sino medir el mismo
+  concepto.** En SECOP II, "Cerrado" no basta por sí solo —34% reporta $0
+  pagado— así que se cruza con el pago. En SECOP I, `Liquidado` **es** ese
+  cruce: es un acto legal de conciliación final de cuentas, más fuerte que el
+  estado "Cerrado" de SECOP II. El total combinado puede definir "cierre
+  confiable" como `Cerrado + pago ≥ valor` en una fuente y `Liquidado` en la
+  otra — mismo concepto, columnas distintas.
+- **Lo que de verdad no se puede traer:** SECOP I no reporta ejecución
+  financiera. No existen `valor_pagado`, `valor_pendiente_de_ejecucion` ni
+  `saldo_cdp`, y se buscó un dataset separado de pagos para SECOP I (como sí
+  existe `SECOP II - Plan de pagos`, `uymx-8p3j`) sin encontrar equivalente.
+  No es un dato mal capturado: nunca se capturó, porque SECOP I es un sistema
+  de registro, no de ejecución. Ninguna operación entre columnas reconstruye
+  un hecho que la fuente nunca registró. Eso deja fuera, solo para esta
+  fuente, "Cerrados sin pago" y "Valor sin ejecutar" — se documentará como
+  limitación de la fuente, no se inventará un sustituto.
 
 Otras diferencias verificadas:
 - **Vocabulario de estados incompatible.** No existe `'En ejecución'`. El

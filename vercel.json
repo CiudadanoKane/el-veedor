@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["gru1"],
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ],
@@ -14,13 +15,13 @@
     { "path": "/api/rankings-contratistas", "schedule": "35 9 * * *" }
   ],
   "functions": {
-    "api/noticias.js": { "maxDuration": 60 },
-    "api/noticias-fechas.js": { "maxDuration": 60 },
-    "api/geo.js": { "maxDuration": 30 },
-    "api/directorio.js": { "maxDuration": 30 },
-    "api/panorama.js": { "maxDuration": 30 },
-    "api/alertas-vencidos.js": { "maxDuration": 30 },
-    "api/errores-indice.js": { "maxDuration": 60 },
-    "api/rankings-contratistas.js": { "maxDuration": 45 }
+    "api/noticias.js": { "maxDuration": 120 },
+    "api/noticias-fechas.js": { "maxDuration": 300 },
+    "api/geo.js": { "maxDuration": 60 },
+    "api/directorio.js": { "maxDuration": 60 },
+    "api/panorama.js": { "maxDuration": 60 },
+    "api/alertas-vencidos.js": { "maxDuration": 60 },
+    "api/errores-indice.js": { "maxDuration": 150 },
+    "api/rankings-contratistas.js": { "maxDuration": 90 }
   }
 }
