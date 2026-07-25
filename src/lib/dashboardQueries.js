@@ -4,11 +4,11 @@
 // (producción, cacheado en el edge de Vercel). Un solo lugar donde corregir
 // si cambia una regla — ver ROADMAP.md sobre por qué el Panorama tardaba
 // 10+ segundos.
-import { ESTADO_ACTIVO, HOY } from './constants'
+import { ESTADO_ACTIVO, HOY } from './constants.js'
 import {
   whereFromFilters, buildWhere, moraConditions, soloContratosValidos, RANGOS_VENCIMIENTO,
-} from './soql'
-import { documentoIdentifica } from './identidad'
+} from './soql.js'
+import { documentoIdentifica } from './identidad.js'
 
 // Modalidades donde no hubo concurso: el Estado escoge al contratista
 // directamente. Es la vía legítima en muchos casos (servicios profesionales,

@@ -1,4 +1,4 @@
-import { ESTADO_ACTIVO, HOY } from './constants'
+import { ESTADO_ACTIVO, HOY } from './constants.js'
 
 // Escapa comillas simples para SoQL (se duplican)
 export function esc(value) {
