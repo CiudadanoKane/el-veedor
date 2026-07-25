@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
-import { socrataQuery } from '../lib/socrataClient'
-import { DATASETS, CONTRACT_FIELDS, ESTADO_ACTIVO } from '../lib/constants'
+import { socrataQuery } from '../lib/socrataClient.js'
+import { DATASETS, CONTRACT_FIELDS, ESTADO_ACTIVO } from '../lib/constants.js'
 import {
   whereFromFilters, buildWhere, soloContratosValidos, haceDias,
-} from '../lib/soql'
-import { adaptList } from '../adapters/secop2Adapter'
-import { documentoIdentifica } from '../lib/identidad'
+} from '../lib/soql.js'
+import { adaptList } from '../adapters/secop2Adapter.js'
+import { documentoIdentifica } from '../lib/identidad.js'
 
 const DS = DATASETS.CONTRATOS
 
@@ -50,8 +50,12 @@ const CONDICIONES_CERRADO_SIN_PAGO = [
   '(valor_pagado IS NULL OR valor_pagado <= 0)',
 ]
 
-export function useCerradoSinPago(filters = {}) {
-  const conteo = useQuery({
+// Cada alerta expone su conteo y su lista como queryOptions independientes
+// (mismo patrón que ejecucionContratistasQueryOptions y las de useRankings):
+// así /api/noticias puede correr server-side solo la pieza que de verdad usa,
+// sin arrastrar react-query.
+export function cerradoSinPagoConteoQueryOptions(filters = {}) {
+  return {
     queryKey: ['alerta', 'cerradosinpago', 'conteo', filters],
     queryFn: () => {
       const where = buildWhere(whereFromFilters(filters, CONDICIONES_CERRADO_SIN_PAGO))
@@ -64,9 +68,11 @@ export function useCerradoSinPago(filters = {}) {
       total: parseInt(rows[0]?.n ?? 0, 10),
       valor: parseFloat(rows[0]?.valor ?? 0),
     }),
-  })
+  }
+}
 
-  const lista = useQuery({
+export function cerradoSinPagoListaQueryOptions(filters = {}) {
+  return {
     queryKey: ['alerta', 'cerradosinpago', 'lista', filters],
     queryFn: () => {
       const where = buildWhere(whereFromFilters(filters, CONDICIONES_CERRADO_SIN_PAGO))
@@ -76,13 +82,18 @@ export function useCerradoSinPago(filters = {}) {
       )
     },
     select: adaptList,
-  })
-
-  return { conteo, lista }
+  }
 }
 
-export function useContratosSinValor(filters = {}) {
-  const conteo = useQuery({
+export function useCerradoSinPago(filters = {}) {
+  return {
+    conteo: useQuery(cerradoSinPagoConteoQueryOptions(filters)),
+    lista: useQuery(cerradoSinPagoListaQueryOptions(filters)),
+  }
+}
+
+export function contratosSinValorConteoQueryOptions(filters = {}) {
+  return {
     queryKey: ['alerta', 'sinvalor', 'conteo', filters],
     queryFn: () => {
       const where = buildWhere(whereFromFilters(filters, CONDICIONES_SIN_VALOR))
@@ -91,9 +102,11 @@ export function useContratosSinValor(filters = {}) {
       return socrataQuery(DS, `SELECT count(id_contrato) as n ${where} LIMIT 1`)
     },
     select: (rows) => ({ total: parseInt(rows[0]?.n ?? 0, 10) }),
-  })
+  }
+}
 
-  const lista = useQuery({
+export function contratosSinValorListaQueryOptions(filters = {}) {
+  return {
     queryKey: ['alerta', 'sinvalor', 'lista', filters],
     queryFn: () => {
       const where = buildWhere(whereFromFilters(filters, CONDICIONES_SIN_VALOR))
@@ -103,9 +116,14 @@ export function useContratosSinValor(filters = {}) {
       )
     },
     select: adaptList,
-  })
+  }
+}
 
-  return { conteo, lista }
+export function useContratosSinValor(filters = {}) {
+  return {
+    conteo: useQuery(contratosSinValorConteoQueryOptions(filters)),
+    lista: useQuery(contratosSinValorListaQueryOptions(filters)),
+  }
 }
 
 // ALERTA: contratos sin contratista identificado.
@@ -123,16 +141,15 @@ const CONDICIONES_SIN_CONTRATISTA = [
   `NOT (${documentoIdentifica()})`,
 ]
 
-export function useSinContratista(filters = {}) {
-  const conteo = useQuery({
+// Cota para que un valor mal digitado no distorsione el total
+const SIN_CONTRATISTA_TOPE = 'valor_del_contrato < 1000000000000'
+
+export function sinContratistaConteoQueryOptions(filters = {}) {
+  return {
     queryKey: ['alerta', 'sincontratista', 'conteo', filters],
     queryFn: () => {
       const where = buildWhere(
-        whereFromFilters(filters, [
-          ...CONDICIONES_SIN_CONTRATISTA,
-          // Cota para que un valor mal digitado no distorsione el total
-          'valor_del_contrato < 1000000000000',
-        ]),
+        whereFromFilters(filters, [...CONDICIONES_SIN_CONTRATISTA, SIN_CONTRATISTA_TOPE]),
       )
       return socrataQuery(
         DS,
@@ -143,16 +160,15 @@ export function useSinContratista(filters = {}) {
       total: parseInt(rows[0]?.n ?? 0, 10),
       valor: parseFloat(rows[0]?.valor ?? 0),
     }),
-  })
+  }
+}
 
-  const lista = useQuery({
+export function sinContratistaListaQueryOptions(filters = {}) {
+  return {
     queryKey: ['alerta', 'sincontratista', 'lista', filters],
     queryFn: () => {
       const where = buildWhere(
-        whereFromFilters(filters, [
-          ...CONDICIONES_SIN_CONTRATISTA,
-          'valor_del_contrato < 1000000000000',
-        ]),
+        whereFromFilters(filters, [...CONDICIONES_SIN_CONTRATISTA, SIN_CONTRATISTA_TOPE]),
       )
       return socrataQuery(
         DS,
@@ -160,31 +176,38 @@ export function useSinContratista(filters = {}) {
       )
     },
     select: adaptList,
-  })
+  }
+}
 
-  return { conteo, lista }
+export function useSinContratista(filters = {}) {
+  return {
+    conteo: useQuery(sinContratistaConteoQueryOptions(filters)),
+    lista: useQuery(sinContratistaListaQueryOptions(filters)),
+  }
 }
 
 // ALERTA: obra paralizada.
 // Un contrato de obra vencido hace más de seis meses, que además reporta
 // dinero sin ejecutar. La combinación es la señal más preocupante: la obra
 // no terminó, el plazo se venció hace rato y quedaron recursos sin gastar.
-const CONDICIONES_OBRA_PARALIZADA = [
-  `estado_contrato = '${ESTADO_ACTIVO}'`,
-  `tipo_de_contrato = 'Obra'`,
-  `fecha_de_fin_del_contrato >= '2000-01-01T00:00:00'`,
-  `fecha_de_fin_del_contrato >= fecha_de_inicio_del_contrato`,
-  `fecha_de_fin_del_contrato < '${haceDias(180)}'`,
-  `valor_pendiente_de_ejecucion > 0`,
-  // Cota para que un valor mal digitado no distorsione el total
-  `valor_pendiente_de_ejecucion < 1000000000000`,
-]
+function condicionesObraParalizada() {
+  return [
+    `estado_contrato = '${ESTADO_ACTIVO}'`,
+    `tipo_de_contrato = 'Obra'`,
+    `fecha_de_fin_del_contrato >= '2000-01-01T00:00:00'`,
+    `fecha_de_fin_del_contrato >= fecha_de_inicio_del_contrato`,
+    `fecha_de_fin_del_contrato < '${haceDias(180)}'`,
+    `valor_pendiente_de_ejecucion > 0`,
+    // Cota para que un valor mal digitado no distorsione el total
+    `valor_pendiente_de_ejecucion < 1000000000000`,
+  ]
+}
 
-export function useObraParalizada(filters = {}) {
-  const conteo = useQuery({
+export function obraParalizadaConteoQueryOptions(filters = {}) {
+  return {
     queryKey: ['alerta', 'obra', 'conteo', filters],
     queryFn: () => {
-      const where = buildWhere(whereFromFilters(filters, CONDICIONES_OBRA_PARALIZADA))
+      const where = buildWhere(whereFromFilters(filters, condicionesObraParalizada()))
       return socrataQuery(
         DS,
         `SELECT count(id_contrato) as n, sum(valor_pendiente_de_ejecucion) as pendiente
@@ -195,12 +218,14 @@ export function useObraParalizada(filters = {}) {
       total: parseInt(rows[0]?.n ?? 0, 10),
       pendiente: parseFloat(rows[0]?.pendiente ?? 0),
     }),
-  })
+  }
+}
 
-  const lista = useQuery({
+export function obraParalizadaListaQueryOptions(filters = {}) {
+  return {
     queryKey: ['alerta', 'obra', 'lista', filters],
     queryFn: () => {
-      const where = buildWhere(whereFromFilters(filters, CONDICIONES_OBRA_PARALIZADA))
+      const where = buildWhere(whereFromFilters(filters, condicionesObraParalizada()))
       return socrataQuery(
         DS,
         `SELECT ${CONTRACT_FIELDS} ${where}
@@ -208,9 +233,14 @@ export function useObraParalizada(filters = {}) {
       )
     },
     select: adaptList,
-  })
+  }
+}
 
-  return { conteo, lista }
+export function useObraParalizada(filters = {}) {
+  return {
+    conteo: useQuery(obraParalizadaConteoQueryOptions(filters)),
+    lista: useQuery(obraParalizadaListaQueryOptions(filters)),
+  }
 }
 
 // ALERTA: adición de tiempo excesiva.
@@ -237,17 +267,40 @@ function condicionesAdicionExcesiva(nivel) {
   ]
 }
 
-export function useAdicionTiempoExcesiva(filters = {}, nivel = 'alta') {
-  const conteo = useQuery({
+// El plazo original y el % de adición se calculan en cliente para mostrarlos,
+// a partir de fechas y días ya adaptados — se reutiliza en ambos consumidores
+// (hook y /api/noticias) para no repetir la cuenta.
+export function conPlazoYPorcentaje(rows) {
+  return adaptList(rows).map((c) => {
+    let plazoOriginal = null
+    let pctAdicion = null
+    if (c.startDate && c.endDate) {
+      const dur = Math.round(
+        (new Date(c.endDate).getTime() - new Date(c.startDate).getTime()) / 86_400_000,
+      )
+      const original = dur - (c.daysAdded || 0)
+      if (original > 0) {
+        plazoOriginal = original
+        pctAdicion = Math.round(((c.daysAdded || 0) / original) * 100)
+      }
+    }
+    return { ...c, plazoOriginal, pctAdicion }
+  })
+}
+
+export function adicionTiempoConteoQueryOptions(filters = {}, nivel = 'alta') {
+  return {
     queryKey: ['alerta', 'adiciontiempo', 'conteo', filters, nivel],
     queryFn: () => {
       const where = buildWhere(whereFromFilters(filters, condicionesAdicionExcesiva(nivel)))
       return socrataQuery(DS, `SELECT count(id_contrato) as n ${where} LIMIT 1`)
     },
     select: (rows) => ({ total: parseInt(rows[0]?.n ?? 0, 10) }),
-  })
+  }
+}
 
-  const lista = useQuery({
+export function adicionTiempoListaQueryOptions(filters = {}, nivel = 'alta') {
+  return {
     queryKey: ['alerta', 'adiciontiempo', 'lista', filters, nivel],
     queryFn: () => {
       const where = buildWhere(whereFromFilters(filters, condicionesAdicionExcesiva(nivel)))
@@ -256,30 +309,19 @@ export function useAdicionTiempoExcesiva(filters = {}, nivel = 'alta') {
         `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY dias_adicionados DESC LIMIT 100`,
       )
     },
-    select: (rows) =>
-      adaptList(rows).map((c) => {
-        // El plazo original y el % se calculan en cliente para mostrarlos
-        let plazoOriginal = null
-        let pctAdicion = null
-        if (c.startDate && c.endDate) {
-          const dur = Math.round(
-            (new Date(c.endDate).getTime() - new Date(c.startDate).getTime()) / 86_400_000,
-          )
-          const original = dur - (c.daysAdded || 0)
-          if (original > 0) {
-            plazoOriginal = original
-            pctAdicion = Math.round(((c.daysAdded || 0) / original) * 100)
-          }
-        }
-        return { ...c, plazoOriginal, pctAdicion }
-      }),
-  })
-
-  return { conteo, lista }
+    select: conPlazoYPorcentaje,
+  }
 }
 
-export function useFechasInconsistentes(filters = {}) {
-  const conteo = useQuery({
+export function useAdicionTiempoExcesiva(filters = {}, nivel = 'alta') {
+  return {
+    conteo: useQuery(adicionTiempoConteoQueryOptions(filters, nivel)),
+    lista: useQuery(adicionTiempoListaQueryOptions(filters, nivel)),
+  }
+}
+
+export function fechasInconsistentesConteoQueryOptions(filters = {}) {
+  return {
     queryKey: ['alerta', 'fechas', 'conteo', filters],
     queryFn: () => {
       const where = buildWhere(whereFromFilters(filters, CONDICIONES_FECHAS))
@@ -292,9 +334,11 @@ export function useFechasInconsistentes(filters = {}) {
       total: parseInt(rows[0]?.n ?? 0, 10),
       valor: parseFloat(rows[0]?.valor ?? 0),
     }),
-  })
+  }
+}
 
-  const lista = useQuery({
+export function fechasInconsistentesListaQueryOptions(filters = {}) {
+  return {
     queryKey: ['alerta', 'fechas', 'lista', filters],
     queryFn: () => {
       const where = buildWhere(whereFromFilters(filters, CONDICIONES_FECHAS))
@@ -304,7 +348,12 @@ export function useFechasInconsistentes(filters = {}) {
       )
     },
     select: adaptList,
-  })
+  }
+}
 
-  return { conteo, lista }
+export function useFechasInconsistentes(filters = {}) {
+  return {
+    conteo: useQuery(fechasInconsistentesConteoQueryOptions(filters)),
+    lista: useQuery(fechasInconsistentesListaQueryOptions(filters)),
+  }
 }

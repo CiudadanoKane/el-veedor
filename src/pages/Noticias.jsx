@@ -2,13 +2,7 @@ import { PageHeader } from '../components/layout/Layout'
 import { GlobalFilters } from '../components/layout/GlobalFilters'
 import { NotaCard } from '../components/ui/NotaCard'
 import { useFilters } from '../context/FiltersContext'
-import {
-  useObraParalizada, useCerradoSinPago, useSinContratista,
-  useFechasInconsistentes, useAdicionTiempoExcesiva,
-} from '../hooks/useAlertas'
-import { useSinCompetencia } from '../hooks/useDashboard'
-import { useEjecucionContratistas } from '../hooks/useEjecucionContratistas'
-import { useConcentracionEntidad, useDirectaGranCuantia } from '../hooks/useRankings'
+import { useNoticiasData } from '../hooks/useNoticias'
 import { formatCOP, daysSince, humanDuration, formatPct } from '../lib/formatters'
 import { esPersonaJuridica } from '../lib/identidad'
 
@@ -41,17 +35,13 @@ function conFiltros(path, t, filters) {
 export function Noticias() {
   const { filters } = useFilters()
 
-  // Hooks compartidos con Alertas y Errores: mismas query keys, así que la
-  // caché se reaprovecha al navegar entre secciones.
-  const adicion = useAdicionTiempoExcesiva(filters, 'alta')
-  const obra = useObraParalizada(filters)
-  const cerrado = useCerradoSinPago(filters)
-  const sinContratista = useSinContratista(filters)
-  const fechas = useFechasInconsistentes(filters)
-  const competencia = useSinCompetencia(filters)
-  const prorrogas = useEjecucionContratistas(filters, 'peor', 'prorroga')
-  const concentracion = useConcentracionEntidad()
-  const directa = useDirectaGranCuantia(filters)
+  // En desarrollo, mismas queries y mismas query keys que Alertas/Errores
+  // (la caché se reaprovecha al navegar entre secciones). En producción,
+  // una sola petición cacheada a /api/noticias — ver useNoticias.js.
+  const {
+    adicion, obra, cerrado, sinContratista, fechas,
+    competencia, prorrogas, concentracion, directa,
+  } = useNoticiasData(filters)
 
   const ambito = filters.city || filters.department || 'Colombia'
   const num = (n) => n.toLocaleString('es-CO')

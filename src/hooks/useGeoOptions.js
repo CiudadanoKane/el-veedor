@@ -1,40 +1,41 @@
 import { useQuery } from '@tanstack/react-query'
-import { socrataQuery } from '../lib/socrataClient'
-import { DATASETS } from '../lib/constants'
-import { esc } from '../lib/soql'
+import { socrataQuery } from '../lib/socrataClient.js'
+import { DATASETS } from '../lib/constants.js'
+import { soqlGeo, adaptarGeo } from '../lib/geoQueries.js'
 
 const DS = DATASETS.CONTRATOS
 
-// Lista de departamentos (cacheada indefinidamente — cambia rara vez)
-export function useDepartamentos() {
+// En desarrollo va directo a Socrata; en producción sale de /api/geo,
+// cacheado 24h y refrescado por cron — se usa en GlobalFilters, que se
+// renderiza en todas las páginas del sitio.
+function useGeoRaw() {
   return useQuery({
-    queryKey: ['geo', 'departamentos'],
+    queryKey: ['geo', 'todo'],
     staleTime: Infinity,
-    queryFn: () =>
-      socrataQuery(
-        DS,
-        `SELECT departamento, count(id_contrato) as n
-         WHERE departamento IS NOT NULL
-         GROUP BY departamento ORDER BY departamento ASC LIMIT 50`,
-      ),
-    select: (rows) =>
-      rows.map((r) => r.departamento).filter(Boolean),
+    queryFn: async () => {
+      if (import.meta.env.DEV) return socrataQuery(DS, soqlGeo())
+      const res = await fetch('/api/geo')
+      if (!res.ok) throw new Error(`Geo error ${res.status}`)
+      return res.json()
+    },
+    select: adaptarGeo,
   })
 }
 
-// Ciudades de un departamento
+// Lista de departamentos.
+export function useDepartamentos() {
+  const geo = useGeoRaw()
+  return { ...geo, data: geo.data?.departamentos }
+}
+
+// Ciudades de un departamento. Ya vienen todas en el mismo payload que
+// useDepartamentos, así que elegir un departamento no dispara una consulta
+// nueva — solo se lee del mismo resultado.
 export function useCiudades(departamento) {
-  return useQuery({
-    queryKey: ['geo', 'ciudades', departamento],
-    enabled: !!departamento,
-    staleTime: Infinity,
-    queryFn: () =>
-      socrataQuery(
-        DS,
-        `SELECT ciudad, count(id_contrato) as n
-         WHERE departamento = '${esc(departamento)}' AND ciudad IS NOT NULL
-         GROUP BY ciudad ORDER BY ciudad ASC LIMIT 200`,
-      ),
-    select: (rows) => rows.map((r) => r.ciudad).filter(Boolean),
-  })
+  const geo = useGeoRaw()
+  return {
+    ...geo,
+    data: departamento ? geo.data?.ciudadesPorDepartamento?.[departamento] : undefined,
+    isLoading: !!departamento && geo.isLoading,
+  }
 }

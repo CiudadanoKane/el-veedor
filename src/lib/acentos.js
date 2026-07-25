@@ -1,4 +1,4 @@
-import { esc } from './soql'
+import { esc } from './soql.js'
 
 // Búsqueda de texto en español sobre datos que mezclan escritura con y sin
 // tildes. La API distingue acentos, y la diferencia es enorme: buscar

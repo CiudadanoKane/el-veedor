@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { socrataQuery } from '../lib/socrataClient'
-import { DATASETS } from '../lib/constants'
-import { whereFromFilters, buildWhere, soloContratosValidos } from '../lib/soql'
-import { HOY } from '../lib/constants'
-import { valorMasFrecuente, documentoIdentifica } from '../lib/identidad'
+import { socrataQuery } from '../lib/socrataClient.js'
+import { DATASETS, HOY } from '../lib/constants.js'
+import { whereFromFilters, buildWhere, soloContratosValidos } from '../lib/soql.js'
+import { valorMasFrecuente, documentoIdentifica } from '../lib/identidad.js'
 
 const DS = DATASETS.CONTRATOS
 

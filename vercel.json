@@ -4,6 +4,17 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "crons": [
-    { "path": "/api/panorama", "schedule": "0 9 * * *" }
-  ]
+    { "path": "/api/panorama", "schedule": "0 9 * * *" },
+    { "path": "/api/geo", "schedule": "5 9 * * *" },
+    { "path": "/api/directorio", "schedule": "10 9 * * *" },
+    { "path": "/api/noticias", "schedule": "15 9 * * *" },
+    { "path": "/api/noticias-fechas", "schedule": "20 9 * * *" }
+  ],
+  "functions": {
+    "api/noticias.js": { "maxDuration": 60 },
+    "api/noticias-fechas.js": { "maxDuration": 60 },
+    "api/geo.js": { "maxDuration": 30 },
+    "api/directorio.js": { "maxDuration": 30 },
+    "api/panorama.js": { "maxDuration": 30 }
+  }
 }

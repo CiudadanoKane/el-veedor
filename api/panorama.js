@@ -1,23 +1,6 @@
 import { DATASETS } from '../src/lib/constants.js'
 import { PANORAMA_SOQL } from '../src/lib/dashboardQueries.js'
-
-// Sin prefijo VITE_ a propósito: esta variable solo se lee server-side, nunca
-// se debe incrustar en el JS del cliente. SOCRATA_BASE cae de vuelta a la
-// variable pública porque esa sí es inofensiva (solo dice a qué dominio
-// preguntar, no es un secreto).
-const SOCRATA_BASE = process.env.SOCRATA_BASE || process.env.VITE_SOCRATA_BASE
-const SOCRATA_TOKEN = process.env.SOCRATA_TOKEN
-
-async function socrataQuery(datasetId, soql) {
-  const params = new URLSearchParams({ $query: soql })
-  const res = await fetch(`${SOCRATA_BASE}/${datasetId}.json?${params}`, {
-    headers: SOCRATA_TOKEN ? { 'X-App-Token': SOCRATA_TOKEN } : {},
-  })
-  if (!res.ok) {
-    throw new Error(`Socrata error ${res.status}: ${await res.text()}`)
-  }
-  return res.json()
-}
+import { socrataQuery } from '../src/lib/socrataClient.js'
 
 // Cifras del Panorama, precalculadas server-side y cacheadas en el edge de
 // Vercel. El cron diario definido en vercel.json golpea este mismo endpoint

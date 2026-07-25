@@ -1,5 +1,12 @@
-const BASE = import.meta.env.VITE_SOCRATA_BASE
-const TOKEN = import.meta.env.VITE_SOCRATA_TOKEN
+// import.meta.env solo existe en Vite (navegador). Las funciones serverless de
+// /api corren en Node puro: ahí BASE cae a la misma variable pública (no es
+// secreta), pero TOKEN solo se lee de SOCRATA_TOKEN, sin prefijo VITE_, para
+// que nunca quede incrustado en el JS del cliente.
+const env = (typeof import.meta !== 'undefined' && import.meta.env) || {}
+const nodeEnv = (typeof process !== 'undefined' && process.env) || {}
+
+const BASE = env.VITE_SOCRATA_BASE || nodeEnv.SOCRATA_BASE || nodeEnv.VITE_SOCRATA_BASE
+const TOKEN = env.VITE_SOCRATA_TOKEN || nodeEnv.SOCRATA_TOKEN
 
 async function pedir(url) {
   const res = await fetch(url, {

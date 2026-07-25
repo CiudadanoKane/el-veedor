@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { socrataQuery } from '../lib/socrataClient'
-import { DATASETS } from '../lib/constants'
-import { esc, whereFromFilters, buildWhere, soloContratosValidos } from '../lib/soql'
-import { valorMasFrecuente, documentoIdentifica } from '../lib/identidad'
-import { MODALIDADES_SIN_COMPETENCIA } from './useDashboard'
+import { socrataQuery } from '../lib/socrataClient.js'
+import { DATASETS } from '../lib/constants.js'
+import { esc, whereFromFilters, buildWhere, soloContratosValidos } from '../lib/soql.js'
+import { valorMasFrecuente, documentoIdentifica } from '../lib/identidad.js'
+import { MODALIDADES_SIN_COMPETENCIA } from '../lib/dashboardQueries.js'
 
 const DS = DATASETS.CONTRATOS
 
