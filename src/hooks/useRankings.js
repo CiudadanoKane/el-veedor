@@ -184,7 +184,10 @@ export async function rankingContratistasQuerySecop1(filters = {}, orderBy = 'va
 // SECOP I van directo a Socrata (esta última no tiene endpoint cacheado).
 export function useRankingContratistas(filters = {}, orderBy = 'valor_total', fuente = 'secop2') {
   const esSecop1 = fuente === 'secop1'
-  const usarCache = !import.meta.env.DEV && !esSecop1 && orderBy === 'valor_total'
+  // SECOP II cachea solo su orden por defecto (valor_total). SECOP I es lento en
+  // los dos órdenes (~73s), así que ambos van por su endpoint cacheado; solo el
+  // orden por valor tiene cron, el de cantidad se cachea al primer uso vía SWR.
+  const usarCache = !import.meta.env.DEV && (esSecop1 || orderBy === 'valor_total')
 
   const directo = useQuery({
     queryKey: ['rank', 'contratistas', fuente, filters, orderBy],
@@ -196,9 +199,12 @@ export function useRankingContratistas(filters = {}, orderBy = 'valor_total', fu
     enabled: !usarCache,
   })
 
+  const ruta = esSecop1 ? '/api/rankings-contratistas-secop1' : '/api/rankings-contratistas'
   const cache = useQuery({
-    queryKey: ['rank', 'contratistas', 'api', filters],
-    queryFn: () => fetchOwnApi('/api/rankings-contratistas', filters),
+    // Para SECOP I el orden cambia el resultado y va en la URL, así que entra en
+    // la clave; para SECOP II el endpoint solo sirve el orden por defecto.
+    queryKey: ['rank', 'contratistas', 'api', fuente, filters, esSecop1 ? orderBy : 'valor_total'],
+    queryFn: () => fetchOwnApi(ruta, filters, esSecop1 ? { orderBy } : {}),
     select: selectRankingContratistas,
     enabled: usarCache,
   })
@@ -224,6 +230,10 @@ function rankingEntidadesQuery(filters = {}) {
 // Ranking de entidades de SECOP I. El NIT de entidad es un catálogo controlado
 // —mucho más limpio que los documentos de contratista—, así que aquí sí se
 // ordena por valor; solo se excluyen las cuantías imposibles (van a Errores).
+//
+// No trae "proveedores distintos": ese count(distinct) sobre 5,8M filas
+// agrupadas dispara la consulta a >150s (sin él baja a ~16s, viable en vivo
+// como su gemela de SECOP II). La columna se oculta para esta fuente.
 function rankingEntidadesQuerySecop1(filters = {}) {
   const where = buildWhere(
     whereFromFiltrosSecop1(filters, [soloContratosValidosSecop1(), cuantiaPosibleSecop1()]),
@@ -232,8 +242,7 @@ function rankingEntidadesQuerySecop1(filters = {}) {
     DS1,
     `SELECT nombre_entidad, nit_de_la_entidad as nit_entidad,
             count(uid) as total_contratos,
-            sum(${VALOR_SECOP1_SOQL}) as valor_total,
-            count(distinct identificacion_del_contratista) as proveedores_distintos
+            sum(${VALOR_SECOP1_SOQL}) as valor_total
      ${where}
      GROUP BY nombre_entidad, nit_de_la_entidad
      ORDER BY valor_total DESC

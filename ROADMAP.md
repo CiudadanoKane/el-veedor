@@ -416,21 +416,27 @@ registros se excluyen de los rankings por valor. Nota de rendimiento: en SECOP I
 el filtro NO usa `coalesce()` en el WHERE (fuerza scan completo, 34s); se
 descompone en un OR de las dos columnas de cuantía (0,4s).
 
-**Rankings — distinguir fuente** (en curso, decisión de caché pendiente) — se
-resolvió NO sumar las dos fuentes sino ofrecer un selector SECOP II / SECOP I,
-porque el valor de SECOP I es de calidad muy inferior. Las consultas del ranking
-SECOP I ya están escritas (`rankingContratistasQuerySecop1`,
-`rankingEntidadesQuerySecop1`, con saneamiento: excluir docs sin identidad y
-cuantías imposibles), pero la agregación por valor sobre 5,8M filas tarda ~73s,
-igual que su gemela de SECOP II. Antes de cablear el selector en la UI hay que
-darles endpoint cacheado + cron, como los de SECOP II. Además, aun saneado, el
-top por valor de SECOP I deja pasar sumas infladas por docs basura tipo
-"123456": se mostrará con banner de aviso (acordado), no se puede limpiar del
-todo por valor.
+**Rankings — distinguir fuente** ✅ — se resolvió NO sumar las dos fuentes sino
+ofrecer un selector SECOP II / SECOP I en "Quién recibe más" y "Quién entrega
+más", porque el valor de SECOP I es de calidad muy inferior y mezclarlo daría un
+agregado engañoso. Saneamiento propio de SECOP I: excluir documentos sin
+identidad (`documentoIdentifica` + `tipo_identifi = 'No Definido'`) y cuantías
+imposibles. Aun así el top por valor deja pasar sumas infladas por docs basura
+tipo "123456" que no se pueden distinguir de contratos reales por valor: se
+muestra con banner de aviso (`AvisoSecop1`), que señala además que "por
+cantidad" es el orden más confiable en esta fuente. Detalles:
+- **Contratistas SECOP I** (~73s de agregación) → endpoint cacheado
+  `/api/rankings-contratistas-secop1.js` + cron; ambos órdenes van por ahí, solo
+  "por valor" tiene cron (el de cantidad se cachea al primer uso vía SWR). Se
+  oculta la columna "Entidades (país)" (la concentración país no se calcula para
+  SECOP I). El tipo de documento sale de `tipo_identifi_del_contratista` y se
+  enmascara igual que SECOP II (solo "Nit de Persona Jurídica" se muestra
+  completo, ver `tipoDocSecop1ASecop2`).
+- **Entidades SECOP I** → en vivo (como su gemela de SECOP II), ~16s tras quitar
+  `count(distinct)` de proveedores (con él pasaba de 150s); se oculta esa
+  columna para esta fuente.
 
 **Pendiente:**
-- **Rankings SECOP I**: endpoints cacheados + cron, luego cablear el selector de
-  fuente en `Rankings.jsx`.
 - **Mora** (opción B acordada): incluir SECOP I solo en el tramo reciente
   (`estado_del_proceso = 'Celebrado'` + `fecha_fin_ejec_contrato` vencida en los
   últimos 6 meses + `fin >= inicio`), con "Pendiente"/"valor en riesgo" = no

@@ -25,9 +25,51 @@ function Encabezado({ titulo, children }) {
   )
 }
 
+const FUENTES = [
+  { value: 'secop2', label: 'SECOP II' },
+  { value: 'secop1', label: 'SECOP I' },
+]
+
+// Selector de fuente. Las dos NO se suman: el valor de SECOP I es de calidad
+// muy inferior (ver AvisoSecop1) y mezclarlo con SECOP II daría un agregado
+// engañoso. Se elige una u otra.
+function SelectorFuente({ fuente, onChange }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 mb-4">
+      <span className="text-xs text-textSecondary">Fuente:</span>
+      <Segmented value={fuente} onChange={onChange} options={FUENTES} />
+    </div>
+  )
+}
+
+// Aviso obligatorio al mirar rankings de SECOP I por valor: esa fuente no tiene
+// los controles de valor de SECOP II, así que el orden por valor arrastra sumas
+// infladas por registros erróneos. Las cuantías imposibles ya se sacaron (van a
+// Errores → Valores implausibles), pero el resto no se puede limpiar del todo.
+function AvisoSecop1() {
+  return (
+    <div className="border-l-2 border-warning pl-4 py-1 mb-4">
+      <p className="text-[13.5px] text-textPrimary font-semibold">
+        El valor en SECOP I no es confiable
+      </p>
+      <p className="text-[13.5px] text-textSecondary font-light leading-relaxed mt-1 max-w-3xl">
+        SECOP I no tiene los controles de valor de SECOP II. Ya se excluyen las{' '}
+        <strong className="font-semibold text-textPrimary">cuantías imposibles</strong>{' '}
+        (aparecen en Errores → Valores implausibles), pero el orden por valor puede
+        seguir trayendo sumas infladas por registros mal digitados que no se pueden
+        distinguir de contratos reales. <strong className="font-semibold text-textPrimary">
+        El orden por cantidad</strong> es más confiable en esta fuente. Que estos
+        errores existan es, en sí mismo, parte de lo que la veeduría debe mostrar.
+      </p>
+    </div>
+  )
+}
+
 function RankingContratistas({ filters }) {
   const [orderBy, setOrderBy] = useState('valor_total')
-  const query = useRankingContratistas(filters, orderBy)
+  const [fuente, setFuente] = useState('secop2')
+  const esSecop1 = fuente === 'secop1'
+  const query = useRankingContratistas(filters, orderBy, fuente)
 
   const columns = [
     { key: 'rank', header: '#', className: 'text-textSecondary tabular-nums', render: (r) => r._rank },
@@ -55,23 +97,27 @@ function RankingContratistas({ filters }) {
       render: (r) => formatCOP(r.valorTotal),
     },
     { key: 'contratos', header: 'Contratos', className: 'text-right tabular-nums' },
-    {
-      key: 'entidadesPais',
-      header: 'Entidades (país)',
-      className: 'text-right tabular-nums',
-      render: (r) => {
-        // La señal de concentración solo se marca en empresas. Para una persona
-        // natural, contratar con una sola entidad es tener un empleo, no una
-        // captura: marcarla sería señalar a un ciudadano por trabajar.
-        const concentrado =
-          esPersonaJuridica(r.tipoDocumento) && r.entidadesPais === 1 && r.contratosPais >= 3
-        return (
-          <span className={concentrado ? 'text-warning font-medium' : ''}>
-            {r.entidadesPais}
-          </span>
-        )
-      },
-    },
+    // La concentración "entidades (país)" está afinada para SECOP II (segunda
+    // consulta nacional); en SECOP I no se calcula, así que la columna se oculta.
+    ...(esSecop1
+      ? []
+      : [{
+          key: 'entidadesPais',
+          header: 'Entidades (país)',
+          className: 'text-right tabular-nums',
+          render: (r) => {
+            // La señal de concentración solo se marca en empresas. Para una
+            // persona natural, contratar con una sola entidad es tener un empleo,
+            // no una captura: marcarla sería señalar a un ciudadano por trabajar.
+            const concentrado =
+              esPersonaJuridica(r.tipoDocumento) && r.entidadesPais === 1 && r.contratosPais >= 3
+            return (
+              <span className={concentrado ? 'text-warning font-medium' : ''}>
+                {r.entidadesPais}
+              </span>
+            )
+          },
+        }]),
     {
       key: 'diasAdicionales',
       header: 'Días añadidos',
@@ -92,6 +138,9 @@ function RankingContratistas({ filters }) {
           ]}
         />
       </Encabezado>
+
+      <SelectorFuente fuente={fuente} onChange={setFuente} />
+      {esSecop1 && <AvisoSecop1 />}
 
       <p className="text-[14.5px] text-textSecondary font-light -mt-1 mb-4 max-w-2xl leading-relaxed">
         Haz clic en el nombre de un contratista para ver su perfil: con qué entidades
@@ -144,7 +193,9 @@ function RankingContratistas({ filters }) {
 }
 
 function RankingEntidades({ filters }) {
-  const query = useRankingEntidades(filters)
+  const [fuente, setFuente] = useState('secop2')
+  const esSecop1 = fuente === 'secop1'
+  const query = useRankingEntidades(filters, fuente)
 
   const columns = [
     { key: 'rank', header: '#', className: 'text-textSecondary tabular-nums', render: (r) => r._rank },
@@ -165,12 +216,19 @@ function RankingEntidades({ filters }) {
       render: (r) => formatCOP(r.valorTotal),
     },
     { key: 'contratos', header: 'Contratos', className: 'text-right tabular-nums' },
-    { key: 'proveedores', header: 'Proveedores', className: 'text-right tabular-nums' },
+    // "Proveedores" (contratistas distintos) sale de un count(distinct) que en
+    // SECOP I dispara la consulta a >150s; se omite esa columna para esa fuente.
+    ...(esSecop1
+      ? []
+      : [{ key: 'proveedores', header: 'Proveedores', className: 'text-right tabular-nums' }]),
   ]
 
   return (
     <>
       <Encabezado titulo="Quién entrega más recursos públicos" />
+
+      <SelectorFuente fuente={fuente} onChange={setFuente} />
+      {esSecop1 && <AvisoSecop1 />}
 
       <Methodology>
         Agrupamos por entidad (nombre + NIT). "Proveedores" es el número de contratistas
