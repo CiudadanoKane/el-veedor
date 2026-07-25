@@ -8,13 +8,19 @@
     { "path": "/api/geo", "schedule": "5 9 * * *" },
     { "path": "/api/directorio", "schedule": "10 9 * * *" },
     { "path": "/api/noticias", "schedule": "15 9 * * *" },
-    { "path": "/api/noticias-fechas", "schedule": "20 9 * * *" }
+    { "path": "/api/noticias-fechas", "schedule": "20 9 * * *" },
+    { "path": "/api/alertas-vencidos", "schedule": "25 9 * * *" },
+    { "path": "/api/errores-indice", "schedule": "30 9 * * *" },
+    { "path": "/api/rankings-contratistas", "schedule": "35 9 * * *" }
   ],
   "functions": {
     "api/noticias.js": { "maxDuration": 60 },
     "api/noticias-fechas.js": { "maxDuration": 60 },
     "api/geo.js": { "maxDuration": 30 },
     "api/directorio.js": { "maxDuration": 30 },
-    "api/panorama.js": { "maxDuration": 30 }
+    "api/panorama.js": { "maxDuration": 30 },
+    "api/alertas-vencidos.js": { "maxDuration": 30 },
+    "api/errores-indice.js": { "maxDuration": 60 },
+    "api/rankings-contratistas.js": { "maxDuration": 45 }
   }
 }

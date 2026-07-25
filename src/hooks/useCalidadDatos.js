@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { socrataQuery } from '../lib/socrataClient'
-import { DATASETS, ESTADO_ACTIVO } from '../lib/constants'
-import { whereFromFilters, buildWhere, soloContratosValidos, haceDias } from '../lib/soql'
-import { documentoIdentifica } from '../lib/identidad'
+import { socrataQuery } from '../lib/socrataClient.js'
+import { DATASETS, ESTADO_ACTIVO } from '../lib/constants.js'
+import { whereFromFilters, buildWhere, soloContratosValidos, haceDias } from '../lib/soql.js'
+import { documentoIdentifica } from '../lib/identidad.js'
+import { fetchOwnApi } from '../lib/apiClient.js'
 
 const DS = DATASETS.CONTRATOS
 
@@ -96,77 +97,99 @@ export const UMBRAL_CONTRATOS = 500
 const entero = (v) => parseInt(v ?? 0, 10) || 0
 const tasa = (parte, total) => (total ? (parte / total) * 100 : 0)
 
-export function useCalidadDatos(filters = {}, extremo = 'peor', metrica = 'errores') {
+// El cálculo completo del índice — usado tanto por el hook (modo desarrollo o
+// combinaciones no cacheadas) como por /api/errores-indice.js en producción.
+export async function calidadDatosQuery(filters = {}, extremo = 'peor', metrica = 'errores') {
   const activa = METRICAS[metrica] || METRICAS.errores
+  const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
 
-  return useQuery({
-    queryKey: ['calidad', 'entidades', filters, extremo, metrica],
-    queryFn: async () => {
-      const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
+  const columnas = [...Object.values(ERRORES), ...Object.values(INCOMPLETOS)]
+    .map((d) => `sum(case(${d.condicion}, 1, true, 0)) as ${d.campo}`)
+    .join(',\n                ')
 
-      const columnas = [...Object.values(ERRORES), ...Object.values(INCOMPLETOS)]
-        .map((d) => `sum(case(${d.condicion}, 1, true, 0)) as ${d.campo}`)
-        .join(',\n                ')
+  // Al ordenar por la tasa más baja, muchas entidades empatan en cero. El
+  // desempate por volumen premia a quien sostiene el registro limpio a lo
+  // largo de miles de contratos, no a quien tuvo suerte con quinientos.
+  const orden =
+    extremo === 'peor'
+      ? `${activa.suma} / count(id_contrato) DESC`
+      : `${activa.suma} / count(id_contrato) ASC, count(id_contrato) DESC`
 
-      // Al ordenar por la tasa más baja, muchas entidades empatan en cero. El
-      // desempate por volumen premia a quien sostiene el registro limpio a lo
-      // largo de miles de contratos, no a quien tuvo suerte con quinientos.
-      const orden =
-        extremo === 'peor'
-          ? `${activa.suma} / count(id_contrato) DESC`
-          : `${activa.suma} / count(id_contrato) ASC, count(id_contrato) DESC`
+  const [entidades, nacional] = await Promise.all([
+    socrataQuery(
+      DS,
+      `SELECT nombre_entidad, nit_entidad, count(id_contrato) as n,
+              ${columnas},
+              ${SUMA_ERRORES} as errores,
+              ${SUMA_INCOMPLETOS} as incompletos
+       ${where}
+       GROUP BY nombre_entidad, nit_entidad
+       HAVING count(id_contrato) >= ${UMBRAL_CONTRATOS}
+       ORDER BY ${orden}
+       LIMIT 25`,
+    ),
+    socrataQuery(
+      DS,
+      `SELECT count(id_contrato) as n,
+              ${SUMA_ERRORES} as errores,
+              ${SUMA_INCOMPLETOS} as incompletos
+       ${where}`,
+    ),
+  ])
 
-      const [entidades, nacional] = await Promise.all([
-        socrataQuery(
-          DS,
-          `SELECT nombre_entidad, nit_entidad, count(id_contrato) as n,
-                  ${columnas},
-                  ${SUMA_ERRORES} as errores,
-                  ${SUMA_INCOMPLETOS} as incompletos
-           ${where}
-           GROUP BY nombre_entidad, nit_entidad
-           HAVING count(id_contrato) >= ${UMBRAL_CONTRATOS}
-           ORDER BY ${orden}
-           LIMIT 25`,
-        ),
-        socrataQuery(
-          DS,
-          `SELECT count(id_contrato) as n,
-                  ${SUMA_ERRORES} as errores,
-                  ${SUMA_INCOMPLETOS} as incompletos
-           ${where}`,
-        ),
-      ])
+  const g = nacional[0] || {}
+  const totalPais = entero(g.n)
 
-      const g = nacional[0] || {}
-      const totalPais = entero(g.n)
-
-      return {
-        entidades: entidades.map((r) => {
-          const total = entero(r.n)
-          const detalle = {}
-          for (const d of [...Object.values(ERRORES), ...Object.values(INCOMPLETOS)]) {
-            detalle[d.campo] = entero(r[d.campo])
-          }
-          return {
-            entidad: r.nombre_entidad,
-            nit: r.nit_entidad,
-            total,
-            errores: entero(r.errores),
-            incompletos: entero(r.incompletos),
-            tasaErrores: tasa(entero(r.errores), total),
-            tasaIncompletos: tasa(entero(r.incompletos), total),
-            ...detalle,
-          }
-        }),
-        referencia: {
-          total: totalPais,
-          errores: entero(g.errores),
-          incompletos: entero(g.incompletos),
-          tasaErrores: tasa(entero(g.errores), totalPais),
-          tasaIncompletos: tasa(entero(g.incompletos), totalPais),
-        },
+  return {
+    entidades: entidades.map((r) => {
+      const total = entero(r.n)
+      const detalle = {}
+      for (const d of [...Object.values(ERRORES), ...Object.values(INCOMPLETOS)]) {
+        detalle[d.campo] = entero(r[d.campo])
       }
+      return {
+        entidad: r.nombre_entidad,
+        nit: r.nit_entidad,
+        total,
+        errores: entero(r.errores),
+        incompletos: entero(r.incompletos),
+        tasaErrores: tasa(entero(r.errores), total),
+        tasaIncompletos: tasa(entero(r.incompletos), total),
+        ...detalle,
+      }
+    }),
+    referencia: {
+      total: totalPais,
+      errores: entero(g.errores),
+      incompletos: entero(g.incompletos),
+      tasaErrores: tasa(entero(g.errores), totalPais),
+      tasaIncompletos: tasa(entero(g.incompletos), totalPais),
     },
+  }
+}
+
+// Es la combinación que carga la pestaña "Índice por entidad" de Errores al
+// entrar, sin tocar ningún control: peor registro, por tasa de errores. Solo
+// esa combinación exacta usa el endpoint cacheado (/api/errores-indice);
+// cualquier otro cruce de extremo/métrica sigue yendo directo a Socrata.
+function esCombinacionPorDefecto(extremo, metrica) {
+  return extremo === 'peor' && metrica === 'errores'
+}
+
+export function useCalidadDatos(filters = {}, extremo = 'peor', metrica = 'errores') {
+  const usarCache = !import.meta.env.DEV && esCombinacionPorDefecto(extremo, metrica)
+
+  const directo = useQuery({
+    queryKey: ['calidad', 'entidades', filters, extremo, metrica],
+    queryFn: () => calidadDatosQuery(filters, extremo, metrica),
+    enabled: !usarCache,
   })
+
+  const cache = useQuery({
+    queryKey: ['calidad', 'entidades', 'api', filters],
+    queryFn: () => fetchOwnApi('/api/errores-indice', filters),
+    enabled: usarCache,
+  })
+
+  return usarCache ? cache : directo
 }
