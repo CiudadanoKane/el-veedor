@@ -35,4 +35,13 @@ export default [
       ],
     },
   },
+  {
+    // Funciones serverless de Vercel: corren en Node, no en el navegador.
+    // constants.js también entra aquí porque /api/panorama.js lo importa y
+    // necesita `process` para leer sus variables de entorno ahí.
+    files: ['api/**/*.js', 'src/lib/constants.js'],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+  },
 ]

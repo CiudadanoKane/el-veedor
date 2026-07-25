@@ -1,19 +1,60 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
-import { DATASETS, ESTADO_ACTIVO, HOY } from '../lib/constants'
-import {
-  whereFromFilters, buildWhere, moraConditions, soloContratosValidos,
-  RANGOS_VENCIMIENTO,
-} from '../lib/soql'
-import { documentoIdentifica } from '../lib/identidad'
+import { DATASETS, ESTADO_ACTIVO } from '../lib/constants'
+import { whereFromFilters, buildWhere, moraConditions, soloContratosValidos } from '../lib/soql'
+import { PANORAMA_SOQL, MODALIDADES_SIN_COMPETENCIA } from '../lib/dashboardQueries'
 
 const DS = DATASETS.CONTRATOS
+const PANORAMA_KEYS = Object.keys(PANORAMA_SOQL)
 
-// Modalidades donde no hubo concurso: el Estado escoge al contratista
-// directamente. Es la vía legítima en muchos casos (servicios profesionales,
-// urgencias), pero su peso relativo es un indicador de veeduría.
-export const MODALIDADES_SIN_COMPETENCIA =
-  `modalidad_de_contratacion IN ('Contratación directa', 'Contratación Directa (con ofertas)')`
+// Re-exportada para no romper a quienes ya la importan de aquí
+// (useRankings, usePerfilEntidad, usePerfilContratista). La definición vive
+// en dashboardQueries.js, que también usa /api/panorama.js.
+export { MODALIDADES_SIN_COMPETENCIA }
+
+async function fetchPanoramaApi(filters) {
+  const params = new URLSearchParams()
+  if (filters.department) params.set('department', filters.department)
+  if (filters.city) params.set('city', filters.city)
+  if (filters.entity) params.set('entity', filters.entity)
+  const res = await fetch(`/api/panorama?${params}`)
+  if (!res.ok) throw new Error(`Panorama error ${res.status}`)
+  return res.json()
+}
+
+// Las 7 cifras que siempre se calculan al entrar al Panorama. En desarrollo
+// (`npm run dev`) van directo contra Socrata, igual que siempre — así no hace
+// falta `vercel dev` para trabajar en local, y la contención entre las 7
+// solo importa con tráfico público real. En producción se sirven desde
+// /api/panorama, cacheado 24h en el edge de Vercel y refrescado por un cron
+// diario: el visitante nunca paga el costo de la consulta contra 5,3M de
+// registros. Ver ROADMAP.md.
+function usePanoramaRaw(filters) {
+  return useQuery({
+    queryKey: ['dash', 'panorama', filters],
+    queryFn: async () => {
+      if (import.meta.env.DEV) {
+        const resultados = await Promise.all(
+          PANORAMA_KEYS.map((clave) => socrataQuery(DS, PANORAMA_SOQL[clave](filters))),
+        )
+        return Object.fromEntries(PANORAMA_KEYS.map((clave, i) => [clave, resultados[i]]))
+      }
+      return fetchPanoramaApi(filters)
+    },
+  })
+}
+
+// Adapta un pedazo de usePanoramaRaw() a la forma { data, isLoading, isError,
+// error, refetch } que ya esperan QueryState y el resto del Dashboard.
+function usarPedazo(panorama, clave, transformar) {
+  return {
+    data: panorama.data ? transformar(panorama.data[clave]) : undefined,
+    isLoading: panorama.isLoading,
+    isError: panorama.isError,
+    error: panorama.error,
+    refetch: panorama.refetch,
+  }
+}
 
 // Proporción de contratos adjudicados sin concurso (contratación directa). Es la
 // misma cifra que la tarjeta "Sin competencia" del Panorama, aislada en una
@@ -43,34 +84,17 @@ export function useSinCompetencia(filters = {}) {
 // solo se disparan cuando el usuario abre la cifra correspondiente: así el
 // Panorama carga más rápido y no gasta peticiones en lo que nadie mira.
 export function useDashboardStats(filters = {}, abiertas = new Set()) {
+  const panorama = usePanoramaRaw(filters)
+
   // Cifras generales (solo contratos vigentes: sin borradores, cancelados ni
   // los que están en trámite de aprobación)
-  const generales = useQuery({
-    queryKey: ['dash', 'generales', filters],
-    queryFn: () => {
-      const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
-      // El conteo de contratación directa va en la misma consulta: sale gratis
-      return socrataQuery(
-        DS,
-        `SELECT count(id_contrato) as total, sum(valor_del_contrato) as valor,
-                sum(case(${MODALIDADES_SIN_COMPETENCIA}, 1, true, 0)) as directa
-         ${where} LIMIT 1`,
-      )
-    },
-    select: (rows) => ({
-      total: parseInt(rows[0]?.total ?? 0, 10),
-      valor: parseFloat(rows[0]?.valor ?? 0),
-      directa: parseInt(rows[0]?.directa ?? 0, 10),
-    }),
-  })
+  const generales = usarPedazo(panorama, 'generales', (rows) => ({
+    total: parseInt(rows[0]?.total ?? 0, 10),
+    valor: parseFloat(rows[0]?.valor ?? 0),
+    directa: parseInt(rows[0]?.directa ?? 0, 10),
+  }))
 
   // Escala del sistema: cuántos actores participan.
-  //
-  // Dos consultas separadas, no una combinada: Socrata igual calcula cada
-  // count(distinct) por su cuenta internamente, así que combinarlas en una sola
-  // petición no ahorra nada y obliga a esperar a la más lenta de las dos para
-  // tener cualquiera de las dos cifras. Medido sobre 5,3 millones de registros:
-  // 35s la consulta combinada, ~11s la más lenta de las dos por separado.
   //
   // Entidades cuenta por nit_entidad, no por nombre_entidad: además de ser ~2×
   // más rápido, es más correcto — el mismo NIT aparece escrito de formas
@@ -79,28 +103,11 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
   // Socrata, así que no admite el filtro de "documento sin identidad" que sí
   // usa documento_proveedor (ese es de texto): comparar un número contra
   // 'No Definido' revienta la consulta con un error de tipo.
-  const entidadesActoras = useQuery({
-    queryKey: ['dash', 'entidades', filters],
-    queryFn: () => {
-      const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
-      return socrataQuery(DS, `SELECT count(distinct nit_entidad) as entidades ${where} LIMIT 1`)
-    },
-    select: (rows) => parseInt(rows[0]?.entidades ?? 0, 10),
-  })
+  const entidadesActoras = usarPedazo(panorama, 'entidades', (rows) =>
+    parseInt(rows[0]?.entidades ?? 0, 10))
 
-  const contratistasActores = useQuery({
-    queryKey: ['dash', 'contratistas', filters],
-    queryFn: () => {
-      const where = buildWhere(
-        whereFromFilters(filters, [soloContratosValidos(), documentoIdentifica()]),
-      )
-      return socrataQuery(
-        DS,
-        `SELECT count(distinct documento_proveedor) as contratistas ${where} LIMIT 1`,
-      )
-    },
-    select: (rows) => parseInt(rows[0]?.contratistas ?? 0, 10),
-  })
+  const contratistasActores = usarPedazo(panorama, 'contratistas', (rows) =>
+    parseInt(rows[0]?.contratistas ?? 0, 10))
 
   // Desglose por modalidad — detalle de la cifra "sin competencia"
   const porModalidad = useQuery({
@@ -127,28 +134,15 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
 
   // Desglose por estado: da el panorama completo y aporta el denominador
   // correcto para la mora (solo los que realmente están en ejecución).
-  const porEstado = useQuery({
-    queryKey: ['dash', 'estados', filters],
-    queryFn: () => {
-      const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
-      return socrataQuery(
-        DS,
-        `SELECT estado_contrato, count(id_contrato) as n, sum(valor_del_contrato) as valor
-         ${where} GROUP BY estado_contrato ORDER BY n DESC LIMIT 20`,
-      )
-    },
-    select: (rows) => {
-      const lista = rows.map((r) => ({
-        estado: r.estado_contrato,
-        n: parseInt(r.n ?? 0, 10),
-        valor: parseFloat(r.valor ?? 0),
-      }))
-      const enEjecucion =
-        lista.find((x) => x.estado === ESTADO_ACTIVO)?.n ?? 0
-      return { lista, enEjecucion }
-    },
+  const porEstado = usarPedazo(panorama, 'porEstado', (rows) => {
+    const lista = rows.map((r) => ({
+      estado: r.estado_contrato,
+      n: parseInt(r.n ?? 0, 10),
+      valor: parseFloat(r.valor ?? 0),
+    }))
+    const enEjecucion = lista.find((x) => x.estado === ESTADO_ACTIVO)?.n ?? 0
+    return { lista, enEjecucion }
   })
-
 
   // Ejecución financiera de los contratos con plazo vencido. Es la evidencia
   // más dura disponible... pero el campo valor_pagado está muy incompleto:
@@ -178,38 +172,18 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
     },
   })
 
-  // Contratos en mora, con su desglose por antigüedad en la misma consulta.
-  // Antes eran 4 peticiones (total+riesgo, y una por franja); combinadas en una
-  // sola con sum(case()) por franja, igual que ya hacen cierre y ejecucion más
-  // abajo. No es que cada consulta suelta fuera lenta por sí sola —de hecho son
-  // baratas—, sino que las nueve o diez peticiones del Panorama compiten entre
-  // sí al dispararse todas juntas: medido en vivo, consultas de 2-5s en
-  // solitario pasan a 19-28s cuando compiten con el resto. Menos peticiones
-  // totales es lo que de verdad baja el tiempo de carga.
-  const mora = useQuery({
-    queryKey: ['dash', 'mora', filters],
-    queryFn: async () => {
-      const where = buildWhere(whereFromFilters(filters, moraConditions()))
-      const condicion = (rango) => RANGOS_VENCIMIENTO[rango].join(' AND ')
-      const rows = await socrataQuery(
-        DS,
-        `SELECT count(id_contrato) as total,
-                sum(valor_pendiente_de_ejecucion) as riesgo,
-                sum(case(${condicion('recientes')}, 1, true, 0)) as recientes,
-                sum(case(${condicion('medios')}, 1, true, 0)) as medios,
-                sum(case(${condicion('antiguos')}, 1, true, 0)) as antiguos
-         ${where}`,
-      )
-      const r = rows[0] || {}
-      const n = (v) => parseInt(v ?? 0, 10)
-      return {
-        total: n(r.total),
-        riesgo: parseFloat(r.riesgo ?? 0),
-        recientes: n(r.recientes),
-        medios: n(r.medios),
-        antiguos: n(r.antiguos),
-      }
-    },
+  // Contratos en mora, con su desglose por antigüedad en la misma consulta
+  // (total+riesgo y una franja por rango, en un solo sum(case()) cada una).
+  const mora = usarPedazo(panorama, 'mora', (rows) => {
+    const r = rows[0] || {}
+    const n = (v) => parseInt(v ?? 0, 10)
+    return {
+      total: n(r.total),
+      riesgo: parseFloat(r.riesgo ?? 0),
+      recientes: n(r.recientes),
+      medios: n(r.medios),
+      antiguos: n(r.antiguos),
+    }
   })
 
   // Distribución de valor por sector
@@ -255,45 +229,24 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
   // trabajando. De ahí se mira cuántos quedaron con el expediente completo
   // —estado cerrado y pago registrado por el total— frente a los que quedaron a
   // medias, y de qué forma.
-  const cierre = useQuery({
-    queryKey: ['dash', 'cierre', filters],
-    queryFn: async () => {
-      const cerrado = `estado_contrato IN ('Cerrado', 'terminado')`
-      const conValor = `valor_del_contrato > 0`
-      const where = buildWhere(
-        whereFromFilters(filters, [
-          soloContratosValidos(),
-          `fecha_de_fin_del_contrato >= '2000-01-01T00:00:00'`,
-          `fecha_de_fin_del_contrato < '${HOY()}T00:00:00'`,
-        ]),
-      )
-      const rows = await socrataQuery(
-        DS,
-        `SELECT count(id_contrato) as total,
-                sum(case(${cerrado} AND ${conValor} AND valor_pagado >= valor_del_contrato, 1, true, 0)) as completo,
-                sum(case(${cerrado} AND ${conValor} AND valor_pagado > 0 AND valor_pagado < valor_del_contrato, 1, true, 0)) as parcial,
-                sum(case(${cerrado} AND ${conValor} AND (valor_pagado IS NULL OR valor_pagado <= 0), 1, true, 0)) as sin_pago,
-                sum(case(estado_contrato = '${ESTADO_ACTIVO}', 1, true, 0)) as sin_cerrar
-         ${where}`,
-      )
-      const r = rows[0] || {}
-      const n = (v) => parseInt(v ?? 0, 10)
-      const total = n(r.total)
-      const completo = n(r.completo)
-      const parcial = n(r.parcial)
-      const sinPago = n(r.sin_pago)
-      const sinCerrar = n(r.sin_cerrar)
-      return {
-        total,
-        completo,
-        parcial,
-        sinPago,
-        sinCerrar,
-        // El resto son estados intermedios (suspendido, modificado) y contratos
-        // sin cuantía registrada, donde "pago completo" no significa nada.
-        otros: Math.max(0, total - completo - parcial - sinPago - sinCerrar),
-      }
-    },
+  const cierre = usarPedazo(panorama, 'cierre', (rows) => {
+    const r = rows[0] || {}
+    const n = (v) => parseInt(v ?? 0, 10)
+    const total = n(r.total)
+    const completo = n(r.completo)
+    const parcial = n(r.parcial)
+    const sinPago = n(r.sin_pago)
+    const sinCerrar = n(r.sin_cerrar)
+    return {
+      total,
+      completo,
+      parcial,
+      sinPago,
+      sinCerrar,
+      // El resto son estados intermedios (suspendido, modificado) y contratos
+      // sin cuantía registrada, donde "pago completo" no significa nada.
+      otros: Math.max(0, total - completo - parcial - sinPago - sinCerrar),
+    }
   })
 
   // Cuánto del total está realmente vivo, en dos cortes.
@@ -304,29 +257,14 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
   // porque "En ejecución" no es de fiar: la mayoría también tiene el plazo
   // vencido y sigue así solo porque nadie cerró el registro. El corte estricto
   // —en ejecución Y con plazo aún por vencer— es el único genuinamente activo.
-  const ejecucion = useQuery({
-    queryKey: ['dash', 'ejecucion-resumen', filters],
-    queryFn: async () => {
-      const hoy = `${HOY()}T00:00:00`
-      const vivo = `estado_contrato = '${ESTADO_ACTIVO}'`
-      const vigente = `${vivo} AND fecha_de_fin_del_contrato >= '${hoy}'`
-      const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
-      const rows = await socrataQuery(
-        DS,
-        `SELECT sum(case(${vivo}, 1, true, 0)) as n_ejec,
-                sum(case(${vivo}, valor_del_contrato, true, 0)) as v_ejec,
-                sum(case(${vigente}, 1, true, 0)) as n_vig,
-                sum(case(${vigente}, valor_del_contrato, true, 0)) as v_vig
-         ${where}`,
-      )
-      const r = rows[0] || {}
-      return {
-        nEjecucion: parseInt(r.n_ejec ?? 0, 10),
-        valorEjecucion: parseFloat(r.v_ejec ?? 0),
-        nVigente: parseInt(r.n_vig ?? 0, 10),
-        valorVigente: parseFloat(r.v_vig ?? 0),
-      }
-    },
+  const ejecucion = usarPedazo(panorama, 'ejecucion', (rows) => {
+    const r = rows[0] || {}
+    return {
+      nEjecucion: parseInt(r.n_ejec ?? 0, 10),
+      valorEjecucion: parseFloat(r.v_ejec ?? 0),
+      nVigente: parseInt(r.n_vig ?? 0, 10),
+      valorVigente: parseFloat(r.v_vig ?? 0),
+    }
   })
 
   return {

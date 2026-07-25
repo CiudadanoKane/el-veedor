@@ -298,6 +298,61 @@ Tipos de nota:
 Enfoque algorítmico y neutral, coherente con el resto de la plataforma: describir
 hechos ("el contrato X creció 229% sobre lo adjudicado"), nunca emitir juicios.
 
+### 8. Activar SECOP I
+
+**El supuesto que teníamos era falso.** `constants.js` decía que SECOP I era
+solo pre-2021. Verificado contra la API (jul 2026): sigue activo, con
+**150.276 procesos cargados solo en 2026** — alcaldías pequeñas que nunca
+migraron a SECOP II. No es un archivo histórico, es una fuente viva con hueco
+de cobertura actual.
+
+**Dataset identificado:** `SECOP I - Procesos de Compra Pública` (`f789-7hwg`),
+79 columnas, **6,4 millones de registros**, actualización diaria. Adiciones en
+dataset aparte (`7fix-nd37`), enlazado por `id_adjudicacion`.
+
+Es un dataset de **procesos**, no de contratos: incluye estados que nunca
+llegaron a formalizarse (`Convocado`, `Borrador`, `Descartado`). Filtrando a
+los que sí son contrato (`Celebrado` + `Liquidado` + `Terminado sin Liquidar`)
+quedan **5,81 millones**, orden comparable a los 5,3M de SECOP II.
+
+**Lo que no se puede traer, y por qué:** SECOP I no reporta ejecución
+financiera. No existen `valor_pagado`, `valor_pendiente_de_ejecucion` ni
+`saldo_cdp`. Eso deja fuera, para esta fuente, tres piezas ya construidas:
+"Cerrados sin pago", "Valor sin ejecutar" y el método exacto de adiciones de
+valor. Se documentará como limitación de la fuente, no se inventará un
+sustituto.
+
+Otras diferencias verificadas:
+- **Vocabulario de estados incompatible.** No existe `'En ejecución'`. El
+  equivalente a "en mora" sería `estado_del_proceso = 'Celebrado'` (no
+  liquidado) con `fecha_fin_ejec_contrato` ya vencida — regla nueva, no
+  reutilizable de SECOP II.
+- **Identificación de contratista incompleta**: 8,5% sin definir (544.308 de
+  6,4M), del mismo tipo que el bucket `"No Definido"` ya filtrado en SECOP II.
+- **Fechas basura**: `fecha_de_firma_del_contrato` llega hasta el año 2099.
+  Mismo tipo de error ya tratado en la sección 5, filtro nuevo por aplicar.
+- Existe también `SECOP Integrado` (`rpmr-utcd`): combina SECOP I y II con
+  campo `origen`, pero muy delgado (22 columnas, sin datos de pago ni
+  adiciones). Sirve como atajo para Buscar y Perfil de contratista, no para
+  Mora ni Calidad de datos.
+
+**La barrera real no es el adaptador, son las consultas.** El patrón
+adaptador (`secop2Adapter.js`) ya deja la forma interna del contrato agnóstica
+a la fuente. Pero el SoQL de cada hook (`useMora`, `useRankings`,
+`useCalidadDatos`, `useEjecucionContratistas`, etc.) está escrito directo
+contra los nombres de campo de SECOP II, sin capa intermedia. Activar SECOP I
+no es un adaptador nuevo: es rehacer o duplicar cada una de esas ~15 consultas
+ya afinadas con datos reales, con un vocabulario de estados distinto y sin
+varios de los campos que hoy usan.
+
+**Orden de trabajo propuesto:**
+1. Buscador y Perfil de contratista — dependen menos de los campos ausentes;
+   `rpmr-utcd` alcanza tal cual.
+2. Mora y Rankings — requieren la regla de "en mora" rehecha para
+   `estado_del_proceso`, aceptando que faltan columnas de pago.
+3. Documentar como fuera de alcance: Adiciones de valor exacto, Cerrados sin
+   pago, Valor sin ejecutar — no calculables con lo que reporta SECOP I.
+
 ---
 
 ## Principios que no se negocian

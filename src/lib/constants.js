@@ -1,7 +1,15 @@
 // Constantes verificadas contra la API real de SECOP II (jbjy-vk9h) — jul 2026
 
+// import.meta.env solo existe en Vite (navegador). Este archivo también lo
+// importa /api/panorama.js, que corre en Node puro sobre Vercel — ahí se lee
+// de process.env en su lugar.
+const env =
+  (typeof import.meta !== 'undefined' && import.meta.env) ||
+  (typeof process !== 'undefined' && process.env) ||
+  {}
+
 export const DATASETS = {
-  CONTRATOS: import.meta.env.VITE_SECOP2_CONTRATOS || 'jbjy-vk9h',
+  CONTRATOS: env.VITE_SECOP2_CONTRATOS || 'jbjy-vk9h',
 }
 
 // Archivos anexos de los procesos (nombre del documento + enlace de descarga),
