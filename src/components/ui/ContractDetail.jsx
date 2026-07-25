@@ -8,8 +8,12 @@ import { ModificationHistory } from './ModificationHistory'
 // (En ejecución, Modificado, Suspendido…) sigue corriendo, así que si la fecha
 // —que ya incluye las prórrogas, SECOP la actualiza con cada una— ya pasó, es
 // un atraso real.
+// Liquidado y Terminado sin Liquidar son el vocabulario de cierre de SECOP I
+// (ver ROADMAP.md sección 8): significan lo mismo que Cerrado/terminado para
+// este propósito, el plazo de ejecución ya terminó.
 const ESTADOS_SIN_ATRASO = [
   'Cerrado', 'terminado', 'Borrador', 'Cancelado', 'enviado Proveedor', 'En aprobación',
+  'Liquidado', 'Terminado sin Liquidar',
 ]
 
 // Días de atraso sobre la fecha de fin, o null si no aplica. Mismas guardas de
@@ -115,18 +119,39 @@ export function ContractDetail({ contract: c }) {
           value={c.daysAdded ? `+${c.daysAdded.toLocaleString('es-CO')}` : '0'}
         />
         <Fact label="Valor del contrato" value={formatCOP(c.contractValue)} />
-        <Fact label="Pagado" value={formatCOP(c.valuePaid)} />
-        <Fact label="Pendiente por ejecutar" value={formatCOP(c.valuePending)} />
-        <Fact label="Anticipo" value={formatCOP(c.valueAdvance)} />
+        {/* SECOP I no reporta ejecución financiera (ver ROADMAP.md sección 8):
+            un guion ahí se leería como "$0 registrado" en vez de "esta fuente
+            no lo mide". */}
+        <Fact
+          label="Pagado"
+          value={c.source === 'SECOP I' ? 'No disponible en SECOP I' : formatCOP(c.valuePaid)}
+        />
+        <Fact
+          label="Pendiente por ejecutar"
+          value={c.source === 'SECOP I' ? 'No disponible en SECOP I' : formatCOP(c.valuePending)}
+        />
+        <Fact
+          label="Anticipo"
+          value={c.source === 'SECOP I' ? 'No disponible en SECOP I' : formatCOP(c.valueAdvance)}
+        />
         <Fact label="Entidad (NIT)" value={c.entityNit} />
         <Fact label="Contratista (NIT/CC)" value={c.contractorId} />
         <Fact label="Referencia" value={c.reference} />
         <Fact label="Ciudad · Depto." value={[c.city, c.department].filter(Boolean).join(' · ')} />
       </div>
 
-      {/* Historial de adiciones de dinero y tiempo (fuente: dataset de modificaciones) */}
+      {/* Historial de adiciones de dinero y tiempo (fuente: dataset de
+          modificaciones, solo cubre SECOP II). Para SECOP I se avisa que no
+          está disponible en vez de dejar que el componente diga "sin
+          modificaciones", que implicaría que sí se buscó y no había. */}
       <div className="border-t border-border pt-4">
-        <ModificationHistory idContrato={c.id} />
+        {c.source === 'SECOP I' ? (
+          <div className="text-sm text-textSecondary">
+            Historial de modificaciones no disponible para contratos de SECOP I.
+          </div>
+        ) : (
+          <ModificationHistory idContrato={c.id} />
+        )}
       </div>
 
       <div className="pt-1">

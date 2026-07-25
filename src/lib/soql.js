@@ -104,3 +104,26 @@ export function condicionEstado(estados) {
   return soloContratosValidos()
 }
 
+// --- SECOP I (f789-7hwg): mismo propósito, nombres de campo distintos ---
+//
+// f789-7hwg es un dataset de PROCESOS, no de contratos: incluye etapas que
+// nunca llegaron a formalizarse (Convocado, Borrador, Descartado, Adjudicado).
+// Estos tres son los que sí representan un contrato real. Ver ROADMAP.md
+// sección 8 para el resto de estados y por qué se excluyen.
+const ESTADOS_CONTRATO_SECOP1 = ['Celebrado', 'Liquidado', 'Terminado sin Liquidar']
+
+export function soloContratosValidosSecop1() {
+  const lista = ESTADOS_CONTRATO_SECOP1.map((e) => `'${esc(e)}'`).join(', ')
+  return `estado_del_proceso IN (${lista})`
+}
+
+// Filtros geográficos y de entidad para SECOP I, con sus propios nombres de
+// campo (departamento_entidad / municipio_entidad, no departamento / ciudad).
+export function whereFromFiltrosSecop1(filters = {}, extra = []) {
+  const parts = [...extra]
+  if (filters.department) parts.push(`departamento_entidad = '${esc(filters.department)}'`)
+  if (filters.city) parts.push(`municipio_entidad = '${esc(filters.city)}'`)
+  if (filters.entity) parts.push(`nombre_entidad = '${esc(filters.entity)}'`)
+  return parts
+}
+

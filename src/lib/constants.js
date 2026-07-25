@@ -10,6 +10,11 @@ const env =
 
 export const DATASETS = {
   CONTRATOS: env.VITE_SECOP2_CONTRATOS || 'jbjy-vk9h',
+  // SECOP I - Procesos de Compra Pública. Sigue activo (150.276 procesos
+  // cargados solo en 2026, ver ROADMAP.md sección 8), no es un archivo
+  // histórico. Es un dataset de procesos, no de contratos: filtrar siempre
+  // por ESTADOS_CONTRATO_SECOP1 en soql.js antes de tratarlo como tal.
+  PROCESOS_SECOP1: env.VITE_SECOP1_PROCESOS || 'f789-7hwg',
 }
 
 // Archivos anexos de los procesos (nombre del documento + enlace de descarga),
@@ -62,4 +67,18 @@ export const CONTRACT_FIELDS = [
   'valor_de_pago_adelantado', 'saldo_cdp',
   'fecha_de_firma', 'fecha_de_inicio_del_contrato', 'fecha_de_fin_del_contrato',
   'dias_adicionados', 'urlproceso',
+].join(', ')
+
+// Equivalente de CONTRACT_FIELDS para SECOP I (f789-7hwg), con los nombres de
+// campo de esa fuente. Ver secop1Adapter.js.
+export const CONTRACT_FIELDS_SECOP1 = [
+  'uid', 'numero_de_contrato', 'numero_de_proceso', 'numero_de_constancia',
+  'ruta_proceso_en_secop_i',
+  'detalle_del_objeto_a_contratar', 'objeto_a_contratar',
+  'nombre_entidad', 'nit_de_la_entidad', 'departamento_entidad', 'municipio_entidad',
+  'modalidad_de_contratacion', 'tipo_de_contrato', 'estado_del_proceso',
+  'nom_razon_social_contratista', 'identificacion_del_contratista', 'es_mipyme',
+  'cuantia_contrato', 'valor_contrato_con_adiciones',
+  'fecha_de_firma_del_contrato', 'fecha_ini_ejec_contrato', 'fecha_fin_ejec_contrato',
+  'tiempo_adiciones_en_dias',
 ].join(', ')

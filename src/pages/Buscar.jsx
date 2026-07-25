@@ -219,7 +219,17 @@ export function Buscar() {
       header: 'Entidad y objeto',
       render: (r) => (
         <div className="max-w-[320px]">
-          <div className="text-textPrimary">{r.entityName}</div>
+          <div className="text-textPrimary">
+            {r.entityName}
+            {/* SECOP II es la fuente por defecto y la gran mayoría de los
+                resultados; solo se anota lo distinto de lo esperado. */}
+            {r.source === 'SECOP I' && (
+              <span className="ml-2 align-middle text-[10px] uppercase tracking-label
+                                 text-textSecondary border border-border px-1.5 py-0.5">
+                SECOP I
+              </span>
+            )}
+          </div>
           <div className="text-xs text-textSecondary line-clamp-2">{r.description}</div>
           {/* Misma etiqueta y color para toda pista de "por qué apareció esta
               fila", venga de un campo del registro o de un documento anexo: es
