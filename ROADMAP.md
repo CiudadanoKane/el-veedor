@@ -370,6 +370,43 @@ varios de los campos que hoy usan.
 3. Documentar como fuera de alcance: Adiciones de valor exacto, Cerrados sin
    pago, Valor sin ejecutar — no calculables con lo que reporta SECOP I.
 
+**Paso 1 hecho** ✅ — `secop1Adapter.js`, mismo esquema interno que
+`secop2Adapter.js`, verificado contra un registro real. En la práctica se
+consulta `f789-7hwg` directo (no `rpmr-utcd`, que resultó demasiado delgado
+para el detalle de contrato) con `CONTRACT_FIELDS_SECOP1` en `constants.js`.
+
+**Paso 3 hecho** ✅ — `useBusqueda.js` consulta las dos fuentes en paralelo
+(por texto, por identificador exacto, y por modalidad/tipo/estado cuando hay
+cruce verificado — ver `catalogosSecop1.js`). El filtro de estado sí cruza,
+donde la equivalencia resiste verificación:
+- `Cerrado`/`terminado` ⇄ `Liquidado` + `Terminado sin Liquidar` (la ejecución
+  terminó; NO se separa por pago —liquidar es acto jurídico, no pago, y SECOP I
+  no reporta pagos).
+- `Cancelado` ⇄ `Terminado Anormalmente después de Convocado` + `Descartado`
+  (proceso muerto antes de firmarse: solo 80 de 110.336 `Cancelado` de SECOP II
+  llegaron a tener firma; 11 de 83.030 en el lado SECOP I).
+- `Borrador` ⇄ `Borrador`.
+- `Celebrado` (SECOP I) se ofrece como opción propia del selector: `En
+  ejecución` de SECOP II no es equivalente limpio (Celebrado mezcla vivos con
+  terminados no marcados), así que no se fuerza el cruce.
+- Estados de SECOP II sin equivalente (`En ejecución`, `Modificado`,
+  `Suspendido`, `Prorrogado`, `cedido`, `Aprobado`, `enviado Proveedor`, `En
+  aprobación`): marcarlos no trae nada de SECOP I.
+
+**Paso 4 hecho** ✅ — `usePerfilContratista.js` combina el resumen de un
+contratista en las dos fuentes: total de contratos, valor, entidades
+(deduplicadas por nombre exacto para no contar dos veces una entidad con
+historia en ambas), modalidades (mismo cruce que el buscador, con reverso en
+`SECOP1_A_MODALIDAD`), evolución anual y el top 50 de contratos. "Pagado"
+sigue siendo solo de SECOP II —la fuente no reporta esa cifra— y la UI lo
+avisa explícitamente en vez de sumar en silencio. El tipo de documento
+(NIT/cédula) también es solo de SECOP II; un contratista sin historia ahí
+queda sin definir y se trata como persona natural por defecto (opción
+conservadora, ver `identidad.js`).
+
+Pendiente: Mora y Rankings agregados entre las dos fuentes (paso 2 de la
+lista de arriba) — no iniciado.
+
 ---
 
 ## Principios que no se negocian

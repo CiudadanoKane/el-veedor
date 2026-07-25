@@ -79,7 +79,17 @@ function Perfil({ perfil }) {
       header: 'Entidad y objeto',
       render: (r) => (
         <div className="max-w-[340px]">
-          <div className="text-textPrimary">{r.entityName}</div>
+          <div className="text-textPrimary">
+            {r.entityName}
+            {/* SECOP II es la fuente por defecto y la gran mayoría de los
+                contratos; solo se anota lo distinto de lo esperado. */}
+            {r.source === 'SECOP I' && (
+              <span className="ml-2 align-middle text-[10px] uppercase tracking-label
+                                 text-textSecondary border border-border px-1.5 py-0.5">
+                SECOP I
+              </span>
+            )}
+          </div>
           <div className="text-xs text-textSecondary line-clamp-2">{r.description}</div>
         </div>
       ),
@@ -129,7 +139,14 @@ function Perfil({ perfil }) {
         <StatCard
           label="Valor total"
           value={formatCOP(perfil.valorTotal)}
-          sub={`Pagado: ${formatCOP(perfil.valorPagado)}`}
+          sub={
+            // SECOP I no reporta ejecución financiera (ver ROADMAP.md sección
+            // 8): "Pagado" solo cubre los contratos de SECOP II. Sin el aviso,
+            // se leería como si cubriera todo el valor total de arriba.
+            perfil.tieneSecop1
+              ? `Pagado en SECOP II: ${formatCOP(perfil.valorPagado)} · ${perfil.totalContratosSecop1.toLocaleString('es-CO')} contratos de SECOP I no reportan pagos`
+              : `Pagado: ${formatCOP(perfil.valorPagado)}`
+          }
         />
         <StatCard
           label="Entidades"

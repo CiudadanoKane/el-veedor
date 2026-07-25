@@ -3,12 +3,12 @@ import { socrataQuery, socrataBusqueda } from '../lib/socrataClient'
 import { DATASETS, CONTRACT_FIELDS, CONTRACT_FIELDS_SECOP1 } from '../lib/constants'
 import {
   esc, whereFromFilters, condicionEstado,
-  soloContratosValidosSecop1, whereFromFiltrosSecop1,
+  soloContratosValidosSecop1, condicionEstadoSecop1, whereFromFiltrosSecop1,
 } from '../lib/soql'
 import { variantesDeFrase, tieneTextoBuscable, palabrasDeFrase } from '../lib/acentos'
 import { adaptList as adaptListSecop2 } from '../adapters/secop2Adapter'
 import { adaptList as adaptListSecop1 } from '../adapters/secop1Adapter'
-import { MODALIDAD_A_SECOP1, TIPO_A_SECOP1 } from '../lib/catalogosSecop1'
+import { MODALIDAD_A_SECOP1, TIPO_A_SECOP1, ESTADO_A_SECOP1 } from '../lib/catalogosSecop1'
 
 const DS = DATASETS.CONTRATOS
 const DS1 = DATASETS.PROCESOS_SECOP1
@@ -142,14 +142,14 @@ async function buscarPorVariantes(dataset, { texto, where, campoId, campos, orde
 //      solo como prefiltro rápido (el índice acota a esos miles) y se le suma un
 //      caseless_contains que exige la frase CONTIGUA en un campo visible.
 //
-// SECOP I participa en la búsqueda por texto y en modalidad/tipo cuando hay
-// un cruce verificado a su propio vocabulario (ver catalogosSecop1.js: p. ej.
-// "Contratación directa" ⇄ "Contratación Directa (Ley 1150 de 2007)"). Si el
-// valor elegido no tiene cruce claro —"con ofertas", "Acuerdo Marco"—, o si se
-// eligió un estado puntual (ahí los catálogos miden ejes distintos: etapa del
-// proceso vs. ciclo de vida del contrato, sin equivalencia limpia), se omite
-// para no devolver ceros falsos ni resultados mal filtrados. Ver ROADMAP.md
-// sección 8.
+// SECOP I participa en la búsqueda por texto, y en los filtros de
+// modalidad/tipo/estado cuando el valor elegido tiene un cruce verificado a su
+// propio vocabulario (ver catalogosSecop1.js: p. ej. "Contratación directa" ⇄
+// "Contratación Directa (Ley 1150 de 2007)", o "Cerrado" ⇄ "Liquidado" +
+// "Terminado sin Liquidar"). Si el valor no tiene cruce claro —modalidad "con
+// ofertas" o "Acuerdo Marco"; estado "En ejecución" o "Modificado", que no
+// existen en SECOP I— esa fuente se omite de esa búsqueda concreta, para no
+// devolver ceros falsos ni resultados mal filtrados. Ver ROADMAP.md sección 8.
 export function useBusqueda(criterios = {}, filtrosGeo = {}) {
   const { texto = '', orden = 'valor' } = criterios
   const orderBy = (ORDENES[orden] || ORDENES.valor).soql
@@ -158,8 +158,15 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
   const porId = esIdentificador(texto)
   const modalidadSecop1 = criterios.modalidad ? MODALIDAD_A_SECOP1[criterios.modalidad] : undefined
   const tipoSecop1 = criterios.tipo ? TIPO_A_SECOP1[criterios.tipo] : undefined
+  // Estados de SECOP I equivalentes a los que eligió el ciudadano (ver
+  // ESTADO_A_SECOP1). null = no eligió estado → se usa el filtro por defecto de
+  // contratos válidos. Lista vacía = eligió estados pero ninguno cruza a SECOP I
+  // (p. ej. solo "En ejecución"), así que esa fuente no participa.
+  const estadosSecop1 = criterios.estados?.length
+    ? [...new Set(criterios.estados.flatMap((e) => ESTADO_A_SECOP1[e] || []))]
+    : null
   const incluirSecop1 =
-    !(criterios.estados?.length) &&
+    (estadosSecop1 === null || estadosSecop1.length > 0) &&
     (!criterios.modalidad || modalidadSecop1) &&
     (!criterios.tipo || tipoSecop1)
 
@@ -197,10 +204,18 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
       }
       const where2 = whereFromFilters(filtrosGeo, partes2).join(' AND ')
 
-      // El mismo filtro de modalidad/tipo, pero traducido al vocabulario de
+      // El mismo filtro de estado/modalidad/tipo, traducido al vocabulario de
       // SECOP I (ver catalogosSecop1.js) — solo llega aquí cuando incluirSecop1
-      // ya confirmó que hay cruce.
-      const partes1 = [soloContratosValidosSecop1()]
+      // ya confirmó que hay cruce. Si el ciudadano eligió estados se usa el
+      // cruce ya calculado; si no, el filtro por defecto de contratos válidos.
+      // (El lado SECOP II resuelve el mismo caso dentro de condicionEstado: un
+      // estado propio de SECOP I como 'Celebrado (SECOP I)' no coincide con
+      // ningún estado_contrato y no trae filas de SECOP II, que es lo correcto.)
+      const partes1 = [
+        estadosSecop1 === null
+          ? soloContratosValidosSecop1()
+          : condicionEstadoSecop1(estadosSecop1),
+      ]
       if (modalidadSecop1) partes1.push(`modalidad_de_contratacion = '${esc(modalidadSecop1)}'`)
       if (tipoSecop1) partes1.push(`tipo_de_contrato = '${esc(tipoSecop1)}'`)
       const where1 = whereFromFiltrosSecop1(filtrosGeo, partes1).join(' AND ')

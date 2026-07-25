@@ -14,6 +14,7 @@ import { useBusquedaDocumentos } from '../hooks/useBusquedaDocumentos'
 import { useDirectorioEntidades } from '../hooks/useDirectorioEntidades'
 import { useBusqueda, hayBusqueda, ORDENES, LIMITE } from '../hooks/useBusqueda'
 import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO } from '../lib/catalogos'
+import { ESTADOS_SOLO_SECOP1 } from '../lib/catalogosSecop1'
 import { DOCUMENTOS_SIN_IDENTIDAD } from '../lib/identidad'
 import { sinTildes } from '../lib/acentos'
 import { formatCOP, formatDate } from '../lib/formatters'
@@ -57,6 +58,11 @@ const MODOS = [
 // Búsquedas de arranque: la página en blanco no sugiere nada, y el punto de la
 // plataforma es que alguien sin saber qué buscar encuentre por dónde empezar.
 const EJEMPLOS = ['alimentación escolar', 'vías terciarias', 'hospital', 'acueducto']
+
+// Opciones del selector de estado: las de SECOP II (que además arrastran su
+// equivalente en SECOP I donde lo hay, ver catalogosSecop1.js) más los estados
+// propios de SECOP I sin equivalente allá.
+const ESTADOS_FILTRO = [...ESTADOS_CONTRATO, ...ESTADOS_SOLO_SECOP1]
 
 function Campo({ label, value, onChange, options, placeholder }) {
   return (
@@ -365,7 +371,7 @@ export function Buscar() {
                     label="Estado del contrato"
                     seleccionados={criterios.estados}
                     onToggle={toggleEstado}
-                    options={ESTADOS_CONTRATO}
+                    options={ESTADOS_FILTRO}
                   />
                 </div>
               )}

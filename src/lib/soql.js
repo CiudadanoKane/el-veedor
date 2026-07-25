@@ -117,6 +117,14 @@ export function soloContratosValidosSecop1() {
   return `estado_del_proceso IN (${lista})`
 }
 
+// Análogo de condicionEstado para SECOP I: recibe estados ya traducidos a su
+// vocabulario (ver ESTADO_A_SECOP1 en catalogosSecop1.js) y arma el IN. El
+// llamador solo la usa cuando la lista trae al menos un estado.
+export function condicionEstadoSecop1(estados) {
+  const lista = estados.map((e) => `'${esc(e)}'`).join(', ')
+  return `estado_del_proceso IN (${lista})`
+}
+
 // Filtros geográficos y de entidad para SECOP I, con sus propios nombres de
 // campo (departamento_entidad / municipio_entidad, no departamento / ciudad).
 export function whereFromFiltrosSecop1(filters = {}, extra = []) {
