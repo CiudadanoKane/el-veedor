@@ -404,8 +404,42 @@ avisa explícitamente en vez de sumar en silencio. El tipo de documento
 queda sin definir y se trata como persona natural por defecto (opción
 conservadora, ver `identidad.js`).
 
-Pendiente: Mora y Rankings agregados entre las dos fuentes (paso 2 de la
-lista de arriba) — no iniciado.
+**Errores en SECOP → Valores implausibles: cuantías imposibles** ✅ — la
+detección de contratos con valor ≥ $50 billones (ver `CUANTIA_IMPOSIBLE` en
+constants.js) vive **dentro** de la pestaña "Valores implausibles", no aparte:
+es el mismo problema para el ciudadano (el valor registrado no es real), solo
+que por un método distinto (umbral absoluto vs. cruce ×N/>500% contra el valor
+del proceso). La columna "Motivo" distingue "Cuantía imposible" de los múltiplos
+de digitación. Cubre las dos fuentes; hoy solo SECOP I trae casos (2 verificados
+jul 2026; SECOP II, 0) y salen primeros por ser el error más extremo. Estos
+registros se excluyen de los rankings por valor. Nota de rendimiento: en SECOP I
+el filtro NO usa `coalesce()` en el WHERE (fuerza scan completo, 34s); se
+descompone en un OR de las dos columnas de cuantía (0,4s).
+
+**Rankings — distinguir fuente** (en curso, decisión de caché pendiente) — se
+resolvió NO sumar las dos fuentes sino ofrecer un selector SECOP II / SECOP I,
+porque el valor de SECOP I es de calidad muy inferior. Las consultas del ranking
+SECOP I ya están escritas (`rankingContratistasQuerySecop1`,
+`rankingEntidadesQuerySecop1`, con saneamiento: excluir docs sin identidad y
+cuantías imposibles), pero la agregación por valor sobre 5,8M filas tarda ~73s,
+igual que su gemela de SECOP II. Antes de cablear el selector en la UI hay que
+darles endpoint cacheado + cron, como los de SECOP II. Además, aun saneado, el
+top por valor de SECOP I deja pasar sumas infladas por docs basura tipo
+"123456": se mostrará con banner de aviso (acordado), no se puede limpiar del
+todo por valor.
+
+**Pendiente:**
+- **Rankings SECOP I**: endpoints cacheados + cron, luego cablear el selector de
+  fuente en `Rankings.jsx`.
+- **Mora** (opción B acordada): incluir SECOP I solo en el tramo reciente
+  (`estado_del_proceso = 'Celebrado'` + `fecha_fin_ejec_contrato` vencida en los
+  últimos 6 meses + `fin >= inicio`), con "Pendiente"/"valor en riesgo" = no
+  disponible y nota de que se filtra por estado, no por pago.
+- **Perfil de entidad** (`usePerfilEntidad.js`, ruta `/entidad/:nit`) — sumar
+  SECOP I al resumen de una entidad contratante, igual que el Perfil de
+  contratista (Paso 4): contratos, valor, contratistas distintos, modalidades y
+  evolución anual combinados por `nit_de_la_entidad`. Sin datos de pago ni de
+  ejecución financiera para la parte de SECOP I.
 
 ---
 

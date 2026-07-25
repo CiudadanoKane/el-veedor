@@ -82,3 +82,14 @@ export const ESTADO_A_SECOP1 = {
 // SECOP I se alcanzan a través de su equivalente de SECOP II (ESTADO_A_SECOP1).
 // Debe coincidir exacto con las llaves de ESTADO_A_SECOP1 que no son de SECOP II.
 export const ESTADOS_SOLO_SECOP1 = ['Celebrado (SECOP I)']
+
+// Normaliza el tipo de documento de SECOP I (tipo_identifi_del_contratista) al
+// vocabulario que entiende identidad.js. Solo "Nit de Persona Jurídica" cuenta
+// como persona jurídica: es la única categoría donde mostrar el documento
+// completo es legítimo (escrutinio sobre una empresa). Todo lo demás —cédulas,
+// NIT de persona natural, extranjería— es una persona, y su documento se
+// enmascara igual que en SECOP II. Ante la duda, se trata como persona (la
+// opción que protege privacidad). Ver esPersonaJuridica / documentoVisible.
+export function tipoDocSecop1ASecop2(tipo) {
+  return tipo === 'Nit de Persona Jurídica' ? 'NIT' : 'CC'
+}

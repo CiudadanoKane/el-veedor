@@ -55,6 +55,16 @@ export const SEMAFORO = {
 
 export const HOY = () => new Date().toISOString().split('T')[0]
 
+// Cuantía por encima de la cual un contrato individual es imposible. El
+// presupuesto general de la Nación ronda los $500 billones al año y el contrato
+// real más grande del país (concesiones 4G) está en el orden de $5 billones,
+// así que $50 billones es 10× lo máximo concebible para un solo contrato. Por
+// encima de eso no es un contrato caro, es un error de dato: centinelas
+// (999.999.999.999.999), ceros de más al digitar. Verificado jul 2026 contra
+// SECOP I: solo 2 contratos la cruzan, ambos basura demostrable. Se excluye de
+// los rankings y se lista aparte en Errores → Cuantías imposibles.
+export const CUANTIA_IMPOSIBLE = 50_000_000_000_000
+
 // Campos que necesita el adaptador para poblar el panel de detalle de un contrato.
 // Se usa en las queries de fila (no agregadas) de Mora y Adiciones.
 export const CONTRACT_FIELDS = [

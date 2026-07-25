@@ -15,7 +15,20 @@ import {
   useObraParalizada, useAdicionTiempoExcesiva, useCerradoSinPago, NIVELES_ADICION,
 } from '../../hooks/useAlertas'
 import { useAdicionesCosto } from '../../hooks/useAdiciones'
+import { useCuantiaImposible } from '../../hooks/useCuantiaImposible'
 import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/formatters'
+
+// Etiqueta de fuente para las filas que mezclan SECOP I y II. SECOP II es lo
+// esperado y mayoritario; solo se marca lo distinto (mismo criterio que Buscar).
+function FuenteBadge({ source }) {
+  if (source !== 'SECOP I') return null
+  return (
+    <span className="ml-2 align-middle text-[10px] uppercase tracking-label
+                     text-textSecondary border border-border px-1.5 py-0.5">
+      SECOP I
+    </span>
+  )
+}
 
 function diasInconsistencia(r) {
   if (!r.startDate || !r.endDate) return null
@@ -104,8 +117,37 @@ export function AlertaFechasInconsistentes() {
 
 export function AlertaErrorDigitacion() {
   const { filters } = useFilters()
-  const query = useAdicionesCosto(filters)
-  const anomalias = query.data?.anomalias ?? []
+  const digitacionQuery = useAdicionesCosto(filters)
+  const imposiblesQuery = useCuantiaImposible(filters)
+
+  // Dos detecciones del mismo problema —el valor registrado no es real— que se
+  // muestran juntas y se distinguen en la columna "Motivo":
+  //   · Digitación (SECOP II): el valor es ×100/×1.000 el original, o creció
+  //     >500%. Sale de cruzar contra el valor del proceso; trae "Valor original".
+  //   · Cuantía imposible (ambas fuentes, hoy solo SECOP I): valor absoluto por
+  //     encima de lo que un contrato real podría valer (ver useCuantiaImposible).
+  //     No tiene "valor original" con qué comparar: es basura pura.
+  const digitacion = digitacionQuery.data?.anomalias ?? []
+  const imposibles = (imposiblesQuery.data ?? []).map((c) => ({
+    ...c,
+    valorOriginal: null,
+    motivo: 'Cuantía imposible',
+  }))
+  // Las imposibles primero: son el error más extremo (y las únicas de SECOP I).
+  const filas = [...imposibles, ...digitacion]
+
+  // QueryState acepta cualquier objeto con esta forma; se combinan las dos
+  // consultas en una sola para manejar carga/error/vacío de forma unificada.
+  const combinada = {
+    isLoading: digitacionQuery.isLoading || imposiblesQuery.isLoading,
+    isError: digitacionQuery.isError || imposiblesQuery.isError,
+    error: digitacionQuery.error || imposiblesQuery.error,
+    data: filas,
+    refetch: () => {
+      digitacionQuery.refetch()
+      imposiblesQuery.refetch()
+    },
+  }
 
   const columns = [
     {
@@ -113,7 +155,10 @@ export function AlertaErrorDigitacion() {
       header: 'Entidad',
       render: (r) => (
         <div className="max-w-[220px]">
-          <div className="text-textPrimary">{r.entityName}</div>
+          <div className="text-textPrimary">
+            {r.entityName}
+            <FuenteBadge source={r.source} />
+          </div>
           <div className="text-xs text-textSecondary truncate">{r.description}</div>
         </div>
       ),
@@ -123,7 +168,7 @@ export function AlertaErrorDigitacion() {
       key: 'valorOriginal',
       header: 'Valor original',
       className: 'text-right tabular-nums',
-      render: (r) => formatCOP(r.valorOriginal),
+      render: (r) => (r.valorOriginal == null ? '—' : formatCOP(r.valorOriginal)),
     },
     {
       key: 'contractValue',
@@ -143,36 +188,35 @@ export function AlertaErrorDigitacion() {
     <AlertCard
       icon="digitos"
       title="Valores implausibles (posible error de digitación)"
-      question="¿Qué contratos registran un valor que no puede ser una adición real?"
-      count={query.isLoading ? null : anomalias.length}
+      question="¿Qué contratos registran un valor que no puede ser real?"
+      count={combinada.isLoading ? null : filas.length}
       methodology={
         <>
-          Compara el valor registrado del contrato con el valor original del proceso
-          (adjudicado o precio base). Marcamos dos patrones: (1) el valor es{' '}
-          <strong>exactamente ×100, ×1.000 o ×10.000</strong> el original — se digitó en
-          unidades equivocadas (ej. un proceso de $450 millones registrado como $450.000
-          millones); (2) el valor creció <strong>más de 500%</strong>, cuando la Ley 80
-          limita las adiciones al 50% del valor inicial. Importa porque estas cifras
-          inflan las estadísticas públicas de contratación y distorsionan cualquier
-          análisis del gasto.
+          Tres patrones de valor que no puede ser real: (1) el valor es{' '}
+          <strong>exactamente ×100, ×1.000 o ×10.000</strong> el original del proceso — se
+          digitó en unidades equivocadas (ej. un proceso de $450 millones registrado como
+          $450.000 millones); (2) el valor creció <strong>más de 500%</strong>, cuando la
+          Ley 80 limita las adiciones al 50% del valor inicial; (3){' '}
+          <strong>cuantía imposible</strong>: por encima de <strong>$50 billones</strong>,
+          diez veces el contrato real más grande del país — un valor centinela
+          (<code>999.999.999.999.999</code>) o ceros de más. Los dos primeros salen de
+          cruzar contra el valor del proceso (SECOP II) y traen "valor original"; el
+          tercero es un umbral absoluto y aparece sobre todo en{' '}
+          <strong>SECOP I</strong>, cuyo campo de valor no tiene los controles de SECOP II.
+          Todos inflan las estadísticas públicas y se excluyen de los rankings por valor.{' '}
+          <strong>Haz clic en una fila</strong> para ver el detalle.
         </>
       }
     >
-      <QueryState query={query} empty="Sin errores de digitación detectados.">
-        {() =>
-          anomalias.length === 0 ? (
-            <div className="py-12 text-center text-textSecondary">
-              Sin errores de digitación detectados con estos filtros.
-            </div>
-          ) : (
-            <DataTable
-              columns={columns}
-              rows={anomalias}
-              keyField="id"
-              renderDetail={(row) => <ContractDetail contract={row} />}
-            />
-          )
-        }
+      <QueryState query={combinada} empty="Sin valores implausibles detectados con estos filtros.">
+        {(rows) => (
+          <DataTable
+            columns={columns}
+            rows={rows}
+            keyField="id"
+            renderDetail={(row) => <ContractDetail contract={row} />}
+          />
+        )}
       </QueryState>
     </AlertCard>
   )

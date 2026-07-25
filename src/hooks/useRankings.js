@@ -1,12 +1,18 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient.js'
 import { DATASETS } from '../lib/constants.js'
-import { esc, whereFromFilters, buildWhere, soloContratosValidos } from '../lib/soql.js'
+import {
+  esc, whereFromFilters, buildWhere, soloContratosValidos,
+  soloContratosValidosSecop1, whereFromFiltrosSecop1,
+  VALOR_SECOP1_SOQL, cuantiaPosibleSecop1,
+} from '../lib/soql.js'
 import { valorMasFrecuente, documentoIdentifica } from '../lib/identidad.js'
+import { tipoDocSecop1ASecop2 } from '../lib/catalogosSecop1.js'
 import { MODALIDADES_SIN_COMPETENCIA } from '../lib/dashboardQueries.js'
 import { fetchOwnApi } from '../lib/apiClient.js'
 
 const DS = DATASETS.CONTRATOS
+const DS1 = DATASETS.PROCESOS_SECOP1
 
 export function selectRankingContratistas(rows) {
   return rows
@@ -104,15 +110,88 @@ export async function rankingContratistasQuery(filters = {}, orderBy = 'valor_to
   })
 }
 
+// Ranking de contratistas en SECOP I. Misma idea que la de SECOP II, con las
+// diferencias propias de esa fuente:
+//   - Se agrupa por identificacion_del_contratista y el valor sale de
+//     VALOR_SECOP1_SOQL (cuantia con adiciones si las hubo).
+//   - Saneamiento que SECOP II no necesita: se excluyen los documentos que no
+//     identifican a nadie (documentoIdentifica + tipo 'No Definido') y las
+//     cuantías imposibles (van a Errores → Cuantías imposibles). Aun así el
+//     valor de SECOP I es poco confiable y la UI lo advierte.
+//   - No se calcula "entidades (país)": esa señal de concentración está afinada
+//     para SECOP II y aquí no se muestra esa columna.
+export async function rankingContratistasQuerySecop1(filters = {}, orderBy = 'valor_total') {
+  const orderExpr =
+    orderBy === 'total_contratos' ? 'count(uid) DESC' : `sum(${VALOR_SECOP1_SOQL}) DESC`
+  const base = [
+    soloContratosValidosSecop1(),
+    documentoIdentifica('identificacion_del_contratista'),
+    `tipo_identifi_del_contratista <> 'No Definido'`,
+    cuantiaPosibleSecop1(),
+  ]
+  const where = buildWhere(whereFromFiltrosSecop1(filters, base))
+
+  const filas = await socrataQuery(
+    DS1,
+    `SELECT identificacion_del_contratista as documento_proveedor,
+            count(uid) as total_contratos,
+            sum(${VALOR_SECOP1_SOQL}) as valor_total,
+            sum(tiempo_adiciones_en_dias) as dias_adicionales
+     ${where}
+     GROUP BY documento_proveedor
+     ORDER BY ${orderExpr}
+     LIMIT 30`,
+  )
+
+  const documentos = filas.map((r) => r.documento_proveedor).filter(Boolean)
+  if (!documentos.length) return []
+
+  const lista = documentos.map((d) => `'${esc(d)}'`).join(', ')
+  // El nombre y el tipo de documento no son estables por identificación (misma
+  // empresa con varias escrituras), y max() devuelve el alfabéticamente último.
+  // Se resuelven por frecuencia. Ver valorMasFrecuente.
+  const nombres = await socrataQuery(
+    DS1,
+    `SELECT identificacion_del_contratista as documento_proveedor,
+            nom_razon_social_contratista as nombre,
+            tipo_identifi_del_contratista as tipo,
+            count(uid) as n
+     WHERE ${soloContratosValidosSecop1()} AND identificacion_del_contratista IN (${lista})
+     GROUP BY documento_proveedor, nombre, tipo`,
+  )
+
+  const porContratista = new Map()
+  for (const r of nombres) {
+    if (!porContratista.has(r.documento_proveedor)) porContratista.set(r.documento_proveedor, [])
+    porContratista.get(r.documento_proveedor).push(r)
+  }
+
+  return filas.map((r) => {
+    const suyas = porContratista.get(r.documento_proveedor) || []
+    const tipoSecop1 = valorMasFrecuente(suyas, 'tipo')?.valor
+    return {
+      ...r,
+      nombre: valorMasFrecuente(suyas, 'nombre')?.valor,
+      tipo_documento: tipoDocSecop1ASecop2(tipoSecop1),
+      pais: null, // SECOP I no calcula la concentración país
+    }
+  })
+}
+
 // Es la combinación que carga la pestaña "Quién recibe más" de Rankings al
-// entrar: orden por valor total. Solo ese orden usa el endpoint cacheado
-// (/api/rankings-contratistas); "Por cantidad" sigue yendo directo a Socrata.
-export function useRankingContratistas(filters = {}, orderBy = 'valor_total') {
-  const usarCache = !import.meta.env.DEV && orderBy === 'valor_total'
+// entrar: SECOP II, orden por valor total. Solo ese cruce usa el endpoint
+// cacheado (/api/rankings-contratistas); "Por cantidad" y toda la fuente
+// SECOP I van directo a Socrata (esta última no tiene endpoint cacheado).
+export function useRankingContratistas(filters = {}, orderBy = 'valor_total', fuente = 'secop2') {
+  const esSecop1 = fuente === 'secop1'
+  const usarCache = !import.meta.env.DEV && !esSecop1 && orderBy === 'valor_total'
 
   const directo = useQuery({
-    queryKey: ['rank', 'contratistas', filters, orderBy],
-    queryFn: () => rankingContratistasQuery(filters, orderBy),
+    queryKey: ['rank', 'contratistas', fuente, filters, orderBy],
+    queryFn: () =>
+      esSecop1
+        ? rankingContratistasQuerySecop1(filters, orderBy)
+        : rankingContratistasQuery(filters, orderBy),
     select: selectRankingContratistas,
     enabled: !usarCache,
   })
@@ -127,24 +206,48 @@ export function useRankingContratistas(filters = {}, orderBy = 'valor_total') {
   return usarCache ? cache : directo
 }
 
-// Ranking de entidades por valor comprometido
-export function useRankingEntidades(filters = {}) {
+function rankingEntidadesQuery(filters = {}) {
+  const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
+  return socrataQuery(
+    DS,
+    `SELECT nombre_entidad, nit_entidad,
+            count(id_contrato) as total_contratos,
+            sum(valor_del_contrato) as valor_total,
+            count(distinct documento_proveedor) as proveedores_distintos
+     ${where}
+     GROUP BY nombre_entidad, nit_entidad
+     ORDER BY valor_total DESC
+     LIMIT 30`,
+  )
+}
+
+// Ranking de entidades de SECOP I. El NIT de entidad es un catálogo controlado
+// —mucho más limpio que los documentos de contratista—, así que aquí sí se
+// ordena por valor; solo se excluyen las cuantías imposibles (van a Errores).
+function rankingEntidadesQuerySecop1(filters = {}) {
+  const where = buildWhere(
+    whereFromFiltrosSecop1(filters, [soloContratosValidosSecop1(), cuantiaPosibleSecop1()]),
+  )
+  return socrataQuery(
+    DS1,
+    `SELECT nombre_entidad, nit_de_la_entidad as nit_entidad,
+            count(uid) as total_contratos,
+            sum(${VALOR_SECOP1_SOQL}) as valor_total,
+            count(distinct identificacion_del_contratista) as proveedores_distintos
+     ${where}
+     GROUP BY nombre_entidad, nit_de_la_entidad
+     ORDER BY valor_total DESC
+     LIMIT 30`,
+  )
+}
+
+// Ranking de entidades por valor comprometido. Sin endpoint cacheado en ninguna
+// fuente (la de SECOP II tampoco lo tenía).
+export function useRankingEntidades(filters = {}, fuente = 'secop2') {
+  const esSecop1 = fuente === 'secop1'
   return useQuery({
-    queryKey: ['rank', 'entidades', filters],
-    queryFn: () => {
-      const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
-      return socrataQuery(
-        DS,
-        `SELECT nombre_entidad, nit_entidad,
-                count(id_contrato) as total_contratos,
-                sum(valor_del_contrato) as valor_total,
-                count(distinct documento_proveedor) as proveedores_distintos
-         ${where}
-         GROUP BY nombre_entidad, nit_entidad
-         ORDER BY valor_total DESC
-         LIMIT 30`,
-      )
-    },
+    queryKey: ['rank', 'entidades', fuente, filters],
+    queryFn: () => (esSecop1 ? rankingEntidadesQuerySecop1(filters) : rankingEntidadesQuery(filters)),
     select: (rows) =>
       rows.map((r) => ({
         entidad: r.nombre_entidad,

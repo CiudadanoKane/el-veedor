@@ -1,4 +1,4 @@
-import { ESTADO_ACTIVO, HOY } from './constants.js'
+import { ESTADO_ACTIVO, HOY, CUANTIA_IMPOSIBLE } from './constants.js'
 
 // Escapa comillas simples para SoQL (se duplican)
 export function esc(value) {
@@ -123,6 +123,32 @@ export function soloContratosValidosSecop1() {
 export function condicionEstadoSecop1(estados) {
   const lista = estados.map((e) => `'${esc(e)}'`).join(', ')
   return `estado_del_proceso IN (${lista})`
+}
+
+// Valor del contrato en SECOP I: cuantia_contrato es el valor inicial,
+// valor_contrato_con_adiciones ya incluye las adiciones cuando las hubo. Mismo
+// criterio que secop1Adapter.js. Se usa tanto en SELECT como en WHERE.
+export const VALOR_SECOP1_SOQL = 'coalesce(valor_contrato_con_adiciones, cuantia_contrato)'
+
+// Cuantías imposibles (ver CUANTIA_IMPOSIBLE en constants.js): error de dato,
+// no contrato caro. Se excluyen de los rankings (cuantiaPosible*) y se listan
+// aparte en Errores (cuantiaImposible*).
+export function cuantiaImposibleSecop2() {
+  return `valor_del_contrato >= ${CUANTIA_IMPOSIBLE}`
+}
+export function cuantiaPosibleSecop2() {
+  return `(valor_del_contrato IS NULL OR valor_del_contrato < ${CUANTIA_IMPOSIBLE})`
+}
+// En SECOP I NO se usa coalesce() en el WHERE: sobre ese dataset fuerza un
+// scan completo (medido 34s vs 0,4s). Se descompone en un OR de las dos
+// columnas, que sí usa índice. Un contrato es basura si CUALQUIERA de las dos
+// cuantías es imposible — criterio más amplio que coalesce, pero correcto:
+// si un valor imposible aparece en cualquier columna, el registro es basura.
+export function cuantiaImposibleSecop1() {
+  return `(valor_contrato_con_adiciones >= ${CUANTIA_IMPOSIBLE} OR cuantia_contrato >= ${CUANTIA_IMPOSIBLE})`
+}
+export function cuantiaPosibleSecop1() {
+  return `(valor_contrato_con_adiciones IS NULL OR valor_contrato_con_adiciones < ${CUANTIA_IMPOSIBLE}) AND (cuantia_contrato IS NULL OR cuantia_contrato < ${CUANTIA_IMPOSIBLE})`
 }
 
 // Filtros geográficos y de entidad para SECOP I, con sus propios nombres de
