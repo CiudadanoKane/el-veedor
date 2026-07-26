@@ -1,0 +1,56 @@
+name: Recalcular adiciones de valor
+
+# Las adiciones de valor no se pueden calcular en vivo: exigen cruzar el
+# dataset de Contratos con el de Procesos contrato a contrato, y SoQL no puede
+# unir dos datasets dentro de un GROUP BY. Ver el encabezado de
+# scripts/calcular-adiciones.mjs. Por eso se precalculan una vez al día y el
+# resultado (public/adiciones.json) se sirve como archivo estático.
+
+on:
+  schedule:
+    # 07:40 UTC = 02:40 en Colombia, después de la actualización diaria de SECOP
+    # y antes de que haya tráfico.
+    - cron: '40 7 * * *'
+  # Permite recalcular a mano desde la pestaña Actions.
+  workflow_dispatch:
+
+# Necesario para que el bot pueda commitear el JSON recalculado.
+permissions:
+  contents: write
+
+concurrency:
+  group: adiciones
+  cancel-in-progress: false
+
+jobs:
+  calcular:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Calcular adiciones
+        env:
+          SOCRATA_BASE: https://www.datos.gov.co/resource
+          # Sin token la API impone un límite de tasa mucho más bajo y el
+          # recorrido de 5,4 millones de contratos se cae a mitad de camino.
+          SOCRATA_TOKEN: ${{ secrets.SOCRATA_TOKEN }}
+        # El mapa de procesos ronda los 8 millones de entradas; el heap por
+        # defecto de Node no alcanza.
+        run: node --max-old-space-size=6144 scripts/calcular-adiciones.mjs
+
+      - name: Commitear si cambió
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git diff --quiet -- public/adiciones.json; then
+            echo 'Sin cambios en las adiciones.'
+            exit 0
+          fi
+          git add public/adiciones.json
+          git commit -m 'Datos: recalcula adiciones de valor'
+          git push

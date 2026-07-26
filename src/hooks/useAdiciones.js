@@ -4,27 +4,15 @@ import { DATASETS } from '../lib/constants'
 import { whereFromFilters, buildWhere, soloContratosValidos, esc } from '../lib/soql'
 import { adaptList } from '../adapters/secop2Adapter'
 import { CONTRACT_FIELDS } from '../lib/constants'
+import { valorOriginalDe, clasificarAdicion, detectarErrorDigitacion } from '../lib/adiciones'
 
 const DS = DATASETS.CONTRATOS
 const DS_PROCESOS = 'p6dx-8zbt'
 
-// Valor original mínimo para que el % de adición sea interpretable.
-const BASE_MINIMA = 10_000_000
-// Por encima de este crecimiento la cifra deja de ser creíble como adición real
-// (la Ley 80 limita las adiciones al 50% del valor inicial).
-const PCT_SOSPECHOSO = 500
-
-// Detecta errores de digitación: el valor registrado es un múltiplo exacto de
-// potencia de 10 del original (ej. $450.000.000 → $450.000.000.000 = 1000x).
-// No es una adición: alguien tecleó el valor en unidades equivocadas.
-export function detectarErrorDigitacion(actual, original) {
-  if (!actual || !original || original <= 0) return null
-  const ratio = actual / original
-  for (const mult of [100, 1000, 10000]) {
-    if (Math.abs(ratio - mult) / mult < 0.001) return mult
-  }
-  return null
-}
+// Las reglas de qué cuenta como adición viven en lib/adiciones.js, compartidas
+// con el precálculo en lote (scripts/calcular-adiciones.mjs) para que el mapa y
+// el ranking no puedan contradecir a esta sección.
+export { detectarErrorDigitacion }
 
 // Órdenes permitidos (lista blanca — nunca interpolar texto libre en SoQL)
 const ORDEN_ADIC = {
@@ -149,36 +137,23 @@ export function useAdicionesCosto(filters = {}, limit = 150) {
       const adiciones = []
       const anomalias = []
       for (const c of adaptados) {
-        const p = mapa.get(c.processId)
-        if (!p) continue
-        const usaAdjudicado = p.adjudicado > 0
-        const valorOriginal = usaAdjudicado ? p.adjudicado : p.base
+        const original = valorOriginalDe(mapa.get(c.processId))
+        if (!original) continue
 
-        // Base demasiado pequeña: el porcentaje se dispara y no es interpretable.
-        if (!valorOriginal || valorOriginal < BASE_MINIMA) continue
+        const clas = clasificarAdicion(c.contractValue, original.valor)
+        if (!clas) continue
 
-        const adicion = c.contractValue - valorOriginal
-        if (adicion <= 0) continue
-
-        const pctAdicion = Math.round((adicion / valorOriginal) * 100)
         const fila = {
           ...c,
-          valorOriginal,
-          adicion,
-          pctAdicion,
-          referencia: usaAdjudicado ? 'adjudicado' : 'base',
+          valorOriginal: original.valor,
+          adicion: clas.adicion,
+          pctAdicion: clas.pctAdicion,
+          referencia: original.referencia,
         }
-
-        const multiplo = detectarErrorDigitacion(c.contractValue, valorOriginal)
-        if (multiplo) {
-          anomalias.push({ ...fila, multiplo, motivo: `Múltiplo exacto ×${multiplo}` })
-        } else if (pctAdicion > PCT_SOSPECHOSO) {
-          // La ley limita las adiciones al 50% del valor inicial; un crecimiento
-          // de varios cientos por ciento casi siempre es un error de registro.
-          anomalias.push({ ...fila, multiplo: null, motivo: `Crecimiento de +${pctAdicion.toLocaleString('es-CO')}%` })
-        } else {
-          adiciones.push(fila)
-        }
+        // Con motivo, el dato no es creíble como sobrecosto real (múltiplo
+        // exacto de digitación o crecimiento imposible): va a anomalías.
+        if (clas.motivo) anomalias.push({ ...fila, multiplo: clas.multiplo, motivo: clas.motivo })
+        else adiciones.push(fila)
       }
 
       adiciones.sort((a, b) => b.adicion - a.adicion)
