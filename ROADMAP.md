@@ -492,6 +492,12 @@ pueden sumar limpio y rápido: **Contratos** (11,27M vs 5,45M solo SECOP II),
 Una sola consulta de agregado de SECOP I (`soqlGeneralesSecop1`, ~20s, la paga
 el cron; el resultado sigue siendo diminuto y cabe en Edge Config).
 
+El desglose vivo bajo Contratos/Valor ("en ejecución" / "con plazo vigente")
+también estima SECOP I: `Celebrado` (firmado, sin liquidar) como proxy de "en
+ejecución", + plazo no vencido para "vigente" — aproximación a propósito (SECOP I
+no tiene el estado "En ejecución"), con nota que lo aclara. Todo sale en una
+sola consulta de agregado de SECOP I (`soqlGeneralesSecop1`).
+
 Lo que NO se combina y sigue solo-SECOP-II, con avisos en la UI: Contratistas y
 Entidades (su `count(distinct)` sobre 5,8M tarda >2 min —no cabe en el cron— y
 sumar distinct entre fuentes sobrecontaría); y los indicadores de ejecución
@@ -499,6 +505,8 @@ sumar distinct entre fuentes sobrecontaría); y los indicadores de ejecución
 sector (SECOP I no reporta pago, estado de ejecución ni sector). Fix de
 correctitud: "Valor en riesgo %" se calcula contra el valor de SECOP II, no el
 combinado. Un aviso arriba del Panorama explica el esquema de una vez.
+`maxDuration` de `/api/panorama` subido a 180s: el recálculo del cron ahora
+incluye la consulta de SECOP I (~25s).
 
 **Siguientes pasos acordados con el usuario (jul 2026):**
 1. ~~Revisar la velocidad de carga del Panorama~~ → Edge Config.
