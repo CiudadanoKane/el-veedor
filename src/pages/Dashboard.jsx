@@ -135,6 +135,11 @@ export function Dashboard() {
   const enEjecucion = porEstado.data?.enEjecucion
   const pctRecienteNum = pct(mora.data?.recientes, enEjecucion)
   const pctReciente = pctRecienteNum != null ? formatPct(pctRecienteNum) : null
+  // El vencido reciente de SECOP I se muestra aparte, con SU base (los
+  // "vigentes" estimados de SECOP I), nunca promediado con SECOP II: las dos
+  // tasas son muy distintas y un porcentaje mezclado engañaría.
+  const pctRecienteSecop1Num = pct(mora.data?.recientesSecop1, mora.data?.vigentesSecop1)
+  const pctRecienteSecop1 = pctRecienteSecop1Num != null ? formatPct(pctRecienteSecop1Num) : null
   const pctVencidosNum = pct(mora.data?.total, enEjecucion)
   const pctVencidos = pctVencidosNum != null ? formatPct(pctVencidosNum) : null
   // El riesgo (valor_pendiente) es solo de SECOP II, así que se compara contra
@@ -250,7 +255,23 @@ export function Dashboard() {
           fuente={fuenteSolo2}
           value={mora.data?.recientes?.toLocaleString('es-CO') ?? '—'}
           pct={pctReciente ? `${pctReciente} de los vigentes` : null}
-          sub="Plazo vencido en los últimos 6 meses. No todos los vencidos son retrasos reales."
+          sub={
+            <div>
+              {mora.data?.recientesSecop1 ? (
+                <div className="mb-1.5 text-textPrimary">
+                  <span className="tabular-nums font-medium">
+                    {mora.data.recientesSecop1.toLocaleString('es-CO')}
+                  </span>{' '}
+                  más en SECOP I
+                  {pctRecienteSecop1 ? ` (${pctRecienteSecop1} de sus vigentes)` : ''}, por su
+                  estado "Celebrado"
+                </div>
+              ) : null}
+              <div>
+                Plazo vencido en los últimos 6 meses. No todos los vencidos son retrasos reales.
+              </div>
+            </div>
+          }
           tone="danger"
           loading={mora.isLoading || porEstado.isLoading}
           onToggle={() => alternar('vencidos')}

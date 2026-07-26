@@ -8,6 +8,7 @@ import { ESTADO_ACTIVO, HOY } from './constants.js'
 import {
   whereFromFilters, buildWhere, moraConditions, soloContratosValidos, RANGOS_VENCIMIENTO,
   esc, soloContratosValidosSecop1, whereFromFiltrosSecop1, VALOR_SECOP1_SOQL, cuantiaPosibleSecop1,
+  RANGOS_VENCIMIENTO_SECOP1,
 } from './soql.js'
 import { documentoIdentifica } from './identidad.js'
 import { MODALIDAD_SIN_COMPETENCIA_SECOP1 } from './catalogosSecop1.js'
@@ -116,12 +117,29 @@ export function soqlGeneralesSecop1(filters) {
   // Panorama es general), porque SECOP I no tiene el estado "En ejecución".
   const vivo = `estado_del_proceso = 'Celebrado'`
   const vigente = `${vivo} AND fecha_fin_ejec_contrato >= '${HOY()}T00:00:00'`
+  // "Vencidos hace poco" de SECOP I: firmado (Celebrado), plazo terminado en
+  // los últimos 6 meses, con la guarda de fin>=inicio. Se calcula en el mismo
+  // scan que los totales, sin consulta extra. Se muestra en el Panorama como
+  // una línea aparte —NO se fusiona con el conteo de SECOP II— porque su tasa
+  // sobre "vigentes" es muy distinta y mezclarlas daría un porcentaje engañoso.
+  //
+  // El case se deja MÍNIMO a propósito: el saneamiento de cuantías ya está en
+  // el WHERE y el piso de año 2000 queda subsumido por el rango reciente.
+  // Repetir esas condiciones aquí dispara un scan completo (medido: 66s con
+  // ellas, 16s sin ellas, mismo resultado). Ver ROADMAP.md.
+  const vencReciente = [
+    vivo,
+    ...RANGOS_VENCIMIENTO_SECOP1.recientes,
+    `fecha_fin_ejec_contrato < '${HOY()}T00:00:00'`,
+    `fecha_fin_ejec_contrato >= fecha_ini_ejec_contrato`,
+  ].join(' AND ')
   return `SELECT count(uid) as n, sum(${V}) as valor,
                  sum(case(modalidad_de_contratacion = '${esc(MODALIDAD_SIN_COMPETENCIA_SECOP1)}', 1, true, 0)) as directa,
                  sum(case(${vivo}, 1, true, 0)) as n_ejec,
                  sum(case(${vivo}, ${V}, true, 0)) as v_ejec,
                  sum(case(${vigente}, 1, true, 0)) as n_vig,
-                 sum(case(${vigente}, ${V}, true, 0)) as v_vig
+                 sum(case(${vigente}, ${V}, true, 0)) as v_vig,
+                 sum(case(${vencReciente}, 1, true, 0)) as venc_recientes
           ${where} LIMIT 1`
 }
 

@@ -202,15 +202,25 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
 
   // Contratos en mora, con su desglose por antigüedad en la misma consulta
   // (total+riesgo y una franja por rango, en un solo sum(case()) cada una).
-  const mora = usarPedazo(panorama, 'mora', (rows) => {
+  //
+  // El vencido reciente de SECOP I viaja aparte (recientesSecop1) con su propia
+  // base de "vigentes" (vigentesSecop1 = su estimación de en ejecución): la
+  // tarjeta lo muestra como línea separada, no fusionado, porque su tasa sobre
+  // vigentes difiere mucho de la de SECOP II y un promedio mezclado engañaría.
+  const mora = usarPedazo(panorama, 'mora', (rows, todo) => {
     const r = rows[0] || {}
+    const g1 = todo?.generales1?.[0] || {}
     const n = (v) => parseInt(v ?? 0, 10)
+    const recientesSecop1 = n(g1.venc_recientes)
     return {
       total: n(r.total),
       riesgo: parseFloat(r.riesgo ?? 0),
       recientes: n(r.recientes),
       medios: n(r.medios),
       antiguos: n(r.antiguos),
+      recientesSecop1,
+      vigentesSecop1: n(g1.n_ejec),
+      tieneSecop1: recientesSecop1 > 0,
     }
   })
 
