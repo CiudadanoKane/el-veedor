@@ -486,10 +486,29 @@ Env vars de servidor aprovisionadas en Vercel (Production): `EDGE_CONFIG`
 aplica (cuenta personal). Lección: las env vars son por entorno — deben estar en
 **Production**, no solo en Preview.
 
+**SECOP I en el Panorama** ✅ — se combinan solo las 3 cifras de "total" que se
+pueden sumar limpio y rápido: **Contratos** (11,27M vs 5,45M solo SECOP II),
+**Valor** ($1.637 B) y **Sin competencia** (63% combinado vs 78% solo SECOP II).
+Una sola consulta de agregado de SECOP I (`soqlGeneralesSecop1`, ~20s, la paga
+el cron; el resultado sigue siendo diminuto y cabe en Edge Config).
+
+Lo que NO se combina y sigue solo-SECOP-II, con avisos en la UI: Contratistas y
+Entidades (su `count(distinct)` sobre 5,8M tarda >2 min —no cabe en el cron— y
+sumar distinct entre fuentes sobrecontaría); y los indicadores de ejecución
+(Vencidos, Valor en riesgo, Se cierran bien) más los desgloses por estado y por
+sector (SECOP I no reporta pago, estado de ejecución ni sector). Fix de
+correctitud: "Valor en riesgo %" se calcula contra el valor de SECOP II, no el
+combinado. Un aviso arriba del Panorama explica el esquema de una vez.
+
 **Siguientes pasos acordados con el usuario (jul 2026):**
-1. ~~Revisar la velocidad de carga del Panorama~~ → Edge Config (arriba).
-2. Evaluar cómo sumar cifras de SECOP I en el Panorama.
-3. Evaluar incluir asistencia de LLM en el Buscador.
+1. ~~Revisar la velocidad de carga del Panorama~~ → Edge Config.
+2. ~~Sumar cifras de SECOP I en el Panorama~~ → hecho (arriba).
+3. Aplicar Edge Config al resto de pestañas del cron → **descartado**: sus
+   payloads (58–385 KB) superan de largo el límite de 8 KB / 1 store de Hobby;
+   solo Panorama (1 KB) cabe. Alternativa si se quisiera: Vercel Blob. Por ahora
+   siguen con caché de CDN + cron (frías solo tras deploy, en páginas
+   secundarias).
+4. Evaluar incluir asistencia de LLM en el Buscador.
 
 ---
 

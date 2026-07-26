@@ -131,7 +131,9 @@ export function Dashboard() {
   const pctReciente = pctRecienteNum != null ? formatPct(pctRecienteNum) : null
   const pctVencidosNum = pct(mora.data?.total, enEjecucion)
   const pctVencidos = pctVencidosNum != null ? formatPct(pctVencidosNum) : null
-  const pctRiesgoNum = pct(mora.data?.riesgo, generales.data?.valor)
+  // El riesgo (valor_pendiente) es solo de SECOP II, así que se compara contra
+  // el valor de SECOP II, no el total combinado con SECOP I.
+  const pctRiesgoNum = pct(mora.data?.riesgo, generales.data?.valorSecop2)
   const pctRiesgo = pctRiesgoNum != null ? formatPct(pctRiesgoNum) : null
   const pctDirectaNum = pct(generales.data?.directa, generales.data?.total)
   const pctDirecta = pctDirectaNum != null ? formatPct(pctDirectaNum) : null
@@ -153,7 +155,11 @@ export function Dashboard() {
             <SubVivo
               data={ejecucion.data}
               tipo="conteo"
-              nota="Total histórico. Excluye borradores y cancelados."
+              nota={
+                generales.data?.tieneSecop1
+                  ? 'Total SECOP II + SECOP I. El desglose vivo es solo de SECOP II.'
+                  : 'Total histórico. Excluye borradores y cancelados.'
+              }
             />
           }
           loading={generales.isLoading}
@@ -387,7 +393,7 @@ export function Dashboard() {
     contratos: (
       <Detalle
         titulo="¿En qué estado están esos contratos?"
-        intro="El total agrupa contratos en etapas distintas. Solo los que están en ejecución pueden tener el plazo vencido."
+        intro="El total agrupa contratos en etapas distintas. Solo los que están en ejecución pueden tener el plazo vencido. Este desglose es solo de SECOP II: su vocabulario de estados no es el de SECOP I."
         metodologia={
           <>
             Quedan excluidos de todas las cifras los <strong>borradores</strong>,{' '}
@@ -416,7 +422,7 @@ export function Dashboard() {
     valor: (
       <Detalle
         titulo="Distribución de valor por sector"
-        intro="En qué áreas del Estado se concentra el dinero comprometido."
+        intro="En qué áreas del Estado se concentra el dinero comprometido. Solo SECOP II: SECOP I no clasifica sus contratos por sector."
         metodologia={
           <>
             "Sector" corresponde a la estructura del gobierno <strong>nacional</strong>.
@@ -452,7 +458,7 @@ export function Dashboard() {
     competencia: (
       <Detalle
         titulo="¿Cómo se escoge a quién contrata el Estado?"
-        intro="Cuánto se adjudica por concurso y cuánto de forma directa."
+        intro="Cuánto se adjudica por concurso y cuánto de forma directa. El porcentaje de arriba suma las dos fuentes; este desglose por modalidad es solo de SECOP II."
         metodologia={
           <>
             Contamos como <strong>sin competencia</strong> las modalidades
@@ -618,6 +624,20 @@ export function Dashboard() {
         subtitle={`¿Cómo está contratando ${scope} hoy? Cada cifra se puede desplegar para ver de dónde sale.`}
       />
       <GlobalFilters />
+
+      {/* Explica de una vez el esquema de fuentes, para no rotular ocho
+          tarjetas: los totales suman las dos plataformas; los indicadores de
+          ejecución solo se pueden medir en SECOP II. */}
+      {generales.data?.tieneSecop1 && (
+        <p className="text-[13px] text-textSecondary -mt-4 mb-8 max-w-3xl leading-relaxed border-l-2 border-border pl-4">
+          <strong className="text-textPrimary">Contratos, valor y sin competencia</strong> suman{' '}
+          <strong className="text-textPrimary">SECOP II + SECOP I</strong> (las dos plataformas de
+          contratación del Estado). El resto —contratistas, entidades y los indicadores de
+          ejecución (vencidos, valor en riesgo, cierre)— son <strong className="text-textPrimary">
+          solo de SECOP II</strong>: SECOP I no reporta pago, estado de ejecución ni sector, y
+          contar sus contratistas/entidades aparte sobrecontaría a quienes están en ambas.
+        </p>
+      )}
 
       {/* Cifras clave: cada una es la puerta de entrada a su detalle */}
       <div data-tour="cifras" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-8 mb-10">

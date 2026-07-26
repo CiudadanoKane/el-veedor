@@ -7,8 +7,10 @@
 import { ESTADO_ACTIVO, HOY } from './constants.js'
 import {
   whereFromFilters, buildWhere, moraConditions, soloContratosValidos, RANGOS_VENCIMIENTO,
+  esc, soloContratosValidosSecop1, whereFromFiltrosSecop1, VALOR_SECOP1_SOQL, cuantiaPosibleSecop1,
 } from './soql.js'
 import { documentoIdentifica } from './identidad.js'
+import { MODALIDAD_SIN_COMPETENCIA_SECOP1 } from './catalogosSecop1.js'
 
 // Modalidades donde no hubo concurso: el Estado escoge al contratista
 // directamente. Es la vía legítima en muchos casos (servicios profesionales,
@@ -93,4 +95,25 @@ export const PANORAMA_SOQL = {
   mora: soqlMora,
   cierre: soqlCierre,
   ejecucion: soqlEjecucion,
+}
+
+// --- SECOP I: solo las cifras de "totales" que se pueden combinar de forma
+// limpia y RÁPIDA. Contratos (count), Valor (sum saneado) y Sin competencia
+// (su modalidad directa) salen en una sola consulta de agregado (~20s, la paga
+// el cron). NO se incluyen Contratistas ni Entidades: su count(distinct) sobre
+// los 5,8M tarda >2 min (no cabe en el cron) y además sumar distinct entre
+// fuentes sobrecontaría a quien aparece en ambas. El resto del Panorama —mora,
+// cierre, ejecución, por estado, por sector— depende de pago/estado/sector que
+// SECOP I no reporta, así que sigue siendo solo de SECOP II. Ver ROADMAP.md.
+export function soqlGeneralesSecop1(filters) {
+  const where = buildWhere(
+    whereFromFiltrosSecop1(filters, [soloContratosValidosSecop1(), cuantiaPosibleSecop1()]),
+  )
+  return `SELECT count(uid) as n, sum(${VALOR_SECOP1_SOQL}) as valor,
+                 sum(case(modalidad_de_contratacion = '${esc(MODALIDAD_SIN_COMPETENCIA_SECOP1)}', 1, true, 0)) as directa
+          ${where} LIMIT 1`
+}
+
+export const PANORAMA_SOQL_SECOP1 = {
+  generales1: soqlGeneralesSecop1,
 }

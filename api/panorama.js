@@ -1,5 +1,5 @@
 import { DATASETS } from '../src/lib/constants.js'
-import { PANORAMA_SOQL } from '../src/lib/dashboardQueries.js'
+import { PANORAMA_SOQL, PANORAMA_SOQL_SECOP1 } from '../src/lib/dashboardQueries.js'
 import { socrataQuery } from '../src/lib/socrataClient.js'
 import { leerEdgeConfig, escribirEdgeConfig } from '../src/lib/edgeConfig.js'
 
@@ -39,11 +39,22 @@ export default async function handler(req, res) {
     }
 
     // Cómputo: vista filtrada, refresco del cron, o Edge Config aún vacío.
+    // SECOP II (7 consultas) y SECOP I (agregado de totales combinables) en
+    // paralelo; se fusionan en un solo payload por clave.
     const claves = Object.keys(PANORAMA_SOQL)
-    const resultados = await Promise.all(
-      claves.map((clave) => socrataQuery(datasetId, PANORAMA_SOQL[clave](filters))),
-    )
-    const payload = Object.fromEntries(claves.map((clave, i) => [clave, resultados[i]]))
+    const claves1 = Object.keys(PANORAMA_SOQL_SECOP1)
+    const [resultados, resultados1] = await Promise.all([
+      Promise.all(claves.map((clave) => socrataQuery(datasetId, PANORAMA_SOQL[clave](filters)))),
+      Promise.all(
+        claves1.map((clave) =>
+          socrataQuery(DATASETS.PROCESOS_SECOP1, PANORAMA_SOQL_SECOP1[clave](filters)),
+        ),
+      ),
+    ])
+    const payload = {
+      ...Object.fromEntries(claves.map((clave, i) => [clave, resultados[i]])),
+      ...Object.fromEntries(claves1.map((clave, i) => [clave, resultados1[i]])),
+    }
 
     // Guarda el resultado por defecto en Edge Config (best-effort). Se espera
     // para asegurar que el refresco del cron persista antes de que la función

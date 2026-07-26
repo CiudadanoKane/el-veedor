@@ -2,10 +2,12 @@ import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
 import { DATASETS, ESTADO_ACTIVO } from '../lib/constants'
 import { whereFromFilters, buildWhere, moraConditions, soloContratosValidos } from '../lib/soql'
-import { PANORAMA_SOQL, MODALIDADES_SIN_COMPETENCIA } from '../lib/dashboardQueries'
+import { PANORAMA_SOQL, PANORAMA_SOQL_SECOP1, MODALIDADES_SIN_COMPETENCIA } from '../lib/dashboardQueries'
 
 const DS = DATASETS.CONTRATOS
+const DS1 = DATASETS.PROCESOS_SECOP1
 const PANORAMA_KEYS = Object.keys(PANORAMA_SOQL)
+const PANORAMA_KEYS_SECOP1 = Object.keys(PANORAMA_SOQL_SECOP1)
 
 // Re-exportada para no romper a quienes ya la importan de aquí
 // (useRankings, usePerfilEntidad, usePerfilContratista). La definición vive
@@ -34,10 +36,16 @@ function usePanoramaRaw(filters) {
     queryKey: ['dash', 'panorama', filters],
     queryFn: async () => {
       if (import.meta.env.DEV) {
-        const resultados = await Promise.all(
-          PANORAMA_KEYS.map((clave) => socrataQuery(DS, PANORAMA_SOQL[clave](filters))),
-        )
-        return Object.fromEntries(PANORAMA_KEYS.map((clave, i) => [clave, resultados[i]]))
+        const [resultados, resultados1] = await Promise.all([
+          Promise.all(PANORAMA_KEYS.map((clave) => socrataQuery(DS, PANORAMA_SOQL[clave](filters)))),
+          Promise.all(
+            PANORAMA_KEYS_SECOP1.map((clave) => socrataQuery(DS1, PANORAMA_SOQL_SECOP1[clave](filters))),
+          ),
+        ])
+        return {
+          ...Object.fromEntries(PANORAMA_KEYS.map((clave, i) => [clave, resultados[i]])),
+          ...Object.fromEntries(PANORAMA_KEYS_SECOP1.map((clave, i) => [clave, resultados1[i]])),
+        }
       }
       return fetchPanoramaApi(filters)
     },
@@ -48,7 +56,9 @@ function usePanoramaRaw(filters) {
 // error, refetch } que ya esperan QueryState y el resto del Dashboard.
 function usarPedazo(panorama, clave, transformar) {
   return {
-    data: panorama.data ? transformar(panorama.data[clave]) : undefined,
+    // Segundo argumento: el objeto completo, para las cifras que combinan más
+    // de una clave (p. ej. generales + generales1 de SECOP I).
+    data: panorama.data ? transformar(panorama.data[clave], panorama.data) : undefined,
     isLoading: panorama.isLoading,
     isError: panorama.isError,
     error: panorama.error,
@@ -87,12 +97,30 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
   const panorama = usePanoramaRaw(filters)
 
   // Cifras generales (solo contratos vigentes: sin borradores, cancelados ni
-  // los que están en trámite de aprobación)
-  const generales = usarPedazo(panorama, 'generales', (rows) => ({
-    total: parseInt(rows[0]?.total ?? 0, 10),
-    valor: parseFloat(rows[0]?.valor ?? 0),
-    directa: parseInt(rows[0]?.directa ?? 0, 10),
-  }))
+  // los que están en trámite de aprobación). Contratos, Valor y Sin competencia
+  // se COMBINAN con SECOP I (generales1): son las únicas cifras de total que se
+  // pueden sumar limpio y rápido entre las dos fuentes. Se conservan aparte las
+  // de SECOP II (totalSecop2, valorSecop2) porque las tarjetas de calidad
+  // —Valor en riesgo, etc.— comparan contra el universo de SECOP II, no el
+  // combinado. tieneSecop1 avisa a la UI para rotular las cifras.
+  const generales = usarPedazo(panorama, 'generales', (rows, todo) => {
+    const g2 = rows?.[0] || {}
+    const g1 = todo?.generales1?.[0] || {}
+    const i = (v) => parseInt(v ?? 0, 10)
+    const f = (v) => parseFloat(v ?? 0)
+    const totalSecop2 = i(g2.total)
+    const valorSecop2 = f(g2.valor)
+    const totalSecop1 = i(g1.n)
+    return {
+      total: totalSecop2 + totalSecop1,
+      valor: valorSecop2 + f(g1.valor),
+      directa: i(g2.directa) + i(g1.directa),
+      totalSecop2,
+      valorSecop2,
+      totalSecop1,
+      tieneSecop1: totalSecop1 > 0,
+    }
+  })
 
   // Escala del sistema: cuántos actores participan.
   //
