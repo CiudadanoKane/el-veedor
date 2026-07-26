@@ -168,22 +168,34 @@ const OPCIONES = Object.entries(METRICAS).map(([v, m]) => ({ value: v, label: m.
 export function MapaColombia() {
   const [metrica, setMetrica] = useState('vencidos')
   const [modo, setModo] = useState('total')
+  // Por defecto solo entidades territoriales: es la única agregación geográfica
+  // honesta (ver comentario del toggle más abajo y useMapaMetricas).
+  const [orden, setOrden] = useState('territorial')
   const [activo, setActivo] = useState(null)
 
   const queryMetricas = useMapaMetricas()
   const queryAdic = useAdicionesPrecalculadas()
 
   const registro = METRICAS[metrica]
+  const esSecop = registro.fuente !== 'adiciones'
   const perCapita = !!registro.perCapita && modo === 'percapita'
-  const query = registro.fuente === 'adiciones' ? queryAdic : queryMetricas
-  const fuenteMap =
-    registro.fuente === 'adiciones' ? queryAdic.data?.porDepto : queryMetricas.data
+  // El toggle de orden solo aplica a las métricas SECOP en vivo. Adiciones viene
+  // del precálculo diario, que aún no separa por orden, así que va con todas las
+  // entidades (se advierte bajo el mapa).
+  const territorial = esSecop && orden === 'territorial'
+  const query = esSecop ? queryMetricas : queryAdic
+  const fuenteMap = esSecop ? queryMetricas.data : queryAdic.data?.porDepto
 
   // Reduce cada departamento al número de la métrica elegida (respetando per
-  // cápita) y guarda la fila cruda para el detalle del hover.
+  // cápita) y guarda la fila cruda para el detalle del hover. En las métricas
+  // SECOP la fila cruda trae dos agregados {todas, territorial}: se aplana al
+  // que pida el toggle antes de leer la métrica.
   const porDepto = new Map()
   if (fuenteMap) {
-    for (const [clave, fila] of fuenteMap) {
+    for (const [clave, cruda] of fuenteMap) {
+      const fila = esSecop
+        ? { nombre: cruda.nombre, ...(territorial ? cruda.territorial : cruda.todas) }
+        : cruda
       const pob = poblacionDe(clave)
       const v = registro.valorDe(fila, pob, perCapita)
       if (v == null || !isFinite(v)) continue
@@ -201,7 +213,7 @@ export function MapaColombia() {
   const ordenados = [...porDepto.entries()].sort((a, b) => b[1].v - a[1].v)
   const fueraDeEscala = new Set()
   if (registro.perCapita && ordenados.length > 2) {
-    fueraDeEscala.add(ordenados[0][0]) // el dominante (Bogotá en total)
+    fueraDeEscala.add(ordenados[0][0]) // el dominante (p. ej. Bogotá en "todas" · total)
     // En per cápita, San Andrés es un atípico estructural: su población diminuta
     // (~62 mil) infla cualquier cifra por habitante. Se saca también, si no era
     // ya el dominante. En Nº de contratos ya lo es (no cambia); en Valor es el
@@ -243,8 +255,30 @@ export function MapaColombia() {
           options={OPCIONES}
         />
       </div>
-      {/* El toggle Total / per cápita va en su propia fila, debajo del selector
-          de métrica: puesto a la derecha se perdía. */}
+
+      {/* Toggle de orden. En SECOP II `departamento` es la SEDE de la entidad,
+          no dónde se gasta: las entidades nacionales (INVÍAS, ministerios)
+          quedan atribuidas a Bogotá aunque la obra esté en otro lado. Por eso el
+          mapa muestra por defecto solo lo territorial —bien ubicado— y avisa al
+          ver "todas". No aplica a Adiciones (precálculo sin orden). */}
+      {esSecop && (
+        <div className="mt-2.5 flex items-center gap-2 flex-wrap">
+          <span className="text-[11px] uppercase tracking-label text-textSecondary font-semibold">
+            Entidades
+          </span>
+          <Segmented
+            value={orden}
+            onChange={(v) => { setOrden(v); setActivo(null) }}
+            options={[
+              { value: 'territorial', label: 'Territoriales' },
+              { value: 'todas', label: 'Todas' },
+            ]}
+          />
+        </div>
+      )}
+
+      {/* El toggle Total / per cápita va en su propia fila: puesto a la derecha
+          se perdía. */}
       {registro.perCapita && (
         <div className="mt-2.5">
           <Segmented
@@ -258,8 +292,37 @@ export function MapaColombia() {
         </div>
       )}
 
+      {/* Advertencia de alcance según el toggle de orden. */}
+      {esSecop && (
+        <p className="mt-3 text-[12.5px] text-textSecondary leading-snug max-w-2xl">
+          {territorial ? (
+            <>
+              Solo <strong>entidades territoriales</strong> (alcaldías y gobernaciones): contratan
+              dentro de su jurisdicción, así que el mapa las ubica bien. Se <strong>excluye la
+              contratación nacional</strong> (ministerios, INVÍAS…), cuyo destino no es ubicable
+              geográficamente en los datos de SECOP.
+            </>
+          ) : (
+            <>
+              <strong>Todas las entidades.</strong> Cuidado: en SECOP el departamento es la{' '}
+              <strong>sede</strong> de la entidad, no dónde se gasta. Lo nacional se atribuye a su
+              ciudad-sede —p. ej. una vía de INVÍAS en el Guaviare se cuenta en Bogotá—, así que
+              las sedes nacionales (sobre todo Bogotá) se ven infladas.
+            </>
+          )}
+        </p>
+      )}
+
       <Methodology>
         {registro.metodologia}
+        <br />
+        <br />
+        <strong>Sede, no destino:</strong> en SECOP II el <code>departamento</code> es dónde está
+        la entidad, no dónde se ejecuta el contrato. Las entidades nacionales figuran en su
+        ciudad-sede (verificado: INVÍAS, con obras en todo el país, tiene sus 25.575 contratos al
+        100% en Bogotá). Por eso el mapa muestra por defecto solo <strong>entidades
+        territoriales</strong>, que sí contratan dentro de su territorio; el destino real de la
+        contratación nacional no es reconstruible con estos datos.
         <br />
         <br />
         El mapa siempre muestra el país completo, sin importar el filtro geográfico activo.
@@ -407,8 +470,9 @@ export function MapaColombia() {
                 </p>
               )}
               {registro.fuente === 'adiciones' && queryAdic.data?.generadoEn && (
-                <p className="mt-3 text-[11px] text-textSecondary/80">
-                  Calculado el {formatDate(queryAdic.data.generadoEn)}.
+                <p className="mt-3 text-[11px] text-textSecondary/80 leading-snug">
+                  Calculado el {formatDate(queryAdic.data.generadoEn)}. Incluye todas las
+                  entidades (el precálculo aún no separa nacionales de territoriales).
                 </p>
               )}
             </div>
