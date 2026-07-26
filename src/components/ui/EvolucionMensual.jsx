@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from 'recharts'
 import { QueryState } from './QueryState'
 import { Segmented } from './Segmented'
@@ -11,22 +11,22 @@ import { CHART, tooltipProps } from '../../lib/chartTheme'
 
 // Formatea según el tipo de métrica: conteo, dinero o porcentaje.
 function formatear(valor, tipo, completo = false) {
+  if (valor == null) return '—'
   if (tipo === 'dinero') return completo ? formatCOPFull(valor) : formatCOP(valor)
   if (tipo === 'porcentaje') return formatPct(valor)
   return valor?.toLocaleString('es-CO') ?? '—'
 }
 
 // Serie de tiempo: uno de los dos casos donde un gráfico dice algo que una
-// lista no puede. Línea limpia con marcadores, sin relleno ni adornos.
+// lista no puede. Dos líneas —SECOP II y SECOP I— sin relleno ni adornos.
 export function EvolucionMensual({ filters }) {
   // Por defecto la vista anual: la mensual queda dominada por el pico de
   // enero y se vuelve ilegible como panorama general.
   const [periodo, setPeriodo] = useState('5a')
   const [metrica, setMetrica] = useState('contratos')
-  const query = useEvolucion(filters, periodo)
+  const { data, secop2, secop1, porAnio, secop1Viable } = useEvolucion(filters, periodo)
 
   const tipo = METRICAS[metrica].tipo
-  const porAnio = PERIODOS[periodo].grano === 'anio'
 
   return (
     <section className="border-t-2 border-textPrimary pt-5 pb-8 mb-2">
@@ -37,7 +37,8 @@ export function EvolucionMensual({ filters }) {
           </h2>
           <p className="text-[14.5px] text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
             Cómo cambia lo que contrata el Estado a lo largo del tiempo. Cada punto es
-            lo firmado en ese {porAnio ? 'año' : 'mes'}, no un acumulado.
+            lo firmado en ese {porAnio ? 'año' : 'mes'}, no un acumulado. Se muestran las
+            dos fuentes por separado: <strong>SECOP II</strong> y <strong>SECOP I</strong>.
           </p>
         </div>
         <Segmented
@@ -56,29 +57,33 @@ export function EvolucionMensual({ filters }) {
       </div>
 
       <Methodology>
-        Agrupa por <code>fecha_de_firma</code>. Cada punto cuenta{' '}
+        Agrupa por la fecha de firma del contrato en cada fuente. Cada punto cuenta{' '}
         <strong>solo los contratos firmados en ese período</strong>: no se acumula con los
-        anteriores. Por eso la línea puede bajar, como ocurre entre 2018 y 2019.
+        anteriores, por eso la línea puede bajar.
         <br />
         <br />
-        Tres advertencias para leerlo bien:
+        Se pintan <strong>dos líneas separadas, no una suma</strong>: SECOP II y SECOP I son
+        sistemas distintos y el valor registrado en SECOP I es de menor calidad. Verlas
+        aparte muestra la <strong>migración</strong> de una a la otra —SECOP I cae mientras
+        SECOP II sube, a medida que las entidades se pasan de sistema—, y evita el espejismo
+        de leer ese ascenso de SECOP II como un aumento real de la contratación cuando es en
+        buena parte adopción del sistema nuevo. En la vista de 10 años se muestra solo SECOP
+        II (ver la nota bajo el gráfico).
+        <br />
+        <br />
+        Dos advertencias para leerlo:
         (1) en la vista mensual, <strong>enero dispara el conteo</strong> — es cuando las
-        entidades firman en masa los contratos de prestación de servicios del año.
-        Verificamos que es un fenómeno real y no una carga masiva de datos: las firmas se
-        reparten a lo largo de todo el mes. Aun así, el pico deja el resto de meses
-        aplanado, por eso la vista anual viene por defecto; (2) <strong>los períodos más
-        recientes suelen estar incompletos</strong> porque las entidades tardan en
-        registrar, y el período en curso se excluye por completo; (3) en las vistas de 5 y
-        10 años, el crecimiento inicial refleja sobre todo la{' '}
-        <strong>adopción de SECOP II</strong> (en 2016 apenas había 1.338 contratos
-        registrados), no un aumento real de la contratación.{' '}
-        <strong>"% sin competencia"</strong> es la proporción de contratos adjudicados por
-        contratación directa.
+        entidades firman en masa los contratos de prestación de servicios del año; es un
+        fenómeno real, no una carga de datos, pero aplana el resto de meses, por eso la
+        vista anual viene por defecto; (2) <strong>los períodos más recientes suelen estar
+        incompletos</strong> porque las entidades tardan en registrar, y el período en curso
+        se excluye por completo. <strong>"% sin competencia"</strong> es la proporción de
+        contratos adjudicados por contratación directa.
       </Methodology>
 
       <div className="mt-6">
-        <QueryState query={query} empty="Sin datos para este período.">
-          {(data) => (
+        <QueryState query={secop2} empty="Sin datos para este período.">
+          {() => (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={data} margin={{ top: 8, right: 16, left: 4, bottom: 4 }}>
                 <CartesianGrid stroke={CHART.grid} strokeDasharray="0" vertical={false} />
@@ -107,27 +112,56 @@ export function EvolucionMensual({ filters }) {
                   }
                 />
                 <Tooltip
-                  formatter={(v) => [formatear(v, tipo, true), METRICAS[metrica].label]}
+                  formatter={(v, name) => [formatear(v, tipo, true), name]}
                   {...tooltipProps}
                 />
+                <Legend
+                  verticalAlign="top"
+                  align="right"
+                  height={28}
+                  iconType="plainline"
+                  wrapperStyle={{ fontSize: 12, color: CHART.axis }}
+                />
                 <Line
+                  name="SECOP II"
                   type="linear"
                   dataKey={metrica}
                   stroke={CHART.text}
                   strokeWidth={1.75}
-                  dot={{ r: 4, fill: '#FFFFFF', stroke: CHART.text, strokeWidth: 1.75 }}
+                  connectNulls={false}
+                  dot={{ r: 3.5, fill: '#FFFFFF', stroke: CHART.text, strokeWidth: 1.75 }}
                   activeDot={{ r: 6, fill: CHART.text, stroke: '#FFFFFF', strokeWidth: 2 }}
                   isAnimationActive={false}
                 />
+                {secop1Viable && (
+                  <Line
+                    name="SECOP I"
+                    type="linear"
+                    dataKey={`${metrica}1`}
+                    stroke={CHART.primary}
+                    strokeWidth={1.75}
+                    strokeDasharray="5 3"
+                    connectNulls={false}
+                    dot={{ r: 3.5, fill: '#FFFFFF', stroke: CHART.primary, strokeWidth: 1.75 }}
+                    activeDot={{ r: 6, fill: CHART.primary, stroke: '#FFFFFF', strokeWidth: 2 }}
+                    isAnimationActive={false}
+                  />
+                )}
               </LineChart>
             </ResponsiveContainer>
           )}
         </QueryState>
 
         <p className="mt-3 text-[12.5px] text-textSecondary">
-          {porAnio
-            ? 'El año en curso se excluye por estar incompleto.'
-            : 'Los últimos meses pueden estar incompletos: las entidades tardan en registrar.'}
+          {!secop1Viable
+            ? 'En la vista de 10 años se muestra solo SECOP II: agrupar SECOP I por año sobre 6,4 millones de registros es demasiado pesado para hacerlo en vivo. Usa 5 años o menos para ver también SECOP I.'
+            : secop1.isLoading
+              ? 'Cargando la serie de SECOP I… (es más lenta; la línea aparecerá en un momento)'
+              : secop1.isError
+                ? 'No se pudo cargar la serie de SECOP I; se muestra solo SECOP II.'
+                : porAnio
+                  ? 'El año en curso se excluye por estar incompleto.'
+                  : 'Los últimos meses pueden estar incompletos: las entidades tardan en registrar.'}
         </p>
       </div>
     </section>

@@ -535,8 +535,13 @@ mismo resultado; el `case` se deja mínimo.
    solo Panorama (1 KB) cabe. Alternativa si se quisiera: Vercel Blob. Por ahora
    siguen con caché de CDN + cron (frías solo tras deploy, en páginas
    secundarias).
-4. **Evolución de la contratación con SECOP I ← PRÓXIMO (diseño acordado, sin
-   implementar).** Ver especificación abajo.
+4. ~~Evolución de la contratación con SECOP I~~ ✅ — dos líneas separadas
+   (SECOP II sólida, SECOP I azul punteada), consultas en paralelo con SECOP I
+   en diferido. **Salvedad de rendimiento:** la vista de 10 años NO trae SECOP I
+   —su GROUP BY por año sobre 6,4M no baja de ~50s y con saneamiento de cuantías
+   pasa de 150s (medido)—, así que en ese rango se muestra solo SECOP II con una
+   nota. Las demás vistas (hasta 5 años) sí lo traen (~30s). Ver
+   `useEvolucion.js` y `EvolucionMensual.jsx`.
 5. Enriquecer el mapa de Colombia (hoy solo mora) con más métricas valiosas, con
    toggle **Total / per cápita** para que la comparación entre departamentos sea
    justa. Ver especificación abajo.
@@ -547,7 +552,14 @@ mismo resultado; el `case` se deja mínimo.
 
 ---
 
-### PRÓXIMO — Evolución con SECOP I (opción A: dos líneas)
+### ~~PRÓXIMO~~ HECHO ✅ — Evolución con SECOP I (opción A: dos líneas)
+
+Implementado. Nota de alcance añadida al implementar: la vista de **10 años**
+quedó fuera para SECOP I por rendimiento (ver salvedad en el punto 4 de arriba).
+En las vistas de hasta 5 años se ven las dos líneas y la migración (SECOP I cae,
+SECOP II sube, se cruzan hacia 2022). La afirmación "SECOP I rellena los años
+vacíos" se matizó en la metodología del componente, porque justo esos años
+viejos solo se verían en la vista de 10 años, donde SECOP I no se muestra.
 
 **Decisión del usuario (jul 2026): opción A — dos líneas separadas** (SECOP II
 vs SECOP I), NO una línea combinada ni toggle. Motivo: la migración SECOP I→II
