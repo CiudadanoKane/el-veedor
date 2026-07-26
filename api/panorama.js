@@ -33,6 +33,7 @@ export default async function handler(req, res) {
       const cache = await leerEdgeConfig(CLAVE)
       if (cache) {
         res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=86400')
+        res.setHeader('X-Panorama-Source', 'edge-config')
         return res.status(200).json(cache)
       }
     }
@@ -48,9 +49,14 @@ export default async function handler(req, res) {
     // para asegurar que el refresco del cron persista antes de que la función
     // termine; en cómputo el costo del write (~200ms) es despreciable frente a
     // los ~15s de las consultas.
-    if (sinFiltros) await escribirEdgeConfig(CLAVE, payload)
+    let escrito = false
+    if (sinFiltros) escrito = await escribirEdgeConfig(CLAVE, payload)
 
     res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=86400')
+    res.setHeader('X-Panorama-Source', 'compute')
+    // Diagnóstico: 'ok' si el write a Edge Config funcionó (env vars correctas),
+    // 'no' si no está configurado o falló. Solo aplica al caso sin filtros.
+    if (sinFiltros) res.setHeader('X-Panorama-Write', escrito ? 'ok' : 'no')
     res.status(200).json(payload)
   } catch (err) {
     res.status(502).json({ error: err.message })
