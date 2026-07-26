@@ -285,13 +285,18 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
   // porque "En ejecución" no es de fiar: la mayoría también tiene el plazo
   // vencido y sigue así solo porque nadie cerró el registro. El corte estricto
   // —en ejecución Y con plazo aún por vencer— es el único genuinamente activo.
-  const ejecucion = usarPedazo(panorama, 'ejecucion', (rows) => {
+  // El desglose vivo (en ejecución / plazo vigente) suma la estimación de
+  // SECOP I: 'Celebrado' como proxy de "en ejecución" (ver soqlGeneralesSecop1).
+  const ejecucion = usarPedazo(panorama, 'ejecucion', (rows, todo) => {
     const r = rows[0] || {}
+    const g1 = todo?.generales1?.[0] || {}
+    const i = (v) => parseInt(v ?? 0, 10)
+    const f = (v) => parseFloat(v ?? 0)
     return {
-      nEjecucion: parseInt(r.n_ejec ?? 0, 10),
-      valorEjecucion: parseFloat(r.v_ejec ?? 0),
-      nVigente: parseInt(r.n_vig ?? 0, 10),
-      valorVigente: parseFloat(r.v_vig ?? 0),
+      nEjecucion: i(r.n_ejec) + i(g1.n_ejec),
+      valorEjecucion: f(r.v_ejec) + f(g1.v_ejec),
+      nVigente: i(r.n_vig) + i(g1.n_vig),
+      valorVigente: f(r.v_vig) + f(g1.v_vig),
     }
   })
 

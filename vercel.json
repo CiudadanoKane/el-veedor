@@ -20,7 +20,7 @@
     "api/noticias-fechas.js": { "maxDuration": 300 },
     "api/geo.js": { "maxDuration": 60 },
     "api/directorio.js": { "maxDuration": 60 },
-    "api/panorama.js": { "maxDuration": 60 },
+    "api/panorama.js": { "maxDuration": 180 },
     "api/alertas-vencidos.js": { "maxDuration": 60 },
     "api/errores-indice.js": { "maxDuration": 150 },
     "api/rankings-contratistas.js": { "maxDuration": 90 },

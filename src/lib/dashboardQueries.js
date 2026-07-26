@@ -109,8 +109,19 @@ export function soqlGeneralesSecop1(filters) {
   const where = buildWhere(
     whereFromFiltrosSecop1(filters, [soloContratosValidosSecop1(), cuantiaPosibleSecop1()]),
   )
-  return `SELECT count(uid) as n, sum(${VALOR_SECOP1_SOQL}) as valor,
-                 sum(case(modalidad_de_contratacion = '${esc(MODALIDAD_SIN_COMPETENCIA_SECOP1)}', 1, true, 0)) as directa
+  const V = VALOR_SECOP1_SOQL
+  // Estimación de "vivo" en SECOP I: 'Celebrado' es firmado y aún no liquidado
+  // ni terminado — el proxy más cercano a "en ejecución" de SECOP II. "Vigente"
+  // le suma que el plazo no haya vencido. Es una aproximación a propósito (el
+  // Panorama es general), porque SECOP I no tiene el estado "En ejecución".
+  const vivo = `estado_del_proceso = 'Celebrado'`
+  const vigente = `${vivo} AND fecha_fin_ejec_contrato >= '${HOY()}T00:00:00'`
+  return `SELECT count(uid) as n, sum(${V}) as valor,
+                 sum(case(modalidad_de_contratacion = '${esc(MODALIDAD_SIN_COMPETENCIA_SECOP1)}', 1, true, 0)) as directa,
+                 sum(case(${vivo}, 1, true, 0)) as n_ejec,
+                 sum(case(${vivo}, ${V}, true, 0)) as v_ejec,
+                 sum(case(${vigente}, 1, true, 0)) as n_vig,
+                 sum(case(${vigente}, ${V}, true, 0)) as v_vig
           ${where} LIMIT 1`
 }
 

@@ -157,7 +157,7 @@ export function Dashboard() {
               tipo="conteo"
               nota={
                 generales.data?.tieneSecop1
-                  ? 'Total SECOP II + SECOP I. El desglose vivo es solo de SECOP II.'
+                  ? 'SECOP II + SECOP I. En SECOP I, "en ejecución" se estima por su estado "Celebrado".'
                   : 'Total histórico. Excluye borradores y cancelados.'
               }
             />
