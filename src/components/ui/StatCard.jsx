@@ -18,13 +18,16 @@ const TONE = {
 // las cifras queden alineadas entre sí aunque los subtítulos midan distinto.
 export function StatCard({
   label, value, sub, pct, tone = 'default', loading,
-  onToggle, abierta, detalle, accion, reservaPct = true,
+  onToggle, abierta, detalle, accion, reservaPct = true, fuente,
 }) {
   const desplegable = typeof onToggle === 'function'
 
   const contenido = (
     <>
-      {/* Fila 1: etiqueta */}
+      {/* Fila 1: etiqueta + alcance de fuente. La etiqueta de fuente rotula, en
+          el mismo gris tenue del rótulo, si la cifra combina las dos plataformas
+          o es solo de SECOP II — así el alcance viaja pegado a cada cifra en vez
+          de en una nota al pie que hay que ir a buscar. */}
       <div className="flex items-baseline gap-2">
         <span className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
           {label}
@@ -35,6 +38,11 @@ export function StatCard({
             className={`h-3 w-3 shrink-0 text-textSecondary transition-transform duration-200
                         ${abierta ? 'rotate-0' : '-rotate-90'}`}
           />
+        )}
+        {fuente && (
+          <span className="ml-auto text-[9.5px] uppercase tracking-label text-textSecondary/70 font-medium whitespace-nowrap">
+            {fuente}
+          </span>
         )}
       </div>
 

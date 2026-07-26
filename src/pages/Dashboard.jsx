@@ -124,6 +124,12 @@ export function Dashboard() {
   } = useDashboardStats(filters, abiertas)
 
   const scope = filters.city || filters.department || 'Colombia'
+  // Cuando el alcance trae SECOP I, cada tarjeta rotula su fuente: las tres que
+  // combinan ("SECOP II + I") y las que solo se pueden medir en SECOP II. Si no
+  // hay SECOP I en el alcance, la distinción no existe y no se rotula nada.
+  const tieneSecop1 = generales.data?.tieneSecop1
+  const fuenteAmbas = tieneSecop1 ? 'SECOP II + I' : undefined
+  const fuenteSolo2 = tieneSecop1 ? 'solo SECOP II' : undefined
 
   // Solo los contratos En ejecución pueden tener el plazo vencido.
   const enEjecucion = porEstado.data?.enEjecucion
@@ -150,14 +156,15 @@ export function Dashboard() {
       nodo: (
         <StatCard
           label="Contratos registrados"
+          fuente={fuenteAmbas}
           value={generales.data?.total?.toLocaleString('es-CO') ?? '—'}
           sub={
             <SubVivo
               data={ejecucion.data}
               tipo="conteo"
               nota={
-                generales.data?.tieneSecop1
-                  ? 'SECOP II + SECOP I. En SECOP I, "en ejecución" se estima por su estado "Celebrado".'
+                tieneSecop1
+                  ? 'En SECOP I, "en ejecución" se estima por su estado "Celebrado".'
                   : 'Total histórico. Excluye borradores y cancelados.'
               }
             />
@@ -175,6 +182,7 @@ export function Dashboard() {
       nodo: (
         <StatCard
           label="Contratistas"
+          fuente={fuenteSolo2}
           value={contratistasActores.data?.toLocaleString('es-CO') ?? '—'}
           sub="Personas y empresas distintas, contadas por NIT o cédula"
           loading={contratistasActores.isLoading}
@@ -195,6 +203,7 @@ export function Dashboard() {
       nodo: (
         <StatCard
           label="Entidades contratantes"
+          fuente={fuenteSolo2}
           value={entidadesActoras.data?.toLocaleString('es-CO') ?? '—'}
           sub="Organismos públicos que firmaron contratos"
           loading={entidadesActoras.isLoading}
@@ -215,6 +224,7 @@ export function Dashboard() {
       nodo: (
         <StatCard
           label="Valor contratado"
+          fuente={fuenteAmbas}
           value={formatCOPCorto(generales.data?.valor)}
           sub={
             <SubVivo
@@ -237,6 +247,7 @@ export function Dashboard() {
       nodo: (
         <StatCard
           label="Vencidos hace poco"
+          fuente={fuenteSolo2}
           value={mora.data?.recientes?.toLocaleString('es-CO') ?? '—'}
           pct={pctReciente ? `${pctReciente} de los vigentes` : null}
           sub="Plazo vencido en los últimos 6 meses. No todos los vencidos son retrasos reales."
@@ -253,6 +264,7 @@ export function Dashboard() {
       nodo: (
         <StatCard
           label="Valor en riesgo"
+          fuente={fuenteSolo2}
           value={formatCOPCorto(mora.data?.riesgo)}
           pct={pctRiesgo ? `${pctRiesgo} del comprometido` : null}
           // La forma con la palabra completa va debajo: la abreviatura resuelve
@@ -275,6 +287,7 @@ export function Dashboard() {
       nodo: (
         <StatCard
           label="Sin competencia"
+          fuente={fuenteAmbas}
           value={pctDirecta ?? '—'}
           // Un porcentaje suelto no dice nada: la base va en la misma línea que
           // en las demás tarjetas, para que las cinco se lean igual.
@@ -297,6 +310,7 @@ export function Dashboard() {
       nodo: (
         <StatCard
           label="Se cierran bien"
+          fuente={fuenteSolo2}
           value={
             cierre.data ? formatPct(pct(cierre.data.completo, cierre.data.total)) : '—'
           }
@@ -625,21 +639,9 @@ export function Dashboard() {
       />
       <GlobalFilters />
 
-      {/* Explica de una vez el esquema de fuentes, para no rotular ocho
-          tarjetas: los totales suman las dos plataformas; los indicadores de
-          ejecución solo se pueden medir en SECOP II. */}
-      {generales.data?.tieneSecop1 && (
-        <p className="text-[13px] text-textSecondary -mt-4 mb-8 max-w-3xl leading-relaxed border-l-2 border-border pl-4">
-          <strong className="text-textPrimary">Contratos, valor y sin competencia</strong> suman{' '}
-          <strong className="text-textPrimary">SECOP II + SECOP I</strong> (las dos plataformas de
-          contratación del Estado). El resto —contratistas, entidades y los indicadores de
-          ejecución (vencidos, valor en riesgo, cierre)— son <strong className="text-textPrimary">
-          solo de SECOP II</strong>: SECOP I no reporta pago, estado de ejecución ni sector, y
-          contar sus contratistas/entidades aparte sobrecontaría a quienes están en ambas.
-        </p>
-      )}
-
-      {/* Cifras clave: cada una es la puerta de entrada a su detalle */}
+      {/* Cifras clave: cada una es la puerta de entrada a su detalle. El alcance
+          de fuente (SECOP II + I / solo SECOP II) viaja rotulado en cada tarjeta,
+          no en un banner arriba. */}
       <div data-tour="cifras" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-8 mb-10">
         {tarjetas.map((t, i) => (
           <Fragment key={t.clave ?? `fija-${i}`}>
