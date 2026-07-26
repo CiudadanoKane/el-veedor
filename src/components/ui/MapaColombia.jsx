@@ -2,114 +2,232 @@ import { useState } from 'react'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
 import { Methodology } from './Methodology'
 import { Segmented } from './Segmented'
-import { useMapaMora } from '../../hooks/useMapaMora'
+import { useMapaMetricas } from '../../hooks/useMapaMetricas'
 import { useAdicionesPrecalculadas, tasasAdicion } from '../../hooks/useAdicionesPrecalculadas'
 import { normalizarDepto } from '../../lib/departamentos'
-import { SCALE_MORA, colorEnEscala } from '../../lib/chartTheme'
-import { formatPct, formatCOP, formatDate } from '../../lib/formatters'
+import { poblacionDe, POBLACION_ANIO } from '../../lib/poblacion'
+import { SCALE_SENAL, SCALE_NEUTRO, colorEnEscala } from '../../lib/chartTheme'
+import { formatPct, formatCOP, formatCOPCorto, formatDate } from '../../lib/formatters'
 
 const GEO = '/departamentos-colombia.geojson'
+const N = (x) => (x ?? 0).toLocaleString('es-CO')
+// Una tasa sobre una muestra menor a esto no es representativa; el departamento
+// entra en gris en las métricas de tasa (no en las de volumen, que son totales).
+const MIN_MUESTRA = 100
 
+// Registro de métricas. Cada una sabe reducir la fila de su departamento a un
+// número comparable (valorDe), formatearlo (formato) y explicar el detalle que
+// se lee al pasar el cursor. Las de "señal" (donde más es algo que mirar) van en
+// escala roja; las de volumen (donde más no es bueno ni malo) en azul.
 const METRICAS = {
-  mora: { label: 'Mora', escalaLabel: 'Tasa de mora' },
-  adiciones: { label: 'Adiciones de valor', escalaLabel: 'Cuánto crecieron los que crecieron' },
+  vencidos: {
+    label: 'Plazo vencido',
+    fuente: 'secop',
+    escala: SCALE_SENAL,
+    tono: 'text-danger',
+    descripcion:
+      'Qué proporción de los contratos en ejecución venció en los últimos 6 meses.',
+    leyenda: () => 'Plazo vencido',
+    valorDe: (f) => (f.enEjecucion >= MIN_MUESTRA ? (f.vencidos / f.enEjecucion) * 100 : null),
+    formato: (v) => formatPct(v),
+    detalle: (f) => `${N(f.vencidos)} vencidos de ${N(f.enEjecucion)} en ejecución`,
+    metodologia: (
+      <>
+        Contratos <strong>en ejecución</strong> cuyo plazo venció en los{' '}
+        <strong>últimos 6 meses</strong>, sobre el total en ejecución del departamento. Se
+        usa ese tramo porque es el que con más probabilidad es un retraso real y no un
+        registro que la entidad nunca cerró. Un plazo vencido en el registro no prueba por
+        sí solo que el contrato esté incumplido. Se excluyen los departamentos con menos de{' '}
+        {MIN_MUESTRA} contratos en ejecución.
+      </>
+    ),
+  },
+  contratos: {
+    label: 'Nº de contratos',
+    fuente: 'secop',
+    escala: SCALE_NEUTRO,
+    tono: 'text-primary',
+    perCapita: true,
+    descripcion: 'Cuántos contratos públicos se firmaron en cada departamento.',
+    leyenda: (pc) => (pc ? 'Contratos por 100 mil hab.' : 'Nº de contratos'),
+    valorDe: (f, pob, pc) => (pc ? (pob ? (f.n / pob) * 100000 : null) : f.n),
+    formato: (v) => N(Math.round(v)),
+    detalle: (f, pc, pob) =>
+      pc ? `${N(f.n)} contratos · ${N(pob)} habitantes` : `${formatCOPCorto(f.valor)} contratado`,
+    metodologia: (
+      <>
+        Número de contratos válidos firmados en el departamento (se excluyen borradores,
+        cancelados y sin formalizar). En <strong>per cápita</strong>, contratos por cada
+        100.000 habitantes (proyección DANE {POBLACION_ANIO}), que permite comparar
+        departamentos de tamaños muy distintos sin que los grandes dominen siempre.
+      </>
+    ),
+  },
+  valor: {
+    label: 'Valor contratado',
+    fuente: 'secop',
+    escala: SCALE_NEUTRO,
+    tono: 'text-primary',
+    perCapita: true,
+    descripcion: 'Cuánto dinero público se comprometió en cada departamento.',
+    leyenda: (pc) => (pc ? 'Valor por habitante' : 'Valor contratado'),
+    valorDe: (f, pob, pc) => (pc ? (pob ? f.valor / pob : null) : f.valor),
+    formato: (v, pc) => (pc ? formatCOP(v) : formatCOPCorto(v)),
+    detalle: (f, pc, pob) =>
+      pc ? `${formatCOPCorto(f.valor)} en total · ${N(pob)} hab.` : `en ${N(f.n)} contratos`,
+    metodologia: (
+      <>
+        Suma del valor de los contratos válidos del departamento. En{' '}
+        <strong>per cápita</strong>, pesos por habitante (proyección DANE {POBLACION_ANIO}).
+        Es el valor <strong>contratado</strong>, no el ejecutado ni el pagado.
+      </>
+    ),
+  },
+  directa: {
+    label: 'Sin competencia',
+    fuente: 'secop',
+    escala: SCALE_SENAL,
+    tono: 'text-warning',
+    descripcion:
+      'Qué proporción de los contratos se adjudicó de forma directa, sin concurso.',
+    leyenda: () => 'Sin competencia',
+    valorDe: (f) => (f.n >= MIN_MUESTRA ? (f.directa / f.n) * 100 : null),
+    formato: (v) => formatPct(v),
+    detalle: (f) => `${N(f.directa)} de ${N(f.n)} sin concurso`,
+    metodologia: (
+      <>
+        Contratos por <strong>contratación directa</strong> sobre el total del departamento.
+        Que sea directa <strong>no la hace irregular</strong> —la ley la permite para
+        servicios profesionales, urgencias y otros casos—; lo que importa es su peso
+        relativo. Se excluyen los departamentos con menos de {MIN_MUESTRA} contratos.
+      </>
+    ),
+  },
+  prorroga: {
+    label: 'Con prórroga',
+    fuente: 'secop',
+    escala: SCALE_SENAL,
+    tono: 'text-warning',
+    descripcion:
+      'Qué proporción de los contratos recibió una adición de tiempo a su plazo.',
+    leyenda: () => 'Con prórroga',
+    valorDe: (f) => (f.n >= MIN_MUESTRA ? (f.prorroga / f.n) * 100 : null),
+    formato: (v) => formatPct(v),
+    detalle: (f) => `${N(f.prorroga)} de ${N(f.n)} con el plazo ampliado`,
+    metodologia: (
+      <>
+        Contratos con <strong>adición de tiempo</strong> (días añadidos al plazo) sobre el
+        total del departamento. Prorrogar es legal y a veces inevitable; el patrón vale la
+        pena mirarlo cuando es muy alto. Se excluyen los departamentos con menos de{' '}
+        {MIN_MUESTRA} contratos.
+      </>
+    ),
+  },
+  adiciones: {
+    label: 'Adiciones de valor',
+    fuente: 'adiciones',
+    escala: SCALE_SENAL,
+    tono: 'text-warning',
+    descripcion: 'Cuánto crecieron los contratos sobre el valor con que se firmaron.',
+    leyenda: () => 'Cuánto crecieron',
+    valorDe: (f) => {
+      const t = tasasAdicion(f)
+      return t && t.pctValor != null && f.evaluables >= MIN_MUESTRA ? t.pctValor : null
+    },
+    formato: (v) => formatPct(v),
+    detalle: (f) =>
+      `${formatCOP(f.adicion)} añadidos · ${N(f.conAdicion)} de ${N(f.evaluables)} crecieron`,
+    metodologia: (
+      <>
+        Cuánto crecieron <strong>los contratos que crecieron</strong>, frente a su valor
+        inicial. Exige cruzar con el dataset de Procesos contrato a contrato, así que se{' '}
+        <strong>precalcula a diario</strong>. Adicionar es legal; el mapa muestra dónde
+        ocurre más, para preguntar por qué. Se excluyen los departamentos con menos de{' '}
+        {MIN_MUESTRA} contratos evaluables.
+      </>
+    ),
+  },
 }
 
-// Mapa coroplético: el segundo caso donde un gráfico dice algo que una lista
-// no puede — la geografía. Dos lecturas: dónde se concentra la mora y dónde
-// los contratos crecen más sobre lo que se pactó al firmarlos.
+const OPCIONES = Object.entries(METRICAS).map(([v, m]) => ({ value: v, label: m.label }))
+
+// Mapa coroplético: la vista donde la geografía dice algo que una lista no
+// puede. Un selector de métrica y, para las de volumen, un toggle Total / per
+// cápita para que la comparación entre departamentos sea justa.
 export function MapaColombia() {
-  const [metrica, setMetrica] = useState('mora')
+  const [metrica, setMetrica] = useState('vencidos')
+  const [modo, setModo] = useState('total')
   const [activo, setActivo] = useState(null)
 
-  const queryMora = useMapaMora()
+  const queryMetricas = useMapaMetricas()
   const queryAdic = useAdicionesPrecalculadas()
-  const esMora = metrica === 'mora'
-  const query = esMora ? queryMora : queryAdic
 
-  // Cada métrica reduce su fila a un solo número comparable entre
-  // departamentos, más el detalle que se lee al pasar el cursor.
-  let porDepto = null
-  let min = 0
-  let max = 0
-  if (esMora) {
-    porDepto = queryMora.data?.porDepto ?? null
-    min = queryMora.data?.min ?? 0
-    max = queryMora.data?.max ?? 0
-  } else if (queryAdic.data) {
-    porDepto = new Map()
-    for (const [clave, fila] of queryAdic.data.porDepto) {
-      const t = tasasAdicion(fila)
-      // Menos de 100 contratos evaluables no sostiene una tasa, igual que en
-      // el mapa de mora.
-      if (!t || t.pctValor == null || fila.evaluables < 100) continue
-      porDepto.set(clave, { ...fila, nombre: fila.etiqueta, valor: t.pctValor, ...t })
+  const registro = METRICAS[metrica]
+  const perCapita = !!registro.perCapita && modo === 'percapita'
+  const query = registro.fuente === 'adiciones' ? queryAdic : queryMetricas
+  const fuenteMap =
+    registro.fuente === 'adiciones' ? queryAdic.data?.porDepto : queryMetricas.data
+
+  // Reduce cada departamento al número de la métrica elegida (respetando per
+  // cápita) y guarda la fila cruda para el detalle del hover.
+  const porDepto = new Map()
+  let min = Infinity
+  let max = -Infinity
+  if (fuenteMap) {
+    for (const [clave, fila] of fuenteMap) {
+      const pob = poblacionDe(clave)
+      const v = registro.valorDe(fila, pob, perCapita)
+      if (v == null || !isFinite(v)) continue
+      porDepto.set(clave, { nombre: fila.nombre ?? fila.etiqueta, fila, pob, v })
+      if (v < min) min = v
+      if (v > max) max = v
     }
-    const valores = [...porDepto.values()].map((d) => d.valor)
-    min = valores.length ? Math.min(...valores) : 0
-    max = valores.length ? Math.max(...valores) : 0
   }
-
-  const valorDe = (d) => (esMora ? d?.tasa : d?.valor)
+  if (!porDepto.size) {
+    min = 0
+    max = 0
+  }
 
   return (
     <section className="border-t-2 border-textPrimary pt-5 pb-8 mb-2">
       <div className="flex items-start justify-between gap-6 flex-wrap">
         <div className="min-w-0">
           <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] leading-tight">
-            {esMora ? 'Mora por departamento' : 'Adiciones de valor por departamento'}
+            {registro.label} por departamento
           </h2>
           <p className="text-[14.5px] text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
-            {esMora
-              ? 'Qué proporción de los contratos en ejecución venció en los últimos 6 meses.'
-              : 'Cuánto crecieron los contratos sobre el valor con que se firmaron.'}
+            {registro.descripcion}
           </p>
         </div>
-        <Segmented
-          value={metrica}
-          onChange={(v) => { setMetrica(v); setActivo(null) }}
-          options={Object.entries(METRICAS).map(([v, m]) => ({ value: v, label: m.label }))}
-        />
       </div>
 
-      {esMora ? (
-        <Methodology>
-          Para cada departamento: contratos <strong>en ejecución</strong> cuyo plazo venció
-          en los <strong>últimos 6 meses</strong>, dividido entre el total en ejecución de
-          ese departamento. Usamos ese tramo porque es el que con mayor probabilidad
-          corresponde a retrasos reales y no a registros sin cerrar. Se excluyen los
-          departamentos con menos de 100 contratos en ejecución, donde una tasa no sería
-          representativa, y los registros sin departamento asignado. El mapa siempre
-          muestra el país completo, sin importar el filtro geográfico activo. Base
-          geográfica: Geoportal del DANE.
-        </Methodology>
-      ) : (
-        <Methodology>
-          Una adición es lo que el contrato creció frente a{' '}
-          <strong>el valor con que se firmó</strong>. El color muestra, por departamento,
-          cuánto crecieron <strong>los contratos que crecieron</strong>, frente al valor
-          inicial de esos mismos contratos. El denominador son solo ellos y no todos los
-          contratos a propósito: repartir las adiciones entre los que nunca se modificaron
-          diluye la cifra hasta volverla insignificante y no responde a ninguna pregunta.
-          <br />
-          <br />
-          El valor inicial no está en el registro del contrato: hay que ir a buscarlo al{' '}
-          <strong>dataset de Procesos</strong>, contrato por contrato. Como esa comparación
-          no se puede hacer en vivo sobre 5,4 millones de registros, se{' '}
-          <strong>precalcula una vez al día</strong>. La referencia es el valor adjudicado
-          cuando hubo concurso, y el <strong>precio base del proceso</strong> en la
-          contratación directa, que no tiene adjudicación — sin ese respaldo la medición
-          dejaría fuera a 6 de cada 7 contratos.
-          <br />
-          <br />
-          <strong>Un contrato que crece no es un contrato irregular:</strong> adicionar es
-          legal y a veces inevitable. Lo que el mapa muestra es dónde ocurre más, para
-          preguntar por qué. Se apartan los casos que no son creíbles como sobrecosto —
-          múltiplos exactos de digitación (×100, ×1.000) y crecimientos de más del 500%,
-          que la ley no permite— y los departamentos con menos de 100 contratos
-          evaluables. Solo entran contratos cuyo valor inicial se pudo establecer.
-        </Methodology>
-      )}
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <div className="overflow-x-auto -mx-1 px-1">
+          <Segmented
+            value={metrica}
+            onChange={(v) => { setMetrica(v); setActivo(null) }}
+            options={OPCIONES}
+          />
+        </div>
+        {registro.perCapita && (
+          <Segmented
+            value={modo}
+            onChange={setModo}
+            options={[
+              { value: 'total', label: 'Total' },
+              { value: 'percapita', label: 'Per cápita' },
+            ]}
+          />
+        )}
+      </div>
+
+      <Methodology>
+        {registro.metodologia}
+        <br />
+        <br />
+        El mapa siempre muestra el país completo, sin importar el filtro geográfico activo.
+        Base geográfica: Geoportal del DANE.
+      </Methodology>
 
       {query.isError && (
         <p className="mt-5 text-sm text-danger">
@@ -130,9 +248,8 @@ export function MapaColombia() {
               {({ geographies }) =>
                 geographies.map((geo) => {
                   const clave = normalizarDepto(geo.properties.DPTO_CNMBR)
-                  const d = porDepto?.get(clave)
-                  const v = valorDe(d)
-                  const relleno = v != null ? colorEnEscala(v, min, max) : '#F2F2F0'
+                  const d = porDepto.get(clave)
+                  const relleno = d ? colorEnEscala(d.v, min, max, registro.escala) : '#F2F2F0'
                   return (
                     <Geography
                       key={geo.rsmKey}
@@ -141,7 +258,7 @@ export function MapaColombia() {
                       stroke="#FFFFFF"
                       strokeWidth={0.6}
                       onMouseEnter={() =>
-                        setActivo(d ? { ...d, clave } : { nombre: geo.properties.DPTO_CNMBR, clave })
+                        setActivo({ clave, nombre: d?.nombre ?? geo.properties.DPTO_CNMBR })
                       }
                       onMouseLeave={() => setActivo(null)}
                       style={{
@@ -159,67 +276,58 @@ export function MapaColombia() {
         </div>
 
         <div>
-          {/* Lectura del departamento señalado */}
+          {/* Lectura del departamento señalado. Se deriva de porDepto en cada
+              render (no de un snapshot del hover) para que al cambiar de métrica
+              o alternar per cápita el panel se actualice solo. */}
           <div className="min-h-[92px] pb-4 border-b border-border">
             {activo ? (
-              <>
-                <div className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
-                  {activo.nombre}
-                </div>
-                {valorDe(activo) != null ? (
+              (() => {
+                const d = porDepto.get(activo.clave)
+                return (
                   <>
-                    <div
-                      className={`font-display text-[2rem] font-extrabold tracking-[-0.03em] leading-none mt-2 ${
-                        esMora ? 'text-danger' : 'text-warning'
-                      }`}
-                    >
-                      {formatPct(valorDe(activo))}
+                    <div className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+                      {activo.nombre}
                     </div>
-                    {esMora ? (
-                      <p className="text-[12.5px] text-textSecondary mt-2 leading-snug">
-                        {activo.vencidos.toLocaleString('es-CO')} vencidos de{' '}
-                        {activo.enEjecucion.toLocaleString('es-CO')} en ejecución
-                      </p>
+                    {d ? (
+                      <>
+                        <div
+                          className={`font-display text-[2rem] font-extrabold tracking-[-0.03em] leading-none mt-2 ${registro.tono}`}
+                        >
+                          {registro.formato(d.v, perCapita)}
+                        </div>
+                        <p className="text-[12.5px] text-textSecondary mt-2 leading-snug">
+                          {registro.detalle(d.fila, perCapita, d.pob)}
+                        </p>
+                      </>
                     ) : (
-                      <p className="text-[12.5px] text-textSecondary mt-2 leading-snug">
-                        {formatCOP(activo.adicion)} añadidos sobre lo pactado
-                        <br />
-                        {activo.conAdicion.toLocaleString('es-CO')} de{' '}
-                        {activo.evaluables.toLocaleString('es-CO')} contratos crecieron (
-                        {formatPct(activo.pctContratos)})
-                      </p>
+                      <p className="text-[12.5px] text-textSecondary mt-2">Sin datos suficientes</p>
                     )}
                   </>
-                ) : (
-                  <p className="text-[12.5px] text-textSecondary mt-2">
-                    Sin datos suficientes
-                  </p>
-                )}
-              </>
+                )
+              })()
             ) : (
               <p className="text-[13px] text-textSecondary">
-                Pasa el cursor sobre un departamento para ver su{' '}
-                {esMora ? 'tasa' : 'crecimiento'}.
+                Pasa el cursor sobre un departamento para ver su cifra.
               </p>
             )}
           </div>
 
           {/* Escala de color */}
-          {porDepto && porDepto.size > 0 && (
+          {porDepto.size > 0 && (
             <div className="mt-4">
               <div className="text-[10px] uppercase tracking-label text-textSecondary font-semibold mb-2">
-                {METRICAS[metrica].escalaLabel}
+                {registro.leyenda(perCapita)}
               </div>
               <div className="flex h-2.5 w-full">
-                {SCALE_MORA.map((c) => (
+                {registro.escala.map((c) => (
                   <div key={c} className="flex-1" style={{ background: c }} />
                 ))}
               </div>
               <div className="flex justify-between mt-1.5 text-[11px] text-textSecondary tabular-nums">
-                <span>{formatPct(min)}</span>
-                <span>{formatPct(max)}</span>
+                <span>{registro.formato(min, perCapita)}</span>
+                <span>{registro.formato(max, perCapita)}</span>
               </div>
-              {!esMora && queryAdic.data?.generadoEn && (
+              {registro.fuente === 'adiciones' && queryAdic.data?.generadoEn && (
                 <p className="mt-3 text-[11px] text-textSecondary/80">
                   Calculado el {formatDate(queryAdic.data.generadoEn)}.
                 </p>

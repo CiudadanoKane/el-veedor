@@ -592,14 +592,23 @@ mismo resultado; el `case` se deja mínimo.
    pasa de 150s (medido)—, así que en ese rango se muestra solo SECOP II con una
    nota. Las demás vistas (hasta 5 años) sí lo traen (~30s). Ver
    `useEvolucion.js` y `EvolucionMensual.jsx`.
-5. Enriquecer el mapa de Colombia — **parcialmente hecho**: ya tiene selector de
-   métrica con **Mora** y **Adiciones de valor** (ver arriba). Falta el toggle
-   **Total / per cápita** y las métricas de volumen (nº contratos, valor). Nota
-   al retomarlo: no hay dataset nacional limpio de población por departamento en
-   datos.gov.co (lo verificado son municipales o de población escolar), así que
-   el per cápita exige embeber las proyecciones DANE como tabla estática.
-   Descartado por ahora, con la métrica compuesta de "índice de riesgo", ver
-   abajo.
+5. Enriquecer el mapa de Colombia — **hecho** (jul 2026). Selector de 6
+   métricas: **Plazo vencido** (antes "Mora" — renombrado; ver abajo),
+   **Nº de contratos**, **Valor contratado**, **Sin competencia**,
+   **Con prórroga** y **Adiciones de valor**. Toggle **Total / per cápita** en
+   las dos de volumen, con población DANE 2025 embebida (`src/lib/poblacion.js`;
+   no hay dataset nacional limpio en datos.gov.co). Escala de color por tipo:
+   roja para las señales, azul neutra para volumen (pintar "más contratos" de
+   rojo insinuaría que contratar es malo). Las cinco métricas de SECOP salen de
+   una sola consulta (`useMapaMetricas`, ~10s); adiciones del precálculo diario.
+
+   Se **eliminó la palabra "mora"** del mapa (título, label y escala eran
+   "Mora"/"Tasa de mora"): es acusatoria y el dashboard ya usaba "plazo
+   vencido". El helper interno pasó de `useMapaMora` a `useMapaMetricas`.
+
+   Falta (menor): las métricas del mapa no respetan el filtro geográfico — el
+   mapa es siempre nacional a propósito, pero no hay un modo "acercar" a un
+   departamento con sus municipios.
 6. Botón de ayuda: al activarlo, hover/clic sobre cifras, gráficos y tablas
    (p. ej. cada tarjeta del Panorama) muestra una explicación en lenguaje llano
    —qué es y por qué importa— para el público general. Idea, sin diseñar aún.
