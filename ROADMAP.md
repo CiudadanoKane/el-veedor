@@ -501,22 +501,98 @@ sola consulta de agregado de SECOP I (`soqlGeneralesSecop1`).
 Lo que NO se combina y sigue solo-SECOP-II, con avisos en la UI: Contratistas y
 Entidades (su `count(distinct)` sobre 5,8M tarda >2 min —no cabe en el cron— y
 sumar distinct entre fuentes sobrecontaría); y los indicadores de ejecución
-(Vencidos, Valor en riesgo, Se cierran bien) más los desgloses por estado y por
+(Valor en riesgo, Se cierran bien) más los desgloses por estado y por
 sector (SECOP I no reporta pago, estado de ejecución ni sector). Fix de
 correctitud: "Valor en riesgo %" se calcula contra el valor de SECOP II, no el
-combinado. Un aviso arriba del Panorama explica el esquema de una vez.
-`maxDuration` de `/api/panorama` subido a 180s: el recálculo del cron ahora
-incluye la consulta de SECOP I (~25s).
+combinado. `maxDuration` de `/api/panorama` subido a 180s: el recálculo del cron
+ahora incluye la consulta de SECOP I (~25s).
+
+**Alcance de fuente por subtítulo, no por banner** ✅ — el banner que explicaba
+el esquema de fuentes se reemplazó por una **etiqueta por tarjeta** (`SECOP II +
+I` / `solo SECOP II`) junto al rótulo (prop `fuente` en `StatCard`). El alcance
+viaja pegado a cada cifra en vez de en una nota al pie. Se marcan las DOS clases
+(no solo las combinadas), para que la asimetría sea explícita. Aparece solo
+cuando el alcance trae SECOP I (`tieneSecop1`).
+
+**"Vencidos hace poco" muestra SECOP I aparte** ✅ (opción B) — el conteo de
+vencidos recientes de SECOP I (`Celebrado` + plazo vencido en los últimos 6
+meses, mismo criterio que la pestaña de Contratos vencidos) viaja como **una
+columna más del agregado `generales1`** (`venc_recientes`, mismo scan, sin
+consulta extra) y se muestra en la tarjeta como **línea separada con su propia
+base de vigentes** —NO fusionado con SECOP II—: las tasas difieren mucho (7,7%
+SECOP II vs 1,9% SECOP I) y un promedio mezclado engañaría. "Valor en riesgo"
+NO puede incluir SECOP I (usa `valor_pendiente_de_ejecucion`, campo inexistente
+en la fuente). Trampa de rendimiento evitada: repetir el saneamiento de cuantías
+dentro del `case()` (ya está en el WHERE) disparaba el scan de 16s a 66s con el
+mismo resultado; el `case` se deja mínimo.
 
 **Siguientes pasos acordados con el usuario (jul 2026):**
 1. ~~Revisar la velocidad de carga del Panorama~~ → Edge Config.
-2. ~~Sumar cifras de SECOP I en el Panorama~~ → hecho (arriba).
+2. ~~Sumar cifras de SECOP I en el Panorama~~ → hecho (arriba, incluye subtítulos
+   de fuente y "vencidos hace poco" con línea de SECOP I).
 3. Aplicar Edge Config al resto de pestañas del cron → **descartado**: sus
    payloads (58–385 KB) superan de largo el límite de 8 KB / 1 store de Hobby;
    solo Panorama (1 KB) cabe. Alternativa si se quisiera: Vercel Blob. Por ahora
    siguen con caché de CDN + cron (frías solo tras deploy, en páginas
    secundarias).
-4. Evaluar incluir asistencia de LLM en el Buscador.
+4. **Evolución de la contratación con SECOP I ← PRÓXIMO (diseño acordado, sin
+   implementar).** Ver especificación abajo.
+5. Enriquecer el mapa de Colombia (hoy solo mora) con más métricas valiosas, con
+   toggle **Total / per cápita** para que la comparación entre departamentos sea
+   justa. Ver especificación abajo.
+6. Botón de ayuda: al activarlo, hover/clic sobre cifras, gráficos y tablas
+   (p. ej. cada tarjeta del Panorama) muestra una explicación en lenguaje llano
+   —qué es y por qué importa— para el público general. Idea, sin diseñar aún.
+7. Evaluar incluir asistencia de LLM en el Buscador.
+
+---
+
+### PRÓXIMO — Evolución con SECOP I (opción A: dos líneas)
+
+**Decisión del usuario (jul 2026): opción A — dos líneas separadas** (SECOP II
+vs SECOP I), NO una línea combinada ni toggle. Motivo: la migración SECOP I→II
+es en sí un dato valioso (se ve SECOP I caer mientras SECOP II sube), y evita
+fundir el valor sucio de SECOP I en la línea de "promedio". De paso corrige la
+distorsión que hoy la metodología tiene que disculpar ("el crecimiento inicial
+es adopción de SECOP II, no aumento real"): SECOP I rellena los años en que
+SECOP II estaba vacío.
+
+Archivos: `src/hooks/useEvolucion.js` y `src/components/ui/EvolucionMensual.jsx`.
+
+Hechos verificados para implementar:
+- Campo de fecha de firma en SECOP I = **`fecha_de_firma_del_contrato`** (el
+  equivalente a `fecha_de_firma` de SECOP II; ya lo usa `secop1Adapter.js`).
+- Métricas actuales: contratos (count), valor, promedio (valor/n), % sin
+  competencia. En SECOP I: `count(uid)`, `VALOR_SECOP1_SOQL` saneado, y la
+  modalidad directa = `MODALIDAD_SIN_COMPETENCIA_SECOP1` (ver `catalogosSecop1`).
+- Saneamiento SECOP I: `soloContratosValidosSecop1()` + `cuantiaPosibleSecop1()`
+  + guardas de fecha (piso año 2000 para `fecha_de_firma_del_contrato`, que llega
+  hasta 2099 — ver sección 8). Geografía con `whereFromFiltrosSecop1`.
+- `date_trunc_y` / `date_trunc_ym` sobre `fecha_de_firma_del_contrato`.
+
+Plan:
+1. En `useEvolucion.js`, añadir la consulta paralela a SECOP I (mismo patrón que
+   `soqlGeneralesSecop1`), devolver ambas series alineadas por período.
+2. En `EvolucionMensual.jsx`, pintar dos `<Line>` (SECOP II y SECOP I) con
+   colores distintos del tema + leyenda. Para "% sin competencia" y "promedio",
+   dos líneas también (cada fuente su tasa).
+3. **Salvedad de rendimiento ya advertida al usuario:** esta gráfica NO se
+   cachea en Edge Config; consulta Socrata **en vivo en cada visita** (hoy rápido
+   con SECOP II). SECOP I es más lenta. Estrategia acordada: pintar SECOP II
+   primero y SECOP I cuando llegue (dos queries independientes, no bloquear). Si
+   la latencia molesta, evaluar cachear aparte.
+4. Ajustar la metodología del componente: ahora que SECOP I rellena los años
+   viejos, matizar/quitar la disculpa de "adopción de SECOP II".
+
+### Mapa enriquecido — notas de alcance (item 5, sin diseñar)
+
+- Hoy `MapaColombia` + `useMapaMora` solo pinta índice de mora (SECOP II).
+- Requiere fuente de **población por departamento/municipio (DANE)** para el
+  modo per cápita — decidir de dónde (dataset estático embebido vs API).
+- Decidir métricas nuevas (nº contratos, valor, valor per cápita, % sin
+  competencia…) y si **SECOP I entra al mapa o va en pestaña aparte**: revisar
+  qué tan poblados y limpios están `departamento_entidad` / `municipio_entidad`
+  en SECOP I antes de decidir.
 
 ---
 
