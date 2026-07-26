@@ -25,23 +25,36 @@ concurrency:
 jobs:
   calcular:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Suele terminar en 10-18 min; el margen holgado es para los días en que la
+    # API de datos.gov.co está lenta (pasa), no para el caso normal.
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
+
+      - name: Verificar el token
+        # Sin token la API estrangula la tasa y el recorrido de 5,4 millones de
+        # contratos se arrastra hasta agotar el tiempo. Falla en 1 segundo con un
+        # mensaje claro, en vez de en 60 minutos con uno ambiguo.
+        env:
+          SOCRATA_TOKEN: ${{ secrets.SOCRATA_TOKEN }}
+        run: |
+          if [ -z "$SOCRATA_TOKEN" ]; then
+            echo "::error::Falta el secreto SOCRATA_TOKEN (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
 
       - name: Calcular adiciones
         env:
           SOCRATA_BASE: https://www.datos.gov.co/resource
-          # Sin token la API impone un límite de tasa mucho más bajo y el
-          # recorrido de 5,4 millones de contratos se cae a mitad de camino.
           SOCRATA_TOKEN: ${{ secrets.SOCRATA_TOKEN }}
-        # El mapa de procesos ronda los 8 millones de entradas; el heap por
-        # defecto de Node no alcanza.
-        run: node --max-old-space-size=6144 scripts/calcular-adiciones.mjs
+        # El heap se acota a 4 GB: los runners de GitHub tienen 7 GB, y dejar que
+        # Node crezca hasta 6 empuja la máquina al swap —el working set real ronda
+        # 1-1,5 GB, así que 4 sobra y evita el thrashing que disparaba el tiempo.
+        run: node --max-old-space-size=4096 scripts/calcular-adiciones.mjs
 
       - name: Commitear si cambió
         run: |
