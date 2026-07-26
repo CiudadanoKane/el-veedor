@@ -21,13 +21,14 @@ export async function leerEdgeConfig(clave) {
 }
 
 // Escribe (upsert) una clave vía la API REST de Vercel — el SDK es de solo
-// lectura, así que la escritura necesita un token. Devuelve true si quedó
-// escrito. VERCEL_TEAM_ID solo hace falta si el proyecto vive bajo un equipo.
+// lectura, así que la escritura necesita un token. VERCEL_TEAM_ID solo hace
+// falta si el proyecto vive bajo un equipo. Devuelve un estado diagnóstico:
+// 'ok' | 'no-config' | 'error-<status>' | 'excepcion' (nunca lanza).
 export async function escribirEdgeConfig(clave, valor) {
   const id = process.env.EDGE_CONFIG_ID
   const token = process.env.VERCEL_API_TOKEN
   const teamId = process.env.VERCEL_TEAM_ID
-  if (!id || !token) return false
+  if (!id || !token) return 'no-config'
   try {
     const url = `https://api.vercel.com/v1/edge-config/${id}/items${teamId ? `?teamId=${teamId}` : ''}`
     const r = await fetch(url, {
@@ -38,8 +39,8 @@ export async function escribirEdgeConfig(clave, valor) {
       },
       body: JSON.stringify({ items: [{ operation: 'upsert', key: clave, value: valor }] }),
     })
-    return r.ok
+    return r.ok ? 'ok' : `error-${r.status}`
   } catch {
-    return false
+    return 'excepcion'
   }
 }

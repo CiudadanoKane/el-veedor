@@ -49,14 +49,21 @@ export default async function handler(req, res) {
     // para asegurar que el refresco del cron persista antes de que la función
     // termine; en cómputo el costo del write (~200ms) es despreciable frente a
     // los ~15s de las consultas.
-    let escrito = false
+    let escrito = 'skip'
     if (sinFiltros) escrito = await escribirEdgeConfig(CLAVE, payload)
 
     res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=86400')
     res.setHeader('X-Panorama-Source', 'compute')
-    // Diagnóstico: 'ok' si el write a Edge Config funcionó (env vars correctas),
-    // 'no' si no está configurado o falló. Solo aplica al caso sin filtros.
-    if (sinFiltros) res.setHeader('X-Panorama-Write', escrito ? 'ok' : 'no')
+    // Diagnóstico de escritura a Edge Config (ok | no-config | error-<status> |
+    // excepcion) y presencia de env vars, sin exponer sus valores.
+    if (sinFiltros) {
+      res.setHeader('X-Panorama-Write', escrito)
+      res.setHeader(
+        'X-Panorama-Env',
+        `cfg=${process.env.EDGE_CONFIG ? 1 : 0},id=${process.env.EDGE_CONFIG_ID ? 1 : 0},` +
+          `token=${process.env.VERCEL_API_TOKEN ? 1 : 0},team=${process.env.VERCEL_TEAM_ID ? 1 : 0}`,
+      )
+    }
     res.status(200).json(payload)
   } catch (err) {
     res.status(502).json({ error: err.message })
