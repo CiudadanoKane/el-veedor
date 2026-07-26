@@ -28,8 +28,8 @@ export const SECTOR_COLORS = [
 
 // Escala de SEÑAL para el mapa: de neutro a rojo, de menos a más. Se usa en las
 // métricas donde "más" es algo que vale la pena mirar (plazo vencido, sin
-// competencia, prórrogas, adiciones).
-export const SCALE_SENAL = ['#F2EDE8', '#E5CFC0', '#D5A78E', '#C07A61', '#B22020']
+// competencia, prórrogas, adiciones). Seis tonos para un gradiente más fino.
+export const SCALE_SENAL = ['#F2EDE8', '#E7D3C4', '#D9AE97', '#C9836A', '#BC5340', '#B22020']
 
 // Alias histórico; SCALE_SENAL es el nombre neutro. (Se conserva por si algún
 // import viejo lo usa.)
@@ -38,7 +38,7 @@ export const SCALE_MORA = SCALE_SENAL
 // Escala NEUTRA (tinta azul, de claro a oscuro) para las métricas de volumen
 // —número de contratos, valor contratado—, donde "más" no es bueno ni malo:
 // pintarlas de rojo insinuaría que contratar mucho es un problema.
-export const SCALE_NEUTRO = ['#EAEFF5', '#C2D2E4', '#8AA6C6', '#4F77A6', '#113D7A']
+export const SCALE_NEUTRO = ['#EAEFF5', '#CBD9E9', '#9DB6D2', '#6E92B8', '#40699B', '#113D7A']
 
 // Color de la escala que corresponde a un valor dentro de un rango
 export function colorEnEscala(valor, min, max, escala = SCALE_MORA) {

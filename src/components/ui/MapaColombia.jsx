@@ -168,9 +168,15 @@ const OPCIONES = Object.entries(METRICAS).map(([v, m]) => ({ value: v, label: m.
 export function MapaColombia() {
   const [metrica, setMetrica] = useState('vencidos')
   const [modo, setModo] = useState('total')
-  // Por defecto solo entidades territoriales: es la única agregación geográfica
-  // honesta (ver comentario del toggle más abajo y useMapaMetricas).
-  const [orden, setOrden] = useState('territorial')
+  // Por defecto TODAS las entidades: es el panorama completo y, salvo las
+  // grandes entidades nacionales centralizadas (INVÍAS, ministerios) que se
+  // atribuyen a su ciudad-sede e inflan a Bogotá —ya neutralizada al salir de la
+  // escala de color—, la contratación está bien ubicada (incluidas las
+  // instituciones nacionales regionales: SENA, ICBF, Policía de cada depto).
+  // "Territoriales" queda como lente opcional de solo gobiernos locales; ojo que
+  // sobre-corrige (borra actividad regional real y deja sin datos a los deptos
+  // chicos). Ver useMapaMetricas y la memoria secop2-geografia-es-sede.
+  const [orden, setOrden] = useState('todas')
   const [activo, setActivo] = useState(null)
 
   const queryMetricas = useMapaMetricas()
@@ -270,8 +276,8 @@ export function MapaColombia() {
             value={orden}
             onChange={(v) => { setOrden(v); setActivo(null) }}
             options={[
-              { value: 'territorial', label: 'Territoriales' },
               { value: 'todas', label: 'Todas' },
+              { value: 'territorial', label: 'Solo locales' },
             ]}
           />
         </div>
@@ -297,17 +303,18 @@ export function MapaColombia() {
         <p className="mt-3 text-[12.5px] text-textSecondary leading-snug max-w-2xl">
           {territorial ? (
             <>
-              Solo <strong>entidades territoriales</strong> (alcaldías y gobernaciones): contratan
-              dentro de su jurisdicción, así que el mapa las ubica bien. Se <strong>excluye la
-              contratación nacional</strong> (ministerios, INVÍAS…), cuyo destino no es ubicable
-              geográficamente en los datos de SECOP.
+              Solo <strong>gobiernos locales</strong> (alcaldías y gobernaciones). Excluye toda la
+              contratación nacional —incluidas instituciones regionales como el SENA o el ICBF, que
+              sí operan en el departamento—, así que <strong>sobre-corrige</strong>: los
+              departamentos pequeños pueden quedar con pocos datos o ninguno.
             </>
           ) : (
             <>
-              <strong>Todas las entidades.</strong> Cuidado: en SECOP el departamento es la{' '}
-              <strong>sede</strong> de la entidad, no dónde se gasta. Lo nacional se atribuye a su
-              ciudad-sede —p. ej. una vía de INVÍAS en el Guaviare se cuenta en Bogotá—, así que
-              las sedes nacionales (sobre todo Bogotá) se ven infladas.
+              <strong>Todas las entidades.</strong> La mayoría está bien ubicada (p. ej. SENA e
+              ICBF regionales). Pero en SECOP el departamento es la <strong>sede</strong> de la
+              entidad: las grandes entidades nacionales centralizadas se cuentan en su ciudad-sede
+              —una vía de INVÍAS en el Guaviare se suma en Bogotá—, así que <strong>Bogotá aparece
+              inflada</strong> (por eso sale de la escala de color).
             </>
           )}
         </p>
@@ -318,11 +325,14 @@ export function MapaColombia() {
         <br />
         <br />
         <strong>Sede, no destino:</strong> en SECOP II el <code>departamento</code> es dónde está
-        la entidad, no dónde se ejecuta el contrato. Las entidades nacionales figuran en su
-        ciudad-sede (verificado: INVÍAS, con obras en todo el país, tiene sus 25.575 contratos al
-        100% en Bogotá). Por eso el mapa muestra por defecto solo <strong>entidades
-        territoriales</strong>, que sí contratan dentro de su territorio; el destino real de la
-        contratación nacional no es reconstruible con estos datos.
+        la entidad, no dónde se ejecuta el contrato. La mayoría de las entidades contrata donde
+        está —incluidas las instituciones nacionales regionales (SENA, ICBF, Policía de cada
+        departamento)—, pero las <strong>grandes entidades nacionales centralizadas</strong> se
+        atribuyen a su ciudad-sede (verificado: INVÍAS, con obras en todo el país, tiene sus 25.575
+        contratos al 100% en Bogotá), lo que <strong>infla a Bogotá</strong>. El toggle{' '}
+        <strong>«Solo locales»</strong> deja únicamente alcaldías y gobernaciones: elimina esa
+        inflación, pero también la actividad nacional regional bien ubicada, así que sobre-corrige
+        y los departamentos pequeños pueden quedar sin datos.
         <br />
         <br />
         El mapa siempre muestra el país completo, sin importar el filtro geográfico activo.
