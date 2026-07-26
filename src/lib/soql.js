@@ -161,3 +161,38 @@ export function whereFromFiltrosSecop1(filters = {}, extra = []) {
   return parts
 }
 
+// "En mora" para SECOP I: el contrato se firmó (Celebrado), su plazo ya venció
+// y NO se ha liquidado ni marcado terminado —esos dos estados son el cierre de
+// SECOP I, ver ROADMAP.md sección 8—. Restringir a 'Celebrado' hace aquí el
+// mismo trabajo que el filtro de pago hace en SECOP II: excluir lo ya cerrado.
+//
+// La diferencia que NO se puede salvar: SECOP II además descarta los contratos
+// pagados al 100% (evidencia de que terminaron aunque nadie actualizó el
+// estado). SECOP I no tiene datos de pago, así que su lista de vencidos incluye
+// esa cola de contratos ejecutados que quedaron en 'Celebrado'. Se explica en
+// la metodología, no se recorta.
+//
+// Mismas guardas de dato que SECOP II: piso de año 2000 (fechas basura) y
+// fin >= inicio (fechas invertidas). Más el saneamiento de cuantías imposibles.
+export function moraConditionsSecop1() {
+  return [
+    `estado_del_proceso = 'Celebrado'`,
+    `fecha_fin_ejec_contrato >= '2000-01-01T00:00:00'`,
+    `fecha_fin_ejec_contrato < '${HOY()}T00:00:00'`,
+    `fecha_fin_ejec_contrato >= fecha_ini_ejec_contrato`,
+    cuantiaPosibleSecop1(),
+  ]
+}
+
+// Rangos de antigüedad del vencimiento para SECOP I (fecha_fin_ejec_contrato),
+// mismos cortes que RANGOS_VENCIMIENTO de SECOP II.
+export const RANGOS_VENCIMIENTO_SECOP1 = {
+  todos: [],
+  recientes: [`fecha_fin_ejec_contrato >= '${haceDias(180)}'`],
+  medios: [
+    `fecha_fin_ejec_contrato < '${haceDias(180)}'`,
+    `fecha_fin_ejec_contrato >= '${haceDias(365)}'`,
+  ],
+  antiguos: [`fecha_fin_ejec_contrato < '${haceDias(365)}'`],
+}
+

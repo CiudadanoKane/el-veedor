@@ -35,7 +35,9 @@ export function ContratosVencidos() {
     })
   }
 
-  const query = useMora(filters, 100, orden, rango)
+  const [fuente, setFuente] = useState('secop2')
+  const esSecop1 = fuente === 'secop1'
+  const query = useMora(filters, 100, orden, rango, fuente)
 
   const columns = [
     {
@@ -55,12 +57,16 @@ export function ContratosVencidos() {
       className: 'text-right tabular-nums',
       render: (r) => formatCOP(r.contractValue),
     },
-    {
-      key: 'valuePending',
-      header: 'Pendiente',
-      className: 'text-right tabular-nums',
-      render: (r) => formatCOP(r.valuePending),
-    },
+    // SECOP I no reporta ejecución financiera (ver ROADMAP.md sección 8): la
+    // columna "Pendiente" no existe para esa fuente y se oculta.
+    ...(esSecop1
+      ? []
+      : [{
+          key: 'valuePending',
+          header: 'Pendiente',
+          className: 'text-right tabular-nums',
+          render: (r) => formatCOP(r.valuePending),
+        }]),
     { key: 'endDate', header: 'Fecha fin', render: (r) => formatDate(r.endDate) },
     {
       key: 'dias',
@@ -110,6 +116,39 @@ export function ContratosVencidos() {
         />
       </div>
 
+      <div className="flex flex-wrap items-center gap-2 mb-1 mt-2">
+        <span className="text-xs text-textSecondary">Fuente:</span>
+        <Segmented
+          value={fuente}
+          onChange={setFuente}
+          options={[
+            { value: 'secop2', label: 'SECOP II' },
+            { value: 'secop1', label: 'SECOP I' },
+          ]}
+        />
+      </div>
+
+      {esSecop1 && (
+        <div className="border-l-2 border-warning pl-4 py-1 mt-3 mb-1">
+          <p className="text-[13.5px] text-textPrimary font-semibold">
+            En SECOP I, "vencido" se mide distinto
+          </p>
+          <p className="text-[13.5px] text-textSecondary font-light leading-relaxed mt-1 max-w-3xl">
+            Aquí un contrato cuenta como vencido si está <strong className="font-semibold text-textPrimary">
+            "Celebrado"</strong> —firmado y sin liquidar— con la fecha de fin pasada.
+            SECOP I <strong className="font-semibold text-textPrimary">no reporta pagos</strong>,
+            así que —a diferencia de SECOP II— no se pueden descartar los contratos que ya
+            se ejecutaron y nadie cerró: el filtro es <strong className="font-semibold text-textPrimary">
+            por estado, no por pago</strong>, y por eso no hay columna "Pendiente". Como ese
+            descarte no se puede hacer, el tramo <strong className="font-semibold text-textPrimary">
+            "Más de 1 año"</strong> es en su mayoría registro sin cerrar, no retraso real —
+            mira sobre todo los <strong className="font-semibold text-textPrimary">recientes</strong>.
+            Que la fuente no permita este cruce es, en sí mismo, parte de lo que la veeduría
+            debe mostrar.
+          </p>
+        </div>
+      )}
+
       <Methodology>
         Un contrato aparece aquí si cumple tres condiciones: su <code>estado</code> es
         "En ejecución", su <code>fecha de fin</code> ya pasó, y{' '}
@@ -127,7 +166,9 @@ export function ContratosVencidos() {
         viene en <strong>"Últimos 6 meses"</strong>, el tramo con más probabilidad de
         ser retraso real. El semáforo clasifica por días vencidos: verde &lt;30, ámbar
         30–180, rojo &gt;180. Se muestran hasta 100 casos.{' '}
-        <strong>Haz clic en cualquier fila para ver el detalle.</strong>
+        <strong>Haz clic en cualquier fila para ver el detalle.</strong> Con el selector
+        de <strong>fuente</strong> puedes ver los vencidos de SECOP I, que se miden por un
+        criterio propio (ver el aviso al elegirla).
       </Methodology>
 
       <div className="mt-4">

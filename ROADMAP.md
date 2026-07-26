@@ -436,11 +436,22 @@ cantidad" es el orden más confiable en esta fuente. Detalles:
   `count(distinct)` de proveedores (con él pasaba de 150s); se oculta esa
   columna para esta fuente.
 
+**Mora / Contratos vencidos — por fuente** ✅ — se resolvió con un selector de
+fuente (SECOP II / SECOP I) en la pestaña "Contratos vencidos", NO mezclando las
+dos en una lista. La mezcla se probó y daba resultados confusos: SECOP II y
+SECOP I tienen definiciones distintas de "vencido" (SECOP II descarta los
+pagados al 100%, SECOP I no puede porque no reporta pagos) y en el orden por
+fecha una fuente copaba el borde del rango, escondiendo a la otra. Separadas,
+cada lista es coherente consigo misma. SECOP I: `estado_del_proceso =
+'Celebrado'` + `fecha_fin_ejec_contrato` vencida + `fin >= inicio` + saneamiento
+de cuantías imposibles (`moraConditionsSecop1`), en todos los rangos
+(recientes/medios/antiguos/todos, ~1s cada uno, va directo sin caché). Se oculta
+la columna "Pendiente" (no hay dato de pago) y un aviso explica que el filtro es
+por estado, no por pago, y que en esa fuente el tramo antiguo es sobre todo
+registro sin cerrar. El filtro por estado hace en SECOP I el mismo trabajo que
+el filtro de pago en SECOP II: excluir lo ya cerrado.
+
 **Pendiente:**
-- **Mora** (opción B acordada): incluir SECOP I solo en el tramo reciente
-  (`estado_del_proceso = 'Celebrado'` + `fecha_fin_ejec_contrato` vencida en los
-  últimos 6 meses + `fin >= inicio`), con "Pendiente"/"valor en riesgo" = no
-  disponible y nota de que se filtra por estado, no por pago.
 - **Perfil de entidad** (`usePerfilEntidad.js`, ruta `/entidad/:nit`) — sumar
   SECOP I al resumen de una entidad contratante, igual que el Perfil de
   contratista (Paso 4): contratos, valor, contratistas distintos, modalidades y
