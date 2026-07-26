@@ -451,12 +451,26 @@ por estado, no por pago, y que en esa fuente el tramo antiguo es sobre todo
 registro sin cerrar. El filtro por estado hace en SECOP I el mismo trabajo que
 el filtro de pago en SECOP II: excluir lo ya cerrado.
 
-**Pendiente:**
-- **Perfil de entidad** (`usePerfilEntidad.js`, ruta `/entidad/:nit`) — sumar
-  SECOP I al resumen de una entidad contratante, igual que el Perfil de
-  contratista (Paso 4): contratos, valor, contratistas distintos, modalidades y
-  evolución anual combinados por `nit_de_la_entidad`. Sin datos de pago ni de
-  ejecución financiera para la parte de SECOP I.
+**Perfil de entidad — SECOP I por NIT inequívoco** ✅ — `usePerfilEntidad.js`
+suma SECOP I al resumen (contratos, valor, contratistas, modalidades, evolución
+anual, top 50). Hallazgo clave: **los nombres de entidad NO coinciden entre
+SECOP I y II** (verificado: las entidades más grandes de SECOP II tienen cero
+coincidencias por nombre en SECOP I), así que el cruce por nombre —que el perfil
+usa como identidad— está muerto. El puente es el NIT, pero solo se usa cuando es
+**inequívoco**: si el NIT identifica a una sola entidad en SECOP II se trae
+SECOP I por ese NIT (fase 2, tras confirmar la fase 1 el NIT dominante); si lo
+comparten varias dependencias (p. ej. el 899999061 de Bogotá, 34 nombres) NO se
+suma —mezclaría organizaciones distintas— y un aviso lo explica. "Pagado", tipo
+de documento y la sección de calidad del registro siguen siendo solo de SECOP II
+(la calidad se calcula sobre el total de SECOP II, no el combinado); las fechas
+basura de SECOP I (año 2096/2099) se descartan del periodo mostrado.
+
+**Pendiente:** (nada de SECOP I core; ver el plan de trabajo del usuario abajo).
+
+**Siguientes pasos acordados con el usuario (jul 2026):**
+1. Revisar de nuevo la velocidad de carga del Panorama.
+2. Evaluar cómo sumar cifras de SECOP I en el Panorama.
+3. Evaluar incluir asistencia de LLM en el Buscador.
 
 ---
 

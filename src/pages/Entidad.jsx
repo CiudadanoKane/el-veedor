@@ -72,7 +72,15 @@ function Perfil({ perfil }) {
       key: 'description',
       header: 'Objeto',
       render: (r) => (
-        <div className="max-w-[340px] text-textPrimary line-clamp-2">{r.description}</div>
+        <div className="max-w-[340px]">
+          {r.source === 'SECOP I' && (
+            <span className="mr-2 align-middle text-[10px] uppercase tracking-label
+                             text-textSecondary border border-border px-1.5 py-0.5">
+              SECOP I
+            </span>
+          )}
+          <span className="text-textPrimary line-clamp-2">{r.description}</span>
+        </div>
       ),
     },
     { key: 'contractorName', header: 'Contratista', render: (r) => r.contractorName || '—' },
@@ -102,6 +110,18 @@ function Perfil({ perfil }) {
         subtitle={perfil.nit ? `NIT: ${perfil.nit}` : undefined}
       />
 
+      {/* Los nombres de entidad no coinciden entre SECOP I y II, así que SECOP I
+          se suma por NIT — pero solo si es inequívoco. Cuando el NIT lo comparten
+          varias dependencias, no se puede atribuir a esta entidad y se omite. */}
+      {perfil.nitCompartido && (
+        <p className="text-[13px] text-textSecondary -mt-2 max-w-3xl leading-snug">
+          Esta entidad comparte su NIT con otras dependencias, así que su historia en
+          <strong className="text-textPrimary"> SECOP I</strong> no se pudo sumar por
+          separado: por NIT se mezclaría con la de las demás. Las cifras de abajo son de
+          SECOP II.
+        </p>
+      )}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-8 border-b border-border pb-8">
         <StatCard
           label="Contratos"
@@ -111,12 +131,22 @@ function Perfil({ perfil }) {
         <StatCard
           label="Valor comprometido"
           value={formatCOP(perfil.valorTotal)}
-          sub={`Pagado: ${formatCOP(perfil.valorPagado)}`}
+          sub={
+            // SECOP I no reporta pagos (ver ROADMAP.md sección 8): "Pagado" solo
+            // cubre SECOP II. Se avisa cuando la entidad también tiene SECOP I.
+            perfil.tieneSecop1
+              ? `Pagado en SECOP II: ${formatCOP(perfil.valorPagado)} · ${perfil.totalContratosSecop1.toLocaleString('es-CO')} contratos de SECOP I no reportan pagos`
+              : `Pagado: ${formatCOP(perfil.valorPagado)}`
+          }
         />
         <StatCard
           label="Contratistas"
           value={perfil.contratistas.toLocaleString('es-CO')}
-          sub="Personas y empresas distintas a las que ha contratado"
+          sub={
+            perfil.tieneSecop1
+              ? 'Distintos, sumando SECOP II y SECOP I'
+              : 'Personas y empresas distintas a las que ha contratado'
+          }
         />
         <StatCard
           label="Sin competencia"
@@ -151,17 +181,25 @@ function Perfil({ perfil }) {
             valor={perfil.calidad.tasaErrores}
             referencia={perfil.referencia.tasaErrores}
             casos={perfil.calidad.errores}
-            total={perfil.totalContratos}
+            total={perfil.totalContratosSecop2}
           />
           <Tasa
             etiqueta="Información incompleta"
             valor={perfil.calidad.tasaIncompletos}
             referencia={perfil.referencia.tasaIncompletos}
             casos={perfil.calidad.incompletos}
-            total={perfil.totalContratos}
+            total={perfil.totalContratosSecop2}
             decimales={1}
           />
         </div>
+        {perfil.tieneSecop1 && (
+          <p className="text-[13px] text-textSecondary mt-4 max-w-2xl leading-snug">
+            Calculado solo sobre los <strong className="text-textPrimary">
+            {perfil.totalContratosSecop2.toLocaleString('es-CO')}</strong> contratos de esta
+            entidad en <strong className="text-textPrimary">SECOP II</strong>: SECOP I no
+            reporta los campos de pago y estado que estas reglas necesitan.
+          </p>
+        )}
 
         {defectos.length > 0 && (
           <ul className="mt-7 space-y-1.5 max-w-2xl">
