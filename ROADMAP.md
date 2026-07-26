@@ -158,13 +158,63 @@ nulos y cero valores imposibles sobre 4,7 millones. Se declara como el indicador
 más frágil de la tabla, porque recoge tanto trabajo no hecho como registros sin
 actualizar, y no distinguimos entre los dos.
 
+**Adiciones de valor agregadas — precálculo diario** ✅ (jul 2026)
+
+Las adiciones de dinero son de las señales más fuertes para un veedor, así que
+dejarlas solo como lista de casos era insuficiente: faltaban **por departamento
+(mapa)** y **por entidad y contratista (ranking)**. Ambas exigen agregar, y
+agregar exige cruzar dos datasets.
+
+Lo que se midió antes de construir:
+
+- **El atajo no sirve.** Sumar `valor_del_contrato` por departamento y restarle
+  la suma de `valor_total_adjudicacion` de Procesos da **+$424 billones
+  (+89%)**: los universos no coinciden (8,2M procesos contra 5,4M contratos, y
+  muchos procesos nunca se volvieron contrato). Sería el agregado engañoso que
+  el principio 4 prohíbe.
+- **SoQL sí soporta subconsultas** con el operador `|>` (verificado: dedupe por
+  portafolio y luego `GROUP BY` departamento, 40s). No alcanza para este caso
+  —sigue sin poder unir dos datasets— pero es una herramienta nueva disponible.
+- **El dataset de modificaciones (u8cx-r425) no tiene geografía** (solo
+  `id_contrato`) y no responde ni a un `count` simple. Descartado como fuente.
+
+Solución: **cruce exacto contrato a contrato, precalculado una vez al día** en
+GitHub Actions (gratis), publicado como `public/adiciones.json` (78 KB) y
+servido estático. ~10 min por corrida; la paginación de Socrata es rápida
+(50.000 filas en ~1,3s) con paginación por llave, sin `$offset`.
+
+Tres hallazgos que cambiaron el resultado:
+
+1. **La cobertura depende del respaldo en `precio_base`.** Usando solo
+   `valor_total_adjudicacion` quedan **14,6%** de contratos evaluables; con el
+   respaldo sube a **73%**. La contratación directa (el grueso del país) no
+   tiene adjudicación pero sí precio base. Verificado que el respaldo es sólido:
+   donde existen ambas referencias, base/adjudicado = **0,95**.
+2. **El denominador importa.** Dividir las adiciones entre el valor original de
+   *todos* los evaluables daba un "+5,9%" diluido y sin sentido: reparte lo que
+   creció el 24% entre el 100%. El denominador correcto es el valor inicial de
+   los contratos **que efectivamente crecieron** → **+32,7%**, coherente con el
+   tope legal del 50% de la Ley 80.
+3. **Hay que excluir los documentos sin identidad.** Sin filtrar, el bucket
+   falso `No Definido` encabeza el ranking de contratistas sumando miles de
+   contratos ajenos entre sí (ver `DOCUMENTOS_SIN_IDENTIDAD`).
+
+Validado contra verdad conocida: el contrato de la calle 72 da
+**$12.601.162.260** sobre un original de **$20.849.779.050** — coincide al peso.
+
+Cifras nacionales: 5,41M contratos vistos · **73,0% evaluables** · **952.541 con
+adición (24,1%)** · **$90,8 billones añadidos** · 2.436 anomalías apartadas
+(múltiplos de digitación y crecimientos >500%).
+
+Las reglas viven en `src/lib/adiciones.js`, compartidas por el hook del
+navegador y el script en lote, para que el mapa y el ranking no puedan
+contradecir a la sección de Adiciones.
+
 Pendiente de este índice:
 
 - **Adición de tiempo y de presupuesto a la vez**, la señal más fuerte de que lo
-  pactado no era realista. Requiere cruzar con el dataset de Procesos: se
-  verificó que el dataset de contratos no tiene ningún campo de adición
-  presupuestal, solo `valor_del_contrato` ya actualizado. Misma limitación que
-  deja los valores implausibles fuera del índice de entidades.
+  pactado no era realista. Ahora es alcanzable: el precálculo ya tiene la
+  adición de valor por contrato, y `dias_adicionados` está en el registro.
 - **Rendimiento:** ordenar por cuantía tarda ~50s. El `GROUP BY` sobre 4,7
   millones con sumas condicionales es caro. Deuda conocida, igual que el ranking
   nacional.
@@ -542,9 +592,14 @@ mismo resultado; el `case` se deja mínimo.
    pasa de 150s (medido)—, así que en ese rango se muestra solo SECOP II con una
    nota. Las demás vistas (hasta 5 años) sí lo traen (~30s). Ver
    `useEvolucion.js` y `EvolucionMensual.jsx`.
-5. Enriquecer el mapa de Colombia (hoy solo mora) con más métricas valiosas, con
-   toggle **Total / per cápita** para que la comparación entre departamentos sea
-   justa. Ver especificación abajo.
+5. Enriquecer el mapa de Colombia — **parcialmente hecho**: ya tiene selector de
+   métrica con **Mora** y **Adiciones de valor** (ver arriba). Falta el toggle
+   **Total / per cápita** y las métricas de volumen (nº contratos, valor). Nota
+   al retomarlo: no hay dataset nacional limpio de población por departamento en
+   datos.gov.co (lo verificado son municipales o de población escolar), así que
+   el per cápita exige embeber las proyecciones DANE como tabla estática.
+   Descartado por ahora, con la métrica compuesta de "índice de riesgo", ver
+   abajo.
 6. Botón de ayuda: al activarlo, hover/clic sobre cifras, gráficos y tablas
    (p. ej. cada tarjeta del Panorama) muestra una explicación en lenguaje llano
    —qué es y por qué importa— para el público general. Idea, sin diseñar aún.
@@ -595,6 +650,27 @@ Plan:
    la latencia molesta, evaluar cachear aparte.
 4. Ajustar la metodología del componente: ahora que SECOP I rellena los años
    viejos, matizar/quitar la disculpa de "adopción de SECOP II".
+
+### Índice de riesgo por departamento — idea aplazada (jul 2026)
+
+Propuesta del usuario: un **índice compuesto 0-100** por departamento (extensible
+a municipios) que combine % contratación directa, % único oferente, % vencidos,
+% valor pendiente, % prorrogados, % con adiciones y concentración de
+contratistas. Se aplazó a propósito para no frenar las adiciones de valor, que
+eran la prioridad.
+
+Ya verificado a favor: **todos los componentes salvo la concentración se pueden
+calcular por departamento en UNA sola consulta** (`sum(case(...))` sobre
+jbjy-vk9h, medido en 10,3s), y las adiciones ya están precalculadas. La
+concentración de contratistas es la pieza cara: exige rankear contratistas
+*dentro* de cada departamento (32 rankings), no cabe en una agregación.
+
+La decisión difícil no es técnica sino editorial: un índice compuesto **pondera**
+señales, y esa ponderación es una opinión. La plataforma promete "señala
+patrones, no acusa"; publicar un número único que ordena departamentos por
+"riesgo" se acerca peligrosamente a un veredicto. Si se retoma, conviene
+mostrar los componentes por separado y dejar que el lector los lea, o hacer la
+ponderación explícita y ajustable.
 
 ### Mapa enriquecido — notas de alcance (item 5, sin diseñar)
 
