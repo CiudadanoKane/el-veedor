@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
+import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps'
 import { Methodology } from './Methodology'
 import { Segmented } from './Segmented'
 import { useMapaMetricas } from '../../hooks/useMapaMetricas'
 import { useAdicionesPrecalculadas, tasasAdicion } from '../../hooks/useAdicionesPrecalculadas'
 import { normalizarDepto } from '../../lib/departamentos'
 import { poblacionDe, POBLACION_ANIO } from '../../lib/poblacion'
-import { SCALE_SENAL, SCALE_NEUTRO, colorEnEscala } from '../../lib/chartTheme'
+import { CHART, SCALE_SENAL, SCALE_NEUTRO, colorEnEscala } from '../../lib/chartTheme'
 import { formatPct, formatCOP, formatCOPCorto, formatDate } from '../../lib/formatters'
 
 const GEO = '/departamentos-colombia.geojson'
@@ -14,6 +14,17 @@ const N = (x) => (x ?? 0).toLocaleString('es-CO')
 // Una tasa sobre una muestra menor a esto no es representativa; el departamento
 // entra en gris en las métricas de tasa (no en las de volumen, que son totales).
 const MIN_MUESTRA = 100
+// Gris de "sin dato" para departamentos sin cifra en la métrica activa.
+const GRIS_SIN_DATO = '#F2F2F0'
+// San Andrés es un archipiélago diminuto en el Caribe: su polígono queda como
+// una mota en la esquina superior izquierda y no se distingue. Se le dibuja
+// además un marcador con su color, para que sea visible y consultable en todas
+// las métricas. Coordenadas de la isla de San Andrés.
+const SAN_ANDRES = {
+  clave: normalizarDepto('San Andrés, Providencia y Santa Catalina'),
+  coords: [-81.7, 12.55],
+  nombre: 'San Andrés, Providencia y Santa Catalina',
+}
 
 // Registro de métricas. Cada una sabe reducir la fila de su departamento a un
 // número comparable (valorDe), formatearlo (formato) y explicar el detalle que
@@ -171,22 +182,46 @@ export function MapaColombia() {
   // Reduce cada departamento al número de la métrica elegida (respetando per
   // cápita) y guarda la fila cruda para el detalle del hover.
   const porDepto = new Map()
-  let min = Infinity
-  let max = -Infinity
   if (fuenteMap) {
     for (const [clave, fila] of fuenteMap) {
       const pob = poblacionDe(clave)
       const v = registro.valorDe(fila, pob, perCapita)
       if (v == null || !isFinite(v)) continue
       porDepto.set(clave, { nombre: fila.nombre ?? fila.etiqueta, fila, pob, v })
-      if (v < min) min = v
-      if (v > max) max = v
     }
   }
-  if (!porDepto.size) {
+
+  // Escala robusta a atípicos. En las métricas de volumen un solo departamento
+  // multiplica al resto —Bogotá en total, San Andrés en per cápita— y aplana el
+  // mapa a un solo tono. Se saca ese máximo del CÁLCULO de la escala (no del
+  // mapa): el resto reparte todo el gradiente y el atípico se sigue pintando en
+  // la banda más intensa (colorEnEscala satura por encima del máximo). Su cifra
+  // real queda en el detalle y en una nota bajo la leyenda. Las métricas de tasa
+  // (0–100%, sin la marca perCapita) no lo necesitan y se dejan tal cual.
+  const ordenados = [...porDepto.entries()].sort((a, b) => b[1].v - a[1].v)
+  const fueraDeEscala = new Set()
+  if (registro.perCapita && ordenados.length > 2) {
+    fueraDeEscala.add(ordenados[0][0]) // el dominante (Bogotá en total)
+    // En per cápita, San Andrés es un atípico estructural: su población diminuta
+    // (~62 mil) infla cualquier cifra por habitante. Se saca también, si no era
+    // ya el dominante. En Nº de contratos ya lo es (no cambia); en Valor es el
+    // segundo, y sin sacarlo el resto del país quedaba en el tercio bajo.
+    if (perCapita && porDepto.has(SAN_ANDRES.clave)) fueraDeEscala.add(SAN_ANDRES.clave)
+  }
+  let min = Infinity
+  let max = -Infinity
+  for (const [clave, d] of ordenados) {
+    if (fueraDeEscala.has(clave)) continue
+    if (d.v < min) min = d.v
+    if (d.v > max) max = d.v
+  }
+  if (!isFinite(min)) {
     min = 0
     max = 0
   }
+  const atipicos = [...fueraDeEscala]
+    .map((clave) => ({ clave, ...porDepto.get(clave) }))
+    .sort((a, b) => b.v - a.v)
 
   return (
     <section className="border-t-2 border-textPrimary pt-5 pb-8 mb-2">
@@ -201,15 +236,17 @@ export function MapaColombia() {
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <div className="overflow-x-auto -mx-1 px-1">
-          <Segmented
-            value={metrica}
-            onChange={(v) => { setMetrica(v); setActivo(null) }}
-            options={OPCIONES}
-          />
-        </div>
-        {registro.perCapita && (
+      <div className="mt-4 overflow-x-auto -mx-1 px-1">
+        <Segmented
+          value={metrica}
+          onChange={(v) => { setMetrica(v); setActivo(null) }}
+          options={OPCIONES}
+        />
+      </div>
+      {/* El toggle Total / per cápita va en su propia fila, debajo del selector
+          de métrica: puesto a la derecha se perdía. */}
+      {registro.perCapita && (
+        <div className="mt-2.5">
           <Segmented
             value={modo}
             onChange={setModo}
@@ -218,8 +255,8 @@ export function MapaColombia() {
               { value: 'percapita', label: 'Per cápita' },
             ]}
           />
-        )}
-      </div>
+        </div>
+      )}
 
       <Methodology>
         {registro.metodologia}
@@ -249,7 +286,7 @@ export function MapaColombia() {
                 geographies.map((geo) => {
                   const clave = normalizarDepto(geo.properties.DPTO_CNMBR)
                   const d = porDepto.get(clave)
-                  const relleno = d ? colorEnEscala(d.v, min, max, registro.escala) : '#F2F2F0'
+                  const relleno = d ? colorEnEscala(d.v, min, max, registro.escala) : GRIS_SIN_DATO
                   return (
                     <Geography
                       key={geo.rsmKey}
@@ -272,6 +309,34 @@ export function MapaColombia() {
                 })
               }
             </Geographies>
+
+            {/* Marcador de San Andrés: su polígono es una mota invisible en la
+                esquina. Se le añade un círculo con su color de escala para que
+                sea visible y consultable como cualquier otro departamento. */}
+            {(() => {
+              const d = porDepto.get(SAN_ANDRES.clave)
+              const relleno = d ? colorEnEscala(d.v, min, max, registro.escala) : GRIS_SIN_DATO
+              return (
+                <Marker
+                  coordinates={SAN_ANDRES.coords}
+                  onMouseEnter={() =>
+                    setActivo({ clave: SAN_ANDRES.clave, nombre: d?.nombre ?? SAN_ANDRES.nombre })
+                  }
+                  onMouseLeave={() => setActivo(null)}
+                  style={{ default: { cursor: 'pointer' }, hover: { cursor: 'pointer' } }}
+                >
+                  <circle r={5} fill={relleno} stroke="#111111" strokeWidth={0.9} />
+                  <text
+                    x={9}
+                    y={3.5}
+                    textAnchor="start"
+                    style={{ fontSize: 9, fontWeight: 600, fill: CHART.axis, pointerEvents: 'none' }}
+                  >
+                    San Andrés
+                  </text>
+                </Marker>
+              )
+            })()}
           </ComposableMap>
         </div>
 
@@ -325,8 +390,22 @@ export function MapaColombia() {
               </div>
               <div className="flex justify-between mt-1.5 text-[11px] text-textSecondary tabular-nums">
                 <span>{registro.formato(min, perCapita)}</span>
-                <span>{registro.formato(max, perCapita)}</span>
+                <span>{registro.formato(max, perCapita)}{atipicos.length ? '+' : ''}</span>
               </div>
+              {atipicos.length > 0 && (
+                <p className="mt-3 text-[11px] text-textSecondary/80 leading-snug">
+                  {atipicos.map((a, i) => (
+                    <span key={a.clave}>
+                      {i > 0 ? ' y ' : ''}
+                      <span className="font-semibold text-textSecondary">{a.nombre}</span>{' '}
+                      ({registro.formato(a.v, perCapita)})
+                    </span>
+                  ))}
+                  {atipicos.length > 1 ? ' quedan' : ' queda'} fuera de la escala para que el resto
+                  del mapa no se aplane a un solo tono; se {atipicos.length > 1 ? 'pintan' : 'pinta'}{' '}
+                  en el tono más intenso y su cifra real está en el detalle.
+                </p>
+              )}
               {registro.fuente === 'adiciones' && queryAdic.data?.generadoEn && (
                 <p className="mt-3 text-[11px] text-textSecondary/80">
                   Calculado el {formatDate(queryAdic.data.generadoEn)}.
