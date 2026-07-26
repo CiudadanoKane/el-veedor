@@ -13,11 +13,13 @@ import { useAdicionesPrecalculadas } from '../hooks/useAdicionesPrecalculadas'
 import { formatCOP, formatDate } from '../lib/formatters'
 import { documentoVisible, etiquetaDocumento, esPersonaJuridica } from '../lib/identidad'
 
-// Encabezado de sección: mismo tratamiento que en el resto del sitio, con el
-// control de orden alineado a la derecha.
+// Encabezado de sección con su control (orden, o el toggle entidad/contratista)
+// justo al lado del título, a la izquierda. Antes iba alineado a la derecha con
+// justify-between, donde en una pantalla ancha de PC quedaba tan lejos del
+// título que pasaba desapercibido.
 function Encabezado({ titulo, children }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
       <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em]">
         {titulo}
       </h2>
@@ -205,7 +207,18 @@ function RankingEntidades({ filters }) {
       header: 'Entidad',
       render: (r) => (
         <div>
-          <div className="text-textPrimary">{r.entidad}</div>
+          {/* El perfil de entidad se arma con datos de SECOP II; los nombres de
+              SECOP I no casan, así que ahí queda como texto plano. */}
+          {esSecop1 ? (
+            <div className="text-textPrimary">{r.entidad}</div>
+          ) : (
+            <Link
+              to={`/entidad/${encodeURIComponent(r.entidad)}`}
+              className="text-textPrimary enlace-sutil"
+            >
+              {r.entidad}
+            </Link>
+          )}
           <div className="text-xs text-textSecondary">NIT: {r.nit}</div>
         </div>
       ),
@@ -276,7 +289,14 @@ function RankingAdiciones() {
       header: esEntidades ? 'Entidad' : 'Contratista',
       render: (r) =>
         esEntidades ? (
-          <div className="max-w-[380px]">{r.etiqueta}</div>
+          <div className="max-w-[380px]">
+            <Link
+              to={`/entidad/${encodeURIComponent(r.etiqueta)}`}
+              className="text-textPrimary enlace-sutil"
+            >
+              {r.etiqueta}
+            </Link>
+          </div>
         ) : (
           <div className="max-w-[380px]">
             <Link
