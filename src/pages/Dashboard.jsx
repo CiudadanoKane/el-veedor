@@ -9,6 +9,7 @@ import { ListaBarra } from '../components/ui/ListaBarra'
 import { Segmented } from '../components/ui/Segmented'
 import { EvolucionMensual } from '../components/ui/EvolucionMensual'
 import { MapaColombia } from '../components/ui/MapaColombia'
+import { Concentracion } from '../components/ui/Concentracion'
 import { useFilters } from '../context/FiltersContext'
 import { useDashboardStats } from '../hooks/useDashboard'
 import { useColumnas } from '../hooks/useColumnas'
@@ -674,9 +675,11 @@ export function Dashboard() {
         ))}
       </div>
 
-      {/* Los dos gráficos que aportan lo que una lista no puede: tiempo y geografía */}
+      {/* Los gráficos que aportan lo que una lista no puede: tiempo, geografía y
+          concentración */}
       <EvolucionMensual filters={filters} />
       <MapaColombia />
+      <Concentracion filters={filters} />
     </div>
   )
 }
