@@ -467,22 +467,24 @@ basura de SECOP I (año 2096/2099) se descartan del periodo mostrado.
 
 **Pendiente:** (nada de SECOP I core; ver el plan de trabajo del usuario abajo).
 
-**Panorama vía Edge Config** ✅ (código) / ⏳ (aprovisionamiento) — la home
-servía el caso por defecto desde el caché de CDN, que se purga en cada deploy y
-se calienta PoP por PoP, así que tras cada despliegue el primer visitante pagaba
-~15s (recalcular 7 consultas sobre 5,3M). Ahora el caso sin filtros se sirve de
-**Edge Config** (almacén global de Vercel, lectura instantánea, no se purga con
-deploys ni depende del PoP). El cron diario —y `?refresh=1`— recomputan y
-reescriben la clave `panorama`. `src/lib/edgeConfig.js` es best-effort: si el
-almacén no está aprovisionado, `/api/panorama` cae al cómputo de antes, sin
-regresión. Las vistas filtradas siguen con caché de CDN.
+**Panorama vía Edge Config** ✅ — la home servía el caso por defecto desde el
+caché de CDN, que se purga en cada deploy y se calienta PoP por PoP, así que
+tras cada despliegue el primer visitante pagaba ~15–40s (recalcular 7 consultas
+sobre 5,3M). Ahora el caso sin filtros se sirve de **Edge Config** (almacén
+global de Vercel, no se purga con deploys ni depende del PoP): medido en **~0,5s
+con CDN frío** (`X-Panorama-Source: edge-config`, `X-Vercel-Cache: MISS`). El
+cron diario —y `?refresh=1`— recomputan y reescriben la clave `panorama`; si el
+cron fallara, el último valor persiste (mejor que el SWR anterior).
+`src/lib/edgeConfig.js` es best-effort: si el almacén no estuviera disponible,
+`/api/panorama` cae al cómputo, sin regresión. Las vistas filtradas siguen con
+caché de CDN. Diagnóstico permanente: cabecera `X-Panorama-Write` (ok |
+no-config | error-<status>) para vigilar la salud del refresco del cron.
 
-Aprovisionamiento pendiente en el panel de Vercel (env vars de servidor, sin
-prefijo VITE_): crear un store de Edge Config y conectarlo al proyecto (añade
-`EDGE_CONFIG` para lectura); `EDGE_CONFIG_ID` (id `ecfg_…` del store);
-`VERCEL_API_TOKEN` (token con permiso de escritura, el SDK es de solo lectura);
-`VERCEL_TEAM_ID` solo si el proyecto está bajo un equipo. Tras configurarlo,
-forzar el primer poblado con `/api/panorama?refresh=1`.
+Env vars de servidor aprovisionadas en Vercel (Production): `EDGE_CONFIG`
+(lectura, la añade el store al conectarlo), `EDGE_CONFIG_ID` (`ecfg_…`),
+`VERCEL_API_TOKEN` (escritura; el SDK es solo lectura). `VERCEL_TEAM_ID` no
+aplica (cuenta personal). Lección: las env vars son por entorno — deben estar en
+**Production**, no solo en Preview.
 
 **Siguientes pasos acordados con el usuario (jul 2026):**
 1. ~~Revisar la velocidad de carga del Panorama~~ → Edge Config (arriba).

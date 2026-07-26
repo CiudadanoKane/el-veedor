@@ -54,16 +54,9 @@ export default async function handler(req, res) {
 
     res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=86400')
     res.setHeader('X-Panorama-Source', 'compute')
-    // Diagnóstico de escritura a Edge Config (ok | no-config | error-<status> |
-    // excepcion) y presencia de env vars, sin exponer sus valores.
-    if (sinFiltros) {
-      res.setHeader('X-Panorama-Write', escrito)
-      res.setHeader(
-        'X-Panorama-Env',
-        `cfg=${process.env.EDGE_CONFIG ? 1 : 0},id=${process.env.EDGE_CONFIG_ID ? 1 : 0},` +
-          `token=${process.env.VERCEL_API_TOKEN ? 1 : 0},team=${process.env.VERCEL_TEAM_ID ? 1 : 0}`,
-      )
-    }
+    // Estado de la escritura a Edge Config (ok | no-config | error-<status> |
+    // excepcion): sirve para vigilar la salud del refresco diario del cron.
+    if (sinFiltros) res.setHeader('X-Panorama-Write', escrito)
     res.status(200).json(payload)
   } catch (err) {
     res.status(502).json({ error: err.message })
