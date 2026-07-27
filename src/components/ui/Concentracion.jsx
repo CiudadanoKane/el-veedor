@@ -1,11 +1,8 @@
-import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceDot,
-} from 'recharts'
 import { QueryState } from './QueryState'
 import { Methodology } from './Methodology'
+import { GeoFilterInline } from './GeoFilterInline'
 import { useConcentracion } from '../../hooks/useConcentracion'
 import { formatPct, formatCOPCorto } from '../../lib/formatters'
-import { CHART, tooltipProps } from '../../lib/chartTheme'
 
 // Etiqueta del ámbito activo, para el titular en lenguaje llano.
 function ambitoDe({ city, department, entity } = {}) {
@@ -15,138 +12,155 @@ function ambitoDe({ city, department, entity } = {}) {
   return 'en el país'
 }
 
-// Concentración de la contratación: qué porción del valor se lleva el puñado de
-// contratistas más grandes. La pregunta —¿está muy repartido o en pocas manos?—
-// se responde mejor con una cifra en lenguaje llano que con un índice abstracto,
-// así que el titular manda y la curva acompaña: cuanto más rápido sube, en menos
-// manos está el dinero.
-export function Concentracion({ filters = {} }) {
+// Dos barras alineadas al 100%: la de contratistas con su rayita, la de valor
+// con su bloque. La desproporción entre ambas ES el mensaje. Se garantiza un
+// ancho mínimo visible para que la rayita de "0,1%" no desaparezca.
+function BarrasPareadas({ pctContratistas, etiquetaContratistas, pctValor, etiquetaValor }) {
+  const fila = (titulo, pctReal, texto, tono) => (
+    <div>
+      <div className="flex items-baseline justify-between gap-3 mb-1">
+        <span className="text-[11px] uppercase tracking-label text-textSecondary font-semibold">
+          {titulo}
+        </span>
+        <span className="text-[13px] font-bold tabular-nums text-textPrimary">{texto}</span>
+      </div>
+      <div className="h-3 w-full bg-muted overflow-hidden">
+        <div
+          className="h-full"
+          style={{ width: `${Math.max(0.6, Math.min(100, pctReal))}%`, background: tono }}
+        />
+      </div>
+    </div>
+  )
+  return (
+    <div className="space-y-3 max-w-xl">
+      {fila('Contratistas', pctContratistas, etiquetaContratistas, 'rgb(var(--c-danger))')}
+      {fila('Valor contratado', pctValor, etiquetaValor, 'rgb(var(--c-text))')}
+    </div>
+  )
+}
+
+// Concentración de la contratación: qué tan pocos contratistas acaparan el
+// valor. La pregunta —¿repartido o en pocas manos?— se responde con una cifra
+// llana ("el 0,1% se lleva la mitad") y una barra que hace ver la brecha, no con
+// un índice abstracto. Normalizado por el total de contratistas del ámbito, que
+// viene del Panorama (mismo conteo que la tarjeta "Contratistas").
+export function Concentracion({ filters = {}, contratistas, tieneSecop1 }) {
   const query = useConcentracion(filters)
   const ambito = ambitoDe(filters)
+  const total = contratistas?.data ?? null // total de contratistas del ámbito (M)
 
   return (
     <section className="border-t-2 border-textPrimary pt-5 pb-8 mb-2">
       <div className="min-w-0">
-        <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] leading-tight">
-          Concentración: en cuántas manos está el dinero
-        </h2>
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] leading-tight">
+            Concentración: en cuántas manos está el dinero
+          </h2>
+          {tieneSecop1 && (
+            <span className="text-[9.5px] uppercase tracking-label text-textSecondary/70 font-medium whitespace-nowrap">
+              solo SECOP II
+            </span>
+          )}
+        </div>
         <p className="text-[14.5px] text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
-          Qué porción del valor contratado se lleva el grupo de contratistas más grandes. Entre más
-          arriba arranque la curva, en menos manos está la plata.
+          Qué tan pocos contratistas acaparan el valor contratado. Cuanto más corta sea la barra de
+          contratistas frente a la de valor, en menos manos está la plata.
         </p>
       </div>
 
+      <div className="mt-4">
+        <GeoFilterInline />
+      </div>
+
       <Methodology>
-        Ordena a los contratistas por el <strong>valor total que se les ha contratado</strong> (de
-        mayor a menor) y suma qué porción del total acumulan los primeros. La identidad del
-        contratista es su documento (NIT o cédula); se excluyen los documentos que no identifican a
-        nadie («No Definido», ceros).
+        Ordena a los contratistas por el <strong>valor total que se les ha contratado</strong> y
+        cuenta cuántos de los más grandes hacen falta para acumular la mitad del valor; ese grupo,
+        sobre el total de contratistas del ámbito, es el porcentaje que se muestra. El total de
+        contratistas es el mismo de la tarjeta «Contratistas» del Panorama (documento único,
+        excluyendo los que no identifican a nadie).
+        <br />
+        <br />
+        <strong>Solo SECOP II:</strong> la identidad y el valor del contratista son fiables en esa
+        fuente, no en SECOP I. Por eso el valor total aquí es <strong>menor</strong> que el de la
+        tarjeta «Valor contratado» del Panorama, que suma SECOP II + I.
         <br />
         <br />
         Es valor <strong>contratado, no pagado</strong>. Respeta el filtro geográfico —que agrupa
         por la <strong>sede</strong> de la entidad, no por dónde se ejecuta (ver el mapa)—. A nivel
-        país la contratación se ve <strong>difusa</strong> (son más de un millón de contratistas,
+        país la contratación se ve <strong>difusa</strong> (más de un millón de contratistas,
         muchos personas naturales que prestan servicios); dentro de un departamento o una ciudad la
-        concentración es mucho mayor. La curva muestra solo los <strong>100 contratistas más
-        grandes</strong>.
+        concentración es mucho mayor.
       </Methodology>
 
       <div className="mt-6">
         <QueryState query={query} empty="Sin datos para este ámbito.">
           {(d) => {
-            if (!d.puntos.length || !d.total) {
+            if (!d.total || !d.cum.length) {
               return <p className="py-8 text-center text-textSecondary">Sin datos suficientes.</p>
             }
-            // Punto de referencia para el titular: los 10 más grandes (o los que
-            // haya, si son menos).
-            const nRef = Math.min(10, d.topN)
-            const ref = d.en(nRef)
-            const uno = d.en(1)
-            // Referencia lejana: los 100 más grandes (o el tope disponible).
-            const lejano = d.topN > nRef ? d.en(Math.min(100, d.topN)) : null
-            const marcas = [ref, lejano]
-              .filter(Boolean)
-              .filter((m, i, a) => a.findIndex((x) => x.n === m.n) === i)
+            // Cuántos de los más grandes hacen la mitad del valor.
+            const mitad = 0.5 * d.total
+            let k50 = d.cum.findIndex((c) => c >= mitad)
+            k50 = k50 === -1 ? null : k50 + 1
+
+            // Share del 1% más grande de los contratistas (si conocemos el total
+            // y ese 1% cabe en lo que trajimos).
+            const uno = (d.cum[0] / d.total) * 100
+            let share1pct = null
+            let n1pct = null
+            if (total) {
+              n1pct = Math.max(1, Math.ceil(total * 0.01))
+              if (n1pct <= d.cum.length) share1pct = (d.cum[n1pct - 1] / d.total) * 100
+            }
+
+            const pctContr50 = total && k50 ? (k50 / total) * 100 : null
+            const nf = (x) => x.toLocaleString('es-CO')
 
             return (
               <>
                 <p className="text-[15px] text-textPrimary leading-relaxed max-w-2xl mb-6">
-                  Los <strong>{nRef} contratistas más grandes</strong> concentran{' '}
-                  <span className="font-display font-extrabold text-primary">
-                    {formatPct(ref.pct)}
-                  </span>{' '}
-                  del valor contratado {ambito}.
-                  {uno && (
-                    <> El más grande, por sí solo, se lleva {formatPct(uno.pct)}
-                      {lejano ? `; los ${lejano.n} más grandes, ${formatPct(lejano.pct)}.` : '.'}
+                  {k50 ? (
+                    pctContr50 != null ? (
+                      <>
+                        El <span className="font-display font-extrabold text-danger">
+                          {formatPct(pctContr50, pctContr50 < 1 ? 2 : 1)}
+                        </span>{' '}
+                        de los contratistas —<strong>{nf(k50)}</strong> de {nf(total)}— concentra{' '}
+                        <strong>la mitad</strong> del valor contratado {ambito}.
+                      </>
+                    ) : (
+                      <>
+                        Solo <strong>{nf(k50)} contratistas</strong> concentran{' '}
+                        <strong>la mitad</strong> del valor contratado {ambito}.
+                      </>
+                    )
+                  ) : (
+                    <>Ni los {nf(d.topFetched)} contratistas más grandes acumulan la mitad del valor {ambito}: está muy repartido.</>
+                  )}
+                  {(share1pct != null || uno != null) && (
+                    <>
+                      {' '}El <strong>1% más grande</strong>
+                      {share1pct != null ? <> concentra <strong>{formatPct(share1pct)}</strong></> : null}
+                      ; el contratista más grande, por sí solo, {formatPct(uno)}.
                     </>
                   )}
                 </p>
 
-                <ResponsiveContainer width="100%" height={280}>
-                  <AreaChart data={d.puntos} margin={{ top: 8, right: 16, left: 4, bottom: 20 }}>
-                    <defs>
-                      <linearGradient id="gradConc" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={CHART.primary} stopOpacity={0.28} />
-                        <stop offset="100%" stopColor={CHART.primary} stopOpacity={0.03} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid stroke={CHART.grid} strokeDasharray="0" vertical={false} />
-                    <XAxis
-                      dataKey="n"
-                      type="number"
-                      domain={[1, 'dataMax']}
-                      ticks={[1, 20, 40, 60, 80, 100].filter((t) => t <= d.topN)}
-                      tick={{ fill: CHART.axis, fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={{ stroke: CHART.text }}
-                      label={{
-                        value: 'Nº de contratistas más grandes',
-                        position: 'insideBottom',
-                        offset: -12,
-                        fill: CHART.axis,
-                        fontSize: 11.5,
-                      }}
-                    />
-                    <YAxis
-                      domain={[0, 100]}
-                      tick={{ fill: CHART.axis, fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={false}
-                      width={44}
-                      tickFormatter={(v) => `${v}%`}
-                    />
-                    <Tooltip
-                      {...tooltipProps}
-                      formatter={(v) => [`${formatPct(v)} del valor`, 'Acumulado']}
-                      labelFormatter={(n) => `Los ${n} más grandes`}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="pct"
-                      stroke={CHART.primary}
-                      strokeWidth={2}
-                      fill="url(#gradConc)"
-                      isAnimationActive={false}
-                    />
-                    {marcas.map((m) => (
-                      <ReferenceDot
-                        key={m.n}
-                        x={m.n}
-                        y={m.pct}
-                        r={4}
-                        fill={CHART.primary}
-                        stroke="#FFFFFF"
-                        strokeWidth={1.5}
-                        isFront
-                      />
-                    ))}
-                  </AreaChart>
-                </ResponsiveContainer>
+                {pctContr50 != null && k50 && (
+                  <BarrasPareadas
+                    pctContratistas={pctContr50}
+                    etiquetaContratistas={`${formatPct(pctContr50, pctContr50 < 1 ? 2 : 1)} · ${nf(k50)}`}
+                    pctValor={50}
+                    etiquetaValor="50%"
+                  />
+                )}
 
-                <p className="mt-3 text-[12.5px] text-textSecondary">
-                  Valor total contratado {ambito}: {formatCOPCorto(d.total)}. Cada punto es el{' '}
-                  porcentaje del total que acumulan los N contratistas más grandes.
+                <p className="mt-5 text-[12.5px] text-textSecondary">
+                  Valor total contratado {ambito}: {formatCOPCorto(d.total)} (solo SECOP II).
+                  {tieneSecop1
+                    ? ' Es menor que la tarjeta «Valor contratado» de arriba, que suma además SECOP I.'
+                    : ''}
                 </p>
               </>
             )

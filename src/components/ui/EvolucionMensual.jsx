@@ -5,6 +5,7 @@ import {
 import { QueryState } from './QueryState'
 import { Segmented } from './Segmented'
 import { Methodology } from './Methodology'
+import { GeoFilterInline } from './GeoFilterInline'
 import { useEvolucion, PERIODOS, METRICAS } from '../../hooks/useEvolucion'
 import { formatCOP, formatCOPFull, formatPct } from '../../lib/formatters'
 import { CHART, tooltipProps } from '../../lib/chartTheme'
@@ -54,6 +55,10 @@ export function EvolucionMensual({ filters }) {
           onChange={setMetrica}
           options={Object.entries(METRICAS).map(([v, m]) => ({ value: v, label: m.label }))}
         />
+      </div>
+
+      <div className="mt-4">
+        <GeoFilterInline />
       </div>
 
       <Methodology>

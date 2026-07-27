@@ -6,21 +6,22 @@ import { documentoIdentifica } from '../lib/identidad.js'
 
 const DS = DATASETS.CONTRATOS
 
-// Cuántos contratistas del tope se traen. El grueso de la señal está en los
-// primeros: dentro de un departamento o ciudad, unas decenas ya concentran
-// buena parte del valor. El LIMIT solo afecta la transferencia (100 filas), no
-// el costo del GROUP BY + ORDER en el servidor, así que subirlo es casi gratis.
-const TOP_N = 100
+// Cuántos contratistas del tope se traen. No es la distribución completa: basta
+// con bajar el top ordenado hasta cruzar los umbrales que nos interesan. El 50%
+// del valor se alcanza con muy pocos (medido: país 1.172, Cali 116) y el 1% más
+// grande de los contratistas cabe de sobra aquí (país = 12.020 de 1,2 M). El
+// LIMIT casi no afecta el tiempo —lo que pesa es el GROUP BY en el servidor—, y
+// 20.000 deja margen para cualquier ámbito. La cola (el resto) nunca se trae:
+// es el complemento, 100% − top.
+const TOP = 20000
 
-// Concentración de la contratación: qué porción del valor se lleva el puñado de
-// contratistas más grandes.
+// Concentración de la contratación: qué tan pocos contratistas acaparan el valor.
 //
-// A propósito NO se calcula sobre la distribución completa. count(distinct
-// documento) y bajar el millón largo de contratistas del país son lentísimos
-// (medido: 68–138s). Pero lo único que necesitamos —el valor acumulado de los
-// primeros frente al total— sale de dos consultas rápidas: el top N por valor
-// (~2s en un filtro, ~16s el país) y el sum(valor) total. La identidad del
-// contratista es su documento; se excluyen los que no identifican a nadie.
+// Dos consultas rápidas, sin count(distinct) ni la distribución completa: el
+// valor total del ámbito y el top-N por valor. El total de contratistas (para
+// expresar "el X% de ellos") no se pide aquí: lo aporta el Panorama, que ya lo
+// calcula y cachea por filtro (tarjeta "Contratistas"). Identidad por documento;
+// se excluyen los que no identifican a nadie, igual que ese conteo.
 export function useConcentracion(filters = {}) {
   return useQuery({
     queryKey: ['concentracion', filters],
@@ -33,11 +34,11 @@ export function useConcentracion(filters = {}) {
         socrataQuery(DS, `SELECT sum(valor_del_contrato) as v ${where}`),
         socrataQuery(
           DS,
-          `SELECT documento_proveedor, sum(valor_del_contrato) as v
+          `SELECT sum(valor_del_contrato) as v
            ${where}
            GROUP BY documento_proveedor
            ORDER BY v DESC
-           LIMIT ${TOP_N}`,
+           LIMIT ${TOP}`,
         ),
       ])
       return {
@@ -45,16 +46,17 @@ export function useConcentracion(filters = {}) {
         valores: topRows.map((r) => parseFloat(r.v ?? 0)).filter((v) => v > 0),
       }
     },
-    // Acumula el valor de los top-N y lo expresa como % del total. `en(n)`
-    // devuelve el punto de los n más grandes, o null si no hay tantos.
+    // Sumas acumuladas del top (cum[i] = valor de los i+1 más grandes). El resto
+    // de las cifras —cuántos hacen el 50%, share del top 1%— se derivan de aquí
+    // en el componente, que además tiene el total de contratistas.
     select: ({ total, valores }) => {
-      let acum = 0
-      const puntos = valores.map((v, i) => {
-        acum += v
-        return { n: i + 1, pct: total > 0 ? (acum / total) * 100 : 0, valorAcum: acum }
-      })
-      const en = (n) => (n >= 1 && puntos.length ? puntos[Math.min(n, puntos.length) - 1] : null)
-      return { total, puntos, topN: valores.length, en }
+      const cum = []
+      let acc = 0
+      for (const v of valores) {
+        acc += v
+        cum.push(acc)
+      }
+      return { total, cum, topFetched: valores.length }
     },
   })
 }

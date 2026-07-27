@@ -675,11 +675,11 @@ export function Dashboard() {
         ))}
       </div>
 
-      {/* Los gráficos que aportan lo que una lista no puede: tiempo, geografía y
-          concentración */}
-      <EvolucionMensual filters={filters} />
+      {/* Los gráficos que aportan lo que una lista no puede: concentración,
+          geografía y tiempo */}
+      <Concentracion filters={filters} contratistas={contratistasActores} tieneSecop1={tieneSecop1} />
       <MapaColombia />
-      <Concentracion filters={filters} />
+      <EvolucionMensual filters={filters} />
     </div>
   )
 }
