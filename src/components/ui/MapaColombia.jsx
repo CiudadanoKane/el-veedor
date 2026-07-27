@@ -345,7 +345,10 @@ export function MapaColombia() {
         </p>
       )}
 
-      <div className="mt-5 grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-8 items-start">
+      {/* La columna del mapa se topa (~600px, ≈70% de lo que crecía): con 1fr se
+          agrandaba sin límite y en pantallas grandes ocupaba casi todo el alto.
+          Donde la columna ya es más angosta que el tope, no cambia nada. */}
+      <div className="mt-5 grid grid-cols-1 lg:grid-cols-[minmax(0,600px)_260px] gap-8 items-start">
         <div className="relative">
           <ComposableMap
             projection="geoMercator"
