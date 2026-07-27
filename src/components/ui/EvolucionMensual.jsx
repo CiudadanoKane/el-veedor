@@ -86,7 +86,10 @@ export function EvolucionMensual({ filters }) {
         contratos adjudicados por contratación directa.
       </Methodology>
 
-      <div className="mt-6">
+      {/* Ancho topado (~820px): al 100% la serie se estiraba sin límite y en
+          pantallas grandes quedaba demasiado ancha. Cómodo para una línea de
+          tiempo; donde el contenido ya es más angosto, no cambia nada. */}
+      <div className="mt-6 max-w-[820px]">
         <QueryState query={secop2} empty="Sin datos para este período.">
           {() => (
             <ResponsiveContainer width="100%" height={300}>
