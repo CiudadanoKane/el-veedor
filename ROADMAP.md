@@ -606,13 +606,37 @@ mismo resultado; el `case` se deja mínimo.
    "Mora"/"Tasa de mora"): es acusatoria y el dashboard ya usaba "plazo
    vencido". El helper interno pasó de `useMapaMora` a `useMapaMetricas`.
 
-   Falta (menor): las métricas del mapa no respetan el filtro geográfico — el
-   mapa es siempre nacional a propósito, pero no hay un modo "acercar" a un
-   departamento con sus municipios.
-6. Botón de ayuda: al activarlo, hover/clic sobre cifras, gráficos y tablas
+   **Refinamientos posteriores (jul 2026):**
+   - **Escala robusta a atípicos** en las métricas de volumen: el departamento
+     dominante sale del *cálculo* de la escala —sigue pintado en el tono más
+     intenso, con nota y su cifra en el detalle— para que el resto no quede en un
+     solo tono. En Valor per cápita se sacan dos (Bogotá y San Andrés).
+   - **San Andrés** lleva un marcador (círculo + etiqueta): su polígono es una
+     mota invisible en la esquina y nunca se veía.
+   - **Sede ≠ destino** (hallazgo verificado; ver memoria
+     `secop2-geografia-es-sede` y la sección de abajo): `departamento` es la sede
+     de la entidad, no dónde se gasta. Toggle **Todas / Solo locales** (por
+     `orden`), **Todas por defecto**, con nota que advierte la inflación de las
+     sedes nacionales (Bogotá). "Solo locales" sobre-corrige (borra actividad
+     nacional regional bien ubicada, p. ej. SENA/ICBF de cada depto). Adiciones
+     sigue con todas las entidades (su precálculo no separa `orden`) —
+     **pendiente**.
+   - Escala de color de **6 tonos**; el toggle per cápita en su propia fila; y
+     **tope de tamaño** de la columna del mapa (~600px) para que en pantallas
+     grandes no ocupe casi todo el alto.
+
+   Falta (menor): el mapa es siempre nacional a propósito; no hay modo "acercar"
+   a un departamento con sus municipios (ver "Comparación de ciudades" abajo).
+6. ~~Concentración de contratistas en el Panorama~~ ✅ (jul 2026) — normalizada
+   ("el X% de los contratistas concentra la mitad del valor"), en vivo sin
+   precálculo. Ver sección abajo.
+7. ~~Selectores geográficos inline en Evolución y Concentración~~ ✅ (jul 2026)
+   — controlan el filtro global (mueven toda la página). Ver sección abajo.
+8. Comparación de ciudades (opción B del análisis) — pendiente. Ver sección abajo.
+9. Botón de ayuda: al activarlo, hover/clic sobre cifras, gráficos y tablas
    (p. ej. cada tarjeta del Panorama) muestra una explicación en lenguaje llano
    —qué es y por qué importa— para el público general. Idea, sin diseñar aún.
-7. Evaluar incluir asistencia de LLM en el Buscador.
+10. Evaluar incluir asistencia de LLM en el Buscador.
 
 ---
 
@@ -634,6 +658,40 @@ es adopción de SECOP II, no aumento real"): SECOP I rellena los años en que
 SECOP II estaba vacío.
 
 Archivos: `src/hooks/useEvolucion.js` y `src/components/ui/EvolucionMensual.jsx`.
+
+### HECHO ✅ — Concentración de contratistas (jul 2026)
+
+Sección del Panorama: "en cuántas manos está el dinero". Métrica **normalizada**
+—"el X% de los contratistas concentra la mitad del valor"— más "el 1% más grande
+concentra Y%" y "el mayor de todos, Z%". Respeta el filtro geográfico. Verificado:
+país 0,1% concentra la mitad (top 1% = 75,7%); Chocó 0,4% (top 1% = 64%).
+
+Diseño de datos, **en vivo y sin precálculo** (la clave del replanteo): NO se
+calcula la distribución completa. Se baja el top ordenado por valor acumulando
+hasta cruzar el 50% (país solo ~1.172 filas; el resto es el complemento). El
+total de contratistas —para el "%"— se **reutiliza del Panorama**
+(`contratistasActores`, `count(distinct)` ya cacheado por filtro), no se recalcula
+(medido lento: país 68s, Cali 138s). El 1% más grande cabe en un fetch de 20.000
+(país 1% = 12.020). Gráfico: **barras pareadas** (contratistas vs valor).
+**Solo SECOP II** (identidad y valor del contratista solo fiables ahí); se rotula
+y se aclara que por eso el total es menor que la tarjeta "Valor contratado"
+(que suma II + I). Archivos: `useConcentracion.js`, `Concentracion.jsx`.
+
+Historia: primero se hizo con "top-100 absoluto" (commit 8ac363f); el usuario
+señaló —con razón— que un N absoluto no es comparable entre ámbitos de distinto
+tamaño (100 es 0,08% en Bogotá y 20% en Vaupés), y se rehízo normalizado.
+
+Pendiente (menor): cachear la concentración país (~13s en vivo) como los rankings,
+si la latencia molesta.
+
+### HECHO ✅ — Selectores geográficos inline (jul 2026)
+
+Evolución y Concentración llevan su propio desplegable departamento/ciudad
+(`GeoFilterInline`, mismo estilo que `GlobalFilters`) porque quedan lejos del
+filtro de arriba. **Controlan el mismo filtro global** (estado en la URL): mover
+cualquiera mueve toda la página —una sola fuente de verdad, sin ámbitos
+contradictorios en pantalla—. Decisión del usuario (frente a un ámbito local por
+gráfico). El mapa no lo lleva: es siempre nacional a propósito.
 
 Hechos verificados para implementar:
 - Campo de fecha de firma en SECOP I = **`fecha_de_firma_del_contrato`** (el
@@ -681,15 +739,24 @@ patrones, no acusa"; publicar un número único que ordena departamentos por
 mostrar los componentes por separado y dejar que el lector los lea, o hacer la
 ponderación explícita y ajustable.
 
-### Mapa enriquecido — notas de alcance (item 5, sin diseñar)
+### Comparación de ciudades (opción B) — pendiente
 
-- Hoy `MapaColombia` + `useMapaMora` solo pinta índice de mora (SECOP II).
-- Requiere fuente de **población por departamento/municipio (DANE)** para el
-  modo per cápita — decidir de dónde (dataset estático embebido vs API).
-- Decidir métricas nuevas (nº contratos, valor, valor per cápita, % sin
-  competencia…) y si **SECOP I entra al mapa o va en pestaña aparte**: revisar
-  qué tan poblados y limpios están `departamento_entidad` / `municipio_entidad`
-  en SECOP I antes de decidir.
+El mapa (item 5) quedó hecho, incluida la separación nacional/territorial. Lo que
+sigue del análisis original es la **comparación de ciudades**: ranking/barras de
+las ciudades más grandes por métrica, en Total y per cápita, filtrando a
+`orden = Territorial` para que las sedes nacionales no las inflen. El campo
+`ciudad` está limpio para las grandes (Bogotá, Cali, Medellín…), así que un
+`GROUP BY ciudad` sirve. Faltaría población DANE de ~50 ciudades (tabla chica,
+como `poblacion.js`).
+
+Un **mapa municipal** (zoom real, ~1.100 polígonos + población municipal +
+emparejar por nombre) se evaluó y se **descartó por ahora**: mucho trabajo y el
+mapa quedaría dominado por municipios diminutos con per cápita ruidoso.
+
+Recordar (memoria `secop2-geografia-es-sede`): a nivel **ciudad**,
+`orden = Territorial` es menos perfecto que a nivel departamento —una gobernación
+tiene sede en la capital pero gasta en todo el departamento—, así que lo ideal
+sería afinar a alcaldías. Declararlo, no esconderlo.
 
 ---
 
