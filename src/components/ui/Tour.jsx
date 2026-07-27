@@ -33,8 +33,7 @@ const PASOS = [
         <li><strong className="text-textPrimary">Buscar</strong>: un contrato, contratista o entidad por nombre.</li>
         <li><strong className="text-textPrimary">Alertas</strong>: patrones de ejecución, como mora, prórrogas y obras paradas.</li>
         <li><strong className="text-textPrimary">Errores en SECOP</strong>: fallas del registro, como fechas imposibles o contratos sin identificar.</li>
-        <li><strong className="text-textPrimary">En qué se contrata</strong>: por sector y categoría.</li>
-        <li><strong className="text-textPrimary">Rankings</strong>: quién recibe y quién entrega más recursos.</li>
+        <li><strong className="text-textPrimary">Rankings</strong>: quién recibe y quién entrega más recursos, en qué se contrata y cómo se ejecuta.</li>
       </ul>
     ),
   },

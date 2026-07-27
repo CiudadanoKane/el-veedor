@@ -1,5 +1,8 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
+} from 'recharts'
 import { PageHeader } from '../components/layout/Layout'
 import { GlobalFilters } from '../components/layout/GlobalFilters'
 import { QueryState } from '../components/ui/QueryState'
@@ -10,7 +13,9 @@ import { IndiceEjecucion } from '../components/alertas/IndiceEjecucion'
 import { useFilters } from '../context/FiltersContext'
 import { useRankingContratistas, useRankingEntidades } from '../hooks/useRankings'
 import { useAdicionesPrecalculadas } from '../hooks/useAdicionesPrecalculadas'
-import { formatCOP, formatDate } from '../lib/formatters'
+import { useCategorias } from '../hooks/useCategorias'
+import { formatCOP, formatCOPFull, formatDate, formatPct, pct } from '../lib/formatters'
+import { CHART, tooltipProps } from '../lib/chartTheme'
 import { documentoVisible, etiquetaDocumento, esPersonaJuridica } from '../lib/identidad'
 
 // Encabezado de sección con su control (orden, o el toggle entidad/contratista)
@@ -406,6 +411,132 @@ function RankingAdiciones() {
   )
 }
 
+// En qué contrata el Estado: qué compra, clasificado por tipo de bien o servicio
+// (segmento UNSPSC). No es un ranking de personas sino de categorías, pero
+// comparte la pregunta de fondo del módulo —cómo se reparte el gasto público— y
+// tenía muy poca información para justificar una sección propia en el menú.
+function RankingCategorias({ filters }) {
+  const query = useCategorias(filters)
+  const [metric, setMetric] = useState('valor') // 'valor' | 'contratos'
+  const data = query.data
+
+  const sorted = useMemo(() => {
+    if (!data) return []
+    return [...data.list].sort((a, b) => b[metric] - a[metric])
+  }, [data, metric])
+
+  const total = metric === 'valor' ? data?.totalValor : data?.totalContratos
+
+  const columns = [
+    {
+      key: 'nombre',
+      header: 'Tipo de bien o servicio',
+      render: (r) => (
+        <div>
+          <span className="text-textPrimary">{r.nombre}</span>
+          {r.segmento !== '—' && (
+            <span className="text-xs text-textSecondary ml-2">UNSPSC {r.segmento}</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'contratos',
+      header: 'Contratos',
+      className: 'text-right tabular-nums',
+      render: (r) => r.contratos.toLocaleString('es-CO'),
+    },
+    {
+      key: 'valor',
+      header: 'Valor total',
+      className: 'text-right tabular-nums',
+      render: (r) => formatCOP(r.valor),
+    },
+    {
+      key: 'share',
+      header: '% del total',
+      className: 'text-right tabular-nums',
+      render: (r) => {
+        const p = pct(r[metric], total)
+        return <span className="text-primary">{formatPct(p)}</span>
+      },
+    },
+  ]
+
+  return (
+    <>
+      <Encabezado titulo="En qué contrata el Estado">
+        <Segmented
+          value={metric}
+          onChange={setMetric}
+          options={[
+            { value: 'valor', label: 'Por valor' },
+            { value: 'contratos', label: 'Por cantidad' },
+          ]}
+        />
+      </Encabezado>
+
+      <p className="text-[14.5px] text-textSecondary font-light -mt-1 mb-4 max-w-2xl leading-relaxed">
+        Qué compra el Estado, clasificado por tipo de bien o servicio con el estándar
+        internacional UNSPSC. A diferencia de los demás rankings, esta vista{' '}
+        <strong className="font-semibold text-textPrimary">sí responde</strong> al filtro
+        de departamento o ciudad.
+      </p>
+
+      <Methodology>
+        A diferencia del "sector" (que solo aplica al gobierno nacional), esta vista usa
+        el código <code>UNSPSC</code> (<code>codigo_de_categoria_principal</code>), un
+        estándar internacional que clasifica <strong>qué se contrata</strong> — funciona
+        igual para una alcaldía que para un ministerio. Agrupamos por segmento (los
+        primeros 2 dígitos del código). Los códigos sin segmento válido se agrupan en
+        "Otros / Sin clasificar".
+      </Methodology>
+
+      <div className="mt-4">
+        <QueryState query={query} empty="Sin datos de categorías.">
+          {() => (
+            <>
+              <ResponsiveContainer width="100%" height={Math.max(320, sorted.slice(0, 15).length * 34)}>
+                <BarChart
+                  data={sorted.slice(0, 15)}
+                  layout="vertical"
+                  margin={{ left: 8, right: 24 }}
+                >
+                  <XAxis type="number" hide />
+                  <YAxis
+                    type="category"
+                    dataKey="nombre"
+                    width={230}
+                    tick={{ fill: CHART.axis, fontSize: 11 }}
+                    tickFormatter={(v) => (v.length > 34 ? v.slice(0, 34) + '…' : v)}
+                  />
+                  <Tooltip
+                    formatter={(val) =>
+                      metric === 'valor'
+                        ? [formatCOPFull(val), 'Valor']
+                        : [val.toLocaleString('es-CO'), 'Contratos']
+                    }
+                    {...tooltipProps}
+                  />
+                  <Bar dataKey={metric} radius={[0, 4, 4, 0]}>
+                    {sorted.slice(0, 15).map((_, i) => (
+                      <Cell key={i} fill={CHART.primary} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+
+              <div className="mt-6">
+                <DataTable columns={columns} rows={sorted} keyField="segmento" />
+              </div>
+            </>
+          )}
+        </QueryState>
+      </div>
+    </>
+  )
+}
+
 export function Rankings() {
   const { filters } = useFilters()
   const [tab, setTab] = useState('contratistas')
@@ -414,7 +545,7 @@ export function Rankings() {
     <div className="space-y-6">
       <PageHeader
         title="Rankings"
-        subtitle="Quién recibe más recursos públicos, quién los entrega, y cómo se ejecuta lo contratado."
+        subtitle="Quién recibe más recursos públicos, quién los entrega, en qué se contrata y cómo se ejecuta lo contratado."
       />
       <GlobalFilters />
 
@@ -425,6 +556,7 @@ export function Rankings() {
           options={[
             { value: 'contratistas', label: 'Quién recibe más' },
             { value: 'entidades', label: 'Quién entrega más' },
+            { value: 'categorias', label: 'Qué se contrata' },
             { value: 'adiciones', label: 'Quién más adiciona' },
             { value: 'ejecucion', label: 'Cómo ejecutan' },
           ]}
@@ -434,6 +566,7 @@ export function Rankings() {
       <div className="border-b border-border pb-8">
         {tab === 'contratistas' && <RankingContratistas filters={filters} />}
         {tab === 'entidades' && <RankingEntidades filters={filters} />}
+        {tab === 'categorias' && <RankingCategorias filters={filters} />}
         {tab === 'adiciones' && <RankingAdiciones />}
         {tab === 'ejecucion' && <IndiceEjecucion />}
       </div>

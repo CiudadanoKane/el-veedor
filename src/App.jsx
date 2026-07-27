@@ -7,7 +7,6 @@ import { Noticias } from './pages/Noticias'
 import { Buscar } from './pages/Buscar'
 import { Alertas } from './pages/Alertas'
 import { Errores } from './pages/Errores'
-import { Categorias } from './pages/Categorias'
 import { Rankings } from './pages/Rankings'
 import { Contratista } from './pages/Contratista'
 import { Entidad } from './pages/Entidad'
@@ -27,7 +26,6 @@ function App() {
             <Route path="buscar" element={<Buscar />} />
             <Route path="alertas" element={<Alertas />} />
             <Route path="errores" element={<Errores />} />
-            <Route path="categorias" element={<Categorias />} />
             <Route path="rankings" element={<Rankings />} />
             <Route path="contratista/:documento" element={<Contratista />} />
             <Route path="entidad/:nombre" element={<Entidad />} />
@@ -35,12 +33,13 @@ function App() {
             <Route path="transparencia" element={<Transparencia />} />
             <Route path="reportar" element={<Reportar />} />
 
-            {/* Contratos vencidos y Adiciones dejaron de ser secciones propias
-                y pasaron a ser pestañas de Alertas. Las rutas viejas siguen
-                vivas: pueden estar compartidas por ahí, y un enlace roto en una
-                plataforma de veeduría es justo lo que no queremos. */}
+            {/* Secciones que dejaron de ser propias y pasaron a ser pestañas de
+                otra página. Las rutas viejas siguen vivas: pueden estar
+                compartidas por ahí, y un enlace roto en una plataforma de
+                veeduría es justo lo que no queremos. */}
             <Route path="mora" element={<Navigate to="/alertas" replace />} />
             <Route path="adiciones" element={<Navigate to="/alertas" replace />} />
+            <Route path="categorias" element={<Navigate to="/rankings" replace />} />
           </Route>
         </Routes>
         </TourProvider>
