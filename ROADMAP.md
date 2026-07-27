@@ -636,17 +636,31 @@ mismo resultado; el `case` se deja mínimo.
 9. Botón de ayuda: al activarlo, hover/clic sobre cifras, gráficos y tablas
    (p. ej. cada tarjeta del Panorama) muestra una explicación en lenguaje llano
    —qué es y por qué importa— para el público general. Idea, sin diseñar aún.
-10. Evaluar incluir asistencia de LLM en el Buscador.
-11. Limitar el ancho del gráfico **"Evolución de la contratación"** — igual que
-    el tope que se le puso a la columna del mapa (item 5): hoy se expande sin
-    límite y en pantallas grandes queda demasiado ancho. Archivo:
-    `EvolucionMensual.jsx` (el `<ResponsiveContainer>` está al 100%; topar el
-    contenedor).
+10. Asistencia de IA en el Buscador — **en curso (jul 2026)**. Enfoque elegido:
+    **lenguaje natural → filtros** (opción A), el más seguro (cero alucinación: la
+    IA solo traduce a filtros, los datos salen de SECOP) y de mayor valor.
+    Decisiones: modelo **Haiku 4.5**; v1 incluye rangos de valor y fecha.
+    - ✅ **Hecho (prerrequisito):** filtros de rango de valor y fecha en el
+      buscador (commit de "filtros de rango"). Ver `rangoNumerico`/`rangoFecha` en
+      `soql.js`.
+    - ⏳ **Pendiente de la clave `ANTHROPIC_API_KEY`:** función serverless
+      `api/buscar-ia.js` (structured outputs con el esquema de filtros + catálogos
+      reales, validación server-side contra catálogos) + integración en el
+      Buscador (entrada en lenguaje natural → aplica filtros a la URL → búsqueda
+      normal; filtros aplicados visibles y editables). El usuario debe crear
+      `ANTHROPIC_API_KEY` en Vercel (Production, Sensitive) y en un `.env` local +
+      `vercel dev` para probar. Sería la **primera dependencia de LLM** del
+      proyecto (`@anthropic-ai/sdk`).
+11. ~~Limitar el ancho del gráfico **"Evolución de la contratación"**~~ ✅ hecho
+    (jul 2026) — `max-w-[820px]` en el contenedor, igual criterio que el tope del
+    mapa.
 12. Reubicar la pestaña **"En qué se contrata"** (`/categorias`,
     `pages/Categorias.jsx`; en el Sidebar) — es poca información para tener
-    pestaña propia. Evaluar moverla: fusionarla al Panorama como una sección más,
-    o combinarla con otra pestaña afín. Revisar también `Sidebar.jsx` y `Tour.jsx`
-    (la mencionan) al mover.
+    pestaña propia. **Aplazado (jul 2026):** no moverla suelta; se hará dentro de
+    una **revisión holística de toda la página y su distribución** (hacerla lo
+    más amigable, fluida y lógica para el lector). Destinos evaluados para cuando
+    se retome: a Rankings como tercera vista (junto a contratistas/entidades), o
+    al Panorama como sección. Revisar `Sidebar.jsx` y `Tour.jsx` al mover.
 
 ---
 
