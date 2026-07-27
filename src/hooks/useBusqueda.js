@@ -4,6 +4,7 @@ import { DATASETS, CONTRACT_FIELDS, CONTRACT_FIELDS_SECOP1 } from '../lib/consta
 import {
   esc, whereFromFilters, condicionEstado,
   soloContratosValidosSecop1, condicionEstadoSecop1, whereFromFiltrosSecop1,
+  rangoNumerico, rangoFecha,
 } from '../lib/soql'
 import { variantesDeFrase, tieneTextoBuscable, palabrasDeFrase } from '../lib/acentos'
 import { adaptList as adaptListSecop2 } from '../adapters/secop2Adapter'
@@ -70,7 +71,26 @@ export function hayBusqueda(criterios = {}) {
   const conTexto = tieneTextoBuscable(criterios.texto || '')
   const conFiltro =
     Object.keys(CAMPOS_LISTA).some((k) => criterios[k]) || criterios.estados?.length > 0
-  return conTexto || conFiltro
+  const conRango = !!(
+    criterios.valorMin || criterios.valorMax || criterios.fechaDesde || criterios.fechaHasta
+  )
+  return conTexto || conFiltro || conRango
+}
+
+// Condiciones de rango (valor y fecha) para cada fuente. En SECOP I el rango de
+// valor va sobre cuantia_contrato directo, NO sobre VALOR_SECOP1_SOQL: el
+// coalesce() en el WHERE fuerza un scan sobre ese dataset (ver soql.js).
+function rangosSecop2(c) {
+  return [
+    ...rangoNumerico('valor_del_contrato', c.valorMin, c.valorMax),
+    ...rangoFecha('fecha_de_firma', c.fechaDesde, c.fechaHasta),
+  ]
+}
+function rangosSecop1(c) {
+  return [
+    ...rangoNumerico('cuantia_contrato', c.valorMin, c.valorMax),
+    ...rangoFecha('fecha_de_firma_del_contrato', c.fechaDesde, c.fechaHasta),
+  ]
 }
 
 // Orden final sobre los resultados ya adaptados (mismo esquema para las dos
@@ -198,7 +218,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
       // $where de SECOP II: el filtro de estado (el elegido a mano, o el de
       // "contratos válidos" por defecto), más los filtros de lista y los
       // geográficos.
-      const partes2 = [condicionEstado(criterios.estados)]
+      const partes2 = [condicionEstado(criterios.estados), ...rangosSecop2(criterios)]
       for (const [clave, campo] of Object.entries(CAMPOS_LISTA)) {
         if (criterios[clave]) partes2.push(`${campo} = '${esc(criterios[clave])}'`)
       }
@@ -215,6 +235,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
         estadosSecop1 === null
           ? soloContratosValidosSecop1()
           : condicionEstadoSecop1(estadosSecop1),
+        ...rangosSecop1(criterios),
       ]
       if (modalidadSecop1) partes1.push(`modalidad_de_contratacion = '${esc(modalidadSecop1)}'`)
       if (tipoSecop1) partes1.push(`tipo_de_contrato = '${esc(tipoSecop1)}'`)

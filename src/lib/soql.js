@@ -22,6 +22,28 @@ export function buildWhere(conditions) {
   return conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
 }
 
+// Rango numérico sobre un campo (0, 1 o 2 condiciones). Coacciona a número y
+// descarta lo que no lo sea: así ningún texto libre —venga de la URL o de la
+// IA— entra crudo al SoQL. Devuelve un array de condiciones ya seguras.
+export function rangoNumerico(campo, min, max) {
+  const cond = []
+  const nMin = Number(min)
+  const nMax = Number(max)
+  if (min != null && min !== '' && Number.isFinite(nMin)) cond.push(`${campo} >= ${nMin}`)
+  if (max != null && max !== '' && Number.isFinite(nMax)) cond.push(`${campo} <= ${nMax}`)
+  return cond
+}
+
+// Rango de fechas sobre un campo de fecha SoQL. Solo acepta 'YYYY-MM-DD'
+// estricto (regex), nunca interpola texto libre. Cotas inclusivas.
+const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/
+export function rangoFecha(campo, desde, hasta) {
+  const cond = []
+  if (FECHA_ISO.test(desde || '')) cond.push(`${campo} >= '${desde}T00:00:00'`)
+  if (FECHA_ISO.test(hasta || '')) cond.push(`${campo} <= '${hasta}T23:59:59'`)
+  return cond
+}
+
 // Condición de "en mora": en ejecución y fecha fin ya pasó.
 // Cota inferior 2000-01-01 descarta fechas basura de SECOP (año 205, 25, etc.)
 // que generan "días en mora" absurdos y contaminan el ranking.

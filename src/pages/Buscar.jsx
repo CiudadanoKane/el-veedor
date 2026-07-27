@@ -45,7 +45,7 @@ function coincidenciaVisible(contrato, texto) {
 
 // Parámetros de URL que le pertenecen al buscador. Todo lo demás en la URL es
 // de otro módulo (hoy, los filtros geográficos) y no se toca desde aquí.
-const PARAMS_BUSQUEDA = ['q', 'modalidad', 'tipo', 'estado', 'orden', 'modo']
+const PARAMS_BUSQUEDA = ['q', 'modalidad', 'tipo', 'estado', 'orden', 'modo', 'valorMin', 'valorMax', 'desde', 'hasta']
 
 // Nivel superior: buscar contratos por palabra, o encontrar un contratista o
 // entidad por nombre (que se buscan mejor por nombre que por palabra suelta).
@@ -120,6 +120,72 @@ function Chips({ label, seleccionados, onToggle, options }) {
   )
 }
 
+// Rangos de valor y fecha. El valor usa borrador local y confirma al salir del
+// campo o con Enter —igual que la caja de texto— para no lanzar una consulta por
+// cada tecla; las fechas (type=date) confirman al elegirlas, que es un solo
+// evento. Estos filtros también los llena la búsqueda con IA, y quedan visibles
+// y editables aquí.
+function Rangos({ criterios, actualizar }) {
+  const [vMin, setVMin] = useState(criterios.valorMin)
+  const [vMax, setVMax] = useState(criterios.valorMax)
+  useEffect(() => {
+    setVMin(criterios.valorMin)
+    setVMax(criterios.valorMax)
+  }, [criterios.valorMin, criterios.valorMax])
+
+  const claseInput =
+    'bg-bg border-0 border-b border-border px-0 py-1.5 text-[15px] text-textPrimary ' +
+    'placeholder:text-textSecondary/60 focus:border-textPrimary focus:outline-none ' +
+    'w-full sm:w-auto sm:min-w-[150px] cursor-text'
+  const commit = (campo, valor) => actualizar({ [campo]: valor })
+  const Etiqueta = ({ children }) => (
+    <label className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+      {children}
+    </label>
+  )
+
+  return (
+    <div className="flex flex-wrap items-end gap-5">
+      <div className="flex flex-col gap-1">
+        <Etiqueta>Valor mínimo (COP)</Etiqueta>
+        <input
+          type="number" inputMode="numeric" min="0" value={vMin}
+          onChange={(e) => setVMin(e.target.value)}
+          onBlur={() => commit('valorMin', vMin)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commit('valorMin', vMin) } }}
+          placeholder="sin mínimo" className={claseInput}
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <Etiqueta>Valor máximo (COP)</Etiqueta>
+        <input
+          type="number" inputMode="numeric" min="0" value={vMax}
+          onChange={(e) => setVMax(e.target.value)}
+          onBlur={() => commit('valorMax', vMax)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commit('valorMax', vMax) } }}
+          placeholder="sin máximo" className={claseInput}
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <Etiqueta>Firmado desde</Etiqueta>
+        <input
+          type="date" value={criterios.fechaDesde}
+          onChange={(e) => commit('fechaDesde', e.target.value)}
+          className={claseInput}
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <Etiqueta>Firmado hasta</Etiqueta>
+        <input
+          type="date" value={criterios.fechaHasta}
+          onChange={(e) => commit('fechaHasta', e.target.value)}
+          className={claseInput}
+        />
+      </div>
+    </div>
+  )
+}
+
 export function Buscar() {
   const { filters } = useFilters()
   // La búsqueda vive en la URL para que se pueda compartir: quien encuentre
@@ -139,6 +205,10 @@ export function Buscar() {
     tipo: params.get('tipo') || '',
     estados: (params.get('estado') || '').split(',').filter(Boolean),
     orden: ORDENES[params.get('orden')] ? params.get('orden') : 'valor',
+    valorMin: params.get('valorMin') || '',
+    valorMax: params.get('valorMax') || '',
+    fechaDesde: params.get('desde') || '',
+    fechaHasta: params.get('hasta') || '',
   }), [params])
 
   // El texto se escribe libre y solo viaja a la URL al enviar: cada consulta
@@ -149,7 +219,8 @@ export function Buscar() {
   // Filtros avanzados, plegados por defecto. Se abren solos si llega uno activo
   // por la URL (p. ej. un enlace compartido que ya trae una modalidad).
   const [avanzados, setAvanzados] = useState(
-    () => !!(criterios.modalidad || criterios.tipo || criterios.estados.length),
+    () => !!(criterios.modalidad || criterios.tipo || criterios.estados.length ||
+      criterios.valorMin || criterios.valorMax || criterios.fechaDesde || criterios.fechaHasta),
   )
 
   // Se toca solo lo propio del buscador y se conserva el resto de la URL (los
@@ -163,6 +234,10 @@ export function Buscar() {
       estado: sig.estados.length ? sig.estados.join(',') : '',
       orden: sig.orden === 'valor' ? '' : sig.orden,
       modo: sig.modo === 'contratos' ? '' : sig.modo,
+      valorMin: sig.valorMin || '',
+      valorMax: sig.valorMax || '',
+      desde: sig.fechaDesde || '',
+      hasta: sig.fechaHasta || '',
     }
     setParams((prev) => {
       const next = new URLSearchParams(prev)
@@ -190,7 +265,9 @@ export function Buscar() {
   const queryContratos = useBusqueda(criterios, filters)
   const queryDocumentos = useBusquedaDocumentos(criterios, filters)
   const activa = hayBusqueda(criterios)
-  const hayFiltros = criterios.modalidad || criterios.tipo || criterios.estados.length > 0
+  const hayFiltros =
+    criterios.modalidad || criterios.tipo || criterios.estados.length > 0 ||
+    criterios.valorMin || criterios.valorMax || criterios.fechaDesde || criterios.fechaHasta
 
   const toggleEstado = (estado) => {
     const set = new Set(criterios.estados)
@@ -373,6 +450,7 @@ export function Buscar() {
                     onToggle={toggleEstado}
                     options={ESTADOS_FILTRO}
                   />
+                  <Rangos criterios={criterios} actualizar={actualizar} />
                 </div>
               )}
             </div>
