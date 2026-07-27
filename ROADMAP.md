@@ -637,6 +637,16 @@ mismo resultado; el `case` se deja mínimo.
    (p. ej. cada tarjeta del Panorama) muestra una explicación en lenguaje llano
    —qué es y por qué importa— para el público general. Idea, sin diseñar aún.
 10. Evaluar incluir asistencia de LLM en el Buscador.
+11. Limitar el ancho del gráfico **"Evolución de la contratación"** — igual que
+    el tope que se le puso a la columna del mapa (item 5): hoy se expande sin
+    límite y en pantallas grandes queda demasiado ancho. Archivo:
+    `EvolucionMensual.jsx` (el `<ResponsiveContainer>` está al 100%; topar el
+    contenedor).
+12. Reubicar la pestaña **"En qué se contrata"** (`/categorias`,
+    `pages/Categorias.jsx`; en el Sidebar) — es poca información para tener
+    pestaña propia. Evaluar moverla: fusionarla al Panorama como una sección más,
+    o combinarla con otra pestaña afín. Revisar también `Sidebar.jsx` y `Tour.jsx`
+    (la mencionan) al mover.
 
 ---
 
