@@ -654,13 +654,15 @@ mismo resultado; el `case` se deja mínimo.
 11. ~~Limitar el ancho del gráfico **"Evolución de la contratación"**~~ ✅ hecho
     (jul 2026) — `max-w-[820px]` en el contenedor, igual criterio que el tope del
     mapa.
-12. Reubicar la pestaña **"En qué se contrata"** (`/categorias`,
-    `pages/Categorias.jsx`; en el Sidebar) — es poca información para tener
-    pestaña propia. **Aplazado (jul 2026):** no moverla suelta; se hará dentro de
-    una **revisión holística de toda la página y su distribución** (hacerla lo
-    más amigable, fluida y lógica para el lector). Destinos evaluados para cuando
-    se retome: a Rankings como tercera vista (junto a contratistas/entidades), o
-    al Panorama como sección. Revisar `Sidebar.jsx` y `Tour.jsx` al mover.
+12. ~~Reubicar la pestaña **"En qué se contrata"**~~ ✅ hecho (jul 2026) — pasó a
+    ser la pestaña **"Qué se contrata"** dentro de Rankings, tercera vista junto a
+    "Quién recibe más" y "Quién entrega más". Se quitó del Sidebar y del tour; la
+    ruta vieja `/categorias` redirige a `/rankings` para no romper enlaces
+    compartidos. Se eliminó `pages/Categorias.jsx` (su lógica de datos,
+    `useCategorias`, se mantiene). Pendiente aparte, no de este punto: esa
+    consulta tarda ~55s (GROUP BY con `substring` sobre 5,3M sin índice); podría
+    recibir el mismo tratamiento que el Panorama (endpoint `/api` + Edge Config +
+    cron) si se vuelve prioridad.
 
 ---
 
