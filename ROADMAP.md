@@ -672,12 +672,16 @@ mismo resultado; el `case` se deja mínimo.
       corresponde (ej. "que ya terminaron o están vigentes" →
       `["Cerrado", "terminado", "En ejecución"]`).
 
-    **Pendiente, encontrado en las mismas pruebas:** el esquema no tiene campo
-    geográfico. Si alguien pide "...en Barranquilla", la IA descarta la ciudad
-    en vez de aplicarla —la búsqueda queda nacional, sin avisar—. La vía más
-    directa es ampliar el esquema para que la IA use el selector de
-    departamento/ciudad que ya existe (`useFilters().setFilter`); queda para
-    retomar.
+    **Geografía** ✅ (resuelto después) — el esquema tiene campos
+    departamento/ciudad; la IA extrae el lugar (corrigiendo tipeo: "medallo" →
+    Medellín) y el cliente lo valida contra el catálogo geográfico real —el que
+    ya carga `GlobalFilters`, sin consulta extra— antes de aplicarlo al filtro
+    global. Cero invención: si el municipio no existe en el catálogo, no se
+    aplica. Ver `resolverLugar` en `src/lib/geoResolver.js` —empareja sin tildes
+    ni mayúsculas, y de una ciudad deduce su departamento porque el selector de
+    ciudad lo exige primero—. Búsqueda y geografía se escriben en un único
+    `setParams` (dos seguidos no componen). Verificado contra el catálogo real:
+    la ciudad se guarda "Bogotá" bajo "Distrito Capital de Bogotá".
 11. ~~Limitar el ancho del gráfico **"Evolución de la contratación"**~~ ✅ hecho
     (jul 2026) — `max-w-[820px]` en el contenedor, igual criterio que el tope del
     mapa.
