@@ -487,9 +487,8 @@ export function Buscar() {
                              focus:border-textPrimary focus:outline-none w-full"
                 />
                 <span className="text-[12px] text-textSecondary mt-1">
-                  ¿Tienes el número del proceso o el código SECOP? Pégalo y va directo al
-                  contrato. También entiende una fecha, un valor, una modalidad o un lugar si
-                  los describes en la frase, y los convierte en filtros (asistido por IA).
+                  Escribe en lenguaje natural: la IA convierte fecha, valor, lugar o modalidad
+                  en filtros. ¿Número de proceso o código SECOP? Va directo al contrato.
                 </span>
               </div>
               <button
