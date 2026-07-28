@@ -682,6 +682,23 @@ mismo resultado; el `case` se deja mínimo.
     ciudad lo exige primero—. Búsqueda y geografía se escriben en un único
     `setParams` (dos seguidos no componen). Verificado contra el catálogo real:
     la ciudad se guarda "Bogotá" bajo "Distrito Capital de Bogotá".
+
+    **Búsqueda semántica** ✅ (después) — para consultas conceptuales la IA
+    sugiere hasta 6 frases relacionadas (sinónimos, tipos concretos, el término
+    del sector) que la búsqueda une con OR junto al texto. Medido: "estructura
+    vial" sola encuentra 138 contratos; con puente/viaducto/pontón/etc. surgen
+    +33.000. Respeta lo específico (un nombre propio no se amplía). Transparente
+    y editable: los términos son etiquetas quitables bajo la caja, viven en la
+    URL (`amplia`), y quitar una relanza. Rendimiento: el cartesiano de tildes ×
+    varios términos disparaba ~106 consultas/búsqueda; la frase principal lo
+    conserva (puede venir sin IA) pero los sinónimos usan variantes reducidas
+    (sin tildes + con tildes tal cual, las dos escrituras reales), bajando a 22
+    por dataset. Ver `variantesReducidas` en `acentos.js`.
+
+    **Decidido NO hacer (por ahora):** un bucle agéntico que pruebe la búsqueda,
+    cuente resultados y reintente. La ampliación semántica entrega casi todo su
+    valor sin la latencia ni el costo de varias vueltas contra Socrata y el
+    modelo. Se reevalúa si aparecen casos que lo justifiquen.
 11. ~~Limitar el ancho del gráfico **"Evolución de la contratación"**~~ ✅ hecho
     (jul 2026) — `max-w-[820px]` en el contenedor, igual criterio que el tope del
     mapa.
