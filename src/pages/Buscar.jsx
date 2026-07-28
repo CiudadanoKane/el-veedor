@@ -12,7 +12,7 @@ import { BuscadorContratista } from '../components/ui/BuscadorContratista'
 import { BuscadorEntidad } from '../components/ui/BuscadorEntidad'
 import { useBusquedaDocumentos } from '../hooks/useBusquedaDocumentos'
 import { useDirectorioEntidades } from '../hooks/useDirectorioEntidades'
-import { useBusqueda, hayBusqueda, ORDENES, LIMITE } from '../hooks/useBusqueda'
+import { useBusqueda, hayBusqueda, ORDENES, LIMITE, esIdentificador } from '../hooks/useBusqueda'
 import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO } from '../lib/catalogos'
 import { ESTADOS_SOLO_SECOP1 } from '../lib/catalogosSecop1'
 import { DOCUMENTOS_SIN_IDENTIDAD } from '../lib/identidad'
@@ -249,6 +249,54 @@ export function Buscar() {
     })
   }
 
+  // Búsqueda con IA, integrada en la misma caja de texto —no es un modo
+  // aparte—. Si la frase describe un filtro (fecha, valor, modalidad,
+  // estado), la IA lo extrae y lo aplica junto con lo que quede de texto
+  // libre; abre "Filtros avanzados" para que quede visible y editable, nunca
+  // oculto. Los identificadores (número de proceso, código SECOP) se saltan
+  // la IA: ya tienen una ruta exacta e instantánea. Si la llamada falla, se
+  // degrada a buscar la frase tal cual —nunca bloquea la búsqueda—.
+  const [cargandoIA, setCargandoIA] = useState(false)
+  const [errorIA, setErrorIA] = useState('')
+
+  const buscarConTexto = async (texto) => {
+    const limpio = texto.trim()
+    if (!limpio || esIdentificador(limpio)) {
+      actualizar({ texto: limpio })
+      return
+    }
+    setCargandoIA(true)
+    setErrorIA('')
+    try {
+      const res = await fetch('/api/buscar-ia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ consulta: limpio }),
+      })
+      if (!res.ok) throw new Error('fallo la traducción')
+      const filtros = await res.json()
+      const huboFiltros =
+        filtros.modalidad || filtros.tipo || filtros.estados?.length ||
+        filtros.valorMin || filtros.valorMax || filtros.fechaDesde || filtros.fechaHasta
+      if (huboFiltros) setAvanzados(true)
+      actualizar({
+        texto: filtros.texto || limpio,
+        modalidad: filtros.modalidad || '',
+        tipo: filtros.tipo || '',
+        estados: filtros.estados || [],
+        valorMin: filtros.valorMin ? String(filtros.valorMin) : '',
+        valorMax: filtros.valorMax ? String(filtros.valorMax) : '',
+        fechaDesde: filtros.fechaDesde || '',
+        fechaHasta: filtros.fechaHasta || '',
+      })
+    } catch {
+      setErrorIA('No se pudieron interpretar los filtros de la frase; se buscó el texto tal cual.')
+      actualizar({ texto: limpio })
+    } finally {
+      setCargandoIA(false)
+    }
+  }
+
   // "Limpiar búsqueda" borra la búsqueda, no la ubicación: para eso está
   // "Limpiar filtros" en la barra geográfica.
   const limpiarBusqueda = () => {
@@ -379,7 +427,7 @@ export function Buscar() {
       ) : (
         <>
           <form
-            onSubmit={(e) => { e.preventDefault(); actualizar({ texto: borrador }) }}
+            onSubmit={(e) => { e.preventDefault(); buscarConTexto(borrador) }}
             className="border-b border-border pb-7"
           >
             <div className="flex flex-wrap items-end gap-4">
@@ -402,17 +450,23 @@ export function Buscar() {
                 />
                 <span className="text-[12px] text-textSecondary mt-1">
                   ¿Tienes el número del proceso o el código SECOP? Pégalo y va directo al
-                  contrato.
+                  contrato. También entiende una fecha, un valor o una modalidad si los
+                  describes en la frase, y los convierte en filtros (asistido por IA).
                 </span>
               </div>
               <button
                 type="submit"
+                disabled={cargandoIA}
                 className="bg-textPrimary text-white px-6 py-2 text-[14px] font-semibold
-                           hover:bg-primary transition-colors"
+                           hover:bg-primary transition-colors disabled:opacity-60
+                           disabled:cursor-not-allowed"
               >
-                Buscar
+                {cargandoIA ? 'Interpretando…' : 'Buscar'}
               </button>
             </div>
+            {errorIA && (
+              <p className="mt-2 text-[12.5px] text-textSecondary">{errorIA}</p>
+            )}
 
             {/* Filtros avanzados: modalidad y tipo, plegados por defecto. Son de
                 uso experto y ensucian el flujo del ciudadano común, así que no
@@ -514,8 +568,11 @@ export function Buscar() {
                   contratista, un documento anexo, u otro campo del registro. Por defecto se
                   excluyen borradores y cancelados; en <strong>Filtros avanzados</strong> puedes
                   elegir uno o varios <strong>estados</strong> a la vez —incluidos esos, si es
-                  justo lo que quieres revisar—. Se muestran hasta <strong>{LIMITE}</strong>{' '}
-                  resultados. <strong>Haz clic en una fila</strong> para ver el detalle.
+                  justo lo que quieres revisar—. Si la frase describe una fecha, un valor o una
+                  modalidad, una IA los interpreta y los aplica como filtros —visibles y
+                  editables en Filtros avanzados—; nunca decide qué contrato mostrar, solo cómo
+                  buscarlo. Se muestran hasta <strong>{LIMITE}</strong> resultados.{' '}
+                  <strong>Haz clic en una fila</strong> para ver el detalle.
                 </Methodology>
 
                 <div className="mt-4">
