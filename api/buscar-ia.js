@@ -44,8 +44,14 @@ const ESQUEMA = {
       type: 'array',
       items: { type: 'string', enum: ESTADOS_CONTRATO },
       description:
-        'Estados del contrato mencionados de forma literal (p. ej. "cancelados", "en ejecución"). ' +
-        'No inferir un estado a partir de otra palabra ("vencidos" no es un estado). Vacío si no se menciona ninguno.',
+        'Uno o varios estados, cuando la persona pide algo específico dentro del ciclo de vida del ' +
+        'contrato (p. ej. "cancelados" → ["Cancelado"]; "que ya terminaron" → ["Cerrado", "terminado"]; ' +
+        '"vigentes o suspendidos" → ["En ejecución", "Suspendido"]). Contexto importante: esta búsqueda ' +
+        'YA excluye por defecto Borrador, Cancelado, "enviado Proveedor" y "En aprobación" —es decir, ' +
+        'todo lo que aparece sin este filtro ya está adjudicado y formalizado—. Por eso "adjudicados", ' +
+        '"otorgados" o "asignados" casi nunca necesitan marcar ningún estado: no son un estado de esta ' +
+        'lista, son la condición que ya cumple todo el universo de búsqueda. Vacío si no se pide nada ' +
+        'específico sobre el estado.',
     },
     valorMin: { type: 'integer', description: 'Valor mínimo en pesos colombianos (COP). 0 si no se menciona.' },
     valorMax: { type: 'integer', description: 'Valor máximo en pesos colombianos (COP). 0 si no se menciona.' },
