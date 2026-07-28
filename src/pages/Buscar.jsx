@@ -35,19 +35,25 @@ const norm = (s) => sinTildes(s || '').replace(/\s+/g, ' ').trim()
 // campos de Socrata, no solo los que se muestran—, así que una fila puede
 // coincidir por su sector, ciudad, modalidad o NIT sin que ningún texto visible
 // lo explique; para esos casos se avisa de forma genérica.
-function coincidenciaVisible(contrato, texto) {
-  const aguja = norm(texto)
-  if (!aguja) return null
-  if (norm(contrato.entityName).includes(aguja)) return null
-  if (norm(contrato.contractorName).includes(aguja)) return null
-  if (norm(contrato.department).includes(aguja)) return 'el departamento'
-  if (norm(contrato.description).includes(aguja)) return 'el objeto del contrato'
+function coincidenciaVisible(contrato, textos) {
+  const agujas = textos.map(norm).filter(Boolean)
+  if (!agujas.length) return null
+  // Con la ampliación semántica una fila puede aparecer por cualquiera de los
+  // términos; se busca la coincidencia de cualquiera de ellos.
+  const en = (campo) => agujas.some((a) => norm(contrato[campo]).includes(a))
+  if (en('entityName') || en('contractorName')) return null
+  if (en('department')) return 'el departamento'
+  if (en('description')) return 'el objeto del contrato'
   return 'otro campo del registro — ábrelo para ver el detalle'
 }
 
 // Parámetros de URL que le pertenecen al buscador. Todo lo demás en la URL es
 // de otro módulo (hoy, los filtros geográficos) y no se toca desde aquí.
-const PARAMS_BUSQUEDA = ['q', 'modalidad', 'tipo', 'estado', 'orden', 'modo', 'valorMin', 'valorMax', 'desde', 'hasta']
+const PARAMS_BUSQUEDA = ['q', 'amplia', 'modalidad', 'tipo', 'estado', 'orden', 'modo', 'valorMin', 'valorMax', 'desde', 'hasta']
+
+// Separador de la ampliación semántica en la URL. Barra vertical: no aparece
+// en nombres de contratos, así que no choca con los términos.
+const SEP_TERMINOS = '|'
 
 // Escribe los criterios del buscador en un URLSearchParams (lo muta). Pura, a
 // nivel de módulo, para que la comparta actualizar() y la búsqueda con IA —esta
@@ -57,6 +63,7 @@ const PARAMS_BUSQUEDA = ['q', 'modalidad', 'tipo', 'estado', 'orden', 'modo', 'v
 function escribirBusqueda(next, sig) {
   const propios = {
     q: sig.texto,
+    amplia: sig.terminos?.length ? sig.terminos.join(SEP_TERMINOS) : '',
     modalidad: sig.modalidad,
     tipo: sig.tipo,
     estado: sig.estados.length ? sig.estados.join(',') : '',
@@ -231,6 +238,7 @@ export function Buscar() {
 
   const criterios = useMemo(() => ({
     texto: params.get('q') || '',
+    terminos: (params.get('amplia') || '').split(SEP_TERMINOS).map((s) => s.trim()).filter(Boolean),
     modalidad: params.get('modalidad') || '',
     tipo: params.get('tipo') || '',
     estados: (params.get('estado') || '').split(',').filter(Boolean),
@@ -277,8 +285,10 @@ export function Buscar() {
 
   const buscarConTexto = async (texto) => {
     const limpio = texto.trim()
+    // Cada envío nuevo arranca de cero la ampliación semántica: si no la vuelve
+    // a poblar la IA, no debe arrastrar los sinónimos del intento anterior.
     if (!limpio || esIdentificador(limpio)) {
-      actualizar({ texto: limpio })
+      actualizar({ texto: limpio, terminos: [] })
       return
     }
     setCargandoIA(true)
@@ -296,6 +306,7 @@ export function Buscar() {
         ...criterios,
         modo,
         texto: filtros.texto || limpio,
+        terminos: filtros.terminos || [],
         modalidad: filtros.modalidad || '',
         tipo: filtros.tipo || '',
         estados: filtros.estados || [],
@@ -329,7 +340,7 @@ export function Buscar() {
       })
     } catch {
       setErrorIA('No se pudieron interpretar los filtros de la frase; se buscó el texto tal cual.')
-      actualizar({ texto: limpio })
+      actualizar({ texto: limpio, terminos: [] })
     } finally {
       setCargandoIA(false)
     }
@@ -353,6 +364,7 @@ export function Buscar() {
   const activa = hayBusqueda(criterios)
   const hayFiltros =
     criterios.modalidad || criterios.tipo || criterios.estados.length > 0 ||
+    criterios.terminos.length > 0 ||
     criterios.valorMin || criterios.valorMax || criterios.fechaDesde || criterios.fechaHasta
 
   const toggleEstado = (estado) => {
@@ -369,7 +381,7 @@ export function Buscar() {
   // en". El dedup es contra la lista del objeto con lo que haya de ella al momento.
   const contratosMain = (queryContratos.data?.contratos ?? []).map((c) => ({
     ...c,
-    coincideEn: coincidenciaVisible(c, criterios.texto),
+    coincideEn: coincidenciaVisible(c, [criterios.texto, ...criterios.terminos]),
   }))
   const idsMain = new Set(contratosMain.map((c) => c.id))
   const docUnicos = (queryDocumentos.data?.contratos ?? []).filter((c) => !idsMain.has(c.id))
@@ -505,6 +517,32 @@ export function Buscar() {
               <p className="mt-2 text-[12.5px] text-textSecondary">{errorIA}</p>
             )}
 
+            {/* Ampliación semántica: la IA sumó términos relacionados para no
+                perder contratos que nombran lo mismo con otras palabras. Se
+                muestran y se pueden quitar uno a uno —transparente y editable,
+                como el resto de los filtros—. */}
+            {criterios.terminos.length > 0 && (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+                  También busca
+                </span>
+                {criterios.terminos.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => actualizar({ terminos: criterios.terminos.filter((x) => x !== t) })}
+                    aria-label={`Quitar "${t}" de la búsqueda`}
+                    title="Quitar de la búsqueda"
+                    className="inline-flex items-center gap-1.5 border border-border px-2.5 py-1
+                               text-[12.5px] text-textPrimary hover:border-textPrimary transition-colors"
+                  >
+                    {t}
+                    <span aria-hidden className="text-textSecondary leading-none">×</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Filtros avanzados: modalidad y tipo, plegados por defecto. Son de
                 uso experto y ensucian el flujo del ciudadano común, así que no
                 están a la vista salvo que alguien los pida. */}
@@ -570,7 +608,7 @@ export function Buscar() {
                   {EJEMPLOS.map((t) => (
                     <button
                       key={t}
-                      onClick={() => actualizar({ texto: t, modalidad: '', tipo: '', estados: [] })}
+                      onClick={() => actualizar({ texto: t, terminos: [], modalidad: '', tipo: '', estados: [] })}
                       className="border border-border px-4 py-2 text-[14px] text-textPrimary
                                  hover:border-textPrimary hover:bg-muted transition-colors"
                     >
@@ -608,8 +646,10 @@ export function Buscar() {
                   justo lo que quieres revisar—. Si la frase describe una fecha, un valor, una
                   modalidad o un lugar, una IA los interpreta y los aplica como filtros —el lugar
                   en la barra de arriba, el resto en Filtros avanzados, todos visibles y
-                  editables—; nunca decide qué contrato mostrar, solo cómo buscarlo. Se muestran
-                  hasta <strong>{LIMITE}</strong> resultados.{' '}
+                  editables—; nunca decide qué contrato mostrar, solo cómo buscarlo. Cuando lo
+                  buscado es un concepto, la IA también <strong>amplía a términos relacionados</strong>{' '}
+                  («puente» además de «viaducto»), que aparecen como etiquetas quitables bajo la
+                  caja. Se muestran hasta <strong>{LIMITE}</strong> resultados.{' '}
                   <strong>Haz clic en una fila</strong> para ver el detalle.
                 </Methodology>
 

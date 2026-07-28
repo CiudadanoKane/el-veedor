@@ -6,7 +6,7 @@ import {
   soloContratosValidosSecop1, condicionEstadoSecop1, whereFromFiltrosSecop1,
   rangoNumerico, rangoFecha,
 } from '../lib/soql'
-import { variantesDeFrase, tieneTextoBuscable, palabrasDeFrase } from '../lib/acentos'
+import { variantesDeFrase, variantesReducidas, tieneTextoBuscable, palabrasDeFrase } from '../lib/acentos'
 import { adaptList as adaptListSecop2 } from '../adapters/secop2Adapter'
 import { adaptList as adaptListSecop1 } from '../adapters/secop1Adapter'
 import { MODALIDAD_A_SECOP1, TIPO_A_SECOP1, ESTADO_A_SECOP1 } from '../lib/catalogosSecop1'
@@ -68,7 +68,9 @@ export function esIdentificador(texto) {
 }
 
 export function hayBusqueda(criterios = {}) {
-  const conTexto = tieneTextoBuscable(criterios.texto || '')
+  const conTexto =
+    tieneTextoBuscable(criterios.texto || '') ||
+    (criterios.terminos || []).some((t) => tieneTextoBuscable(t))
   const conFiltro =
     Object.keys(CAMPOS_LISTA).some((k) => criterios[k]) || criterios.estados?.length > 0
   const conRango = !!(
@@ -105,35 +107,49 @@ function compararAdaptados(orden) {
       : (b.contractValue || 0) - (a.contractValue || 0)
 }
 
-// Corre las variantes de tilde de una frase contra un dataset, en paralelo, y
-// deduplica por el campo id indicado. Comparte la lógica entre SECOP I y II;
-// cada llamada trae su propio dataset, campos y cláusula WHERE ya armados.
-async function buscarPorVariantes(dataset, { texto, where, campoId, campos, orderBy, camposFrase }) {
-  const variantes = tieneTextoBuscable(texto) ? variantesDeFrase(texto) : []
-  if (!variantes.length) {
+// Corre una o varias frases contra un dataset y deduplica por el campo id.
+// Comparte la lógica entre SECOP I y II; cada llamada trae su propio dataset,
+// campos y cláusula WHERE ya armados.
+//
+// `frases` es la frase principal (índice 0) más su ampliación semántica: se
+// buscan todas y se unen —un OR de conceptos, "puente" además de "viaducto"—.
+// La principal se expande a todas sus escrituras de tilde (variantesDeFrase),
+// porque puede venir sin pasar por la IA (un enlace compartido, un ejemplo); los
+// sinónimos, que siempre vienen de la IA en ortografía estándar, usan solo las
+// variantes reducidas para no disparar decenas de consultas. Cada frase, si
+// tiene más de una palabra, exige contigüidad con caseless_contains sobre el
+// prefiltro de $q; con una sola palabra $q ya es preciso y se deja amplio para
+// que "hospital" alcance también a la entidad. Todas las consultas corren en
+// paralelo y se fusionan por id.
+async function buscarPorVariantes(dataset, { frases, where, campoId, campos, orderBy, camposFrase }) {
+  const fraseEn = (v) =>
+    '(' + camposFrase.map((c) => `caseless_contains(${c}, '${esc(v)}')`).join(' OR ') + ')'
+
+  const consultas = []
+  frases.forEach((frase, i) => {
+    if (!tieneTextoBuscable(frase)) return
+    const esFrase = palabrasDeFrase(frase).length > 1
+    const variantes = i === 0 ? variantesDeFrase(frase) : variantesReducidas(frase)
+    for (const v of variantes) {
+      consultas.push(
+        socrataBusqueda(dataset, {
+          q: v,
+          where: esFrase ? `${where} AND ${fraseEn(v)}` : where,
+          select: campos,
+          order: orderBy,
+          limit: LIMITE + 1,
+        }),
+      )
+    }
+  })
+
+  // Sin ninguna frase buscable: consulta abierta por el WHERE (filtros/rango).
+  if (!consultas.length) {
     const filas = await socrataBusqueda(dataset, { where, select: campos, order: orderBy, limit: LIMITE + 1 })
     return { filas, hayMas: filas.length > LIMITE }
   }
 
-  // Con más de una palabra se exige la frase contigua: el $q prefiltra por el
-  // índice y el caseless_contains descarta los registros donde las palabras
-  // solo aparecen sueltas. Con una sola palabra no hace falta —$q ya es
-  // preciso— y se deja amplio para que "hospital" alcance también a la entidad.
-  const esFrase = palabrasDeFrase(texto).length > 1
-  const fraseEn = (v) =>
-    '(' + camposFrase.map((c) => `caseless_contains(${c}, '${esc(v)}')`).join(' OR ') + ')'
-
-  const respuestas = await Promise.all(
-    variantes.map((v) =>
-      socrataBusqueda(dataset, {
-        q: v,
-        where: esFrase ? `${where} AND ${fraseEn(v)}` : where,
-        select: campos,
-        order: orderBy,
-        limit: LIMITE + 1,
-      }),
-    ),
-  )
+  const respuestas = await Promise.all(consultas)
   const unicos = new Map()
   for (const filas of respuestas) {
     for (const f of filas) unicos.set(f[campoId], f)
@@ -172,6 +188,9 @@ async function buscarPorVariantes(dataset, { texto, where, campoId, campos, orde
 // devolver ceros falsos ni resultados mal filtrados. Ver ROADMAP.md sección 8.
 export function useBusqueda(criterios = {}, filtrosGeo = {}) {
   const { texto = '', orden = 'valor' } = criterios
+  // Frase principal + ampliación semántica (sinónimos), todas buscables: es el
+  // OR de conceptos que amplía el alcance sin perder la precisión de frase.
+  const frases = [texto, ...(criterios.terminos || [])].filter((f) => tieneTextoBuscable(f))
   const orderBy = (ORDENES[orden] || ORDENES.valor).soql
   const orderBySecop1 = ORDENES_SECOP1[orden] || ORDENES_SECOP1.valor
   const activa = hayBusqueda(criterios)
@@ -241,18 +260,18 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
       if (tipoSecop1) partes1.push(`tipo_de_contrato = '${esc(tipoSecop1)}'`)
       const where1 = whereFromFiltrosSecop1(filtrosGeo, partes1).join(' AND ')
 
-      const consultaSecop2 = tieneTextoBuscable(texto)
+      const consultaSecop2 = frases.length
         ? buscarPorVariantes(DS, {
-            texto, where: where2, campoId: 'id_contrato', campos: CONTRACT_FIELDS,
+            frases, where: where2, campoId: 'id_contrato', campos: CONTRACT_FIELDS,
             orderBy, camposFrase: CAMPOS_FRASE,
           })
         : socrataBusqueda(DS, { where: where2, select: CONTRACT_FIELDS, order: orderBy, limit: LIMITE + 1 })
             .then((filas) => ({ filas, hayMas: filas.length > LIMITE }))
 
       const consultaSecop1 = incluirSecop1
-        ? (tieneTextoBuscable(texto)
+        ? (frases.length
             ? buscarPorVariantes(DS1, {
-                texto, where: where1, campoId: 'uid', campos: CONTRACT_FIELDS_SECOP1,
+                frases, where: where1, campoId: 'uid', campos: CONTRACT_FIELDS_SECOP1,
                 orderBy: orderBySecop1, camposFrase: CAMPOS_FRASE_SECOP1,
               })
             : socrataBusqueda(DS1, { where: where1, select: CONTRACT_FIELDS_SECOP1, order: orderBySecop1, limit: LIMITE + 1 })

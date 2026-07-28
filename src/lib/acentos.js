@@ -86,6 +86,21 @@ export function variantesDeFrase(texto) {
   )
 }
 
+// Variantes MÍNIMAS para la ampliación semántica (los sinónimos que sugiere la
+// IA). A diferencia de variantesDeFrase, que prueba todas las escrituras de
+// tilde posibles porque no sabe dónde va el acento, aquí la IA ya entrega el
+// término en ortografía estándar: bastan dos formas —sin tildes y con las
+// tildes tal cual— para cubrir las dos escrituras que aparecen en los datos.
+// El cartesiano completo, multiplicado por varios sinónimos, dispararía decenas
+// de consultas por búsqueda; estas dos por término lo mantienen acotado sin
+// perder alcance real (las formas que el cartesiano añade no son palabras y no
+// coinciden con nada).
+export function variantesReducidas(texto) {
+  const conAcentos = String(texto).toLowerCase().replace(/\s+/g, ' ').trim()
+  const sin = sinTildes(conAcentos)
+  return sin === conAcentos ? [sin] : [sin, conAcentos]
+}
+
 // Condición SoQL que busca la frase (con cualquier escritura de tildes) dentro
 // de uno o más campos.
 export function condicionBusqueda(campos, texto) {

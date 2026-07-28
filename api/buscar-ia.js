@@ -30,6 +30,21 @@ const ESQUEMA = {
         '(nunca vacío solo por ser corta). Vacío únicamente si, tras quitar todo lo anterior, no sobra ' +
         'ninguna palabra específica sobre qué se contrata.',
     },
+    terminos: {
+      type: 'array',
+      items: { type: 'string' },
+      description:
+        'Ampliación semántica: hasta 6 frases RELACIONADAS con lo que se busca, para encontrar también ' +
+        'contratos que nombran lo mismo con otras palabras. La búsqueda las une con OR junto a "texto". ' +
+        'Ejemplo: para "reparación de estructura vial", texto="estructura vial" y ' +
+        'terminos=["puente", "viaducto", "paso elevado", "pontón", "box coulvert"]. Reglas: (1) NO ' +
+        'repitas "texto". (2) Solo términos ESPECÍFICOS y discriminantes que un contrato usaría para el ' +
+        'mismo concepto —sinónimos, tipos concretos, el término técnico del sector—; nada genérico que ' +
+        'traiga ruido ("obra", "contrato", "servicio", "infraestructura" a secas NO). (3) Cada término ' +
+        'es una frase corta, como "texto". (4) Deja el arreglo VACÍO cuando la consulta ya es específica ' +
+        '(un nombre propio, un lugar exacto, un número) o cuando no hay sinónimos realmente útiles: ' +
+        'ampliar de más mete ruido, así que ante la duda, no amplíes.',
+    },
     modalidad: {
       type: 'string',
       enum: [...MODALIDADES, ''],
@@ -73,7 +88,7 @@ const ESQUEMA = {
     fechaDesde: { type: 'string', description: 'Fecha de firma desde, formato YYYY-MM-DD. Cadena vacía si no se menciona.' },
     fechaHasta: { type: 'string', description: 'Fecha de firma hasta, formato YYYY-MM-DD. Cadena vacía si no se menciona.' },
   },
-  required: ['texto', 'modalidad', 'tipo', 'estados', 'departamento', 'ciudad', 'valorMin', 'valorMax', 'fechaDesde', 'fechaHasta'],
+  required: ['texto', 'terminos', 'modalidad', 'tipo', 'estados', 'departamento', 'ciudad', 'valorMin', 'valorMax', 'fechaDesde', 'fechaHasta'],
   additionalProperties: false,
 }
 
@@ -121,6 +136,21 @@ export default async function handler(req, res) {
     if (filtros.modalidad && !MODALIDADES.includes(filtros.modalidad)) filtros.modalidad = ''
     if (filtros.tipo && !TIPOS_CONTRATO.includes(filtros.tipo)) filtros.tipo = ''
     filtros.estados = (filtros.estados || []).filter((e) => ESTADOS_CONTRATO.includes(e))
+
+    // Ampliación semántica: se sanea (tope duro, sin vacíos, sin repetir el
+    // texto principal ni entre sí, comparando sin tildes ni mayúsculas). El
+    // tope defensivo va por si el modelo se pasa del 6 que pide el esquema.
+    const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+    const vistos = new Set([norm(filtros.texto)])
+    filtros.terminos = (Array.isArray(filtros.terminos) ? filtros.terminos : [])
+      .map((t) => String(t || '').trim())
+      .filter((t) => {
+        const n = norm(t)
+        if (!n || vistos.has(n)) return false
+        vistos.add(n)
+        return true
+      })
+      .slice(0, 6)
 
     res.status(200).json(filtros)
   } catch (err) {
