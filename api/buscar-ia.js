@@ -21,11 +21,11 @@ const ESQUEMA = {
         '—"pintura", "arreglo", "contrato de", "mejoramiento"—: para "contrato de pintura de la avenida ' +
         'circunvalar" el resultado correcto es "avenida circunvalar", no la frase completa. La búsqueda ' +
         'exige que las palabras de "texto" queden JUNTAS y en ese orden, así que menos es mejor —no ' +
-        'debe llevar fechas, valores, modalidad ni estado, que van en los otros campos—. No incluyas ' +
-        'un departamento o una ciudad sola (p. ej. "Bogotá", "Antioquia"): no hay campo de geografía ' +
-        'aquí y son demasiado genéricos como frase —aparecen en miles de registros—, así que sobran en ' +
-        'vez de ayudar. Un lugar más específico dentro de la ciudad —una calle, avenida, barrio o ' +
-        'corregimiento— sí puede ir, porque identifica el contrato en vez de diluirlo. Si la consulta ' +
+        'debe llevar fechas, valores, modalidad ni estado, que van en los otros campos—. Una ciudad o ' +
+        'departamento (p. ej. "Barranquilla", "Antioquia") va en sus propios campos (ciudad, ' +
+        'departamento), NO en "texto": ahí serían demasiado genéricos como frase. Un lugar más ' +
+        'específico dentro de la ciudad —una calle, avenida, barrio o corregimiento— sí puede ir en ' +
+        '"texto", porque identifica el contrato en vez de diluirlo. Si la consulta ' +
         'no tiene ningún otro filtro que extraer, "texto" es lo que quede tras corregir y depurar ' +
         '(nunca vacío solo por ser corta). Vacío únicamente si, tras quitar todo lo anterior, no sobra ' +
         'ninguna palabra específica sobre qué se contrata.',
@@ -53,12 +53,27 @@ const ESQUEMA = {
         'lista, son la condición que ya cumple todo el universo de búsqueda. Vacío si no se pide nada ' +
         'específico sobre el estado.',
     },
+    departamento: {
+      type: 'string',
+      description:
+        'Departamento de Colombia mencionado, en su nombre estándar (p. ej. "Valle del Cauca", ' +
+        '"Atlántico", "Norte de Santander"), corrigiendo errores de tipeo. Si la persona solo nombra ' +
+        'una ciudad y no el departamento, deja esto vacío —la app deduce el departamento a partir de ' +
+        'la ciudad—. Vacío si no se menciona ningún lugar.',
+    },
+    ciudad: {
+      type: 'string',
+      description:
+        'Ciudad o municipio de Colombia mencionado, en su nombre estándar y corrigiendo errores de ' +
+        'tipeo (p. ej. "barranqilla" → "Barranquilla", "medallo" → "Medellín"). Vacío si no se ' +
+        'menciona ninguna ciudad.',
+    },
     valorMin: { type: 'integer', description: 'Valor mínimo en pesos colombianos (COP). 0 si no se menciona.' },
     valorMax: { type: 'integer', description: 'Valor máximo en pesos colombianos (COP). 0 si no se menciona.' },
     fechaDesde: { type: 'string', description: 'Fecha de firma desde, formato YYYY-MM-DD. Cadena vacía si no se menciona.' },
     fechaHasta: { type: 'string', description: 'Fecha de firma hasta, formato YYYY-MM-DD. Cadena vacía si no se menciona.' },
   },
-  required: ['texto', 'modalidad', 'tipo', 'estados', 'valorMin', 'valorMax', 'fechaDesde', 'fechaHasta'],
+  required: ['texto', 'modalidad', 'tipo', 'estados', 'departamento', 'ciudad', 'valorMin', 'valorMax', 'fechaDesde', 'fechaHasta'],
   additionalProperties: false,
 }
 

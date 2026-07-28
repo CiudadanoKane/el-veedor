@@ -22,6 +22,14 @@ function useGeoRaw() {
   })
 }
 
+// Payload geográfico completo (departamentos + ciudades por departamento).
+// Lo usa la búsqueda con IA para validar contra el catálogo real el lugar que
+// extrae de la frase. Comparte queryKey con useDepartamentos/useCiudades, así
+// que no dispara una consulta extra: reusa la que ya cargó GlobalFilters.
+export function useGeo() {
+  return useGeoRaw()
+}
+
 // Lista de departamentos.
 export function useDepartamentos() {
   const geo = useGeoRaw()

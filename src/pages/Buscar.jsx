@@ -13,10 +13,12 @@ import { BuscadorEntidad } from '../components/ui/BuscadorEntidad'
 import { useBusquedaDocumentos } from '../hooks/useBusquedaDocumentos'
 import { useDirectorioEntidades } from '../hooks/useDirectorioEntidades'
 import { useBusqueda, hayBusqueda, ORDENES, LIMITE, esIdentificador } from '../hooks/useBusqueda'
+import { useGeo } from '../hooks/useGeoOptions'
 import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO } from '../lib/catalogos'
 import { ESTADOS_SOLO_SECOP1 } from '../lib/catalogosSecop1'
 import { DOCUMENTOS_SIN_IDENTIDAD } from '../lib/identidad'
 import { sinTildes } from '../lib/acentos'
+import { resolverLugar } from '../lib/geoResolver'
 import { formatCOP, formatDate } from '../lib/formatters'
 
 // Normaliza texto para comparar sin importar tildes ni espacios de más.
@@ -46,6 +48,30 @@ function coincidenciaVisible(contrato, texto) {
 // Parámetros de URL que le pertenecen al buscador. Todo lo demás en la URL es
 // de otro módulo (hoy, los filtros geográficos) y no se toca desde aquí.
 const PARAMS_BUSQUEDA = ['q', 'modalidad', 'tipo', 'estado', 'orden', 'modo', 'valorMin', 'valorMax', 'desde', 'hasta']
+
+// Escribe los criterios del buscador en un URLSearchParams (lo muta). Pura, a
+// nivel de módulo, para que la comparta actualizar() y la búsqueda con IA —esta
+// última necesita tocar además los parámetros geográficos en el MISMO update,
+// porque dos setParams seguidos no se componen de forma fiable y uno pisaría al
+// otro.
+function escribirBusqueda(next, sig) {
+  const propios = {
+    q: sig.texto,
+    modalidad: sig.modalidad,
+    tipo: sig.tipo,
+    estado: sig.estados.length ? sig.estados.join(',') : '',
+    orden: sig.orden === 'valor' ? '' : sig.orden,
+    modo: sig.modo === 'contratos' ? '' : sig.modo,
+    valorMin: sig.valorMin || '',
+    valorMax: sig.valorMax || '',
+    desde: sig.fechaDesde || '',
+    hasta: sig.fechaHasta || '',
+  }
+  for (const [k, v] of Object.entries(propios)) {
+    if (v) next.set(k, v)
+    else next.delete(k)
+  }
+}
 
 // Nivel superior: buscar contratos por palabra, o encontrar un contratista o
 // entidad por nombre (que se buscan mejor por nombre que por palabra suelta).
@@ -199,6 +225,10 @@ export function Buscar() {
   // buscador para que ya esté listo si cambia a la pestaña Entidades.
   useDirectorioEntidades()
 
+  // Catálogo geográfico (ya lo cargó GlobalFilters): la búsqueda con IA valida
+  // contra él el lugar que extrae de la frase, para no inventar un municipio.
+  const geo = useGeo()
+
   const criterios = useMemo(() => ({
     texto: params.get('q') || '',
     modalidad: params.get('modalidad') || '',
@@ -227,35 +257,21 @@ export function Buscar() {
   // filtros de departamento y ciudad viven en esos mismos parámetros).
   const actualizar = (cambios) => {
     const sig = { ...criterios, modo, ...cambios }
-    const propios = {
-      q: sig.texto,
-      modalidad: sig.modalidad,
-      tipo: sig.tipo,
-      estado: sig.estados.length ? sig.estados.join(',') : '',
-      orden: sig.orden === 'valor' ? '' : sig.orden,
-      modo: sig.modo === 'contratos' ? '' : sig.modo,
-      valorMin: sig.valorMin || '',
-      valorMax: sig.valorMax || '',
-      desde: sig.fechaDesde || '',
-      hasta: sig.fechaHasta || '',
-    }
     setParams((prev) => {
       const next = new URLSearchParams(prev)
-      for (const [k, v] of Object.entries(propios)) {
-        if (v) next.set(k, v)
-        else next.delete(k)
-      }
+      escribirBusqueda(next, sig)
       return next
     })
   }
 
   // Búsqueda con IA, integrada en la misma caja de texto —no es un modo
-  // aparte—. Si la frase describe un filtro (fecha, valor, modalidad,
-  // estado), la IA lo extrae y lo aplica junto con lo que quede de texto
+  // aparte—. Si la frase describe un filtro (fecha, valor, modalidad, estado o
+  // un lugar), la IA lo extrae y lo aplica junto con lo que quede de texto
   // libre; abre "Filtros avanzados" para que quede visible y editable, nunca
-  // oculto. Los identificadores (número de proceso, código SECOP) se saltan
-  // la IA: ya tienen una ruta exacta e instantánea. Si la llamada falla, se
-  // degrada a buscar la frase tal cual —nunca bloquea la búsqueda—.
+  // oculto. La geografía va al filtro global (departamento/ciudad), validada
+  // contra el catálogo real. Los identificadores (número de proceso, código
+  // SECOP) se saltan la IA: ya tienen una ruta exacta e instantánea. Si la
+  // llamada falla, se degrada a buscar la frase tal cual —nunca la bloquea—.
   const [cargandoIA, setCargandoIA] = useState(false)
   const [errorIA, setErrorIA] = useState('')
 
@@ -275,11 +291,10 @@ export function Buscar() {
       })
       if (!res.ok) throw new Error('fallo la traducción')
       const filtros = await res.json()
-      const huboFiltros =
-        filtros.modalidad || filtros.tipo || filtros.estados?.length ||
-        filtros.valorMin || filtros.valorMax || filtros.fechaDesde || filtros.fechaHasta
-      if (huboFiltros) setAvanzados(true)
-      actualizar({
+
+      const sig = {
+        ...criterios,
+        modo,
         texto: filtros.texto || limpio,
         modalidad: filtros.modalidad || '',
         tipo: filtros.tipo || '',
@@ -288,6 +303,29 @@ export function Buscar() {
         valorMax: filtros.valorMax ? String(filtros.valorMax) : '',
         fechaDesde: filtros.fechaDesde || '',
         fechaHasta: filtros.fechaHasta || '',
+      }
+      // El lugar se valida contra el catálogo real (no se inventa un municipio).
+      const lugar = resolverLugar(geo.data, {
+        departamento: filtros.departamento,
+        ciudad: filtros.ciudad,
+      })
+
+      const huboAvanzados =
+        sig.modalidad || sig.tipo || sig.estados.length ||
+        sig.valorMin || sig.valorMax || sig.fechaDesde || sig.fechaHasta
+      if (huboAvanzados) setAvanzados(true)
+
+      // Búsqueda y geografía en el MISMO update: los filtros geo viven en la
+      // URL global (departamento/ciudad) y dos setParams seguidos no componen.
+      setParams((prev) => {
+        const next = new URLSearchParams(prev)
+        escribirBusqueda(next, sig)
+        if (lugar.department) {
+          next.set('departamento', lugar.department)
+          if (lugar.city) next.set('ciudad', lugar.city)
+          else next.delete('ciudad')
+        }
+        return next
       })
     } catch {
       setErrorIA('No se pudieron interpretar los filtros de la frase; se buscó el texto tal cual.')
@@ -450,8 +488,8 @@ export function Buscar() {
                 />
                 <span className="text-[12px] text-textSecondary mt-1">
                   ¿Tienes el número del proceso o el código SECOP? Pégalo y va directo al
-                  contrato. También entiende una fecha, un valor o una modalidad si los
-                  describes en la frase, y los convierte en filtros (asistido por IA).
+                  contrato. También entiende una fecha, un valor, una modalidad o un lugar si
+                  los describes en la frase, y los convierte en filtros (asistido por IA).
                 </span>
               </div>
               <button
@@ -568,10 +606,11 @@ export function Buscar() {
                   contratista, un documento anexo, u otro campo del registro. Por defecto se
                   excluyen borradores y cancelados; en <strong>Filtros avanzados</strong> puedes
                   elegir uno o varios <strong>estados</strong> a la vez —incluidos esos, si es
-                  justo lo que quieres revisar—. Si la frase describe una fecha, un valor o una
-                  modalidad, una IA los interpreta y los aplica como filtros —visibles y
-                  editables en Filtros avanzados—; nunca decide qué contrato mostrar, solo cómo
-                  buscarlo. Se muestran hasta <strong>{LIMITE}</strong> resultados.{' '}
+                  justo lo que quieres revisar—. Si la frase describe una fecha, un valor, una
+                  modalidad o un lugar, una IA los interpreta y los aplica como filtros —el lugar
+                  en la barra de arriba, el resto en Filtros avanzados, todos visibles y
+                  editables—; nunca decide qué contrato mostrar, solo cómo buscarlo. Se muestran
+                  hasta <strong>{LIMITE}</strong> resultados.{' '}
                   <strong>Haz clic en una fila</strong> para ver el detalle.
                 </Methodology>
 
