@@ -14,13 +14,21 @@ const ESQUEMA = {
     texto: {
       type: 'string',
       description:
-        'Frase corta sobre QUÉ se contrata (el objeto), la que probablemente aparece tal cual en el ' +
-        'texto de un contrato real —p. ej. "alimentación escolar", no "alimentación escolar Bogotá ' +
-        '2024"—. La búsqueda exige que estas palabras aparezcan JUNTAS y en este orden, así que no ' +
-        'debe llevar lugares, fechas, valores, modalidad ni estado —esos van en los otros campos—. ' +
-        'Si la consulta no tiene ningún otro filtro que extraer, "texto" es la consulta completa tal ' +
-        'cual (nunca queda vacío solo porque es una sola palabra o una frase corta). Vacío solo cuando, ' +
-        'después de quitar fecha, valor, modalidad y estado, no sobra nada más sobre qué se contrata.',
+        'Frase corta con las palabras que MÁS probablemente aparecen tal cual en el objeto de un ' +
+        'contrato real —normalmente el nombre propio de una obra, un lugar o un programa—. Corrige ' +
+        'errores de ortografía a la forma estándar en español (p. ej. "cirvuncalar" → "circunvalar"). ' +
+        'Descarta palabras genéricas de tarea que casi nunca aparecen junto al nombre específico ' +
+        '—"pintura", "arreglo", "contrato de", "mejoramiento"—: para "contrato de pintura de la avenida ' +
+        'circunvalar" el resultado correcto es "avenida circunvalar", no la frase completa. La búsqueda ' +
+        'exige que las palabras de "texto" queden JUNTAS y en ese orden, así que menos es mejor —no ' +
+        'debe llevar fechas, valores, modalidad ni estado, que van en los otros campos—. No incluyas ' +
+        'un departamento o una ciudad sola (p. ej. "Bogotá", "Antioquia"): no hay campo de geografía ' +
+        'aquí y son demasiado genéricos como frase —aparecen en miles de registros—, así que sobran en ' +
+        'vez de ayudar. Un lugar más específico dentro de la ciudad —una calle, avenida, barrio o ' +
+        'corregimiento— sí puede ir, porque identifica el contrato en vez de diluirlo. Si la consulta ' +
+        'no tiene ningún otro filtro que extraer, "texto" es lo que quede tras corregir y depurar ' +
+        '(nunca vacío solo por ser corta). Vacío únicamente si, tras quitar todo lo anterior, no sobra ' +
+        'ninguna palabra específica sobre qué se contrata.',
     },
     modalidad: {
       type: 'string',
@@ -75,8 +83,10 @@ export default async function handler(req, res) {
       max_tokens: 1024,
       system:
         `Traduces una búsqueda en lenguaje natural sobre contratación pública colombiana (SECOP II) ` +
-        `a un objeto de filtros. Hoy es ${hoy}. Extrae solo lo que la persona pidió explícitamente — ` +
-        `no inventes ni asumas filtros que no están en el texto.`,
+        `a un objeto de filtros. Hoy es ${hoy}. Quien escribe puede usar lenguaje coloquial, cometer ` +
+        `errores de tipeo o mezclar la tarea con el lugar —tu trabajo es entenderlo, no repetirlo tal ` +
+        `cual—. Extrae solo lo que la persona pidió explícitamente; no inventes ni asumas filtros que ` +
+        `no están en el texto.`,
       output_config: { format: { type: 'json_schema', schema: ESQUEMA } },
       messages: [{ role: 'user', content: consulta }],
     })
