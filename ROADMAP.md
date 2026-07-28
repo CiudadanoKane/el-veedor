@@ -636,21 +636,48 @@ mismo resultado; el `case` se deja mínimo.
 9. Botón de ayuda: al activarlo, hover/clic sobre cifras, gráficos y tablas
    (p. ej. cada tarjeta del Panorama) muestra una explicación en lenguaje llano
    —qué es y por qué importa— para el público general. Idea, sin diseñar aún.
-10. Asistencia de IA en el Buscador — **en curso (jul 2026)**. Enfoque elegido:
-    **lenguaje natural → filtros** (opción A), el más seguro (cero alucinación: la
-    IA solo traduce a filtros, los datos salen de SECOP) y de mayor valor.
-    Decisiones: modelo **Haiku 4.5**; v1 incluye rangos de valor y fecha.
-    - ✅ **Hecho (prerrequisito):** filtros de rango de valor y fecha en el
-      buscador (commit de "filtros de rango"). Ver `rangoNumerico`/`rangoFecha` en
-      `soql.js`.
-    - ⏳ **Pendiente de la clave `ANTHROPIC_API_KEY`:** función serverless
-      `api/buscar-ia.js` (structured outputs con el esquema de filtros + catálogos
-      reales, validación server-side contra catálogos) + integración en el
-      Buscador (entrada en lenguaje natural → aplica filtros a la URL → búsqueda
-      normal; filtros aplicados visibles y editables). El usuario debe crear
-      `ANTHROPIC_API_KEY` en Vercel (Production, Sensitive) y en un `.env` local +
-      `vercel dev` para probar. Sería la **primera dependencia de LLM** del
-      proyecto (`@anthropic-ai/sdk`).
+10. ~~Asistencia de IA en el Buscador~~ ✅ hecho (jul 2026) — enfoque **lenguaje
+    natural → filtros**, integrado en la misma caja "Palabra o frase" (no es un
+    modo aparte). Un endpoint serverless (`api/buscar-ia.js`) usa **Haiku 4.5**
+    con structured outputs (`output_config.format` + JSON Schema con enum contra
+    los catálogos reales de modalidad/tipo/estado) para traducir la frase a
+    filtros: texto de búsqueda, modalidad, tipo, uno o varios estados, valor y
+    fecha. **Cero alucinación de datos** —el modelo solo elige entre valores
+    reales de SECOP o palabras libres; los contratos siempre salen de la
+    consulta normal a Socrata—, con revalidación server-side contra el catálogo
+    además del enum del esquema. Los identificadores (número de proceso, código
+    SECOP) se saltan la IA —ya tienen una ruta exacta—. Si la llamada falla, se
+    degrada a buscar la frase tal cual, sin bloquear la búsqueda.
+
+    Tres hallazgos de probar contra la API real, corregidos:
+    - **Frase completa vs. lo distintivo.** Exigir el texto tal cual como frase
+      contigua (heredado del fix de "calle 72", punto 3) fallaba con lenguaje
+      coloquial: "contrato de pintura de la avenida circunvalar" daba **0
+      resultados**, porque el objeto oficial rara vez repite la palabra de tarea
+      ("pintura") junto al lugar. Se enseñó a la IA a descartar palabras
+      genéricas de tarea y quedarse con lo específico —"avenida circunvalar"
+      sola sí encuentra los contratos reales—, y a no incluir ciudades o
+      departamentos solos (demasiado genéricos como frase).
+    - **Corrección ortográfica.** "cirvuncalar" → "circunvalar", parte del mismo
+      ajuste — verificado de punta a punta contra Socrata (variantes de tilde +
+      `$q` + frase contigua).
+    - **Estados inventados por asociación.** "adjudicados" se traducía a
+      `estados: ["Aprobado"]`, un estado técnico distinto y mucho más angosto —
+      contradiciendo la propia instrucción de no inferir estados por palabras
+      parecidas. Se corrigió dándole a la IA el hecho de dominio correcto: la
+      búsqueda ya excluye Borrador/Cancelado/"enviado Proveedor"/"En aprobación"
+      por defecto, así que todo lo que aparece ya está adjudicado —"adjudicado"
+      no es un estado de esta lista, es la condición que ya cumple todo el
+      universo de búsqueda—. El campo admite varios estados a la vez cuando
+      corresponde (ej. "que ya terminaron o están vigentes" →
+      `["Cerrado", "terminado", "En ejecución"]`).
+
+    **Pendiente, encontrado en las mismas pruebas:** el esquema no tiene campo
+    geográfico. Si alguien pide "...en Barranquilla", la IA descarta la ciudad
+    en vez de aplicarla —la búsqueda queda nacional, sin avisar—. La vía más
+    directa es ampliar el esquema para que la IA use el selector de
+    departamento/ciudad que ya existe (`useFilters().setFilter`); queda para
+    retomar.
 11. ~~Limitar el ancho del gráfico **"Evolución de la contratación"**~~ ✅ hecho
     (jul 2026) — `max-w-[820px]` en el contenedor, igual criterio que el tope del
     mapa.
