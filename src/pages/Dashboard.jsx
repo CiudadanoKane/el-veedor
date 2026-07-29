@@ -9,6 +9,7 @@ import { ListaBarra } from '../components/ui/ListaBarra'
 import { Segmented } from '../components/ui/Segmented'
 import { EvolucionMensual } from '../components/ui/EvolucionMensual'
 import { MapaColombia } from '../components/ui/MapaColombia'
+import { ComparacionCiudades } from '../components/ui/ComparacionCiudades'
 import { Concentracion } from '../components/ui/Concentracion'
 import { useFilters } from '../context/FiltersContext'
 import { useDashboardStats } from '../hooks/useDashboard'
@@ -679,6 +680,7 @@ export function Dashboard() {
           geografía y tiempo */}
       <Concentracion filters={filters} contratistas={contratistasActores} tieneSecop1={tieneSecop1} />
       <MapaColombia />
+      <ComparacionCiudades />
       <EvolucionMensual filters={filters} />
     </div>
   )

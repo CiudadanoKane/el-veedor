@@ -23,6 +23,9 @@ deploy en Vercel.
 - **Guía rápida (tour)** — recorrido a medida con foco tipo spotlight, sin
   librería; arranca en la primera visita y se reabre desde el pie de la barra
   lateral
+  - **Pendiente (bug):** en **celular**, el recuadro del tour inicial se ve
+    **cortado a la derecha** (se sale del viewport). Ajustar el ancho/posición
+    del tooltip para que quepa en pantallas angostas.
 
 ---
 
@@ -632,7 +635,9 @@ mismo resultado; el `case` se deja mínimo.
    precálculo. Ver sección abajo.
 7. ~~Selectores geográficos inline en Evolución y Concentración~~ ✅ (jul 2026)
    — controlan el filtro global (mueven toda la página). Ver sección abajo.
-8. Comparación de ciudades (opción B del análisis) — pendiente. Ver sección abajo.
+8. ~~Comparación de ciudades (opción B del análisis)~~ ✅ (jul 2026) — ranking de
+   las ~45 ciudades más pobladas por métrica, en Total y per cápita, en el
+   Panorama bajo el mapa. Ver sección abajo.
 9. Botón de ayuda: al activarlo, hover/clic sobre cifras, gráficos y tablas
    (p. ej. cada tarjeta del Panorama) muestra una explicación en lenguaje llano
    —qué es y por qué importa— para el público general. Idea, sin diseñar aún.
@@ -813,24 +818,48 @@ patrones, no acusa"; publicar un número único que ordena departamentos por
 mostrar los componentes por separado y dejar que el lector los lea, o hacer la
 ponderación explícita y ajustable.
 
-### Comparación de ciudades (opción B) — pendiente
+### HECHO ✅ — Comparación de ciudades (opción B)
 
-El mapa (item 5) quedó hecho, incluida la separación nacional/territorial. Lo que
-sigue del análisis original es la **comparación de ciudades**: ranking/barras de
-las ciudades más grandes por métrica, en Total y per cápita, filtrando a
-`orden = Territorial` para que las sedes nacionales no las inflen. El campo
-`ciudad` está limpio para las grandes (Bogotá, Cali, Medellín…), así que un
-`GROUP BY ciudad` sirve. Faltaría población DANE de ~50 ciudades (tabla chica,
-como `poblacion.js`).
+Ranking de barras en el Panorama, **bajo el mapa** (`ComparacionCiudades.jsx`).
+Compara las **~45 ciudades más pobladas** del país por métrica —Valor, Nº de
+contratos, Plazo vencido, Sin competencia, Con prórroga— en **Total** y **per
+cápita**. Un solo `GROUP BY ciudad, orden` (hook `useComparacionCiudades`, ~22 s,
+cacheado 30 min); el campo `ciudad` está limpio para las grandes. No incluye
+Adiciones (ese dato se precalcula por depto/entidad, no por ciudad).
+
+Decisiones de diseño:
+- **Conjunto fijo de ~45 ciudades** (las de `poblacionCiudades.js`), aplicado a
+  TODAS las métricas. Sin ese tope, una métrica de **tasa** (p. ej. plazo
+  vencido) la copaban municipios diminutos que apenas pasan el piso de muestra
+  (Arjona, Sácama…), no "las ciudades grandes". Con el tope, las tasas comparan
+  las mismas grandes ciudades (Maicao, Barrancabermeja, Girón…).
+- **Población municipal DANE 2023** (`poblacionCiudades.js`), la última tabla
+  municipal que se pudo **verificar de punta a punta**; el mapa por departamento
+  usa 2025. Cada vista declara su año. Solo se listan ciudades con población
+  verificada (nunca se inventa un denominador).
+- **Por defecto "Solo locales"** (territorial): a nivel ciudad "Todas" carga a
+  Bogotá con la contratación nacional de medio país (todas las entidades
+  nacionales tienen sede allí). Toggle "Todas" disponible, con su advertencia.
+- Barras proporcionales a la **escala del grupo** (no a la suma: comparar, no
+  repartir); la dominante satura y su cifra real va al lado, como el mapa.
+
+El **hallazgo** que motivó esto queda a la vista en per cápita/Valor: **Tunja
+(~$48 M/hab) y Yopal (~$25 M/hab)** encabezan —capitales chicas que contratan
+para todo el departamento desde la sede—, mientras **Bogotá cae a ~$9,6 M/hab**
+(media tabla). Es exactamente el caso que hay que **declarar**: a nivel ciudad
+`orden = Territorial` es menos perfecto que a nivel departamento, porque una
+**gobernación** tiene sede en la capital pero gasta en todo el territorio (nota
+visible bajo el selector; memoria `secop2-geografia-es-sede`).
 
 Un **mapa municipal** (zoom real, ~1.100 polígonos + población municipal +
-emparejar por nombre) se evaluó y se **descartó por ahora**: mucho trabajo y el
-mapa quedaría dominado por municipios diminutos con per cápita ruidoso.
+emparejar por nombre) se evaluó y se **descartó**: mucho trabajo y quedaría
+dominado por municipios diminutos con per cápita ruidoso. El ranking lo resuelve
+mejor.
 
-Recordar (memoria `secop2-geografia-es-sede`): a nivel **ciudad**,
-`orden = Territorial` es menos perfecto que a nivel departamento —una gobernación
-tiene sede en la capital pero gasta en todo el departamento—, así que lo ideal
-sería afinar a alcaldías. Declararlo, no esconderlo.
+Pendiente (menor): ampliar `poblacionCiudades.js` más allá de las ~45 (faltan
+capitales chicas como Mocoa, Leticia, Quibdó, Arauca; y ciudades intermedias como
+Buga, Sogamoso, Girardot) y, cuando el DANE publique la tabla municipal 2025,
+actualizar y unificar el año con el mapa.
 
 ---
 
