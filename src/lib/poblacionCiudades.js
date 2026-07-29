@@ -6,16 +6,27 @@
 // es justa —y es justo ahí donde aparece el hallazgo interesante: capitales
 // pequeñas con un gasto por habitante altísimo.
 //
-// Va embebida como tabla estática, igual que poblacion.js (departamentos): son
-// ~45 cifras estables que cambian una vez al año. Solo se incluyen las ciudades
-// que se pueden verificar; una ciudad sin cifra aquí sigue apareciendo en la
-// vista "Total", solo que no en "per cápita" (nunca se inventa un denominador).
+// Va embebida como tabla estática, igual que poblacion.js (departamentos). Es el
+// UNIVERSO de ciudades que compara la sección: una ciudad que no esté aquí no
+// aparece (ni en Total ni en per cápita). Por eso se cuida qué entra:
+//   - Cubre las ciudades más pobladas del país y todas las capitales
+//     departamentales con presencia en SECOP.
+//   - Solo cifras que se pudieron VERIFICAR (nunca se inventa un denominador).
+//   - Se excluyen los nombres de municipio AMBIGUOS —los que comparten nombre
+//     con otro municipio de tamaño comparable— porque el campo `ciudad` de SECOP
+//     no trae el departamento y se mezclarían (p. ej. Candelaria: Valle y
+//     Atlántico). Cuando un nombre se repite pero uno domina de lejos (Rionegro:
+//     Antioquia ~150k vs. Santander ~26k), se usa el dominante.
 //
 // AÑO: estas cifras municipales son de la proyección DANE 2023 —la última tabla
 // municipal que se pudo verificar de punta a punta—, mientras que el mapa por
 // departamento usa 2025. Cada vista declara su año. Reverificar contra el DANE
 // (proyecciones de población municipal) al actualizar. Fuente cotejada:
 // proyecciones DANE por municipio, censo 2018.
+//
+// Pendiente: Puerto Carreño (capital de Vichada, con presencia real en SECOP)
+// queda fuera hasta conseguir su proyección DANE 2023 —solo se halló el censo
+// 2020 (21.868), de otra vintage—. Añadirlo al verificar la cifra 2023.
 const POBLACION_MUNICIPAL_2023 = [
   ['Bogotá', 7_968_095],
   ['Medellín', 2_653_729],
@@ -62,14 +73,54 @@ const POBLACION_MUNICIPAL_2023 = [
   ['Mosquera', 166_203],
   ['Chía', 164_995],
   ['Zipaquirá', 161_445],
+  // --- Ampliación jul 2026: ciudades intermedias y capitales departamentales
+  //     que faltaban, todas con presencia en SECOP y población DANE 2023. ---
+  ['Rionegro', 149_786], // Antioquia (domina sobre Rionegro, Santander)
+  ['Malambo', 145_396],
+  ['Magangué', 145_145],
+  ['Madrid', 140_249],
+  ['Cartago', 140_022],
+  ['Turbo', 136_374],
+  ['Quibdó', 133_906],
+  ['Apartadó', 133_811],
+  ['Sogamoso', 133_716],
+  ['Ocaña', 132_387],
+  ['Pitalito', 131_735],
+  ['Guadalajara de Buga', 131_499], // SECOP lo escribe "Guadalajara De Buga"
+  ['Duitama', 129_192],
+  ['Ciénaga', 128_647],
+  ['Aguachica', 124_553],
+  ['Girardot', 121_090],
+  ['Turbaco', 117_501],
+  ['Funza', 115_923],
+  ['Yumbo', 112_272],
+  ['Cajicá', 102_554],
+  ['Arauca', 101_457],
+  ['Los Patios', 99_535],
+  ['Acacías', 94_017],
+  ['Sabaneta', 92_159],
+  ['Copacabana', 85_706],
+  ['La Estrella', 79_103],
+  ['La Dorada', 76_043],
+  ['Fundación', 72_934],
+  ['Espinal', 71_549],
+  ['Mocoa', 61_391],
+  ['San Gil', 61_237],
+  ['San José del Guaviare', 59_446],
+  ['San Andrés', 59_209],
+  ['Leticia', 53_293],
+  ['Cota', 40_807],
+  ['Melgar', 37_968],
+  ['Mitú', 37_424],
+  ['Inírida', 35_499],
 ]
 
 // Año de la proyección municipal, para declararlo en la metodología.
 export const POBLACION_CIUDADES_ANIO = 2023
 
 // Sin tildes ni puntuación, en mayúsculas: así "Bogotá" (SECOP) e "Itagüí" (la
-// tabla) empatan con "ITAGUI" que trae SECOP. Misma idea que normalizarDepto,
-// sin los alias de departamento.
+// tabla) empatan con "ITAGUI" que trae SECOP, y "Guadalajara de Buga" empata con
+// "Guadalajara De Buga". Misma idea que normalizarDepto, sin los alias de depto.
 export function normalizarCiudad(nombre) {
   if (!nombre) return ''
   return nombre
@@ -85,6 +136,9 @@ export function normalizarCiudad(nombre) {
 export const POBLACION_CIUDADES = new Map(
   POBLACION_MUNICIPAL_2023.map(([nombre, hab]) => [normalizarCiudad(nombre), hab]),
 )
+
+// Cuántas ciudades componen el universo de comparación (para declararlo en la UI).
+export const NUM_CIUDADES = POBLACION_CIUDADES.size
 
 export function poblacionCiudadDe(claveNormalizada) {
   return POBLACION_CIUDADES.get(claveNormalizada) ?? null

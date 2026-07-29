@@ -31,9 +31,10 @@ export function useComparacionCiudades() {
         ` AND fecha_de_fin_del_contrato < '${HOY()}T00:00:00'` +
         ` AND fecha_de_fin_del_contrato >= fecha_de_inicio_del_contrato`
       // ORDER BY n DESC + LIMIT alto: basta con capturar las (ciudad, orden) de
-      // más volumen; las ciudades grandes —las únicas que se muestran— traen sus
-      // dos filas (Nacional y Territorial) bien arriba. La cola de municipios
-      // diminutos no interesa aquí.
+      // más volumen. El tope es holgado para que incluso las ciudades pequeñas
+      // de la tabla de población (p. ej. capitales como Mitú o Inírida, de poco
+      // volumen) traigan sus filas; la cola de municipios fuera de la tabla no
+      // se muestra. El LIMIT no encarece el GROUP BY, solo la transferencia.
       return socrataQuery(
         DS,
         `SELECT ciudad, orden,
@@ -46,7 +47,7 @@ export function useComparacionCiudades() {
          WHERE ${soloContratosValidos()} AND ciudad IS NOT NULL AND ciudad NOT IN ('No Definido')
          GROUP BY ciudad, orden
          ORDER BY n DESC
-         LIMIT 700`,
+         LIMIT 1500`,
       )
     },
     select: (rows) => {

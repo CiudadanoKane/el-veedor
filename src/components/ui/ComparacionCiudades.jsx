@@ -3,7 +3,7 @@ import { QueryState } from './QueryState'
 import { Methodology } from './Methodology'
 import { Segmented } from './Segmented'
 import { useComparacionCiudades } from '../../hooks/useComparacionCiudades'
-import { poblacionCiudadDe, POBLACION_CIUDADES_ANIO } from '../../lib/poblacionCiudades'
+import { poblacionCiudadDe, POBLACION_CIUDADES_ANIO, NUM_CIUDADES } from '../../lib/poblacionCiudades'
 import { formatPct, formatCOP, formatCOPCorto } from '../../lib/formatters'
 
 const N = (x) => (x ?? 0).toLocaleString('es-CO')
@@ -167,9 +167,10 @@ export function ComparacionCiudades() {
       <Methodology>
         Agrupa los contratos válidos por <strong>ciudad</strong> (se excluyen borradores,
         cancelados y sin formalizar) y las ordena por la métrica elegida. Se comparan las{' '}
-        <strong>~45 ciudades más pobladas</strong> del país —un conjunto fijo, para que Total, per
-        cápita y las tasas midan siempre las mismas ciudades y una métrica de tasa no la copen
-        municipios diminutos—. Solo <strong>SECOP II</strong>: SECOP I no trae una ciudad fiable.
+        <strong>{NUM_CIUDADES} principales ciudades</strong> del país —las más pobladas y las
+        capitales departamentales; un conjunto fijo, para que Total, per cápita y las tasas midan
+        siempre las mismas ciudades y una métrica de tasa no la copen municipios diminutos—. Solo{' '}
+        <strong>SECOP II</strong>: SECOP I no trae una ciudad fiable.
         Las tasas (plazo vencido, sin competencia, con prórroga) exigen al menos {MIN_MUESTRA}{' '}
         contratos para ser representativas.
         <br />
@@ -246,8 +247,8 @@ export function ComparacionCiudades() {
                   </p>
                 )}
                 <p className="mt-3 text-[11px] text-textSecondary/80 leading-snug">
-                  Entre las ~45 ciudades más pobladas del país, las {top.length} primeras por esta
-                  métrica{perCapita ? ` (población DANE ${POBLACION_CIUDADES_ANIO})` : ''}.
+                  Entre las {NUM_CIUDADES} principales ciudades del país, las {top.length} primeras
+                  por esta métrica{perCapita ? ` (población DANE ${POBLACION_CIUDADES_ANIO})` : ''}.
                 </p>
               </>
             )

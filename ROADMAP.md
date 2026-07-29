@@ -856,10 +856,19 @@ emparejar por nombre) se evaluó y se **descartó**: mucho trabajo y quedaría
 dominado por municipios diminutos con per cápita ruidoso. El ranking lo resuelve
 mejor.
 
-Pendiente (menor): ampliar `poblacionCiudades.js` más allá de las ~45 (faltan
-capitales chicas como Mocoa, Leticia, Quibdó, Arauca; y ciudades intermedias como
-Buga, Sogamoso, Girardot) y, cuando el DANE publique la tabla municipal 2025,
-actualizar y unificar el año con el mapa.
+Ampliación (jul 2026): `poblacionCiudades.js` pasó de ~45 a **83 ciudades** —se
+sumaron las capitales departamentales que faltaban (Mocoa, Leticia, Quibdó,
+Arauca, San Andrés, Mitú, Inírida, San José del Guaviare) y ciudades intermedias
+con presencia en SECOP (Buga, Sogamoso, Girardot, Rionegro, Apartadó, Pitalito,
+Ocaña, Duitama, Cartago, Turbaco, Sabaneta…), todas con población DANE 2023
+verificada. Se excluyen nombres **ambiguos** (mismo nombre en dos departamentos
+de tamaño comparable, p. ej. Candelaria) porque `ciudad` no trae el departamento.
+
+Pendiente (menor): **Puerto Carreño** (capital de Vichada, con presencia real en
+SECOP) espera su proyección DANE 2023 —solo se halló censo 2020—. Y, cuando el
+DANE publique la tabla municipal 2025, actualizar y unificar el año con el mapa.
+Si más adelante se quiere resolver los nombres ambiguos, habría que agrupar por
+`departamento, ciudad` (hoy el hook agrupa solo por `ciudad`).
 
 ---
 
