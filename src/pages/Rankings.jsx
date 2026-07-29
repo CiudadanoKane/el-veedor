@@ -4,7 +4,6 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
 } from 'recharts'
 import { PageHeader } from '../components/layout/Layout'
-import { GlobalFilters } from '../components/layout/GlobalFilters'
 import { QueryState } from '../components/ui/QueryState'
 import { DataTable } from '../components/ui/DataTable'
 import { Methodology } from '../components/ui/Methodology'
@@ -547,7 +546,6 @@ export function Rankings() {
         title="Rankings"
         subtitle="Quién recibe más recursos públicos, quién los entrega, en qué se contrata y cómo se ejecuta lo contratado."
       />
-      <GlobalFilters />
 
       <div className="overflow-x-auto -mx-1 px-1">
         <Segmented

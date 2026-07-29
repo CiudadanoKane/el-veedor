@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom'
 import { useTour } from '../ui/Tour'
+import { useFilters } from '../../context/FiltersContext'
 
 const NAV = [
   { to: '/', label: 'Panorama', end: true },
@@ -14,6 +15,9 @@ const NAV = [
 // La sección activa se marca con una línea vertical y peso tipográfico.
 export function Sidebar({ abierto, onCerrar }) {
   const { iniciar } = useTour()
+  // El ámbito geográfico viaja con el usuario entre secciones: si eligió
+  // Atlántico, Alertas y Rankings deben abrirse en Atlántico.
+  const { rutaConAmbito } = useFilters()
 
   return (
     <>
@@ -35,7 +39,7 @@ export function Sidebar({ abierto, onCerrar }) {
         <div className="px-7 pt-8 pb-7 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <Link
-              to="/"
+              to={rutaConAmbito('/')}
               onClick={onCerrar}
               aria-label="El Veedor — ir al Panorama"
               className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
@@ -68,7 +72,7 @@ export function Sidebar({ abierto, onCerrar }) {
           {NAV.map((item) => (
             <NavLink
               key={item.to}
-              to={item.to}
+              to={rutaConAmbito(item.to)}
               end={item.end}
               onClick={onCerrar}
               data-tour={item.to === '/noticias' ? 'noticias' : undefined}
@@ -99,7 +103,10 @@ export function Sidebar({ abierto, onCerrar }) {
           ].map(([ruta, etiqueta]) => (
             <NavLink
               key={ruta}
-              to={ruta}
+              // Estas páginas no filtran por ámbito, pero el parámetro viaja
+              // igual: si no, pasar por el manual y volver borraría el municipio
+              // que el ciudadano venía consultando.
+              to={rutaConAmbito(ruta)}
               onClick={onCerrar}
               className={({ isActive }) =>
                 `block -ml-7 pl-7 pr-3 py-2 text-[13px] border-l-2 ${

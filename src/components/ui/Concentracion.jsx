@@ -1,6 +1,5 @@
 import { QueryState } from './QueryState'
 import { Methodology } from './Methodology'
-import { GeoFilterInline } from './GeoFilterInline'
 import { useConcentracion } from '../../hooks/useConcentracion'
 import { formatPct, formatCOPCorto } from '../../lib/formatters'
 
@@ -67,10 +66,6 @@ export function Concentracion({ filters = {}, contratistas, tieneSecop1 }) {
           Qué tan pocos contratistas acaparan el valor contratado. Cuanto más corta sea la barra de
           contratistas frente a la de valor, en menos manos está la plata.
         </p>
-      </div>
-
-      <div className="mt-4">
-        <GeoFilterInline />
       </div>
 
       <Methodology>

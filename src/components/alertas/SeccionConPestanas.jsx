@@ -1,6 +1,5 @@
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../layout/Layout'
-import { GlobalFilters } from '../layout/GlobalFilters'
 import { Segmented } from '../ui/Segmented'
 
 // Sección de alertas en pestañas. La comparten Alertas y Errores en SECOP:
@@ -31,7 +30,6 @@ export function SeccionConPestanas({ titulo, subtitulo, intro, items }) {
   return (
     <div className="space-y-6">
       <PageHeader title={titulo} subtitle={subtitulo} />
-      <GlobalFilters />
 
       {intro && (
         <p className="text-[14.5px] text-textSecondary font-light -mt-1 max-w-3xl leading-relaxed">

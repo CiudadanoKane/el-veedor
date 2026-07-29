@@ -1,5 +1,4 @@
 import { PageHeader } from '../components/layout/Layout'
-import { GlobalFilters } from '../components/layout/GlobalFilters'
 import { NotaCard } from '../components/ui/NotaCard'
 import { useFilters } from '../context/FiltersContext'
 import { useNoticiasData } from '../hooks/useNoticias'
@@ -298,7 +297,6 @@ export function Noticias() {
         title="Noticias"
         subtitle="Observaciones que la plataforma genera automáticamente a partir de los datos de SECOP de hoy. Cada una enlaza a la evidencia para que la verifiques. Son descripciones de hechos, no juicios."
       />
-      <GlobalFilters />
 
       {notas.length === 0 && !algoCargando ? (
         <p className="text-textSecondary py-12">

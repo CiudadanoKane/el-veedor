@@ -49,9 +49,30 @@ export function FiltersProvider({ children }) {
     )
   }, [setSearchParams])
 
+  // Ruta que conserva el ámbito activo. Los enlaces de react-router no arrastran
+  // la query, así que sin esto un clic en el menú devolvía la plataforma a "Todo
+  // Colombia": el ciudadano elegía su municipio y lo perdía al cambiar de
+  // sección. Con el filtro fijo arriba el salto era además visible y absurdo
+  // —la barra se reseteaba sola—.
+  //
+  // Solo viaja el ámbito (departamento, ciudad, entidad). Lo demás que vive en la
+  // URL es de cada sección —la pestaña activa, el texto buscado— y llevárselo a
+  // otra no significaría nada.
+  const rutaConAmbito = useCallback(
+    (path) => {
+      const p = new URLSearchParams()
+      for (const [key, param] of Object.entries(PARAMS)) {
+        if (filters[key]) p.set(param, filters[key])
+      }
+      const qs = p.toString()
+      return qs ? `${path}?${qs}` : path
+    },
+    [filters],
+  )
+
   const value = useMemo(
-    () => ({ filters, setFilter, clearFilters }),
-    [filters, setFilter, clearFilters],
+    () => ({ filters, setFilter, clearFilters, rutaConAmbito }),
+    [filters, setFilter, clearFilters, rutaConAmbito],
   )
 
   return <FiltersContext.Provider value={value}>{children}</FiltersContext.Provider>

@@ -6,7 +6,7 @@ import { soqlGeo, adaptarGeo } from '../lib/geoQueries.js'
 const DS = DATASETS.CONTRATOS
 
 // En desarrollo va directo a Socrata; en producción sale de /api/geo,
-// cacheado 24h y refrescado por cron — se usa en GlobalFilters, que se
+// cacheado 24h y refrescado por cron — se usa en la barra de filtro, que se
 // renderiza en todas las páginas del sitio.
 function useGeoRaw() {
   return useQuery({
@@ -25,7 +25,7 @@ function useGeoRaw() {
 // Payload geográfico completo (departamentos + ciudades por departamento).
 // Lo usa la búsqueda con IA para validar contra el catálogo real el lugar que
 // extrae de la frase. Comparte queryKey con useDepartamentos/useCiudades, así
-// que no dispara una consulta extra: reusa la que ya cargó GlobalFilters.
+// que no dispara una consulta extra: reusa la que ya cargó la barra de filtro.
 export function useGeo() {
   return useGeoRaw()
 }

@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../components/layout/Layout'
-import { GlobalFilters } from '../components/layout/GlobalFilters'
 import { QueryState } from '../components/ui/QueryState'
 import { DataTable } from '../components/ui/DataTable'
 import { ContractDetail } from '../components/ui/ContractDetail'
@@ -232,7 +231,7 @@ export function Buscar() {
   // buscador para que ya esté listo si cambia a la pestaña Entidades.
   useDirectorioEntidades()
 
-  // Catálogo geográfico (ya lo cargó GlobalFilters): la búsqueda con IA valida
+  // Catálogo geográfico (ya lo cargó la barra de filtro): la búsqueda con IA valida
   // contra él el lugar que extrae de la frase, para no inventar un municipio.
   const geo = useGeo()
 
@@ -464,7 +463,6 @@ export function Buscar() {
         title="Buscar"
         subtitle="Busca por palabra en 5,3 millones de contratos, o encuentra a un contratista o entidad por nombre."
       />
-      <GlobalFilters />
 
       <div className="overflow-x-auto -mx-1 px-1">
         <Segmented value={modo} onChange={(v) => actualizar({ modo: v })} options={MODOS} />

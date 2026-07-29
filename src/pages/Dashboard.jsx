@@ -1,7 +1,6 @@
 import { Fragment, useState, useCallback, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '../components/layout/Layout'
-import { GlobalFilters } from '../components/layout/GlobalFilters'
 import { StatCard } from '../components/ui/StatCard'
 import { QueryState } from '../components/ui/QueryState'
 import { Methodology } from '../components/ui/Methodology'
@@ -660,7 +659,6 @@ export function Dashboard() {
         title="Panorama de la contratación"
         subtitle={`¿Cómo está contratando ${scope} hoy? Cada cifra se puede desplegar para ver de dónde sale.`}
       />
-      <GlobalFilters />
 
       {/* Cifras clave: cada una es la puerta de entrada a su detalle. El alcance
           de fuente (SECOP II + I / solo SECOP II) viaja rotulado en cada tarjeta,
