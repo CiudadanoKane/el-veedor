@@ -222,23 +222,36 @@ export function ComparacionCiudades() {
             const fueraDeEscala = top.length > 2 && v0 > 2 * v1
             const escala = fueraDeEscala ? v1 : v0
 
+            // Dos columnas en pantallas anchas: la misma lista, la mitad de
+            // alta. Se reparte en orden (1ª mitad a la izquierda, 2ª a la
+            // derecha) en vez de intercalar, para que cada columna se lea
+            // como un tramo continuo del ranking.
+            const mitad = Math.ceil(top.length / 2)
+            const columnas = [top.slice(0, mitad), top.slice(mitad)]
+
+            const fila = (c) => {
+              const ancho = escala > 0 ? Math.max(1.5, Math.min(100, (c.v / escala) * 100)) : 0
+              return (
+                <FilaCiudad
+                  key={c.clave}
+                  nombre={c.nombre}
+                  valorTexto={registro.formato(c.v, perCapita)}
+                  detalle={registro.detalle(c.fila, perCapita, c.pob)}
+                  ancho={ancho}
+                  color={registro.color}
+                />
+              )
+            }
+
             return (
               <>
-                <ul className="divide-y divide-border">
-                  {top.map((c) => {
-                    const ancho = escala > 0 ? Math.max(1.5, Math.min(100, (c.v / escala) * 100)) : 0
-                    return (
-                      <FilaCiudad
-                        key={c.clave}
-                        nombre={c.nombre}
-                        valorTexto={registro.formato(c.v, perCapita)}
-                        detalle={registro.detalle(c.fila, perCapita, c.pob)}
-                        ancho={ancho}
-                        color={registro.color}
-                      />
-                    )
-                  })}
-                </ul>
+                <div className="md:grid md:grid-cols-2 md:gap-x-8 md:divide-x md:divide-border">
+                  {columnas.map((col, i) => (
+                    <ul key={i} className="divide-y divide-border md:last:pl-8">
+                      {col.map(fila)}
+                    </ul>
+                  ))}
+                </div>
                 {fueraDeEscala && (
                   <p className="mt-3 text-[11px] text-textSecondary/80 leading-snug">
                     <span className="font-semibold text-textSecondary">{top[0].nombre}</span> se sale
