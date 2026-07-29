@@ -3,6 +3,7 @@ import { Outlet, useLocation, Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Sidebar } from './Sidebar'
 import { BarraFiltro } from './BarraFiltro'
+import { BusquedaRapida } from './BusquedaRapida'
 import { ErrorBoundary } from '../ui/ErrorBoundary'
 import { useFilters } from '../../context/FiltersContext'
 import { ejecucionContratistasQueryOptions } from '../../hooks/useEjecucionContratistas'
@@ -24,6 +25,10 @@ export function Layout() {
   const { rutaConAmbito } = useFilters()
 
   const conFiltro = !SIN_FILTRO.some((p) => pathname.startsWith(p))
+  // En el buscador no se repite: ahí manda su propia caja, con filtros
+  // avanzados y búsqueda con IA. Dos campos compitiendo confundirían cuál es
+  // el que vale.
+  const conBusqueda = pathname !== '/buscar'
 
   // Cierra el menú al cambiar de sección y evita el scroll de fondo
   useEffect(() => setMenuAbierto(false), [pathname])
@@ -57,29 +62,43 @@ export function Layout() {
       <Sidebar abierto={menuAbierto} onCerrar={() => setMenuAbierto(false)} />
 
       <div className="flex-1 min-w-0 flex flex-col">
-        {/* Cabecera fija: el acceso al menú (solo móvil) y el filtro de ámbito
-            van en un mismo bloque sticky para que se apilen en vez de pelearse
-            por el borde superior. */}
+        {/* Cabecera fija: acceso al menú (solo móvil), búsqueda y ámbito en un
+            mismo bloque sticky, para que se apilen en vez de pelearse por el
+            borde superior. En pantalla ancha búsqueda y ámbito comparten fila;
+            en móvil se apilan en dos. */}
         <div className="sticky top-0 z-20 bg-bg border-b border-border">
-          <header className="lg:hidden flex items-center gap-3 px-4 py-3">
-            <button
-              onClick={() => setMenuAbierto(true)}
-              className="text-textPrimary p-1 -ml-1"
-              aria-label="Abrir menú"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            </button>
-            <Link to={rutaConAmbito('/')} aria-label="El Veedor — ir al Panorama" className="flex items-center gap-3">
-              <img src="/icono-el-veedor.png" alt="" className="h-6 w-6" />
-              <span className="font-display font-semibold text-lg tracking-tight">El Veedor</span>
-            </Link>
-          </header>
+          <div className="px-4 sm:px-8 lg:px-14 lg:flex lg:items-center lg:gap-8">
+            <div className="flex items-center gap-3 py-2.5 lg:flex-1 lg:min-w-0 lg:max-w-2xl">
+              <button
+                onClick={() => setMenuAbierto(true)}
+                className="lg:hidden shrink-0 text-textPrimary p-1 -ml-1"
+                aria-label="Abrir menú"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              </button>
+              <Link
+                to={rutaConAmbito('/')}
+                aria-label="El Veedor — ir al Panorama"
+                className="lg:hidden shrink-0 flex items-center gap-2.5"
+              >
+                <img src="/icono-el-veedor.png" alt="" className="h-6 w-6" />
+                {/* El nombre cede su sitio a la búsqueda cuando esta está
+                    presente: en 375 px no caben las dos, y el nombre completo
+                    sigue en el menú lateral. */}
+                {!conBusqueda && (
+                  <span className="font-display font-semibold text-lg tracking-tight">El Veedor</span>
+                )}
+              </Link>
 
-          {conFiltro && <BarraFiltro />}
+              {conBusqueda && <BusquedaRapida />}
+            </div>
+
+            {conFiltro && <BarraFiltro />}
+          </div>
         </div>
 
         <main className="flex-1 px-5 py-8 sm:px-8 lg:px-14 lg:py-12">

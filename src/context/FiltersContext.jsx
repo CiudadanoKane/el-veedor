@@ -80,10 +80,15 @@ export function FiltersProvider({ children }) {
   // URL es de cada sección —la pestaña activa, el texto buscado— y llevárselo a
   // otra no significaría nada.
   const rutaConAmbito = useCallback(
-    (path) => {
+    (path, extra) => {
       const p = new URLSearchParams()
       for (const [key, param] of Object.entries(PARAMS)) {
         if (filters[key]) p.set(param, filters[key])
+      }
+      // Parámetros propios del destino (p. ej. el texto que se acaba de escribir
+      // en la búsqueda rápida), que viajan junto al ámbito.
+      for (const [key, valor] of Object.entries(extra || {})) {
+        if (valor) p.set(key, valor)
       }
       const qs = p.toString()
       return qs ? `${path}?${qs}` : path
