@@ -875,12 +875,28 @@ Rediseño (jul 2026): la lista pasó de 18 filas con la barra debajo del texto a
 del ancho de pantalla—. Se probó y descartó una variante de columnas verticales
 con nombres girados 90°: en alto quedaba parecida, pero necesitaba más ancho del
 que cabe en pantalla (scroll horizontal) y el texto girado se lee más despacio.
-Las demás ciudades de las 83 no desaparecieron: un selector bajo el ranking deja
+Las demás ciudades no desaparecieron: un selector bajo el ranking deja
 **añadir cualquiera**, mostrando su posición real dentro de la muestra (p. ej.
 "#34"); cada añadida se recalcula sola al cambiar de métrica o modo, y si no
 tiene muestra suficiente para una tasa lo dice en vez de ocultarse. Sin líneas
-divisorias entre filas ni relleno de sobra: la jerarquía la da el espacio, no el
-borde.
+divisorias entre filas y con un padding ajustado entre iteraciones (se probó
+más apretado, pero se dejó un poco más de aire): la jerarquía la da el
+espacio, no el borde.
+
+Ampliación (jul 2026): la tabla de población pasó de 83 a **126 municipios** —
+seleccionables aunque no entren en el top 10—: se sumaron los que faltaban
+para completar el **top ~100 nacional** por población, y por interés
+específico del proyecto, **todos los municipios de Atlántico** (antes solo
+Barranquilla, Soledad y Malambo), sin importar tamaño. Se excluye Candelaria
+(Atlántico): el nombre ya lo usa Candelaria, Valle del Cauca (la dominante),
+y `ciudad` no trae el departamento para distinguirlas. Cada nombre nuevo se
+verificó contra el dato real de SECOP II (`caseless_eq` exacto sobre
+`ciudad`) antes de añadirlo. Tres entradas —Cumaribo, Tubará, Usiacurí— hoy no
+tienen ningún contrato registrado con ese `ciudad` exacto, así que quedan en
+la tabla pero no aparecen aún en el selector; se listan solas apenas SECOP
+tenga el primero. Población de las nuevas ciudades de Atlántico: DANE 2023
+para Sabanalarga–Repelón (misma tabla que el resto); Ponedera en adelante,
+Anuario Estadístico del Atlántico 2022 —no se halló su proyección 2023—.
 
 ---
 

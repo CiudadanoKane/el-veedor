@@ -8,9 +8,13 @@
 //
 // Va embebida como tabla estática, igual que poblacion.js (departamentos). Es el
 // UNIVERSO de ciudades que compara la sección: una ciudad que no esté aquí no
-// aparece (ni en Total ni en per cápita). Por eso se cuida qué entra:
-//   - Cubre las ciudades más pobladas del país y todas las capitales
+// aparece (ni en Total ni en per cápita), aunque solo se muestran 10 a la vez
+// —el resto queda a un clic en el selector "Comparar con otra ciudad"—. Por
+// eso se cuida qué entra:
+//   - Cubre los ~100 municipios más poblados del país y todas las capitales
 //     departamentales con presencia en SECOP.
+//   - Además, TODOS los municipios del Atlántico, sin importar tamaño —interés
+//     específico del proyecto en ese departamento—.
 //   - Solo cifras que se pudieron VERIFICAR (nunca se inventa un denominador).
 //   - Se excluyen los nombres de municipio AMBIGUOS —los que comparten nombre
 //     con otro municipio de tamaño comparable— porque el campo `ciudad` de SECOP
@@ -113,6 +117,60 @@ const POBLACION_MUNICIPAL_2023 = [
   ['Melgar', 37_968],
   ['Mitú', 37_424],
   ['Inírida', 35_499],
+  // --- Ampliación jul 2026: resto de los ~100 municipios más poblados del
+  //     país (antes el corte eran ~83, mezclando población con capitales
+  //     departamentales). Misma fuente y año, DANE 2023. ---
+  ['Lorica', 117_924],
+  ['Ipiales', 116_074],
+  ['Santander de Quilichao', 115_745],
+  ['Villa del Rosario', 113_903],
+  ['Sahagún', 112_585],
+  ['Cereté', 110_723],
+  ['Caucasia', 99_959],
+  ['Manaure', 98_299],
+  ['Tierralta', 97_227],
+  ['Montelíbano', 87_735],
+  ['Caldas', 87_385], // Antioquia
+  ['Cumaribo', 81_651], // sin contratos con este `ciudad` exacto en SECOP II a jul 2026; queda listo por si aparecen
+  ['Santa Rosa de Cabal', 81_608],
+  ['Calarcá', 77_878],
+  ['Zona Bananera', 76_510],
+  ['Arjona', 76_370],
+  ['Garzón', 75_926],
+  ['El Carmen de Bolívar', 75_179],
+  ['Corozal', 73_282],
+  ['Granada', 72_259], // Meta (domina de lejos sobre Granada, Antioquia/Cundinamarca)
+  ['El Banco', 72_131],
+  ['La Ceja', 71_570],
+  ['Marinilla', 71_117],
+  ['Puerto Asís', 70_006],
+  // --- Ampliación jul 2026: TODOS los municipios de Atlántico, sin importar
+  //     tamaño —interés específico del proyecto en ese departamento—. Ya
+  //     estaban Barranquilla, Soledad y Malambo. Se excluye Candelaria
+  //     (Atlántico, ~17k hab.): el nombre ya está tomado por Candelaria,
+  //     Valle del Cauca (~96k, la dominante), y `ciudad` no trae el
+  //     departamento para distinguirlas. Fuente: Sabanalarga a Repelón,
+  //     DANE 2023 (misma tabla que el resto); Ponedera en adelante, Anuario
+  //     Estadístico del Atlántico 2022 —no se halló su proyección 2023—.
+  ['Sabanalarga', 104_207],
+  ['Baranoa', 69_851],
+  ['Galapa', 69_820],
+  ['Puerto Colombia', 55_890],
+  ['Sabanagrande', 36_549],
+  ['Santo Tomás', 33_330],
+  ['Palmar de Varela', 32_328],
+  ['Luruaco', 31_580],
+  ['Repelón', 29_270],
+  ['Ponedera', 26_184],
+  ['Campo de la Cruz', 24_596],
+  ['Juan de Acosta', 23_131],
+  ['Manatí', 21_488],
+  ['Polonuevo', 19_840],
+  ['Tubará', 18_955], // sin contratos con este `ciudad` exacto en SECOP II a jul 2026
+  ['Santa Lucía', 17_593],
+  ['Usiacurí', 13_438], // sin contratos con este `ciudad` exacto en SECOP II a jul 2026
+  ['Suan', 8_664],
+  ['Piojó', 7_207],
 ]
 
 // Año de la proyección municipal, para declararlo en la metodología.

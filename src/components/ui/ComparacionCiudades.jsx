@@ -68,7 +68,7 @@ const OPCIONES = Object.entries(METRICAS).map(([v, m]) => ({ value: v, label: m.
 // añadidas a mano por el selector traen además su botón para quitarlas.
 function FilaCiudad({ posicion, nombre, valorTexto, detalle, ancho, color, onQuitar }) {
   return (
-    <li className="py-0.5">
+    <li className="py-1">
       <div className="flex items-center gap-3">
         <span className="w-6 shrink-0 text-[11px] tabular-nums text-textSecondary text-right leading-tight">
           {posicion}
@@ -307,7 +307,7 @@ export function ComparacionCiudades() {
                         />
                       ))}
                       {anadidasSinDatos.map((c) => (
-                        <li key={c.clave} className="py-0.5 flex items-center gap-3">
+                        <li key={c.clave} className="py-1 flex items-center gap-3">
                           <span className="w-6 shrink-0" />
                           <span className="flex-1 text-[13.5px] text-textPrimary leading-snug">
                             {c.nombre}{' '}
