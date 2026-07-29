@@ -1,9 +1,16 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { QueryState } from './QueryState'
 import { Methodology } from './Methodology'
 import { Segmented } from './Segmented'
 import { useComparacionCiudades } from '../../hooks/useComparacionCiudades'
-import { poblacionCiudadDe, POBLACION_CIUDADES_ANIO, NUM_CIUDADES } from '../../lib/poblacionCiudades'
+import { useGeo } from '../../hooks/useGeoOptions'
+import { useFilters } from '../../context/FiltersContext'
+import {
+  poblacionCiudadDe,
+  POBLACION_CIUDADES_ANIO,
+  NUM_CIUDADES,
+  normalizarCiudad,
+} from '../../lib/poblacionCiudades'
 import { formatPct, formatCOP, formatCOPCorto } from '../../lib/formatters'
 
 const N = (x) => (x ?? 0).toLocaleString('es-CO')
@@ -66,14 +73,35 @@ const OPCIONES = Object.entries(METRICAS).map(([v, m]) => ({ value: v, label: m.
 // grupo (no a la suma: comparar ciudades, no repartir un total) y la cifra al
 // lado, todo en una línea — el detalle da el contexto crudo debajo. Las filas
 // añadidas a mano por el selector traen además su botón para quitarlas.
-function FilaCiudad({ posicion, nombre, valorTexto, detalle, ancho, color, onQuitar }) {
+function FilaCiudad({ posicion, nombre, valorTexto, detalle, ancho, color, onQuitar, onIr, esAmbito }) {
   return (
     <li className="py-1">
       <div className="flex items-center gap-3">
         <span className="w-6 shrink-0 text-[11px] tabular-nums text-textSecondary text-right leading-tight">
           {posicion}
         </span>
-        <span className="w-28 shrink-0 text-[13.5px] text-textPrimary leading-tight">{nombre}</span>
+        {/* El nombre es la salida del gráfico: lleva la plataforma entera a ese
+            municipio. Antes el ranking terminaba aquí —se veía qué ciudad
+            destaca y no había cómo ir a mirarla—. Solo es enlace si sabemos a
+            qué departamento pertenece (ver mapaCiudadDepto). */}
+        <span className="w-28 shrink-0 text-[13.5px] leading-tight min-w-0">
+          {onIr ? (
+            <button
+              onClick={onIr}
+              title={`Ver la contratación de ${nombre}`}
+              className="text-left text-textPrimary hover:text-primary hover:underline"
+            >
+              {nombre}
+            </button>
+          ) : (
+            <span className="text-textPrimary">{nombre}</span>
+          )}
+          {esAmbito && (
+            <span className="block text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+              viendo
+            </span>
+          )}
+        </span>
         <span className="flex-1 h-[7px] bg-muted overflow-hidden">
           <span
             className="block h-full transition-[width] duration-500 ease-out"
@@ -116,6 +144,37 @@ export function ComparacionCiudades() {
   const [agregadas, setAgregadas] = useState([])
 
   const query = useComparacionCiudades()
+
+  // Para llevar al usuario a una ciudad hace falta su departamento: el filtro de
+  // ciudad se lee junto al de departamento, y la consulta de esta sección agrupa
+  // solo por `ciudad`, sin saber de cuál es. Se resuelve invirtiendo el catálogo
+  // geográfico, que ya está cargado y cacheado (no cuesta una consulta más).
+  //
+  // Un nombre repetido en dos departamentos se deja SIN enlace a propósito: con
+  // solo el nombre no hay forma de saber a cuál llevar, y adivinar mandaría al
+  // ciudadano al municipio equivocado.
+  const geo = useGeo()
+  const { filters, setAmbito } = useFilters()
+  const mapaCiudadDepto = useMemo(() => {
+    const porCiudad = new Map()
+    const catalogo = geo.data?.ciudadesPorDepartamento || {}
+    for (const [depto, ciudades] of Object.entries(catalogo)) {
+      for (const ciudad of ciudades || []) {
+        const clave = normalizarCiudad(ciudad)
+        if (!clave) continue
+        if (!porCiudad.has(clave)) porCiudad.set(clave, [])
+        porCiudad.get(clave).push({ depto, ciudad })
+      }
+    }
+    // Solo las inequívocas quedan utilizables.
+    const unicas = new Map()
+    for (const [clave, lista] of porCiudad) {
+      if (lista.length === 1) unicas.set(clave, lista[0])
+    }
+    return unicas
+  }, [geo.data])
+
+  const claveAmbito = filters.city ? normalizarCiudad(filters.city) : null
   const registro = METRICAS[metrica]
   const perCapita = !!registro.perCapita && modo === 'percapita'
   const territorial = orden === 'territorial'
@@ -272,6 +331,13 @@ export function ComparacionCiudades() {
 
             const anchoDe = (v) => (escala > 0 ? Math.max(1.5, Math.min(100, (v / escala) * 100)) : 0)
 
+            // Acción de "ir a esta ciudad", solo si el nombre es inequívoco.
+            const irA = (clave) => {
+              const ubic = mapaCiudadDepto.get(clave)
+              if (!ubic) return null
+              return () => setAmbito(ubic.depto, ubic.ciudad)
+            }
+
             return (
               <>
                 <ul>
@@ -284,6 +350,8 @@ export function ComparacionCiudades() {
                       detalle={registro.detalle(c.fila, perCapita, c.pob)}
                       ancho={anchoDe(c.v)}
                       color={registro.color}
+                      onIr={irA(c.clave)}
+                      esAmbito={claveAmbito === c.clave}
                     />
                   ))}
                 </ul>
@@ -304,6 +372,8 @@ export function ComparacionCiudades() {
                           ancho={anchoDe(c.v)}
                           color={registro.color}
                           onQuitar={() => quitar(c.clave)}
+                          onIr={irA(c.clave)}
+                          esAmbito={claveAmbito === c.clave}
                         />
                       ))}
                       {anadidasSinDatos.map((c) => (

@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps'
 import { Methodology } from './Methodology'
 import { Segmented } from './Segmented'
 import { useMapaMetricas } from '../../hooks/useMapaMetricas'
 import { useAdicionesPrecalculadas, tasasAdicion } from '../../hooks/useAdicionesPrecalculadas'
+import { useFilters } from '../../context/FiltersContext'
+import { useDepartamentos } from '../../hooks/useGeoOptions'
 import { normalizarDepto } from '../../lib/departamentos'
 import { poblacionDe, POBLACION_ANIO } from '../../lib/poblacion'
 import { CHART, SCALE_SENAL, SCALE_NEUTRO, colorEnEscala } from '../../lib/chartTheme'
@@ -182,6 +184,20 @@ export function MapaColombia() {
   const queryMetricas = useMapaMetricas()
   const queryAdic = useAdicionesPrecalculadas()
 
+  // Para poder llevar al usuario al departamento que acaba de tocar hace falta
+  // el nombre EXACTO como lo escribe SECOP ("Distrito Capital de Bogotá"), no el
+  // del archivo geográfico del DANE ("BOGOTÁ, D.C."). Se reconcilian por la
+  // llave normalizada, que ya sabe traducir los tres nombres que no empatan.
+  const { filters, setFilter } = useFilters()
+  const departamentos = useDepartamentos()
+  const nombreEnSecop = useMemo(() => {
+    const m = new Map()
+    for (const d of departamentos.data || []) m.set(normalizarDepto(d), d)
+    return m
+  }, [departamentos.data])
+
+  const ambitoActivo = filters.department ? normalizarDepto(filters.department) : null
+
   const registro = METRICAS[metrica]
   const esSecop = registro.fuente !== 'adiciones'
   const perCapita = !!registro.perCapita && modo === 'percapita'
@@ -348,8 +364,11 @@ export function MapaColombia() {
       {/* La columna del mapa se topa (~600px, ≈70% de lo que crecía): con 1fr se
           agrandaba sin límite y en pantallas grandes ocupaba casi todo el alto.
           Donde la columna ya es más angosta que el tope, no cambia nada. */}
-      <div className="mt-5 grid grid-cols-1 lg:grid-cols-[minmax(0,600px)_260px] gap-8 items-start">
-        <div className="relative">
+      {/* En móvil el panel va ARRIBA del mapa. Debajo quedaba fuera de pantalla
+          —el mapa ocupa unos 400 px de alto—, así que se tocaba un departamento
+          y la cifra aparecía donde no se veía. */}
+      <div className="mt-5 grid grid-cols-1 lg:grid-cols-[minmax(0,600px)_260px] gap-x-8 gap-y-4 items-start">
+        <div className="relative order-2 lg:order-1">
           <ComposableMap
             projection="geoMercator"
             projectionConfig={{ center: [-74, 4.2], scale: 1750 }}
@@ -374,6 +393,15 @@ export function MapaColombia() {
                         setActivo({ clave, nombre: d?.nombre ?? geo.properties.DPTO_CNMBR })
                       }
                       onMouseLeave={() => setActivo(null)}
+                      // El clic FIJA el departamento en el panel, no aplica el
+                      // filtro. Es lo que hace que el mapa sirva en un teléfono
+                      // —donde no hay cursor que pasar— sin que un toque para
+                      // leer una cifra dispare de golpe la recarga de toda la
+                      // página: filtrar es un segundo gesto, explícito, con el
+                      // botón del panel.
+                      onClick={() =>
+                        setActivo({ clave, nombre: d?.nombre ?? geo.properties.DPTO_CNMBR })
+                      }
                       style={{
                         default: { outline: 'none', transition: 'fill 160ms ease' },
                         hover: { outline: 'none', fill: '#111111', cursor: 'pointer' },
@@ -399,6 +427,9 @@ export function MapaColombia() {
                     setActivo({ clave: SAN_ANDRES.clave, nombre: d?.nombre ?? SAN_ANDRES.nombre })
                   }
                   onMouseLeave={() => setActivo(null)}
+                  onClick={() =>
+                    setActivo({ clave: SAN_ANDRES.clave, nombre: d?.nombre ?? SAN_ANDRES.nombre })
+                  }
                   style={{ default: { cursor: 'pointer' }, hover: { cursor: 'pointer' } }}
                 >
                   <circle r={5} fill={relleno} stroke="#111111" strokeWidth={0.9} />
@@ -416,7 +447,7 @@ export function MapaColombia() {
           </ComposableMap>
         </div>
 
-        <div>
+        <div className="order-1 lg:order-2">
           {/* Lectura del departamento señalado. Se deriva de porDepto en cada
               render (no de un snapshot del hover) para que al cambiar de métrica
               o alternar per cápita el panel se actualice solo. */}
@@ -443,12 +474,35 @@ export function MapaColombia() {
                     ) : (
                       <p className="text-[12.5px] text-textSecondary mt-2">Sin datos suficientes</p>
                     )}
+
+                    {/* La salida que el mapa no tenía: se veía que un
+                        departamento destaca y ahí se acababa el recorrido.
+                        Ahora se puede pasar toda la plataforma a ese ámbito. */}
+                    {(() => {
+                      const enSecop = nombreEnSecop.get(activo.clave)
+                      if (!enSecop) return null
+                      if (ambitoActivo === activo.clave) {
+                        return (
+                          <p className="mt-3 text-[12px] text-textSecondary">
+                            Es el ámbito que estás viendo.
+                          </p>
+                        )
+                      }
+                      return (
+                        <button
+                          onClick={() => setFilter('department', enSecop)}
+                          className="mt-3 text-[12.5px] font-semibold text-primary hover:underline text-left"
+                        >
+                          Ver toda la plataforma en {activo.nombre} →
+                        </button>
+                      )
+                    })()}
                   </>
                 )
               })()
             ) : (
               <p className="text-[13px] text-textSecondary">
-                Pasa el cursor sobre un departamento para ver su cifra.
+                Toca un departamento para ver su cifra.
               </p>
             )}
           </div>

@@ -36,6 +36,27 @@ export function FiltersProvider({ children }) {
     [setSearchParams],
   )
 
+  // Departamento y ciudad en un solo cambio de URL. Hace falta porque setFilter
+  // borra la ciudad al cambiar de departamento —lo correcto cuando alguien usa
+  // los selectores—, así que encadenar las dos llamadas dejaría la ciudad vacía.
+  // Lo usan los gráficos al llevar al usuario a un municipio concreto.
+  const setAmbito = useCallback(
+    (department, city) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          if (department) next.set(PARAMS.department, department)
+          else next.delete(PARAMS.department)
+          if (city) next.set(PARAMS.city, city)
+          else next.delete(PARAMS.city)
+          return next
+        },
+        { replace: true },
+      )
+    },
+    [setSearchParams],
+  )
+
   // Limpia los filtros y nada más. Borrar la URL entera se llevaba por delante
   // el estado de otros módulos que también viaja ahí, como la búsqueda.
   const clearFilters = useCallback(() => {
@@ -71,8 +92,8 @@ export function FiltersProvider({ children }) {
   )
 
   const value = useMemo(
-    () => ({ filters, setFilter, clearFilters, rutaConAmbito }),
-    [filters, setFilter, clearFilters, rutaConAmbito],
+    () => ({ filters, setFilter, setAmbito, clearFilters, rutaConAmbito }),
+    [filters, setFilter, setAmbito, clearFilters, rutaConAmbito],
   )
 
   return <FiltersContext.Provider value={value}>{children}</FiltersContext.Provider>
