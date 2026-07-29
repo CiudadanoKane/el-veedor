@@ -87,7 +87,7 @@ Dos hallazgos que definieron el diseño:
 No se muestra el total exacto de coincidencias: contarlas cuesta ~14 segundos y
 no vale esa espera. Se entregan los primeros 100 y se dice que hay más.
 
-### 4. Perfiles de contratistas ← **siguiente**
+### 4. Perfiles de contratistas
 
 Hasta ahora el foco ha estado en el Estado. La corrupción también viene del lado
 privado, y analizarlo puede dar información valiosa.
