@@ -10,8 +10,10 @@ const N = (x) => (x ?? 0).toLocaleString('es-CO')
 // Una tasa sobre una muestra menor a esto no es representativa; la ciudad no
 // entra en las métricas de tasa (sí en las de volumen, que son totales).
 const MIN_MUESTRA = 100
-// Cuántas ciudades se listan. Suficientes para comparar sin volverse un censo.
-const TOP = 18
+// Cuántas ciudades se listan por defecto. Las demás quedan a un clic: el
+// selector de abajo deja añadir cualquiera de las NUM_CIUDADES, mostrando su
+// posición real dentro del ranking en vez de obligar a mostrar un censo.
+const TOP = 10
 
 // Registro de métricas, hermano del mapa pero sin "Adiciones": ese dato se
 // precalcula por departamento/entidad, no por ciudad. Cada métrica sabe reducir
@@ -60,27 +62,40 @@ const METRICAS = {
 
 const OPCIONES = Object.entries(METRICAS).map(([v, m]) => ({ value: v, label: m.label }))
 
-// Una fila del ranking: nombre, cifra, y una barra proporcional a la escala del
-// grupo (no a la suma: comparar ciudades, no repartir un total). El detalle da
-// el contexto crudo debajo.
-function FilaCiudad({ nombre, valorTexto, detalle, ancho, color }) {
+// Una fila del ranking: posición, nombre, barra proporcional a la escala del
+// grupo (no a la suma: comparar ciudades, no repartir un total) y la cifra al
+// lado, todo en una línea — el detalle da el contexto crudo debajo. Las filas
+// añadidas a mano por el selector traen además su botón para quitarlas.
+function FilaCiudad({ posicion, nombre, valorTexto, detalle, ancho, color, onQuitar }) {
   return (
-    <li className="py-3">
-      <div className="flex items-baseline gap-3">
-        <span className="flex-1 min-w-0 text-[14px] text-textPrimary leading-snug">{nombre}</span>
-        <span className="shrink-0 text-[14px] font-bold tabular-nums text-textPrimary">
+    <li className="py-0.5">
+      <div className="flex items-center gap-3">
+        <span className="w-6 shrink-0 text-[11px] tabular-nums text-textSecondary text-right leading-tight">
+          {posicion}
+        </span>
+        <span className="w-28 shrink-0 text-[13.5px] text-textPrimary leading-tight">{nombre}</span>
+        <span className="flex-1 h-[7px] bg-muted overflow-hidden">
+          <span
+            className="block h-full transition-[width] duration-500 ease-out"
+            style={{ width: `${ancho}%`, background: color }}
+          />
+        </span>
+        <span className="shrink-0 whitespace-nowrap text-[13px] font-bold tabular-nums text-textPrimary leading-tight">
           {valorTexto}
         </span>
+        <span className="w-4 shrink-0">
+          {onQuitar && (
+            <button
+              onClick={onQuitar}
+              aria-label={`Quitar ${nombre} de la comparación`}
+              className="text-textSecondary hover:text-textPrimary text-base leading-none"
+            >
+              ×
+            </button>
+          )}
+        </span>
       </div>
-      <div className="mt-2 h-1.5 w-full bg-muted overflow-hidden">
-        <div
-          className="h-full transition-[width] duration-500 ease-out"
-          style={{ width: `${ancho}%`, background: color }}
-        />
-      </div>
-      {detalle && (
-        <p className="mt-1.5 text-[12.5px] text-textSecondary leading-snug">{detalle}</p>
-      )}
+      {detalle && <p className="mt-0.5 ml-9 text-[11.5px] text-textSecondary leading-tight">{detalle}</p>}
     </li>
   )
 }
@@ -96,11 +111,16 @@ export function ComparacionCiudades() {
   // la contratación nacional de medio país (todas las entidades nacionales
   // tienen sede allí). Ver useComparacionCiudades.
   const [orden, setOrden] = useState('territorial')
+  // Claves de ciudades añadidas a mano con el selector, fuera del top. Persiste
+  // al cambiar de métrica o modo: su posición y cifra se recalculan solas.
+  const [agregadas, setAgregadas] = useState([])
 
   const query = useComparacionCiudades()
   const registro = METRICAS[metrica]
   const perCapita = !!registro.perCapita && modo === 'percapita'
   const territorial = orden === 'territorial'
+
+  const quitar = (clave) => setAgregadas((prev) => prev.filter((k) => k !== clave))
 
   return (
     <section className="border-t-2 border-textPrimary pt-5 pb-8 mb-2">
@@ -169,8 +189,9 @@ export function ComparacionCiudades() {
         cancelados y sin formalizar) y las ordena por la métrica elegida. Se comparan las{' '}
         <strong>{NUM_CIUDADES} principales ciudades</strong> del país —las más pobladas y las
         capitales departamentales; un conjunto fijo, para que Total, per cápita y las tasas midan
-        siempre las mismas ciudades y una métrica de tasa no la copen municipios diminutos—. Solo{' '}
-        <strong>SECOP II</strong>: SECOP I no trae una ciudad fiable.
+        siempre las mismas ciudades y una métrica de tasa no la copen municipios diminutos—. Se
+        muestran las {TOP} primeras; el selector debajo del ranking deja añadir cualquier otra con
+        su posición real. Solo <strong>SECOP II</strong>: SECOP I no trae una ciudad fiable.
         Las tasas (plazo vencido, sin competencia, con prórroga) exigen al menos {MIN_MUESTRA}{' '}
         contratos para ser representativas.
         <br />
@@ -192,7 +213,7 @@ export function ComparacionCiudades() {
             const filas = []
             for (const c of porCiudad.values()) {
               // La sección compara las ciudades más grandes: se restringe a las
-              // que están en la tabla de población (las ~45 más pobladas). Así
+              // que están en la tabla de población (las ~83 más pobladas). Así
               // Total, per cápita y las tasas comparan siempre el mismo conjunto
               // —y una métrica de tasa no queda dominada por municipios diminutos—.
               const pob = poblacionCiudadDe(c.clave)
@@ -203,15 +224,42 @@ export function ComparacionCiudades() {
               filas.push({ clave: c.clave, nombre: c.nombre, v, fila, pob })
             }
             filas.sort((a, b) => b.v - a.v)
-            const top = filas.slice(0, TOP)
 
-            if (!top.length) {
+            if (!filas.length) {
               return (
                 <p className="py-8 text-center text-textSecondary">
                   Sin ciudades con datos suficientes para esta métrica.
                 </p>
               )
             }
+
+            const top = filas.slice(0, TOP)
+            const topClaves = new Set(top.map((c) => c.clave))
+
+            // Ciudades añadidas a mano: se buscan en el ranking completo (no
+            // solo en el top) para mostrar su posición real. Si una ciudad
+            // añadida no tiene muestra suficiente para esta métrica, se avisa
+            // en vez de ocultarla —el selector la ofreció, así que se explica
+            // por qué no tiene barra ahora—.
+            const anadidasConDatos = []
+            const anadidasSinDatos = []
+            for (const clave of agregadas) {
+              const idx = filas.findIndex((f) => f.clave === clave)
+              if (idx === -1) {
+                const cruda = porCiudad.get(clave)
+                if (cruda) anadidasSinDatos.push(cruda)
+                continue
+              }
+              anadidasConDatos.push({ ...filas[idx], posicion: idx + 1 })
+            }
+
+            // Opciones del selector: el resto de ciudades con datos para esta
+            // métrica, sin las que ya están en el top o ya añadidas, en orden
+            // alfabético —el ranking ya se ve en el "#" de cada opción—.
+            const opciones = filas
+              .map((f, i) => ({ clave: f.clave, nombre: f.nombre, posicion: i + 1 }))
+              .filter((f) => !topClaves.has(f.clave) && !agregadas.includes(f.clave))
+              .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
 
             // Escala de las barras: si la primera ciudad multiplica por más de 2
             // a la segunda, se usa la segunda como tope para que el resto no
@@ -222,36 +270,92 @@ export function ComparacionCiudades() {
             const fueraDeEscala = top.length > 2 && v0 > 2 * v1
             const escala = fueraDeEscala ? v1 : v0
 
-            // Dos columnas en pantallas anchas: la misma lista, la mitad de
-            // alta. Se reparte en orden (1ª mitad a la izquierda, 2ª a la
-            // derecha) en vez de intercalar, para que cada columna se lea
-            // como un tramo continuo del ranking.
-            const mitad = Math.ceil(top.length / 2)
-            const columnas = [top.slice(0, mitad), top.slice(mitad)]
-
-            const fila = (c) => {
-              const ancho = escala > 0 ? Math.max(1.5, Math.min(100, (c.v / escala) * 100)) : 0
-              return (
-                <FilaCiudad
-                  key={c.clave}
-                  nombre={c.nombre}
-                  valorTexto={registro.formato(c.v, perCapita)}
-                  detalle={registro.detalle(c.fila, perCapita, c.pob)}
-                  ancho={ancho}
-                  color={registro.color}
-                />
-              )
-            }
+            const anchoDe = (v) => (escala > 0 ? Math.max(1.5, Math.min(100, (v / escala) * 100)) : 0)
 
             return (
               <>
-                <div className="md:grid md:grid-cols-2 md:gap-x-8 md:divide-x md:divide-border">
-                  {columnas.map((col, i) => (
-                    <ul key={i} className="divide-y divide-border md:last:pl-8">
-                      {col.map(fila)}
-                    </ul>
+                <ul>
+                  {top.map((c, i) => (
+                    <FilaCiudad
+                      key={c.clave}
+                      posicion={i + 1}
+                      nombre={c.nombre}
+                      valorTexto={registro.formato(c.v, perCapita)}
+                      detalle={registro.detalle(c.fila, perCapita, c.pob)}
+                      ancho={anchoDe(c.v)}
+                      color={registro.color}
+                    />
                   ))}
-                </div>
+                </ul>
+
+                {(anadidasConDatos.length > 0 || anadidasSinDatos.length > 0) && (
+                  <div className="mt-1">
+                    <p className="pt-2 pb-0.5 text-[11px] uppercase tracking-label text-textSecondary font-semibold border-t border-dashed border-border">
+                      Añadidas para comparar
+                    </p>
+                    <ul>
+                      {anadidasConDatos.map((c) => (
+                        <FilaCiudad
+                          key={c.clave}
+                          posicion={c.posicion}
+                          nombre={c.nombre}
+                          valorTexto={registro.formato(c.v, perCapita)}
+                          detalle={registro.detalle(c.fila, perCapita, c.pob)}
+                          ancho={anchoDe(c.v)}
+                          color={registro.color}
+                          onQuitar={() => quitar(c.clave)}
+                        />
+                      ))}
+                      {anadidasSinDatos.map((c) => (
+                        <li key={c.clave} className="py-0.5 flex items-center gap-3">
+                          <span className="w-6 shrink-0" />
+                          <span className="flex-1 text-[13.5px] text-textPrimary leading-snug">
+                            {c.nombre}{' '}
+                            <span className="text-textSecondary font-normal">
+                              — sin muestra suficiente para esta métrica
+                            </span>
+                          </span>
+                          <button
+                            onClick={() => quitar(c.clave)}
+                            aria-label={`Quitar ${c.nombre} de la comparación`}
+                            className="shrink-0 text-textSecondary hover:text-textPrimary text-base leading-none"
+                          >
+                            ×
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {opciones.length > 0 && (
+                  <div className="mt-4 flex items-center gap-3 flex-wrap">
+                    <label
+                      htmlFor="comparacion-ciudades-selector"
+                      className="text-[11px] uppercase tracking-label text-textSecondary font-semibold"
+                    >
+                      Comparar con otra ciudad
+                    </label>
+                    <select
+                      id="comparacion-ciudades-selector"
+                      value=""
+                      onChange={(e) => {
+                        const clave = e.target.value
+                        if (clave) setAgregadas((prev) => [...prev, clave])
+                      }}
+                      className="bg-bg border-0 border-b border-border px-0 py-1.5 text-[14px] text-textPrimary
+                                 focus:border-textPrimary focus:outline-none cursor-pointer min-w-[190px]"
+                    >
+                      <option value="">Elegir ciudad…</option>
+                      {opciones.map((o) => (
+                        <option key={o.clave} value={o.clave}>
+                          {o.nombre} — #{o.posicion}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 {fueraDeEscala && (
                   <p className="mt-3 text-[11px] text-textSecondary/80 leading-snug">
                     <span className="font-semibold text-textSecondary">{top[0].nombre}</span> se sale
@@ -261,7 +365,13 @@ export function ComparacionCiudades() {
                 )}
                 <p className="mt-3 text-[11px] text-textSecondary/80 leading-snug">
                   Entre las {NUM_CIUDADES} principales ciudades del país, las {top.length} primeras
-                  por esta métrica{perCapita ? ` (población DANE ${POBLACION_CIUDADES_ANIO})` : ''}.
+                  por esta métrica{perCapita ? ` (población DANE ${POBLACION_CIUDADES_ANIO})` : ''}
+                  {anadidasConDatos.length + anadidasSinDatos.length > 0
+                    ? `, más ${anadidasConDatos.length + anadidasSinDatos.length} añadida${
+                        anadidasConDatos.length + anadidasSinDatos.length > 1 ? 's' : ''
+                      } para comparar`
+                    : ''}
+                  .
                 </p>
               </>
             )

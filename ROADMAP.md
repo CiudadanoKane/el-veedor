@@ -870,6 +870,18 @@ DANE publique la tabla municipal 2025, actualizar y unificar el año con el mapa
 Si más adelante se quiere resolver los nombres ambiguos, habría que agrupar por
 `departamento, ciudad` (hoy el hook agrupa solo por `ciudad`).
 
+Rediseño (jul 2026): la lista pasó de 18 filas con la barra debajo del texto a
+**10 filas** con la barra al lado, en una sola línea —menos alto, sin depender
+del ancho de pantalla—. Se probó y descartó una variante de columnas verticales
+con nombres girados 90°: en alto quedaba parecida, pero necesitaba más ancho del
+que cabe en pantalla (scroll horizontal) y el texto girado se lee más despacio.
+Las demás ciudades de las 83 no desaparecieron: un selector bajo el ranking deja
+**añadir cualquiera**, mostrando su posición real dentro de la muestra (p. ej.
+"#34"); cada añadida se recalcula sola al cambiar de métrica o modo, y si no
+tiene muestra suficiente para una tasa lo dice en vez de ocultarse. Sin líneas
+divisorias entre filas ni relleno de sobra: la jerarquía la da el espacio, no el
+borde.
+
 ---
 
 ## Principios que no se negocian
