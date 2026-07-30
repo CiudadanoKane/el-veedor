@@ -11,6 +11,7 @@ import { useFilters } from '../../context/FiltersContext'
 // "Metodología y límites", y juntas se leen mejor que separadas.
 const NAV = [
   { to: '/', label: 'Panorama', end: true },
+  { to: '/mi-municipio', label: 'Mi municipio' },
   { to: '/noticias', label: 'Noticias' },
   { to: '/buscar', label: 'Buscar' },
   { to: '/alertas', label: 'Alertas' },

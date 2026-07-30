@@ -14,11 +14,16 @@ import { useFilters } from '../../context/FiltersContext'
 // así que no alarga el scroll de la página —resta alto de pantalla, unos 52 px—.
 //
 // No lleva "Buscar": el buscador ya es un campo permanente en la barra
-// superior, y repetirlo aquí gastaría un cuarto de la barra en algo que está
+// superior, y repetirlo aquí gastaría un quinto de la barra en algo que está
 // siempre a la vista. Sigue en el menú lateral para llegar a sus filtros
 // avanzados.
+//
+// "Mi municipio" aparece aquí como "Mi lugar": con cinco pestañas en 375 px
+// cada una dispone de unos 75 px, y la etiqueta larga se partía en dos
+// renglones. También es más exacto —la vista sirve igual para un departamento—.
 const ITEMS = [
   { to: '/', label: 'Panorama', icono: 'dashboard', end: true },
+  { to: '/mi-municipio', label: 'Mi lugar', icono: 'lugar' },
   { to: '/noticias', label: 'Noticias', icono: 'noticias' },
   { to: '/alertas', label: 'Alertas', icono: 'alerta' },
   { to: '/rankings', label: 'Rankings', icono: 'rankings' },

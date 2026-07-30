@@ -3,6 +3,7 @@ import { FiltersProvider } from './context/FiltersContext'
 import { TourProvider } from './components/ui/Tour'
 import { Layout } from './components/layout/Layout'
 import { Dashboard } from './pages/Dashboard'
+import { MiMunicipio } from './pages/MiMunicipio'
 import { Noticias } from './pages/Noticias'
 import { Buscar } from './pages/Buscar'
 import { Alertas } from './pages/Alertas'
@@ -22,6 +23,7 @@ function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
+            <Route path="mi-municipio" element={<MiMunicipio />} />
             <Route path="noticias" element={<Noticias />} />
             <Route path="buscar" element={<Buscar />} />
             <Route path="alertas" element={<Alertas />} />
