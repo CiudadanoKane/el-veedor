@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Sidebar } from './Sidebar'
 import { BarraFiltro } from './BarraFiltro'
 import { BusquedaRapida } from './BusquedaRapida'
+import { NavInferior } from './NavInferior'
 import { ErrorBoundary } from '../ui/ErrorBoundary'
 import { useFilters } from '../../context/FiltersContext'
 import { ejecucionContratistasQueryOptions } from '../../hooks/useEjecucionContratistas'
@@ -107,7 +108,9 @@ export function Layout() {
           </div>
         </div>
 
-        <main className="flex-1 px-5 py-8 sm:px-8 lg:px-14 lg:py-12">
+        {/* pb-24 en móvil: deja sitio a la barra de secciones, que es fija y si
+            no tapaba el final de cada página. */}
+        <main className="flex-1 px-5 py-8 pb-24 sm:px-8 lg:px-14 lg:py-12 lg:pb-12">
           <div className="max-w-6xl">
             {/* key por ruta: al navegar se limpia un error previo */}
             <ErrorBoundary key={pathname}>
@@ -116,6 +119,8 @@ export function Layout() {
           </div>
         </main>
       </div>
+
+      <NavInferior />
     </div>
   )
 }

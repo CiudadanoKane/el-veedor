@@ -2,12 +2,18 @@ import { Link, NavLink } from 'react-router-dom'
 import { useTour } from '../ui/Tour'
 import { useFilters } from '../../context/FiltersContext'
 
+// Secciones de datos: qué está pasando con la contratación.
+//
+// "Errores en SECOP" salió de aquí y bajó al grupo de abajo. No por ser menos
+// valioso —medir la calidad del registro no lo hace nadie más— sino porque
+// responde a otra pregunta: no habla de la contratación sino de cuánto se
+// puede confiar en el dato que la describe. Esa es exactamente la pregunta de
+// "Metodología y límites", y juntas se leen mejor que separadas.
 const NAV = [
   { to: '/', label: 'Panorama', end: true },
   { to: '/noticias', label: 'Noticias' },
   { to: '/buscar', label: 'Buscar' },
   { to: '/alertas', label: 'Alertas' },
-  { to: '/errores', label: 'Errores en SECOP' },
   { to: '/rankings', label: 'Rankings' },
 ]
 
@@ -89,8 +95,8 @@ export function Sidebar({ abierto, onCerrar }) {
           ))}
         </nav>
 
-        {/* Estas dos van aparte: no son módulos de datos sino el manual de la
-            plataforma y el canal para corregirla. */}
+        {/* Estas van aparte: no describen la contratación sino cómo leerla,
+            cuánto fiarse del dato y cómo corregirnos. */}
         <div className="px-7 pt-5 pb-7">
           {[
             // "Cómo funciona" sonaba a manual de uso, y "Reportar un error" a
@@ -98,6 +104,7 @@ export function Sidebar({ abierto, onCerrar }) {
             // con sus límites declarados, y la otra un canal abierto — llegan
             // correcciones, pero también sugerencias, preguntas y desacuerdos.
             ['/aprender', 'Aprende'],
+            ['/errores', 'Errores en SECOP'],
             ['/transparencia', 'Metodología y límites'],
             ['/reportar', 'Escríbenos'],
           ].map(([ruta, etiqueta]) => (
