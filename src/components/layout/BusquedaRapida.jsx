@@ -22,16 +22,19 @@ export function BusquedaRapida() {
     e.preventDefault()
     const limpio = texto.trim()
     if (!limpio) return
-    navigate(rutaConAmbito('/buscar', { q: limpio }))
+    // ia=1: el texto se interpreta al llegar (ciudad, monto, fechas pasan a ser
+    // filtros), igual que si se hubiera escrito en la caja del buscador.
+    navigate(rutaConAmbito('/buscar', { q: limpio, ia: '1' }))
     setTexto('')
   }
 
   return (
     <form onSubmit={enviar} className="flex-1 min-w-0" role="search">
+      {/* Campo claro sobre la banda oscura: es el contraste más alto de la
+          cabecera, y deja claro dónde se escribe. */}
       <div
-        className="flex items-center gap-2 border border-border bg-muted
-                   focus-within:border-textPrimary focus-within:bg-bg
-                   transition-colors px-2.5 py-1.5"
+        className="flex items-center gap-2 bg-bg border border-transparent
+                   focus-within:border-sideActive transition-colors px-2.5 py-1.5"
       >
         <svg
           width="15"
@@ -51,8 +54,11 @@ export function BusquedaRapida() {
           type="search"
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
-          aria-label="Busca fácil en la contratación pública"
-          placeholder="Busca fácil: acueducto, colegio, una empresa…"
+          aria-label="Busca contratos por descripción, ciudad o monto"
+          // Dice las tres cosas que se pueden escribir —qué, dónde, cuánto— con
+          // un ejemplo de cada una en vez de explicarlas. Cabe en una línea y
+          // no promete nada que la interpretación no haga (ver PARAM_IA).
+          placeholder="Busca contratos: acueducto, Soledad, más de 500 millones…"
           className="flex-1 min-w-0 bg-transparent border-0 p-0 text-[13.5px] text-textPrimary
                      placeholder:text-textSecondary focus:outline-none"
         />

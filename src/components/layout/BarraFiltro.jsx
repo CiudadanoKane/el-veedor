@@ -20,10 +20,17 @@ function Select({ etiqueta, value, onChange, options, loading, placeholder, disa
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled || loading}
-      className="max-w-[9.5rem] sm:max-w-[14rem] overflow-hidden text-ellipsis
-                 bg-bg border-0 border-b border-border px-0 py-0.5
-                 text-[13.5px] font-semibold text-textPrimary cursor-pointer
-                 hover:border-textPrimary focus:border-textPrimary focus:outline-none
+      // Sobre la banda oscura: fondo transparente y texto claro. Las opciones
+      // desplegadas las pinta el sistema operativo con su propio tema, y eso no
+      // se puede (ni conviene) forzar.
+      // flex-1 en móvil: los dos selectores reparten el ancho disponible y dejan
+      // sitio a "Limpiar" en la misma línea. Con anchos fijos, "Limpiar" saltaba
+      // a una tercera fila y la cabecera crecía 24 px.
+      className="flex-1 min-w-0 lg:flex-none max-w-[9.5rem] sm:max-w-[14rem]
+                 overflow-hidden text-ellipsis
+                 bg-side border-0 border-b border-sideSoft/50 px-0 py-0.5
+                 text-[13.5px] font-semibold text-sideActive cursor-pointer
+                 hover:border-sideActive focus:border-sideActive focus:outline-none
                  disabled:opacity-40 disabled:cursor-default"
     >
       <option value="">{loading ? 'Cargando…' : placeholder}</option>
@@ -43,9 +50,12 @@ export function BarraFiltro() {
 
   const hayFiltros = filters.department || filters.city || filters.entity
 
+  // Se conserva flex-wrap: con los selectores en flex-1 la fila normal cabe
+  // entera, y solo baja de línea el caso raro del filtro por entidad —cuyo
+  // nombre es largo—, en vez de desbordar a lo ancho.
   return (
     <div className="flex items-center gap-x-3 gap-y-1 flex-wrap pb-2.5 lg:py-2.5 lg:shrink-0">
-      <span className="hidden sm:inline text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+      <span className="hidden sm:inline text-[10px] uppercase tracking-label text-sideSoft font-semibold">
         Viendo
       </span>
 
@@ -72,11 +82,11 @@ export function BarraFiltro() {
           millones. Se activa al hacer clic en una entidad del índice de calidad,
           y aquí solo se muestra para poder quitarlo. */}
       {filters.entity && (
-        <span className="inline-flex items-center gap-1.5 min-w-0 border border-border px-2 py-0.5 text-[12.5px]">
-          <span className="truncate max-w-[11rem] text-textPrimary">{filters.entity}</span>
+        <span className="inline-flex items-center gap-1.5 min-w-0 border border-sideSoft/50 px-2 py-0.5 text-[12.5px]">
+          <span className="truncate max-w-[11rem] text-sideActive">{filters.entity}</span>
           <button
             onClick={() => setFilter('entity', '')}
-            className="shrink-0 text-textSecondary hover:text-textPrimary text-sm leading-none"
+            className="shrink-0 text-sideSoft hover:text-sideActive text-sm leading-none"
             aria-label="Quitar filtro de entidad"
           >
             ×
@@ -87,7 +97,7 @@ export function BarraFiltro() {
       {hayFiltros && (
         <button
           onClick={clearFilters}
-          className="text-[12.5px] text-textSecondary hover:text-textPrimary underline"
+          className="shrink-0 text-[12.5px] text-sideSoft hover:text-sideActive underline"
         >
           Limpiar
         </button>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../components/layout/Layout'
 import { QueryState } from '../components/ui/QueryState'
@@ -54,6 +54,13 @@ const PARAMS_BUSQUEDA = ['q', 'amplia', 'modalidad', 'tipo', 'estado', 'orden', 
 // en nombres de contratos, así que no choca con los términos.
 const SEP_TERMINOS = '|'
 
+// Marca que el texto llega de la búsqueda rápida de la barra fija y todavía no
+// ha pasado por la IA. Sin ella, escribir "acueducto en Soledad de más de 500
+// millones" allí caía en una búsqueda literal de la frase completa —que no
+// coincide con nada— mientras la caja de esta página sí la habría interpretado.
+// Es una instrucción de un solo uso: escribirBusqueda la borra siempre.
+const PARAM_IA = 'ia'
+
 // Escribe los criterios del buscador en un URLSearchParams (lo muta). Pura, a
 // nivel de módulo, para que la comparta actualizar() y la búsqueda con IA —esta
 // última necesita tocar además los parámetros geográficos en el MISMO update,
@@ -77,6 +84,9 @@ function escribirBusqueda(next, sig) {
     if (v) next.set(k, v)
     else next.delete(k)
   }
+  // Todo camino que escribe una búsqueda consume ya la marca de "interpretar":
+  // así no queda en la URL ni se vuelve a disparar al recargar o compartirla.
+  next.delete(PARAM_IA)
 }
 
 // Nivel superior: buscar contratos por palabra, o encontrar un contratista o
@@ -344,6 +354,20 @@ export function Buscar() {
       setCargandoIA(false)
     }
   }
+
+  // Texto que llega de la búsqueda rápida: se interpreta igual que si se
+  // hubiera escrito en la caja de esta página, para que "en Soledad" o "más de
+  // 500 millones" se conviertan en filtros y no en texto literal que no
+  // coincide con nada. El ref evita repetirlo: buscarConTexto reescribe la URL
+  // y el efecto volvería a entrar.
+  const yaInterpretado = useRef(null)
+  useEffect(() => {
+    const pendiente = params.get(PARAM_IA)
+    const texto = params.get('q') || ''
+    if (!pendiente || !texto || yaInterpretado.current === texto) return
+    yaInterpretado.current = texto
+    buscarConTexto(texto)
+  }, [params]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // "Limpiar búsqueda" borra la búsqueda, no la ubicación: para eso está
   // "Limpiar filtros" en la barra geográfica.

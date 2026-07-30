@@ -295,29 +295,50 @@ export function ComparacionCiudades() {
             const top = filas.slice(0, TOP)
             const topClaves = new Set(top.map((c) => c.clave))
 
-            // Ciudades añadidas a mano: se buscan en el ranking completo (no
-            // solo en el top) para mostrar su posición real. Si una ciudad
-            // añadida no tiene muestra suficiente para esta métrica, se avisa
-            // en vez de ocultarla —el selector la ofreció, así que se explica
-            // por qué no tiene barra ahora—.
+            // La ciudad del filtro superior entra sola en la comparación. Si
+            // alguien está viendo Soledad, la pregunta inmediata es cómo se
+            // compara —y tenerla que buscar en el selector, sabiendo ya que le
+            // interesa, era un paso de más. Se deriva del filtro en vez de
+            // guardarse en el estado, así entra y sale sola al cambiarlo.
+            //
+            // No lleva botón de quitar: está porque es el ámbito activo, y la
+            // forma de sacarla es cambiar el filtro, no el chip.
+            const enElPool = (k) => filas.some((f) => f.clave === k) || porCiudad.has(k)
+            const autoAmbito =
+              claveAmbito && !topClaves.has(claveAmbito) &&
+              !agregadas.includes(claveAmbito) && enElPool(claveAmbito)
+                ? claveAmbito
+                : null
+
+            // Añadidas: se buscan en el ranking completo (no solo en el top)
+            // para mostrar su posición real. Si una no tiene muestra suficiente
+            // para esta métrica, se avisa en vez de ocultarla —el selector la
+            // ofreció, así que se explica por qué no tiene barra ahora—.
             const anadidasConDatos = []
             const anadidasSinDatos = []
-            for (const clave of agregadas) {
+            for (const clave of autoAmbito ? [autoAmbito, ...agregadas] : agregadas) {
+              const esAuto = clave === autoAmbito
               const idx = filas.findIndex((f) => f.clave === clave)
               if (idx === -1) {
                 const cruda = porCiudad.get(clave)
-                if (cruda) anadidasSinDatos.push(cruda)
+                if (cruda) anadidasSinDatos.push({ ...cruda, esAuto })
                 continue
               }
-              anadidasConDatos.push({ ...filas[idx], posicion: idx + 1 })
+              anadidasConDatos.push({ ...filas[idx], posicion: idx + 1, esAuto })
             }
 
             // Opciones del selector: el resto de ciudades con datos para esta
-            // métrica, sin las que ya están en el top o ya añadidas, en orden
-            // alfabético —el ranking ya se ve en el "#" de cada opción—.
+            // métrica, sin las que ya están en el top, ya añadidas o puestas por
+            // el filtro, en orden alfabético —el ranking ya se ve en el "#" de
+            // cada opción—.
             const opciones = filas
               .map((f, i) => ({ clave: f.clave, nombre: f.nombre, posicion: i + 1 }))
-              .filter((f) => !topClaves.has(f.clave) && !agregadas.includes(f.clave))
+              .filter(
+                (f) =>
+                  !topClaves.has(f.clave) &&
+                  !agregadas.includes(f.clave) &&
+                  f.clave !== autoAmbito,
+              )
               .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
 
             // Escala de las barras: si la primera ciudad multiplica por más de 2
@@ -371,7 +392,7 @@ export function ComparacionCiudades() {
                           detalle={registro.detalle(c.fila, perCapita, c.pob)}
                           ancho={anchoDe(c.v)}
                           color={registro.color}
-                          onQuitar={() => quitar(c.clave)}
+                          onQuitar={c.esAuto ? undefined : () => quitar(c.clave)}
                           onIr={irA(c.clave)}
                           esAmbito={claveAmbito === c.clave}
                         />
@@ -385,13 +406,15 @@ export function ComparacionCiudades() {
                               — sin muestra suficiente para esta métrica
                             </span>
                           </span>
-                          <button
-                            onClick={() => quitar(c.clave)}
-                            aria-label={`Quitar ${c.nombre} de la comparación`}
-                            className="shrink-0 text-textSecondary hover:text-textPrimary text-base leading-none"
-                          >
-                            ×
-                          </button>
+                          {!c.esAuto && (
+                            <button
+                              onClick={() => quitar(c.clave)}
+                              aria-label={`Quitar ${c.nombre} de la comparación`}
+                              className="shrink-0 text-textSecondary hover:text-textPrimary text-base leading-none"
+                            >
+                              ×
+                            </button>
+                          )}
                         </li>
                       ))}
                     </ul>

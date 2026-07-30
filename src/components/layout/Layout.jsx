@@ -66,12 +66,16 @@ export function Layout() {
             mismo bloque sticky, para que se apilen en vez de pelearse por el
             borde superior. En pantalla ancha búsqueda y ámbito comparten fila;
             en móvil se apilan en dos. */}
-        <div className="sticky top-0 z-20 bg-bg border-b border-border">
+        {/* Banda oscura, la misma del menú lateral: en blanco sobre blanco la
+            cabecera se perdía —había que buscarla— y es donde viven las dos
+            herramientas que se usan todo el tiempo. Así el "cromo" de la
+            plataforma queda en un solo tono y el contenido, en el blanco. */}
+        <div className="sticky top-0 z-20 bg-side">
           <div className="px-4 sm:px-8 lg:px-14 lg:flex lg:items-center lg:gap-8">
             <div className="flex items-center gap-3 py-2.5 lg:flex-1 lg:min-w-0 lg:max-w-2xl">
               <button
                 onClick={() => setMenuAbierto(true)}
-                className="lg:hidden shrink-0 text-textPrimary p-1 -ml-1"
+                className="lg:hidden shrink-0 text-sideActive p-1 -ml-1"
                 aria-label="Abrir menú"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -85,12 +89,14 @@ export function Layout() {
                 aria-label="El Veedor — ir al Panorama"
                 className="lg:hidden shrink-0 flex items-center gap-2.5"
               >
-                <img src="/icono-el-veedor.png" alt="" className="h-6 w-6" />
+                <img src="/icono-el-veedor-blanco.png" alt="" className="h-6 w-6" />
                 {/* El nombre cede su sitio a la búsqueda cuando esta está
                     presente: en 375 px no caben las dos, y el nombre completo
                     sigue en el menú lateral. */}
                 {!conBusqueda && (
-                  <span className="font-display font-semibold text-lg tracking-tight">El Veedor</span>
+                  <span className="font-display font-semibold text-lg tracking-tight text-sideActive">
+                    El Veedor
+                  </span>
                 )}
               </Link>
 
