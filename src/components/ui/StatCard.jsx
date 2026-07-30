@@ -32,8 +32,26 @@ export function StatCard({
           no caben en la misma línea, y sin permitir el salto la fuente
           estrujaba el rótulo hasta partirlo letra a letra. El rótulo y su
           chevron van agrupados para que al saltar no quede la flecha sola en
-          el renglón de abajo: lo único que baja de línea es la fuente. */}
-      <div className="flex items-baseline gap-x-2 flex-wrap">
+          el renglón de abajo: lo único que baja de línea es la fuente.
+
+          Y se reserva altura cuando hay etiqueta de fuente: los rótulos miden
+          distinto —"Contratos registrados" ocupa dos renglones y "Contratistas"
+          uno—, así que sin la reserva las cifras de una misma fila arrancaban a
+          alturas distintas y la rejilla se veía torcida. Misma solución que ya
+          usan la fila de la cifra y la del porcentaje.
+
+          Son dos reservas porque el rótulo se parte distinto según el ancho: en
+          móvil (dos columnas, ~158 px) "Contratos registrados" ocupa dos
+          renglones y la fuente baja a un tercero; desde sm la fuente vuelve a
+          caber al lado y basta con reservar los dos renglones del rótulo. El
+          desajuste de sm en adelante ya existía antes de las dos columnas —se
+          veía en «Contratos registrados» y «Entidades contratantes»—, solo que
+          nadie lo había medido. */}
+      <div
+        className={`flex items-baseline gap-x-2 flex-wrap ${
+          fuente ? 'min-h-[3.125rem] sm:min-h-[2rem]' : ''
+        }`}
+      >
         <span className="inline-flex items-baseline gap-2 min-w-0">
           <span className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
             {label}

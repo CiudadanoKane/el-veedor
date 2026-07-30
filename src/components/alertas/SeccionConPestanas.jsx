@@ -37,7 +37,7 @@ export function SeccionConPestanas({ titulo, subtitulo, intro, items }) {
         </p>
       )}
 
-      <div className="overflow-x-auto -mx-1 px-1">
+      <div>
         <Segmented
           value={tab}
           onChange={cambiar}

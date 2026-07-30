@@ -488,7 +488,7 @@ export function Buscar() {
         subtitle="Busca por palabra en 5,3 millones de contratos, o encuentra a un contratista o entidad por nombre."
       />
 
-      <div className="overflow-x-auto -mx-1 px-1">
+      <div>
         <Segmented value={modo} onChange={(v) => actualizar({ modo: v })} options={MODOS} />
       </div>
 

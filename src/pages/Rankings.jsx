@@ -547,7 +547,7 @@ export function Rankings() {
         subtitle="Quién recibe más recursos públicos, quién los entrega, en qué se contrata y cómo se ejecuta lo contratado."
       />
 
-      <div className="overflow-x-auto -mx-1 px-1">
+      <div>
         <Segmented
           value={tab}
           onChange={setTab}

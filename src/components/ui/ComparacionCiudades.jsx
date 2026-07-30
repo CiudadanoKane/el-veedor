@@ -194,7 +194,7 @@ export function ComparacionCiudades() {
         </p>
       </div>
 
-      <div className="mt-4 overflow-x-auto -mx-1 px-1">
+      <div className="mt-4">
         <Segmented value={metrica} onChange={setMetrica} options={OPCIONES} />
       </div>
 
