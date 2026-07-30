@@ -37,6 +37,7 @@ export function NavInferior() {
   return (
     <nav
       aria-label="Secciones"
+      data-tour="nav-movil"
       className="lg:hidden fixed bottom-0 inset-x-0 z-20 bg-side border-t border-sideHover
                  pb-[env(safe-area-inset-bottom)]"
     >
@@ -46,6 +47,9 @@ export function NavInferior() {
             key={item.to}
             to={rutaConAmbito(item.to)}
             end={item.end}
+            // Ancla del tour: en móvil este es el enlace visible a Noticias,
+            // porque el de la barra lateral está oculto.
+            data-tour={item.to === '/noticias' ? 'noticias' : undefined}
             className={({ isActive }) =>
               `flex-1 flex flex-col items-center gap-1 py-2 leading-none
                ${isActive ? 'text-sideActive' : 'text-sideSoft'}`

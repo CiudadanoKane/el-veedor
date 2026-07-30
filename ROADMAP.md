@@ -900,6 +900,64 @@ Anuario Estadístico del Atlántico 2022 —no se halló su proyección 2023—.
 
 ---
 
+### HECHO ✅ — Revisión de distribución de la información (jul 2026)
+
+Repaso completo de dónde vive cada cosa, con foco en el uso desde un teléfono.
+El diagnóstico salió de medir, no de opinar: Panorama medía 5.308 px en móvil
+(las ocho cifras, 1.580 px de ellos), el mismo filtro geográfico se renderizaba
+**siete veces** —tres solo en Panorama—, y en toda la app había **7 enlaces**
+entre secciones: el drill-down a perfiles estaba bien resuelto, el movimiento
+lateral no existía.
+
+- **Filtro de ámbito en barra fija** (`BarraFiltro`). Sustituye las siete copias
+  y deja el ámbito visible siempre. Se añade `rutaConAmbito` al contexto porque
+  los enlaces de react-router no arrastraban la query: el ciudadano elegía su
+  municipio y lo perdía al cambiar de sección.
+- **Buscador permanente** (`BusquedaRapida`) en esa misma barra, con el texto
+  "Busca fácil" a la vista. Arrastra el ámbito y pasa por la interpretación con
+  IA vía el parámetro de un solo uso `ia` — sin él, escribir "en Soledad de más
+  de 500 millones" caía en una búsqueda literal que no coincide con nada.
+- **Barra oscura** (`bg-side`, la del menú): el cromo en un tono, el contenido
+  en el blanco.
+- **Mapa y ranking de ciudades clicables.** Eran callejones sin salida y el mapa
+  solo respondía a `onMouseEnter` —en un teléfono era decorativo y pedía "pasa
+  el cursor"—. El toque fija la cifra; filtrar es un segundo gesto explícito.
+  Las ciudades con nombre repetido en varios departamentos quedan **sin enlace
+  a propósito**: adivinar mandaría al ciudadano al municipio equivocado.
+- **Panorama a dos columnas en móvil**: el bloque de cifras baja de 1.580 a
+  1.169 px.
+- **Navegación**: barra fija de secciones en móvil (`NavInferior`), y "Errores
+  en SECOP" baja al grupo de método —no habla de la contratación sino de cuánto
+  fiarse del dato, que es la pregunta de Metodología—.
+- **Vista "Mi municipio"** (`MiMunicipio.jsx`): el retrato de un lugar en una
+  sola lectura. No trae consultas nuevas; reusa el panorama agrupado y el
+  ranking de contratistas.
+
+Dos defectos encontrados al probarlo en un teléfono real, no aquí:
+
+1. **La barra inferior no se veía.** La causa estaba lejos de ella: varios
+   grupos `Segmented` sin contenedor de scroll hacían que el documento midiera
+   541 px contra 375 de pantalla; el navegador móvil **aleja el zoom**, el
+   viewport de layout deja de coincidir con el visible y todo lo `position:
+   fixed` queda anclado fuera de la pantalla. El scroll pasó a vivir **dentro**
+   de `Segmented` para que ningún uso nuevo lo reintroduzca. Lección: comprobar
+   el desborde con `document.documentElement.clientWidth`, nunca con
+   `window.innerWidth` —en un panel emulado valen distinto y la comprobación se
+   cumple sola—.
+2. **Cifras desalineadas**: los rótulos miden distinto, así que se reserva
+   altura cuando llevan etiqueta de fuente. El mismo desajuste existía en
+   escritorio desde antes y nadie lo había medido.
+
+El tour quedó desincronizado por estos cambios y se actualizó: `objetivoVisible`
+admite varios selectores y elige el que de verdad ocupa espacio, para que el
+paso de secciones señale la barra lateral en escritorio y la inferior en móvil.
+
+**Pendiente de verificar en un deploy real** (no se puede en local): que la
+interpretación con IA de la búsqueda rápida devuelva filtros —`/api/buscar-ia`
+exige `vercel dev` o producción—.
+
+---
+
 ## Principios que no se negocian
 
 1. **La plataforma señala patrones, no acusa.** Ninguna cifra se presenta como

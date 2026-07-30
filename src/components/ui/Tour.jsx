@@ -24,15 +24,16 @@ const PASOS = [
       'Convierte los datos de contratación pública de Colombia (SECOP II) en señales que cualquiera puede leer. Su principio: señala patrones, no acusa. Te muestro lo básico en un minuto.',
   },
   {
-    target: '[data-tour="nav"]',
+    // Dos selectores: la barra lateral manda en escritorio y la barra de
+    // secciones en móvil. Ver objetivoVisible.
+    target: '[data-tour="nav"], [data-tour="nav-movil"]',
     titulo: 'Las secciones',
     cuerpo: (
       <ul className="space-y-1.5">
         <li><strong className="text-textPrimary">Panorama</strong>: el resumen del país.</li>
+        <li><strong className="text-textPrimary">Mi municipio</strong>: todo lo que sabemos de un lugar, en una sola lectura.</li>
         <li><strong className="text-textPrimary">Noticias</strong>: las señales del día, ya explicadas.</li>
-        <li><strong className="text-textPrimary">Buscar</strong>: un contrato, contratista o entidad por nombre.</li>
         <li><strong className="text-textPrimary">Alertas</strong>: patrones de ejecución, como mora, prórrogas y obras paradas.</li>
-        <li><strong className="text-textPrimary">Errores en SECOP</strong>: fallas del registro, como fechas imposibles o contratos sin identificar.</li>
         <li><strong className="text-textPrimary">Rankings</strong>: quién recibe y quién entrega más recursos, en qué se contrata y cómo se ejecuta.</li>
       </ul>
     ),
@@ -44,10 +45,10 @@ const PASOS = [
       'Noticias reúne las señales más llamativas del momento, ya masticadas y con enlace a la evidencia. Es la puerta de entrada más rápida.',
   },
   {
-    target: '[data-tour="filtros"]',
-    titulo: 'Acota a tu territorio',
+    target: '[data-tour="barra"]',
+    titulo: 'La barra de arriba',
     cuerpo:
-      'Filtra por departamento y ciudad. Casi todo el sitio responde al filtro: el panorama, las alertas y las noticias se recalculan para tu zona.',
+      'Siempre a mano, en cualquier página. A la izquierda buscas contratos por lo que sea —una obra, tu municipio, un monto—. Al lado eliges el territorio: casi todo el sitio se recalcula para tu zona y el filtro te sigue de sección en sección.',
   },
   {
     target: '[data-tour="cifras"]',
@@ -66,6 +67,21 @@ const PASOS = [
 const TourContext = createContext(null)
 export const useTour = () => useContext(TourContext)
 
+// Primer objetivo que de verdad ocupa espacio. `target` admite varios selectores
+// separados por coma, porque un mismo paso señala elementos distintos según el
+// ancho: las secciones están en la barra lateral en escritorio y en la barra
+// inferior en móvil, y solo una de las dos está visible a la vez. Con
+// querySelector a secas ganaba siempre la primera del DOM —la lateral—, que en
+// móvil está oculta, y el paso acababa flotando en el centro sin señalar nada.
+function objetivoVisible(target) {
+  if (!target) return null
+  for (const el of document.querySelectorAll(target)) {
+    const r = el.getBoundingClientRect()
+    if (r.width > 0 && r.height > 0) return el
+  }
+  return null
+}
+
 function Overlay({ paso, index, total, onAnterior, onSiguiente, onCerrar }) {
   const [rect, setRect] = useState(null)
   const [pos, setPos] = useState(null)
@@ -75,12 +91,12 @@ function Overlay({ paso, index, total, onAnterior, onSiguiente, onCerrar }) {
   // (barra lateral en móvil), rect queda null y el paso se muestra centrado.
   useLayoutEffect(() => {
     const medir = () => {
-      const el = paso.target ? document.querySelector(paso.target) : null
+      const el = objetivoVisible(paso.target)
       if (!el) return setRect(null)
       const r = el.getBoundingClientRect()
       setRect(r.width > 0 && r.height > 0 ? r : null)
     }
-    const el = paso.target ? document.querySelector(paso.target) : null
+    const el = objetivoVisible(paso.target)
     if (el) el.scrollIntoView({ block: 'nearest', inline: 'nearest' })
     medir()
     window.addEventListener('resize', medir)
