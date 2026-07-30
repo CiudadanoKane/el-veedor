@@ -138,11 +138,9 @@ export function Dashboard() {
   const enEjecucion = porEstado.data?.enEjecucion
   const pctRecienteNum = pct(mora.data?.recientes, enEjecucion)
   const pctReciente = pctRecienteNum != null ? formatPct(pctRecienteNum) : null
-  // El vencido reciente de SECOP I se muestra aparte, con SU base (los
-  // "vigentes" estimados de SECOP I), nunca promediado con SECOP II: las dos
-  // tasas son muy distintas y un porcentaje mezclado engañaría.
-  const pctRecienteSecop1Num = pct(mora.data?.recientesSecop1, mora.data?.vigentesSecop1)
-  const pctRecienteSecop1 = pctRecienteSecop1Num != null ? formatPct(pctRecienteSecop1Num) : null
+  // El vencido reciente de SECOP I se muestra como conteo aparte, nunca sumado
+  // ni promediado con el de SECOP II: sus bases son distintas y una tasa
+  // mezclada engañaría (ver el detalle de estados).
   const pctVencidosNum = pct(mora.data?.total, enEjecucion)
   const pctVencidos = pctVencidosNum != null ? formatPct(pctVencidosNum) : null
   // El riesgo (valor_pendiente) es solo de SECOP II, así que se compara contra
@@ -170,11 +168,7 @@ export function Dashboard() {
             <SubVivo
               data={ejecucion.data}
               tipo="conteo"
-              nota={
-                tieneSecop1
-                  ? 'En SECOP I, "en ejecución" se estima por su estado "Celebrado".'
-                  : 'Total histórico. Excluye borradores y cancelados.'
-              }
+              nota={tieneSecop1 ? null : 'Excluye borradores y cancelados.'}
             />
           }
           loading={generales.isLoading}
@@ -192,7 +186,7 @@ export function Dashboard() {
           label="Contratistas"
           fuente={fuenteSolo2}
           value={contratistasActores.data?.toLocaleString('es-CO') ?? '—'}
-          sub="Personas y empresas distintas, contadas por NIT o cédula"
+          sub="Personas y empresas distintas"
           loading={contratistasActores.isLoading}
           reservaPct={false}
           accion={
@@ -213,7 +207,7 @@ export function Dashboard() {
           label="Entidades contratantes"
           fuente={fuenteSolo2}
           value={entidadesActoras.data?.toLocaleString('es-CO') ?? '—'}
-          sub="Organismos públicos que firmaron contratos"
+          sub="Organismos que firmaron"
           loading={entidadesActoras.isLoading}
           reservaPct={false}
           accion={
@@ -238,7 +232,7 @@ export function Dashboard() {
             <SubVivo
               data={ejecucion.data}
               tipo="valor"
-              nota={`Total histórico: ${formatCOPFull(generales.data?.valor)}`}
+              nota={null}
             />
           }
           tone="primary"
@@ -258,21 +252,22 @@ export function Dashboard() {
           fuente={fuenteSolo2}
           value={mora.data?.recientes?.toLocaleString('es-CO') ?? '—'}
           pct={pctReciente ? `${pctReciente} de los vigentes` : null}
+          // La tarjeta se lee de un vistazo. El porqué del estado "Celebrado"
+          // pasó al detalle de "¿En qué estado están esos contratos?", y la
+          // ventana de 6 meses ya estaba en el de antigüedad. Lo único que se
+          // queda aquí es la advertencia de lectura —sin ella la cifra se
+          // malinterpreta sola—, en su forma más corta.
           sub={
             <div>
               {mora.data?.recientesSecop1 ? (
-                <div className="mb-1.5 text-textPrimary">
+                <div className="mb-1 text-textPrimary">
                   <span className="tabular-nums font-medium">
                     {mora.data.recientesSecop1.toLocaleString('es-CO')}
                   </span>{' '}
                   más en SECOP I
-                  {pctRecienteSecop1 ? ` (${pctRecienteSecop1} de sus vigentes)` : ''}, por su
-                  estado "Celebrado"
                 </div>
               ) : null}
-              <div>
-                Plazo vencido en los últimos 6 meses. No todos los vencidos son retrasos reales.
-              </div>
+              <div>No todos son retrasos reales.</div>
             </div>
           }
           tone="danger"
@@ -295,8 +290,8 @@ export function Dashboard() {
           // el ancho, pero no debería ser lo único que el lector recibe.
           sub={
             mora.data?.riesgo
-              ? `${formatCOP(mora.data.riesgo)} pendientes de ejecución en contratos vencidos`
-              : 'Pendiente de ejecución en contratos vencidos'
+              ? `${formatCOP(mora.data.riesgo)} en contratos vencidos`
+              : 'Pendiente en contratos vencidos'
           }
           tone="warning"
           loading={mora.isLoading || generales.isLoading}
@@ -318,8 +313,8 @@ export function Dashboard() {
           pct={generales.data?.total ? 'de todos los contratos' : null}
           sub={
             generales.data?.directa
-              ? `${generales.data.directa.toLocaleString('es-CO')} de ${generales.data.total.toLocaleString('es-CO')} se adjudicaron de forma directa, sin concurso abierto`
-              : 'Contratos adjudicados sin concurso'
+              ? `${generales.data.directa.toLocaleString('es-CO')} de ${generales.data.total.toLocaleString('es-CO')}, sin concurso abierto`
+              : 'Adjudicados sin concurso'
           }
           tone="warning"
           loading={generales.isLoading}
@@ -341,8 +336,8 @@ export function Dashboard() {
           pct={cierre.data?.total ? 'de los que ya vencieron' : null}
           sub={
             cierre.data
-              ? `${cierre.data.completo.toLocaleString('es-CO')} de ${cierre.data.total.toLocaleString('es-CO')} quedaron cerrados y con el pago completo registrado`
-              : 'Contratos cerrados y con el pago completo registrado'
+              ? `${cierre.data.completo.toLocaleString('es-CO')} de ${cierre.data.total.toLocaleString('es-CO')}, con el pago registrado`
+              : 'Cerrados y con el pago registrado'
           }
           tone="success"
           loading={cierre.isLoading}
@@ -438,6 +433,12 @@ export function Dashboard() {
             <strong>cancelados</strong> y los que siguen en trámite de aprobación,
             porque no representan contratación real. Los cancelados por sí solos
             sumaban $1.156 billones e inflaban el valor nacional en más del 130%.
+            <br />
+            <br />
+            En <strong>SECOP I</strong> no existe el estado "En ejecución": ahí esa
+            cifra se <strong>estima</strong> con el estado <strong>"Celebrado"</strong>{' '}
+            —firmado y sin liquidar—, que es su equivalente más cercano. Por eso las
+            dos fuentes se muestran por separado y nunca se promedian sus tasas.
           </>
         }
       >
@@ -460,7 +461,15 @@ export function Dashboard() {
     valor: (
       <Detalle
         titulo="Distribución de valor por sector"
-        intro="En qué áreas del Estado se concentra el dinero comprometido. Solo SECOP II: SECOP I no clasifica sus contratos por sector."
+        // La cifra exacta al peso vive aquí y no en la tarjeta: en la tarjeta
+        // eran diecisiete dígitos que nadie procesa de un vistazo, y ese bloque
+        // se lee de reojo. Pero no se pierde —la abreviatura "$1.638,8 B" no
+        // debería ser lo único que el lector recibe—.
+        intro={
+          generales.data?.valor
+            ? `En qué áreas del Estado se concentra el dinero comprometido. El total histórico es ${formatCOPFull(generales.data.valor)}. Solo SECOP II: SECOP I no clasifica sus contratos por sector.`
+            : 'En qué áreas del Estado se concentra el dinero comprometido. Solo SECOP II: SECOP I no clasifica sus contratos por sector.'
+        }
         metodologia={
           <>
             "Sector" corresponde a la estructura del gobierno <strong>nacional</strong>.
