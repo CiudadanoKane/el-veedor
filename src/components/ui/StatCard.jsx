@@ -28,17 +28,24 @@ export function StatCard({
           el mismo gris tenue del rótulo, si la cifra combina las dos plataformas
           o es solo de SECOP II — así el alcance viaja pegado a cada cifra en vez
           de en una nota al pie que hay que ir a buscar. */}
-      <div className="flex items-baseline gap-2">
-        <span className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
-          {label}
+      {/* flex-wrap: en dos columnas de móvil el rótulo y la etiqueta de fuente
+          no caben en la misma línea, y sin permitir el salto la fuente
+          estrujaba el rótulo hasta partirlo letra a letra. El rótulo y su
+          chevron van agrupados para que al saltar no quede la flecha sola en
+          el renglón de abajo: lo único que baja de línea es la fuente. */}
+      <div className="flex items-baseline gap-x-2 flex-wrap">
+        <span className="inline-flex items-baseline gap-2 min-w-0">
+          <span className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+            {label}
+          </span>
+          {desplegable && (
+            <Icon
+              name="chevronAbajo"
+              className={`h-3 w-3 shrink-0 text-textSecondary transition-transform duration-200
+                          ${abierta ? 'rotate-0' : '-rotate-90'}`}
+            />
+          )}
         </span>
-        {desplegable && (
-          <Icon
-            name="chevronAbajo"
-            className={`h-3 w-3 shrink-0 text-textSecondary transition-transform duration-200
-                        ${abierta ? 'rotate-0' : '-rotate-90'}`}
-          />
-        )}
         {fuente && (
           <span className="ml-auto text-[9.5px] uppercase tracking-label text-textSecondary/70 font-medium whitespace-nowrap">
             {fuente}

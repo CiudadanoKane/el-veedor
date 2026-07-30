@@ -33,11 +33,13 @@ function SubVivo({ data, tipo, nota }) {
     <div>
       <div className="space-y-0.5">
         {filas.map((f) => (
-          <div key={f.label} className="flex items-baseline gap-2">
+          <div key={f.label} className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
             {/* El número a la izquierda, en columna de ancho fijo, para que
                 quede alineado bajo la cifra grande y las etiquetas empiecen
-                todas al mismo punto. */}
-            <span className="tabular-nums font-medium text-textPrimary min-w-[5.5rem]">
+                todas al mismo punto. En móvil, donde las tarjetas van a dos
+                columnas, esa reserva no cabe: el número y su etiqueta se
+                apilan en vez de partir la etiqueta en tres renglones. */}
+            <span className="tabular-nums font-medium text-textPrimary sm:min-w-[5.5rem]">
               {fmt(f.a, f.b)}
             </span>
             <span>{f.label}</span>
@@ -663,7 +665,11 @@ export function Dashboard() {
       {/* Cifras clave: cada una es la puerta de entrada a su detalle. El alcance
           de fuente (SECOP II + I / solo SECOP II) viaja rotulado en cada tarjeta,
           no en un banner arriba. */}
-      <div data-tour="cifras" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-8 mb-10">
+      {/* Dos columnas ya en móvil: apiladas de una en una, las ocho cifras
+          ocupaban 1.580 px —casi un tercio de la página— y empujaban el primer
+          gráfico fuera de alcance; en dos columnas bajan a 1.114. La cifra más
+          ancha mide 129 px y la columna da 158 px, así que ninguna se parte. */}
+      <div data-tour="cifras" className="grid grid-cols-2 lg:grid-cols-4 gap-x-5 sm:gap-x-8 gap-y-8 mb-10">
         {tarjetas.map((t, i) => (
           <Fragment key={t.clave ?? `fija-${i}`}>
             {t.nodo}

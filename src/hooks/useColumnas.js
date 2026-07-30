@@ -5,13 +5,14 @@ import { useState, useEffect } from 'react'
 // Hace falta en JavaScript, y no basta con CSS: para desplegar el detalle
 // justo debajo de la fila de la tarjeta pulsada hay que saber dónde termina
 // esa fila, y eso depende de cuántas columnas quepan. Los cortes replican los
-// de Tailwind en el grid del panorama (sm:2, lg:4).
+// del grid del panorama, que es de dos columnas desde el móvil y de cuatro
+// desde lg. Si este número se desincroniza del CSS, el detalle se abre en
+// mitad de una fila en vez de debajo de ella.
 export function useColumnas() {
   const calcular = () => {
     if (typeof window === 'undefined') return 4
     if (window.matchMedia('(min-width: 1024px)').matches) return 4
-    if (window.matchMedia('(min-width: 640px)').matches) return 2
-    return 1
+    return 2
   }
 
   const [columnas, setColumnas] = useState(calcular)
