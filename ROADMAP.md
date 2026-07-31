@@ -719,6 +719,80 @@ mismo resultado; el `case` se deja mínimo.
 
 ---
 
+### 9. Rendimiento de carga ← **siguiente**
+
+Reportado desde el uso real: la página tarda **decenas de segundos**, no unos
+pocos. Diagnóstico de jul 2026.
+
+#### Qué está cacheado y qué no
+
+Existe una arquitectura buena —endpoint `/api` + Edge Config + cron diario— pero
+**solo cubre una parte**. En Panorama:
+
+| Sección | ¿Cacheada? | Nota |
+|---|---|---|
+| Las 8 cifras | ✅ `/api/panorama` | Edge Config, no se purga con los deploys |
+| Mapa | ❌ Socrata en vivo | `useMapaMetricas` — **no depende del filtro** |
+| Comparación de ciudades | ❌ Socrata en vivo | `useComparacionCiudades` — ~22 s, **no depende del filtro** |
+| Evolución | ❌ Socrata en vivo | 2 series; SECOP I es lento |
+| Concentración | ❌ Socrata en vivo | — |
+
+Que el mapa y la comparación de ciudades **no dependan del ámbito** es la
+oportunidad grande: un único payload sirve a todos los visitantes, así que
+encajan en el patrón de `/api/panorama` sin la complicación de las vistas
+filtradas.
+
+#### Hecho ✅ — quitada una precarga inútil
+
+`Layout` precargaba tres consultas de contratista (~30 s cada una) en cada carga
+de **cada** página. En producción **nadie las leía**: Noticias se sirve de
+`/api/noticias` y los equivalentes directos a Socrata están `enabled: dev` en
+`useNoticias`. Solo ayudaba en `npm run dev`, mientras competía por el cupo de
+Socrata con lo que el visitante sí mira. En Panorama local: 22 → 15 consultas.
+
+#### ⚠️ SIN VERIFICAR — el plan es Hobby y el `vercel.json` pide más
+
+Esto **no está comprobado en el panel de Vercel**; se deduce de `vercel.json` y
+de los límites conocidos de Hobby. **Comprobarlo antes de añadir nada**, porque
+si se confirma, meter más endpoints y crons chocaría con el mismo techo.
+
+1. **Crons: hay 9 declarados; Hobby permite 2.** Los otros 7 probablemente no
+   corren nunca. No es tanto lentitud como **datos congelados**: los cachés se
+   llenan la primera vez que alguien los pide y ahí se quedan.
+2. **Cinco funciones piden más duración de la que Hobby concede** (techo 60 s):
+   `noticias-fechas` 300 s · `panorama` 180 s · `errores-indice` 150 s ·
+   `rankings-contratistas-secop1` 150 s · `rankings-contratistas` 90 s.
+   Cuando toca **calcular** (caché vacío, deploy reciente, filtro nuevo) se
+   cortarían a los 60 s y devolverían error. En rankings el cliente **no** cae de
+   vuelta a Socrata: la consulta falla. Parte de lo que se percibe como lentitud
+   podría ser una función agotando su tiempo y muriendo.
+
+**Cómo comprobarlo (5 minutos):**
+- Vercel → *Settings → Cron Jobs*: ¿aparecen los 9 o solo 2? ¿Última ejecución?
+- Vercel → *Logs*, filtrando por `/api/panorama` o `/api/errores-indice`:
+  ¿hay timeouts a los 60 s?
+- Abrir `…/api/panorama` y mirar la cabecera **`X-Panorama-Source`**:
+  `edge-config` = rápido; `compute` = está recalculando en cada visita.
+
+#### Pasos siguientes, según lo que se encuentre
+
+- **Si los crons y las duraciones están bien** (o se sube a Pro): cachear
+  **mapa** y **comparación de ciudades** con el patrón de `/api/panorama`. Son
+  las dos más pesadas y las únicas sin dependencia del filtro. Después, si hace
+  falta, evolución y concentración **solo en su caso nacional** —el que ve todo
+  el mundo al entrar—, dejando las vistas filtradas en vivo.
+- **Si se confirman los límites de Hobby**, hay que elegir antes:
+  - **subir a Pro**, o
+  - **adaptar el diseño al plan**: mover los precálculos pesados a un **JSON
+    estático** generado fuera de Vercel y servido desde `public/`, como ya se
+    hace con `adiciones.json`. Es la técnica que esquiva los dos límites a la
+    vez —ni cron ni duración de función— y ya está probada en este proyecto.
+
+Pendiente relacionado, del punto 12: la consulta de categorías (~55 s) merece el
+mismo tratamiento que se decida aquí.
+
+---
+
 ### ~~PRÓXIMO~~ HECHO ✅ — Evolución con SECOP I (opción A: dos líneas)
 
 Implementado. Nota de alcance añadida al implementar: la vista de **10 años**
@@ -763,7 +837,13 @@ tamaño (100 es 0,08% en Bogotá y 20% en Vaupés), y se rehízo normalizado.
 Pendiente (menor): cachear la concentración país (~13s en vivo) como los rankings,
 si la latencia molesta.
 
-### HECHO ✅ — Selectores geográficos inline (jul 2026)
+### ~~HECHO ✅ — Selectores geográficos inline (jul 2026)~~ SUSTITUIDO
+
+> **Obsoleto desde jul 2026.** `GeoFilterInline` y `GlobalFilters` ya no existen:
+> los reemplazó una única **barra fija** (`BarraFiltro`), porque el mismo estado
+> acabó renderizándose siete veces. Se conserva el registro por la decisión de
+> fondo —una sola fuente de verdad para el ámbito, sin ámbitos contradictorios en
+> pantalla—, que sigue vigente. Ver "Revisión de distribución de la información".
 
 Evolución y Concentración llevan su propio desplegable departamento/ciudad
 (`GeoFilterInline`, mismo estilo que `GlobalFilters`) porque quedan lejos del
@@ -947,6 +1027,15 @@ Dos defectos encontrados al probarlo en un teléfono real, no aquí:
 2. **Cifras desalineadas**: los rótulos miden distinto, así que se reserva
    altura cuando llevan etiqueta de fuente. El mismo desajuste existía en
    escritorio desde antes y nadie lo había medido.
+
+Y una tercera pasada, ya sobre el texto: las tarjetas repetían en prosa lo que el
+rótulo ya decía y cargaban avisos largos, así que no se leían de un vistazo. El
+bloque baja de 1.169 a **969 px** (de 1.580 al empezar). Nada se borró, se
+recolocó: el porqué del estado "Celebrado" de SECOP I pasó al detalle de estados
+—era el único sitio de Panorama que lo explicaba— y el total histórico al peso,
+al detalle por sector. Se queda en la tarjeta la advertencia "No todos son
+retrasos reales": sin ella esa cifra se malinterpreta sola, que es justo lo que
+la plataforma promete no hacer.
 
 El tour quedó desincronizado por estos cambios y se actualizó: `objetivoVisible`
 admite varios selectores y elige el que de verdad ocupa espacio, para que el
