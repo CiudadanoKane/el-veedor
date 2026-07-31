@@ -1,32 +1,96 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["gru1"],
+  "regions": [
+    "gru1"
+  ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ],
   "crons": [
-    { "path": "/api/panorama", "schedule": "0 9 * * *" },
-    { "path": "/api/geo", "schedule": "5 9 * * *" },
-    { "path": "/api/directorio", "schedule": "10 9 * * *" },
-    { "path": "/api/noticias", "schedule": "15 9 * * *" },
-    { "path": "/api/noticias-fechas", "schedule": "20 9 * * *" },
-    { "path": "/api/alertas-vencidos", "schedule": "25 9 * * *" },
-    { "path": "/api/errores-indice", "schedule": "30 9 * * *" },
-    { "path": "/api/rankings-contratistas", "schedule": "35 9 * * *" },
-    { "path": "/api/rankings-contratistas-secop1", "schedule": "40 9 * * *" },
-    { "path": "/api/panorama-geo", "schedule": "45 9 * * *" }
+    {
+      "path": "/api/panorama",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/geo",
+      "schedule": "5 9 * * *"
+    },
+    {
+      "path": "/api/directorio",
+      "schedule": "10 9 * * *"
+    },
+    {
+      "path": "/api/noticias",
+      "schedule": "15 9 * * *"
+    },
+    {
+      "path": "/api/noticias-fechas",
+      "schedule": "20 9 * * *"
+    },
+    {
+      "path": "/api/alertas-vencidos",
+      "schedule": "25 9 * * *"
+    },
+    {
+      "path": "/api/errores-indice",
+      "schedule": "30 9 * * *"
+    },
+    {
+      "path": "/api/rankings-contratistas",
+      "schedule": "35 9 * * *"
+    },
+    {
+      "path": "/api/rankings-contratistas-secop1",
+      "schedule": "40 9 * * *"
+    },
+    {
+      "path": "/api/panorama-geo",
+      "schedule": "45 9 * * *"
+    },
+    {
+      "path": "/api/noticias-actores",
+      "schedule": "50 9 * * *"
+    }
   ],
   "functions": {
-    "api/noticias.js": { "maxDuration": 60 },
-    "api/noticias-fechas.js": { "maxDuration": 60 },
-    "api/geo.js": { "maxDuration": 60 },
-    "api/directorio.js": { "maxDuration": 60 },
-    "api/panorama.js": { "maxDuration": 60 },
-    "api/panorama-geo.js": { "maxDuration": 60 },
-    "api/alertas-vencidos.js": { "maxDuration": 60 },
-    "api/errores-indice.js": { "maxDuration": 60 },
-    "api/rankings-contratistas.js": { "maxDuration": 60 },
-    "api/rankings-contratistas-secop1.js": { "maxDuration": 60 },
-    "api/buscar-ia.js": { "maxDuration": 30 }
+    "api/noticias.js": {
+      "maxDuration": 60
+    },
+    "api/noticias-fechas.js": {
+      "maxDuration": 60
+    },
+    "api/geo.js": {
+      "maxDuration": 60
+    },
+    "api/directorio.js": {
+      "maxDuration": 60
+    },
+    "api/panorama.js": {
+      "maxDuration": 60
+    },
+    "api/panorama-geo.js": {
+      "maxDuration": 60
+    },
+    "api/alertas-vencidos.js": {
+      "maxDuration": 60
+    },
+    "api/errores-indice.js": {
+      "maxDuration": 60
+    },
+    "api/rankings-contratistas.js": {
+      "maxDuration": 60
+    },
+    "api/rankings-contratistas-secop1.js": {
+      "maxDuration": 60
+    },
+    "api/buscar-ia.js": {
+      "maxDuration": 30
+    },
+    "api/noticias-actores.js": {
+      "maxDuration": 60
+    }
   }
 }

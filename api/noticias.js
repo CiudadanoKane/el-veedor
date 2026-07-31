@@ -7,52 +7,75 @@ import {
   cerradoSinPagoConteoQueryOptions,
   sinContratistaConteoQueryOptions,
 } from '../src/hooks/useAlertas.js'
-import { ejecucionContratistasQueryOptions } from '../src/hooks/useEjecucionContratistas.js'
-import {
-  concentracionEntidadQueryOptions,
-  directaGranCuantiaQueryOptions,
-} from '../src/hooks/useRankings.js'
+import { leerEdgeConfig, escribirEdgeConfig } from '../src/lib/edgeConfig.js'
 
-const DS = DATASETS.CONTRATOS
+const CLAVE = 'noticias'
 
-// 8 de las 9 consultas de Noticias, precalculadas server-side y cacheadas en
-// el edge de Vercel — mismo patrón que /api/panorama. La novena (fechas
-// inconsistentes) vive aparte en /api/noticias-fechas: es una consulta con
-// tiempo de respuesta muy variable en Socrata (compara dos columnas de fecha
-// entre sí, sin poder usar un índice) — probada en 8-49s pero también vista
-// sin terminar pasados 70s. Aislarla evita que un mal día con esa consulta
-// arruine el caché de las otras 8, que son rápidas y estables.
+// Las notas de Noticias que describen CONTRATOS (adiciones de tiempo, obra
+// paralizada, cerrados sin pago, sin contratista identificado). Las de actores
+// —quién prorroga, concentración, directa de gran cuantía— viven en
+// /api/noticias-actores, y las fechas imposibles en /api/noticias-fechas.
 //
-// En desarrollo, useNoticias.js sigue usando las mismas queries y las mismas
-// query keys que Alertas/Errores (para no perder el reaprovechamiento de
-// caché entre secciones); en producción todo sale de aquí + noticias-fechas.
+// Antes las ocho iban juntas aquí y el endpoint devolvía 504: medido, HTTP 504
+// a los 60,9 s, justo el techo del plan. No era la suma de tiempos sino la
+// CONCURRENCIA —Socrata encola las consultas simultáneas del mismo token, así
+// que ocho a la vez se parecen más a la suma que al máximo—. Repartidas en tres
+// endpoints, cada grupo cabe con holgura.
+//
+// La cifra de "sin competencia" ya no se consulta: se lee del payload de
+// /api/panorama, que el cron deja en Edge Config todos los días. Es exactamente
+// el mismo dato (soqlGenerales sin filtros), así que pedirlo otra vez era pagar
+// dos veces por lo mismo.
+//
+// Y ahora hay Edge Config, no solo caché de CDN: el CDN se purga en CADA
+// despliegue, así que la primera visita tras publicar tenía que recalcularlo
+// todo —y no cabía en el tiempo disponible—. Edge Config sobrevive a los
+// deploys.
 export default async function handler(req, res) {
   const filters = {
     department: req.query.department || undefined,
     city: req.query.city || undefined,
     entity: req.query.entity || undefined,
   }
+  const sinFiltros = !filters.department && !filters.city && !filters.entity
+  const forzar =
+    req.query.refresh === '1' || (req.headers['user-agent'] || '').includes('vercel-cron')
 
   try {
-    const [
-      adicion, obra, cerrado, sinContratista, generales,
-      prorrogas, concentracion, directa,
-    ] = await Promise.all([
+    if (sinFiltros && !forzar) {
+      const cache = await leerEdgeConfig(CLAVE)
+      if (cache) {
+        res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=86400')
+        res.setHeader('X-Noticias-Source', 'edge-config')
+        return res.status(200).json(cache)
+      }
+    }
+
+    const [adicion, obra, cerrado, sinContratista] = await Promise.all([
       adicionTiempoListaQueryOptions(filters, 'alta').queryFn(),
       obraParalizadaListaQueryOptions(filters).queryFn(),
       cerradoSinPagoConteoQueryOptions(filters).queryFn(),
       sinContratistaConteoQueryOptions(filters).queryFn(),
-      socrataQuery(DS, soqlGenerales(filters)),
-      ejecucionContratistasQueryOptions(filters, 'peor', 'prorroga').queryFn(),
-      concentracionEntidadQueryOptions().queryFn(),
-      directaGranCuantiaQueryOptions(filters).queryFn(),
     ])
 
+    // "Sin competencia" reaprovechado del Panorama en la vista nacional —que es
+    // la que ve casi todo el mundo y la única que se cachea—. Con filtro no hay
+    // payload equivalente, así que ahí sí se consulta: es un agregado de una
+    // sola fila, la más barata del grupo, y evita que la nota desaparezca al
+    // acotar por municipio.
+    const generales = sinFiltros
+      ? (await leerEdgeConfig('panorama'))?.generales ?? null
+      : await socrataQuery(DATASETS.CONTRATOS, soqlGenerales(filters))
+
+    const payload = { adicion, obra, cerrado, sinContratista, generales }
+
+    let escrito = 'skip'
+    if (sinFiltros) escrito = await escribirEdgeConfig(CLAVE, payload)
+
     res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=86400')
-    res.status(200).json({
-      adicion, obra, cerrado, sinContratista, generales,
-      prorrogas, concentracion, directa,
-    })
+    res.setHeader('X-Noticias-Source', 'compute')
+    if (sinFiltros) res.setHeader('X-Noticias-Write', escrito)
+    res.status(200).json(payload)
   } catch (err) {
     res.status(502).json({ error: err.message })
   }

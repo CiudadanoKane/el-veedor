@@ -72,9 +72,19 @@ export function useNoticiasData(filters = {}) {
   const concentracionDev = useQuery({ ...concentracionEntidadQueryOptions(), enabled: dev })
   const directaDev = useQuery({ ...directaGranCuantiaQueryOptions(filters), enabled: dev })
 
+  // Tres peticiones y no una: las ocho consultas juntas mataban la función en
+  // el techo de 60 s del plan (medido, HTTP 504 a los 60,9 s) porque Socrata
+  // encola las simultáneas del mismo token. Repartidas, cada grupo cabe. Y en
+  // el navegador se suman ventajas: llegan por separado, así que las notas de
+  // contratos aparecen sin esperar a las de actores, que son las lentas.
   const api = useQuery({
     queryKey: ['noticias', 'api', filters],
     queryFn: () => fetchApi('/api/noticias', filters),
+    enabled: !dev,
+  })
+  const apiActores = useQuery({
+    queryKey: ['noticias', 'api-actores', filters],
+    queryFn: () => fetchApi('/api/noticias-actores', filters),
     enabled: !dev,
   })
   const apiFechas = useQuery({
@@ -87,6 +97,14 @@ export function useNoticiasData(filters = {}) {
     isLoading: api.isLoading,
     isError: api.isError,
     error: api.error,
+  })
+  // Lo mismo para el endpoint de actores. Se separa para que su estado de carga
+  // sea el suyo: mientras tarda, las demás notas ya están en pantalla.
+  const pickActores = (clave) => ({
+    data: apiActores.data ? apiActores.data[clave] : undefined,
+    isLoading: apiActores.isLoading,
+    isError: apiActores.isError,
+    error: apiActores.error,
   })
 
   if (dev) {
@@ -116,9 +134,11 @@ export function useNoticiasData(filters = {}) {
         error: apiFechas.error,
       },
     },
-    competencia: pick('generales', selectGenerales),
-    prorrogas: pick('prorrogas', (x) => x),
-    concentracion: pick('concentracion', (x) => x),
-    directa: pick('directa', (x) => x),
+    // `generales` puede llegar nulo si el Panorama aún no está en Edge Config
+    // (ver /api/noticias): la nota se omite en vez de inventar una cifra.
+    competencia: pick('generales', (x) => (x ? selectGenerales(x) : undefined)),
+    prorrogas: pickActores('prorrogas'),
+    concentracion: pickActores('concentracion'),
+    directa: pickActores('directa'),
   }
 }
