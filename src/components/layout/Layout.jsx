@@ -1,17 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Outlet, useLocation, Link } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
 import { Sidebar } from './Sidebar'
 import { BarraFiltro } from './BarraFiltro'
 import { BusquedaRapida } from './BusquedaRapida'
 import { NavInferior } from './NavInferior'
 import { ErrorBoundary } from '../ui/ErrorBoundary'
 import { useFilters } from '../../context/FiltersContext'
-import { ejecucionContratistasQueryOptions } from '../../hooks/useEjecucionContratistas'
-import {
-  concentracionEntidadQueryOptions,
-  directaGranCuantiaQueryOptions,
-} from '../../hooks/useRankings'
 
 // Secciones donde el ámbito geográfico significa algo. Se deja fuera el manual
 // de la plataforma (Aprende, Metodología, Escríbenos) y los perfiles de un
@@ -22,7 +16,6 @@ const SIN_FILTRO = ['/aprender', '/transparencia', '/reportar', '/contratista/',
 export function Layout() {
   const { pathname } = useLocation()
   const [menuAbierto, setMenuAbierto] = useState(false)
-  const queryClient = useQueryClient()
   const { rutaConAmbito } = useFilters()
 
   const conFiltro = !SIN_FILTRO.some((p) => pathname.startsWith(p))
@@ -34,25 +27,15 @@ export function Layout() {
   // Cierra el menú al cambiar de sección y evita el scroll de fondo
   useEffect(() => setMenuAbierto(false), [pathname])
 
-  // Precarga en segundo plano las consultas pesadas de contratista del feed de
-  // Noticias (agrupan por NIT sobre millones de registros, ~30s cada una). Se
-  // disparan en paralelo cuando el navegador está ocioso, una sola vez y a nivel
-  // nacional, para que Noticias las encuentre tibias sin importar en qué página
-  // esté el usuario. Corren concurrentes: el reloj de pared es ~30s, no la suma.
-  useEffect(() => {
-    const nacional = { department: '', city: '', entity: '' }
-    const correr = () => {
-      queryClient.prefetchQuery(ejecucionContratistasQueryOptions(nacional, 'peor', 'prorroga'))
-      queryClient.prefetchQuery(concentracionEntidadQueryOptions())
-      queryClient.prefetchQuery(directaGranCuantiaQueryOptions(nacional))
-    }
-    if ('requestIdleCallback' in window) {
-      const id = window.requestIdleCallback(correr, { timeout: 5000 })
-      return () => window.cancelIdleCallback(id)
-    }
-    const id = setTimeout(correr, 2000)
-    return () => clearTimeout(id)
-  }, [queryClient])
+  // Aquí se precargaban tres consultas de contratista para el feed de Noticias
+  // (~30 s cada una, agrupando por NIT sobre millones de registros). Se quitó:
+  // en PRODUCCIÓN nadie las leía. Noticias se sirve de /api/noticias, cacheado,
+  // y sus equivalentes directos a Socrata están declarados `enabled: dev` (ver
+  // useNoticias). Así que la precarga solo ayudaba en `npm run dev`, mientras
+  // que en producción disparaba tres consultas pesadas en CADA carga de CADA
+  // página, compitiendo por el cupo de Socrata con lo que el visitante sí está
+  // mirando. En dev, Noticias las pide igual al entrar; lo único que se pierde
+  // es que lleguen tibias.
   useEffect(() => {
     document.body.classList.toggle('menu-abierto', menuAbierto)
     return () => document.body.classList.remove('menu-abierto')
