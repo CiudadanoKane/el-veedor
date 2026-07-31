@@ -53,8 +53,16 @@ export function BarraFiltro() {
   // Se conserva flex-wrap: con los selectores en flex-1 la fila normal cabe
   // entera, y solo baja de línea el caso raro del filtro por entidad —cuyo
   // nombre es largo—, en vez de desbordar a lo ancho.
+  //
+  // lg:order-1 — en escritorio va ANTES del buscador. Al final de la fila
+  // quedaba en la esquina derecha: con el buscador estirándose hasta 672 px, el
+  // selector de ciudad caía en x=1306 de una pantalla de 1600, a casi mil
+  // píxeles de donde empieza a leerse el contenido. El ámbito dice QUÉ estás
+  // mirando, así que se lee primero; el buscador no pierde presencia porque es
+  // una caja blanca sobre fondo oscuro. En móvil el orden del DOM manda y sigue
+  // debajo, que es donde cabe.
   return (
-    <div className="flex items-center gap-x-3 gap-y-1 flex-wrap pb-2.5 lg:py-2.5 lg:shrink-0">
+    <div className="flex items-center gap-x-3 gap-y-1 flex-wrap pb-2.5 lg:py-2.5 lg:shrink-0 lg:order-1">
       <span className="hidden sm:inline text-[10px] uppercase tracking-label text-sideSoft font-semibold">
         Viendo
       </span>

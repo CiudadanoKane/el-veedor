@@ -56,7 +56,7 @@ export function Layout() {
             plataforma queda en un solo tono y el contenido, en el blanco. */}
         <div data-tour="barra" className="sticky top-0 z-20 bg-side">
           <div className="px-4 sm:px-8 lg:px-14 lg:flex lg:items-center lg:gap-8">
-            <div className="flex items-center gap-3 py-2.5 lg:flex-1 lg:min-w-0 lg:max-w-2xl">
+            <div className="flex items-center gap-3 py-2.5 lg:flex-1 lg:min-w-0 lg:max-w-2xl lg:order-2">
               <button
                 onClick={() => setMenuAbierto(true)}
                 className="lg:hidden shrink-0 text-sideActive p-1 -ml-1"
