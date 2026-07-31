@@ -750,46 +750,65 @@ de **cada** página. En producción **nadie las leía**: Noticias se sirve de
 `useNoticias`. Solo ayudaba en `npm run dev`, mientras competía por el cupo de
 Socrata con lo que el visitante sí mira. En Panorama local: 22 → 15 consultas.
 
-#### ⚠️ SIN VERIFICAR — el plan es Hobby y el `vercel.json` pide más
+#### ✅ COMPROBADO en el panel (jul 2026) — dos hipótesis eran falsas
 
-Esto **no está comprobado en el panel de Vercel**; se deduce de `vercel.json` y
-de los límites conocidos de Hobby. **Comprobarlo antes de añadir nada**, porque
-si se confirma, meter más endpoints y crons chocaría con el mismo techo.
+Se verificó en Vercel. **Se corrigen dos suposiciones que estaban escritas aquí
+y que habrían llevado a decisiones equivocadas:**
 
-1. **Crons: hay 9 declarados; Hobby permite 2.** Los otros 7 probablemente no
-   corren nunca. No es tanto lentitud como **datos congelados**: los cachés se
-   llenan la primera vez que alguien los pide y ahí se quedan.
-2. **Cinco funciones piden más duración de la que Hobby concede** (techo 60 s):
-   `noticias-fechas` 300 s · `panorama` 180 s · `errores-indice` 150 s ·
-   `rankings-contratistas-secop1` 150 s · `rankings-contratistas` 90 s.
-   Cuando toca **calcular** (caché vacío, deploy reciente, filtro nuevo) se
-   cortarían a los 60 s y devolverían error. En rankings el cliente **no** cae de
-   vuelta a Socrata: la consulta falla. Parte de lo que se percibe como lentitud
-   podría ser una función agotando su tiempo y muriendo.
+- ~~"Hobby permite 2 crons, así que 7 de los 9 no corren"~~ → **falso.** Los
+  **9 crons aparecen y se ejecutan**, todos invocados en las últimas 12 h. Los
+  datos no están congelados. La suposición venía de los límites publicados del
+  plan, no de mirar el panel.
+- ~~"Cinco funciones se cortan a los 60 s"~~ → **falso en cuatro de las cinco.**
+  Declaran más de la cuenta, pero en la práctica terminan cómodas:
+  `rankings-contratistas` 34 s · `rankings-contratistas-secop1` 28 s ·
+  `errores-indice` 27 s · `noticias-fechas` 6 s. La declaración es incorrecta
+  (Hobby topa en 60 s), pero hoy es un **riesgo latente**, no un fallo activo:
+  cualquier día lento de Socrata sí las mataría.
 
-**Cómo comprobarlo (5 minutos):**
-- Vercel → *Settings → Cron Jobs*: ¿aparecen los 9 o solo 2? ¿Última ejecución?
-- Vercel → *Logs*, filtrando por `/api/panorama` o `/api/errores-indice`:
-  ¿hay timeouts a los 60 s?
-- Abrir `…/api/panorama` y mirar la cabecera **`X-Panorama-Source`**:
-  `edge-config` = rápido; `compute` = está recalculando en cada visita.
+Lo que sí se confirmó:
 
-#### Pasos siguientes, según lo que se encuentre
+- **`/api/panorama` va rápido:** P75 de **298 ms**, y la respuesta llega con
+  `X-Vercel-Cache: HIT`. La parte cacheada funciona.
+- **`/api/noticias` roza el techo: P75 de 1 minuto**, exactamente el límite de
+  Hobby, y declara `maxDuration: 120`. Es el único que está contra la pared.
+  **Pendiente:** o se parte en dos como ya se hizo con `noticias-fechas`, o se
+  aligera su consulta. Mientras tanto, Noticias puede fallar sin aviso.
+- Plan **Hobby** confirmado.
 
-- **Si los crons y las duraciones están bien** (o se sube a Pro): cachear
-  **mapa** y **comparación de ciudades** con el patrón de `/api/panorama`. Son
-  las dos más pesadas y las únicas sin dependencia del filtro. Después, si hace
-  falta, evolución y concentración **solo en su caso nacional** —el que ve todo
-  el mundo al entrar—, dejando las vistas filtradas en vivo.
-- **Si se confirman los límites de Hobby**, hay que elegir antes:
-  - **subir a Pro**, o
-  - **adaptar el diseño al plan**: mover los precálculos pesados a un **JSON
-    estático** generado fuera de Vercel y servido desde `public/`, como ya se
-    hace con `adiciones.json`. Es la técnica que esquiva los dos límites a la
-    vez —ni cron ni duración de función— y ya está probada en este proyecto.
+Queda sin confirmar una sola cosa: si **Edge Config** está aprovisionado. En la
+captura no se veían las cabeceras `X-Panorama-Source` / `X-Panorama-Write` (solo
+las de Vercel). Importa poco para el día a día —el CDN ya sirve rápido— pero el
+CDN **se purga en cada deploy** y Edge Config es justo lo que evita que la
+primera visita tras desplegar pague el cálculo entero. Comprobar con:
+
+```
+curl.exe -sI https://el-veedor.vercel.app/api/panorama | findstr /i panorama
+```
+
+`X-Panorama-Write: no-config` significaría que faltan `EDGE_CONFIG_ID` o
+`VERCEL_API_TOKEN`, y se arregla configurando variables, sin tocar código.
+
+#### Conclusión y pasos siguientes
+
+Descartadas las hipótesis de infraestructura, **la causa de los tiempos largos
+es la que se describe arriba**: las cuatro secciones sin cachear que pegan
+contra Socrata en cada visita. El camino queda despejado:
+
+1. **Cachear mapa y comparación de ciudades** con el patrón de `/api/panorama`.
+   Caben de sobra en Hobby: la de ciudades tarda ~22 s y el techo son 60 s. Al
+   no depender del ámbito, un solo payload sirve a todos.
+2. **Corregir `vercel.json`**: bajar a 60 s las cinco declaraciones que piden
+   más, para que el límite real sea explícito en el código y no una sorpresa.
+3. **Arreglar `/api/noticias`**, que ya está en el límite.
+4. Si hace falta más, evolución y concentración **solo en su caso nacional**,
+   dejando las vistas filtradas en vivo.
+
+Ya no hace falta decidir entre subir a Pro o mover a JSON estático: con los
+números reales, todo cabe en Hobby.
 
 Pendiente relacionado, del punto 12: la consulta de categorías (~55 s) merece el
-mismo tratamiento que se decida aquí.
+mismo tratamiento que se decida aquí — y esa sí está cerca del techo.
 
 ---
 
