@@ -1,5 +1,5 @@
 import { ESTADO_ACTIVO, HOY } from './constants.js'
-import { haceDias, soloContratosValidos, cuantiaPosibleSecop2 } from './soql.js'
+import { haceDias, soloContratosValidos } from './soql.js'
 import { MODALIDADES_SIN_COMPETENCIA } from './dashboardQueries.js'
 
 // Las dos consultas geográficas del Panorama: el mapa por departamento y la
@@ -16,14 +16,10 @@ import { MODALIDADES_SIN_COMPETENCIA } from './dashboardQueries.js'
 // Sí dependen de la fecha (`haceDias(180)`, `HOY()`), así que el resultado vale
 // para el día: el cron diario lo recalcula.
 //
-// Ambas excluyen las CUANTÍAS IMPOSIBLES (`cuantiaPosibleSecop2`). No es un
-// detalle menor: sin ese filtro, un solo registro mal digitado se lleva por
-// delante toda la sección. Medido el 31/7/2026 en la fuente —Medellín aparecía
-// con 7,7 × 10²⁰ pesos, es decir un uno seguido de veinte cifras, encabezando
-// el ranking por encima de Bogotá—. El guardia ya existía en el proyecto y se
-// aplicaba a los rankings; estas dos consultas nunca lo habían usado. Un valor
-// así es un error de captura, no un contrato caro, y los contratos afectados se
-// listan aparte en "Errores en SECOP → Valores implausibles".
+// Las cuantías imposibles quedan fuera por `soloContratosValidos()`, que las
+// excluye para toda la plataforma. Aquí se notó el problema: un registro mal
+// digitado ponía a Medellín con 7,7 × 10²⁰ pesos encabezando el ranking por
+// encima de Bogotá. Ver la nota en esa función.
 
 // Contratos en ejecución cuyo plazo venció en los últimos 6 meses. Se exige que
 // la fecha de fin no sea anterior a la de inicio para descartar registros con
@@ -50,8 +46,7 @@ export function soqlMapaMetricas() {
                 sum(case(dias_adicionados > 0 AND dias_adicionados <= 3650, 1, true, 0)) as prorroga,
                 sum(case(${ejec}, 1, true, 0)) as en_ejecucion,
                 sum(case(${condicionVencido(ejec)}, 1, true, 0)) as vencidos
-         WHERE ${soloContratosValidos()} AND ${cuantiaPosibleSecop2()}
-               AND departamento IS NOT NULL
+         WHERE ${soloContratosValidos()} AND departamento IS NOT NULL
          GROUP BY departamento, orden
          LIMIT 300`
 }
@@ -68,7 +63,7 @@ export function soqlComparacionCiudades() {
                 sum(case(dias_adicionados > 0 AND dias_adicionados <= 3650, 1, true, 0)) as prorroga,
                 sum(case(${ejec}, 1, true, 0)) as en_ejecucion,
                 sum(case(${condicionVencido(ejec)}, 1, true, 0)) as vencidos
-         WHERE ${soloContratosValidos()} AND ${cuantiaPosibleSecop2()}
+         WHERE ${soloContratosValidos()}
                AND ciudad IS NOT NULL AND ciudad NOT IN ('No Definido')
          GROUP BY ciudad, orden
          ORDER BY n DESC

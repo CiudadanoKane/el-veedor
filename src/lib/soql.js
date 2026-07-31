@@ -108,9 +108,26 @@ const ESTADOS_NO_VIGENTES = [
 ]
 
 // Filtro estándar para toda cifra agregada de contratación.
+//
+// Excluye dos clases de registro que no son contratación real: los estados de
+// arriba y las CUANTÍAS IMPOSIBLES. Lo segundo se añadió el 31/7/2026, cuando
+// 33 registros con valores absurdos —sumaban 7,7 × 10^20 pesos— entraron en
+// SECOP y rompieron TODAS las cifras a la vez: "Valor contratado" pasó de
+// $1.035 B a $768.424.235 B, y los rankings empezaron a nombrar al contratista
+// y a la entidad equivocados. El guardia (`cuantiaPosibleSecop2`) ya existía en
+// este archivo pero estaba definido y sin usar en ninguna parte; solo se
+// aplicaba la variante de SECOP I.
+//
+// Va AQUÍ, y no en cada consulta, precisamente por eso: cada agregado nuevo lo
+// hereda y ninguno puede olvidarlo. Medido antes de decidir: no cuesta
+// rendimiento (10,6 s con guardia contra 10,8 s sin él, en dos pasadas).
+//
+// Los registros excluidos no se ocultan: se listan aparte en "Errores en SECOP
+// → Valores implausibles", que los busca con `cuantiaImposibleSecop2()` y no
+// pasa por esta función.
 export function soloContratosValidos() {
   const lista = ESTADOS_NO_VIGENTES.map((e) => `'${esc(e)}'`).join(', ')
-  return `estado_contrato NOT IN (${lista})`
+  return `estado_contrato NOT IN (${lista}) AND ${cuantiaPosibleSecop2()}`
 }
 
 // Cláusula de estado para el buscador, donde el ciudadano puede elegir uno o
