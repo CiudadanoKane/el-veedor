@@ -723,9 +723,8 @@ mismo resultado; el `case` se deja mínimo.
 ### 9. Rendimiento de carga
 
 Reportado desde el uso real: la página tardaba **decenas de segundos**, no unos
-pocos. Diagnóstico de jul 2026; los tres pasos principales ya se ejecutaron (ver
-"Hecho ✅" al final de esta sección). Queda un paso opcional (evolución y
-concentración) si la latencia sigue molestando.
+pocos. Diagnóstico de jul 2026; todos los pasos ya se ejecutaron (ver "Hecho
+✅" al final de esta sección).
 
 #### Qué está cacheado y qué no
 
@@ -738,14 +737,14 @@ tras esta sección **ya cubre la parte que más pesaba**:
 | Mapa | ✅ `/api/panorama-geo` | Desde jul 2026, ver "Hecho" abajo |
 | Comparación de ciudades | ✅ `/api/panorama-geo` | Mismo endpoint que el mapa (comparten query) |
 | Noticias | ✅ `/api/noticias` + `-actores` + `-fechas` | Desde jul 2026, ver "Hecho" abajo |
-| Evolución | ❌ Socrata en vivo | 2 series; SECOP I es lento. **Pendiente** |
-| Concentración | ❌ Socrata en vivo | **Pendiente** |
+| Evolución | ✅ `/api/evolucion` | Ago 2026, solo caso nacional (5 años), ver "Hecho" abajo |
+| Concentración | ✅ `/api/concentracion` | Ago 2026, solo caso nacional, ver "Hecho" abajo |
 
 El mapa y la comparación de ciudades **no dependen del ámbito** geográfico: un
 único payload sirve a todos los visitantes, por eso encajaron en el patrón de
 `/api/panorama` sin la complicación de las vistas filtradas. Evolución y
-Concentración sí dependen del filtro, así que cachearlas (si hace falta) tendría
-que ser solo para el caso nacional, dejando las vistas filtradas en vivo.
+Concentración sí dependen del filtro, así que se cachearon solo para el caso
+nacional, dejando las vistas filtradas en vivo — ver "Hecho" más abajo.
 
 #### Hecho ✅ — quitada una precarga inútil
 
@@ -813,8 +812,8 @@ resolvió así:
    máximo) — se repartieron en tres endpoints (`/api/noticias`,
    `-actores`, `-fechas`); y les faltaba Edge Config, así que cada deploy
    obligaba a recalcular todo desde cero bajo el límite de tiempo.
-4. **Pendiente (opcional):** si hace falta más, evolución y concentración solo
-   en su caso nacional, dejando las vistas filtradas en vivo.
+4. ✅ **Cacheados Evolución y Concentración**, solo el caso nacional (ago 2026,
+   ver "Hecho" abajo).
 
 Ya no hace falta decidir entre subir a Pro o mover a JSON estático: con los
 números reales, todo cupo en Hobby.
@@ -976,6 +975,43 @@ sentido.
 Se eliminaron `api/rankings-contratistas.js`, `api/rankings-contratistas-secop1.js`
 y sus entradas en `vercel.json` (cron + `functions`): quedaban huérfanos e
 irreparables como endpoint en vivo.
+
+### HECHO ✅ — Cacheados Evolución y Concentración, solo caso nacional (ago 2026)
+
+Mismo patrón que `/api/panorama-geo`: Edge Config + cron diario, solo para el
+caso **sin filtro geográfico** —el que ve todo el mundo al entrar—; con un
+departamento, ciudad o entidad activo, las dos siguen en vivo (el ámbito es
+mucho más chico y no hace falta cachearlo).
+
+A diferencia de los rankings de contratistas, aquí SÍ había margen para el
+patrón simple (sin precálculo por GitHub Actions): las dos consultas terminan
+dentro del techo de 60 s del plan, aunque una de ellas con menos margen del
+que decía el ROADMAP:
+
+- **`/api/evolucion`**: SECOP II (~6 s) y SECOP I (~24 s) en paralelo, para la
+  vista por defecto real —**5 años**, no 2 como se asumió al principio: el
+  estado inicial del selector es `'5a'`—. Es la vista más cara de las que sí
+  cachean (12m/24m son más baratas; 10 años excluye SECOP I por inviable en
+  vivo, ver el punto 4 de arriba), así que cachear esta cubre lo importante
+  sin replicar cuatro payloads. `useEvolucion.js` se refactorizó: la
+  construcción del SoQL se movió a `src/lib/evolucionQueries.js` (mismo
+  patrón que `panoramaGeoQueries.js`), compartida entre el hook y el endpoint.
+- **`/api/concentracion`**: `GROUP BY documento_proveedor ORDER BY
+  sum(valor_del_contrato) DESC LIMIT 20000` a nivel país. **Medido de nuevo:
+  ~54 s**, muy por encima del "~13 s" que decía este documento —esa cifra
+  estaba tan desactualizada como las de los rankings de contratistas—. A
+  diferencia de esos rankings, esta consulta **sí termina**, así que el cron
+  puede completarla; queda cerca del techo pero con el respaldo de que, si
+  algún día la tarda más de la cuenta y la función se corta, Edge Config sigue
+  sirviendo el valor del día anterior en vez de romperse. `soqlConcentracion*`
+  se movió a `src/lib/concentracionQueries.js`.
+
+Verificado en el navegador (servidor local): las dos secciones siguen
+renderizando igual que antes en la ruta en vivo —la refactorización no cambió
+ningún comportamiento—. La ruta cacheada (`/api/*`) no se puede probar en
+`npm run dev` (son funciones de Vercel, no rutas de Vite): queda por verificar
+en producción tras el deploy, igual que con el resto de endpoints de esta
+sección.
 
 ---
 

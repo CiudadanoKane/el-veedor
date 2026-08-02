@@ -45,6 +45,14 @@
     {
       "path": "/api/noticias-actores",
       "schedule": "50 9 * * *"
+    },
+    {
+      "path": "/api/concentracion",
+      "schedule": "55 9 * * *"
+    },
+    {
+      "path": "/api/evolucion",
+      "schedule": "5 10 * * *"
     }
   ],
   "functions": {
@@ -70,6 +78,12 @@
       "maxDuration": 60
     },
     "api/errores-indice.js": {
+      "maxDuration": 60
+    },
+    "api/concentracion.js": {
+      "maxDuration": 60
+    },
+    "api/evolucion.js": {
       "maxDuration": 60
     },
     "api/buscar-ia.js": {

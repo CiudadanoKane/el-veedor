@@ -1,45 +1,36 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient.js'
-import { DATASETS } from '../lib/constants.js'
-import { whereFromFilters, buildWhere, soloContratosValidos } from '../lib/soql.js'
-import { documentoIdentifica } from '../lib/identidad.js'
-
-const DS = DATASETS.CONTRATOS
-
-// Cuántos contratistas del tope se traen. No es la distribución completa: basta
-// con bajar el top ordenado hasta cruzar los umbrales que nos interesan. El 50%
-// del valor se alcanza con muy pocos (medido: país 1.172, Cali 116) y el 1% más
-// grande de los contratistas cabe de sobra aquí (país = 12.020 de 1,2 M). El
-// LIMIT casi no afecta el tiempo —lo que pesa es el GROUP BY en el servidor—, y
-// 20.000 deja margen para cualquier ámbito. La cola (el resto) nunca se trae:
-// es el complemento, 100% − top.
-const TOP = 20000
+import { soqlConcentracionTotal, soqlConcentracionTop, DATASET_CONCENTRACION } from '../lib/concentracionQueries.js'
 
 // Concentración de la contratación: qué tan pocos contratistas acaparan el valor.
 //
-// Dos consultas rápidas, sin count(distinct) ni la distribución completa: el
-// valor total del ámbito y el top-N por valor. El total de contratistas (para
+// Dos consultas, sin count(distinct) ni la distribución completa: el valor
+// total del ámbito y el top-N por valor. El total de contratistas (para
 // expresar "el X% de ellos") no se pide aquí: lo aporta el Panorama, que ya lo
 // calcula y cachea por filtro (tarjeta "Contratistas"). Identidad por documento;
 // se excluyen los que no identifican a nadie, igual que ese conteo.
+//
+// El caso SIN filtro (el país completo) es lento —medido: ~54s, el GROUP BY
+// por documento_proveedor sobre más de un millón de contratistas—, así que en
+// producción sale de /api/concentracion, cacheado en Edge Config y refrescado
+// por el cron diario (mismo patrón que /api/panorama-geo). Con un filtro
+// geográfico activo el ámbito es mucho más chico y se consulta en vivo.
 export function useConcentracion(filters = {}) {
+  const sinFiltros = !filters.department && !filters.city && !filters.entity
+  const usarCache = !import.meta.env.DEV && sinFiltros
+
   return useQuery({
     queryKey: ['concentracion', filters],
     staleTime: 30 * 60 * 1000,
     queryFn: async () => {
-      const where = buildWhere(
-        whereFromFilters(filters, [soloContratosValidos(), documentoIdentifica()]),
-      )
+      if (usarCache) {
+        const res = await fetch('/api/concentracion')
+        if (!res.ok) throw new Error(`Concentración error ${res.status}`)
+        return res.json()
+      }
       const [totalRows, topRows] = await Promise.all([
-        socrataQuery(DS, `SELECT sum(valor_del_contrato) as v ${where}`),
-        socrataQuery(
-          DS,
-          `SELECT sum(valor_del_contrato) as v
-           ${where}
-           GROUP BY documento_proveedor
-           ORDER BY v DESC
-           LIMIT ${TOP}`,
-        ),
+        socrataQuery(DATASET_CONCENTRACION, soqlConcentracionTotal(filters)),
+        socrataQuery(DATASET_CONCENTRACION, soqlConcentracionTop(filters)),
       ])
       return {
         total: parseFloat(totalRows[0]?.v ?? 0),

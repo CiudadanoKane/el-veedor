@@ -1,28 +1,12 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
-import { DATASETS } from '../lib/constants'
 import {
-  esc, whereFromFilters, buildWhere, soloContratosValidos,
-  whereFromFiltrosSecop1, soloContratosValidosSecop1, cuantiaPosibleSecop1,
-  VALOR_SECOP1_SOQL,
-} from '../lib/soql'
-import { MODALIDAD_SIN_COMPETENCIA_SECOP1 } from '../lib/catalogosSecop1'
+  PERIODOS, secop1EsViable, soqlEvolucionSecop2, soqlEvolucionSecop1,
+  DS_EVOLUCION, DS1_EVOLUCION,
+} from '../lib/evolucionQueries.js'
 
-const DS = DATASETS.CONTRATOS
-const DS1 = DATASETS.PROCESOS_SECOP1
-
-function primerDiaMes(offsetMeses = 0) {
-  const d = new Date()
-  d.setDate(1)
-  d.setMonth(d.getMonth() + offsetMeses)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01T00:00:00`
-}
-
-function primerDiaAnio(offsetAnios = 0) {
-  const d = new Date()
-  return `${d.getFullYear() + offsetAnios}-01-01T00:00:00`
-}
+export { PERIODOS }
 
 // Etiqueta del eje X a partir del período ISO (YYYY-MM-DD). En vista anual, el
 // año; en mensual, "mmm aa".
@@ -56,20 +40,25 @@ function normalizar(rows, porAnio) {
     })
 }
 
-// Períodos disponibles. Con pocos meses agrupamos por mes; en rangos largos
-// por año, para que la línea no se convierta en ruido.
-export const PERIODOS = {
-  '12m': { label: 'Último año', meses: 12, grano: 'mes' },
-  '24m': { label: '2 años', meses: 24, grano: 'mes' },
-  '5a': { label: '5 años', anios: 5, grano: 'anio' },
-  '10a': { label: '10 años', anios: 10, grano: 'anio' },
-}
-
 export const METRICAS = {
   contratos: { label: 'Contratos firmados', tipo: 'conteo' },
   valor: { label: 'Valor firmado', tipo: 'dinero' },
   promedio: { label: 'Valor promedio', tipo: 'dinero' },
   directa: { label: '% sin competencia', tipo: 'porcentaje' },
+}
+
+// El caso por defecto —sin filtro, 5 años— es el que ve todo el mundo al
+// entrar y sale de /api/evolucion, cacheado en Edge Config y refrescado por el
+// cron diario (mismo patrón que /api/panorama-geo). Es la vista más cara que
+// se puede cachear: 10 años excluye SECOP I por inviable (ver secop1EsViable),
+// y el resto (12m/24m) son más baratas que 5a, así que cachear la más costosa
+// cubre lo importante sin tener que replicar cuatro payloads.
+const PERIODO_CACHEADO = '5a'
+
+async function fetchEvolucionCache() {
+  const res = await fetch('/api/evolucion')
+  if (!res.ok) throw new Error(`Evolución error ${res.status}`)
+  return res.json()
 }
 
 // Serie de tiempo de la contratación, en dos fuentes que se pintan como dos
@@ -84,70 +73,47 @@ export const METRICAS = {
 export function useEvolucion(filters = {}, periodoClave = '24m') {
   const periodo = PERIODOS[periodoClave] || PERIODOS['24m']
   const porAnio = periodo.grano === 'anio'
-  const desde = porAnio ? primerDiaAnio(-periodo.anios) : primerDiaMes(-periodo.meses)
-  const hasta = porAnio ? primerDiaAnio(0) : primerDiaMes(0)
+  const secop1Viable = secop1EsViable(periodoClave)
 
-  // SECOP I no se consulta en la vista de 10 años: su GROUP BY por año sobre 6,4
-  // millones de registros no baja de ~50s y con el saneamiento de cuantías pasa
-  // de 150s (medido). En vivo es inviable, así que en ese rango se muestra solo
-  // SECOP II. Las demás vistas (hasta 5 años) sí lo traen (~30s, en diferido).
-  const secop1Viable = periodo.anios ? periodo.anios <= 5 : true
+  const sinFiltros = !filters.department && !filters.city && !filters.entity
+  const usarCache = !import.meta.env.DEV && sinFiltros && periodoClave === PERIODO_CACHEADO
 
-  const secop2 = useQuery({
+  // Una sola petición a /api/evolucion sirve las dos fuentes (comparten query
+  // key), en vez de que cada una la pida por su cuenta.
+  const cache = useQuery({
+    queryKey: ['evolucion', 'cache'],
+    queryFn: fetchEvolucionCache,
+    enabled: usarCache,
+    staleTime: 30 * 60 * 1000,
+  })
+
+  const secop2Directo = useQuery({
     queryKey: ['evolucion', 'secop2', filters, periodoClave],
-    queryFn: () => {
-      const truncado = porAnio
-        ? 'date_trunc_y(fecha_de_firma)'
-        : 'date_trunc_ym(fecha_de_firma)'
-      const where = buildWhere(
-        whereFromFilters(filters, [
-          soloContratosValidos(),
-          `fecha_de_firma >= '${desde}'`,
-          `fecha_de_firma < '${hasta}'`,
-        ]),
-      )
-      return socrataQuery(
-        DS,
-        `SELECT ${truncado} as periodo,
-                count(id_contrato) as n,
-                sum(valor_del_contrato) as valor,
-                sum(case(modalidad_de_contratacion IN
-                  ('Contratación directa', 'Contratación Directa (con ofertas)'),
-                  1, true, 0)) as directa
-         ${where} GROUP BY periodo ORDER BY periodo ASC LIMIT 200`,
-      )
-    },
+    queryFn: () => socrataQuery(DS_EVOLUCION, soqlEvolucionSecop2(filters, periodoClave)),
     select: (rows) => normalizar(rows, porAnio),
+    enabled: !usarCache,
   })
 
-  const secop1 = useQuery({
-    enabled: secop1Viable,
+  const secop1Directo = useQuery({
     queryKey: ['evolucion', 'secop1', filters, periodoClave],
-    queryFn: () => {
-      const truncado = porAnio
-        ? 'date_trunc_y(fecha_de_firma_del_contrato)'
-        : 'date_trunc_ym(fecha_de_firma_del_contrato)'
-      // El rango (>= desde) ya deja fuera las fechas basura de SECOP I (que
-      // llegan hasta 2099): desde nunca baja de hace 10 años.
-      const where = buildWhere(
-        whereFromFiltrosSecop1(filters, [
-          soloContratosValidosSecop1(),
-          cuantiaPosibleSecop1(),
-          `fecha_de_firma_del_contrato >= '${desde}'`,
-          `fecha_de_firma_del_contrato < '${hasta}'`,
-        ]),
-      )
-      return socrataQuery(
-        DS1,
-        `SELECT ${truncado} as periodo,
-                count(uid) as n,
-                sum(${VALOR_SECOP1_SOQL}) as valor,
-                sum(case(modalidad_de_contratacion = '${esc(MODALIDAD_SIN_COMPETENCIA_SECOP1)}', 1, true, 0)) as directa
-         ${where} GROUP BY periodo ORDER BY periodo ASC LIMIT 200`,
-      )
-    },
+    queryFn: () => socrataQuery(DS1_EVOLUCION, soqlEvolucionSecop1(filters, periodoClave)),
     select: (rows) => normalizar(rows, porAnio),
+    enabled: !usarCache && secop1Viable,
   })
+
+  // Adapta un lado del payload cacheado a la misma forma { data, isLoading,
+  // isError, error, refetch } que ya esperan el resto del componente y
+  // useMemo de abajo.
+  const desdeCache = (clave) => ({
+    data: cache.data ? normalizar(cache.data[clave], porAnio) : undefined,
+    isLoading: cache.isLoading,
+    isError: cache.isError,
+    error: cache.error,
+    refetch: cache.refetch,
+  })
+
+  const secop2 = usarCache ? desdeCache('secop2') : secop2Directo
+  const secop1 = usarCache ? desdeCache('secop1') : secop1Directo
 
   // Serie unificada por período: cada fila lleva las métricas de SECOP II
   // (contratos, valor, promedio, directa) y las de SECOP I con sufijo "1". Se
