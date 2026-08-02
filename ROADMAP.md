@@ -988,23 +988,40 @@ patrón simple (sin precálculo por GitHub Actions): las dos consultas terminan
 dentro del techo de 60 s del plan, aunque una de ellas con menos margen del
 que decía el ROADMAP:
 
-- **`/api/evolucion`**: SECOP II (~6 s) y SECOP I (~24 s) en paralelo, para la
-  vista por defecto real —**5 años**, no 2 como se asumió al principio: el
+- **`/api/evolucion`**: SECOP II (~6 s) y SECOP I (~24 s) medido en local, para
+  la vista por defecto real —**5 años**, no 2 como se asumió al principio: el
   estado inicial del selector es `'5a'`—. Es la vista más cara de las que sí
   cachean (12m/24m son más baratas; 10 años excluye SECOP I por inviable en
   vivo, ver el punto 4 de arriba), así que cachear esta cubre lo importante
-  sin replicar cuatro payloads. `useEvolucion.js` se refactorizó: la
+  sin replicar cuatro payloads. **En producción, el primer cómputo tardó 56
+  s** —lejos del margen cómodo que sugerían las pruebas locales, y otra
+  confirmación de que Socrata varía mucho de un día (y de una región) a
+  otra—. Terminó a tiempo, pero por poco: si empeora, el candidato obvio es
+  no traer SECOP I en esta vista cacheada (dejar que la UI la pida aparte,
+  como ya hace con la de 10 años). `useEvolucion.js` se refactorizó: la
   construcción del SoQL se movió a `src/lib/evolucionQueries.js` (mismo
   patrón que `panoramaGeoQueries.js`), compartida entre el hook y el endpoint.
 - **`/api/concentracion`**: `GROUP BY documento_proveedor ORDER BY
-  sum(valor_del_contrato) DESC LIMIT 20000` a nivel país. **Medido de nuevo:
-  ~54 s**, muy por encima del "~13 s" que decía este documento —esa cifra
-  estaba tan desactualizada como las de los rankings de contratistas—. A
-  diferencia de esos rankings, esta consulta **sí termina**, así que el cron
-  puede completarla; queda cerca del techo pero con el respaldo de que, si
-  algún día la tarda más de la cuenta y la función se corta, Edge Config sigue
-  sirviendo el valor del día anterior en vez de romperse. `soqlConcentracion*`
-  se movió a `src/lib/concentracionQueries.js`.
+  sum(valor_del_contrato) DESC LIMIT 20000` a nivel país. Medido de nuevo:
+  entre ~26 s y ~54 s según el momento —muy por encima del "~13 s" que decía
+  este documento, esa cifra estaba tan desactualizada como las de los
+  rankings de contratistas—, pero **siempre termina**, a diferencia de esos
+  rankings. `soqlConcentracion*` se movió a `src/lib/concentracionQueries.js`.
+  - **Hallazgo real, no anticipado: el primer despliegue falló al escribir en
+    Edge Config (`error-400`).** El payload que se iba a cachear —el arreglo
+    completo de los 20.000 valores— pesa **~250 KB**, por encima de lo que
+    admite un ítem de Edge Config. La consulta seguía funcionando (se
+    computaba en vivo cada vez, ~26-54 s), pero nunca llegaba a cachearse.
+  - **Corregido de raíz, no con un tope de tamaño a ciegas:** se movió la
+    derivación matemática —cuántos contratistas hacen el 50%, el share del
+    1% más grande, el del contratista más grande— del componente
+    (`Concentracion.jsx`) a una función compartida
+    (`derivarConcentracion` en `concentracionQueries.js`), usada tanto en
+    vivo como en el endpoint. Lo que se cachea ahora es ese puñado de
+    números ya derivados, no el arreglo crudo. Para derivar hace falta el
+    total nacional de contratistas —que **no se recalcula** (ese
+    `count(distinct)` mide ~68 s en vivo, ver la sección de Concentración
+    más abajo)—: se lee de la caché de `/api/panorama`, que ya lo tiene.
 
 Verificado en el navegador (servidor local): las dos secciones siguen
 renderizando igual que antes en la ruta en vivo —la refactorización no cambió

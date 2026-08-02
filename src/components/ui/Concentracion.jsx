@@ -45,9 +45,9 @@ function BarrasPareadas({ pctContratistas, etiquetaContratistas, pctValor, etiqu
 // un índice abstracto. Normalizado por el total de contratistas del ámbito, que
 // viene del Panorama (mismo conteo que la tarjeta "Contratistas").
 export function Concentracion({ filters = {}, contratistas, tieneSecop1 }) {
-  const query = useConcentracion(filters)
-  const ambito = ambitoDe(filters)
   const total = contratistas?.data ?? null // total de contratistas del ámbito (M)
+  const query = useConcentracion(filters, total)
+  const ambito = ambitoDe(filters)
 
   return (
     <section className="border-t-2 border-textPrimary pt-5 pb-8 mb-2">
@@ -91,25 +91,14 @@ export function Concentracion({ filters = {}, contratistas, tieneSecop1 }) {
       <div className="mt-6">
         <QueryState query={query} empty="Sin datos para este ámbito.">
           {(d) => {
-            if (!d.total || !d.cum.length) {
+            if (!d.total || !d.topFetched) {
               return <p className="py-8 text-center text-textSecondary">Sin datos suficientes.</p>
             }
-            // Cuántos de los más grandes hacen la mitad del valor.
-            const mitad = 0.5 * d.total
-            let k50 = d.cum.findIndex((c) => c >= mitad)
-            k50 = k50 === -1 ? null : k50 + 1
-
-            // Share del 1% más grande de los contratistas (si conocemos el total
-            // y ese 1% cabe en lo que trajimos).
-            const uno = (d.cum[0] / d.total) * 100
-            let share1pct = null
-            let n1pct = null
-            if (total) {
-              n1pct = Math.max(1, Math.ceil(total * 0.01))
-              if (n1pct <= d.cum.length) share1pct = (d.cum[n1pct - 1] / d.total) * 100
-            }
-
-            const pctContr50 = total && k50 ? (k50 / total) * 100 : null
+            // Ya vienen derivados de derivarConcentracion (mismo cálculo en
+            // vivo o desde /api/concentracion): cuántos de los más grandes
+            // hacen la mitad del valor, y el share del contratista más grande
+            // y del 1% más grande.
+            const { k50, uno, share1pct, pctContr50 } = d
             const nf = (x) => x.toLocaleString('es-CO')
 
             return (
