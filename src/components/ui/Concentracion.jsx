@@ -105,7 +105,11 @@ export function Concentracion({ filters = {}, contratistas, tieneSecop1 }) {
               <>
                 <p className="text-[15px] text-textPrimary leading-relaxed max-w-2xl mb-6">
                   {k50 ? (
-                    pctContr50 != null ? (
+                    // pctContr50 puede llegar ya calculado (caso cacheado) antes
+                    // de que esta misma página termine de cargar `total` —la
+                    // cuenta de contratistas viene de otra consulta aparte—, así
+                    // que se exige también total aquí para no llamar nf(null).
+                    pctContr50 != null && total != null ? (
                       <>
                         El <span className="font-display font-extrabold text-danger">
                           {formatPct(pctContr50, pctContr50 < 1 ? 2 : 1)}
