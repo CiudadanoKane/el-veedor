@@ -1026,9 +1026,18 @@ que decía el ROADMAP:
 Verificado en el navegador (servidor local): las dos secciones siguen
 renderizando igual que antes en la ruta en vivo —la refactorización no cambió
 ningún comportamiento—. La ruta cacheada (`/api/*`) no se puede probar en
-`npm run dev` (son funciones de Vercel, no rutas de Vite): queda por verificar
-en producción tras el deploy, igual que con el resto de endpoints de esta
-sección.
+`npm run dev` (son funciones de Vercel, no rutas de Vite): se verificó en
+producción tras el deploy.
+
+Dos problemas reales aparecieron solo ahí —ninguno se podía haber visto en
+local— y los dos ya están corregidos y verificados:
+- El de tamaño de Edge Config en `/api/concentracion`, descrito arriba.
+- Un **crash** en Concentración (`Cannot read properties of null (reading
+  'toLocaleString')`): `pctContr50` llega ya calculado desde el servidor y
+  puede resolver antes que `total` —la cuenta de contratistas, que viene de
+  otra consulta aparte—; antes los dos salían del mismo cálculo en el mismo
+  render, así que nunca se desincronizaban. Se agregó el chequeo que faltaba
+  (`total != null`) antes de formatear con `total`.
 
 ---
 
