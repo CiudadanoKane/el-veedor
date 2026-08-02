@@ -45,6 +45,14 @@ export function valorMasFrecuente(filas, campo, campoConteo = 'n') {
 // distintos—, pero no es el único: hay entidades que rellenan el campo con
 // ceros, con un uno o con "N/A". El '000000000' agrupa 137 contratos de 75
 // organizaciones sin relación entre sí: ETICOS, Uniandes, varios consorcios.
+// '123456' es el mismo patrón con un número de prueba: en SECOP II agrupa
+// "PRUEBA" (repetido), consorcios reales sin relación entre sí y hasta una
+// oficina alemana ("Amt für Umweltschutz, Stuttgart"); en SECOP I agrupa
+// "PRUEBA", "JOHN", "ERROR INVOLUNTARIO", "ZERO 1/2/3", "HOLA HOLA" y otros
+// nombres sueltos. Se detectó al aparecer un solo registro de esa bolsa
+// ("PRUEBA", $25.000.000.200.000) como el 2º contratista nacional por valor
+// en SECOP I — encabezando un ranking que hasta ahora nunca se había podido
+// calcular en vivo (ver ROADMAP.md, punto 9).
 //
 // Agruparlos crea contratistas falsos de tamaño artificial, que se cuelan en
 // los rankings como si fueran uno solo. Se detectaron buscando documentos con
@@ -55,7 +63,7 @@ export function valorMasFrecuente(filas, campo, campoConteo = 'n') {
 // varias dependencias usan legítimamente. Ese caso se advierte en el perfil.
 export const DOCUMENTOS_SIN_IDENTIDAD = [
   'No Definido', 'N/A', 'NA', '0', '1',
-  '000000', '0000000', '00000000', '000000000', '0000000000',
+  '000000', '0000000', '00000000', '000000000', '0000000000', '123456',
 ]
 
 export function documentoIdentifica(campo = 'documento_proveedor') {

@@ -1,0 +1,70 @@
+name: Recalcular ranking de contratistas
+
+# El ranking de contratistas por VALOR (y por cantidad) no se puede calcular en
+# vivo: agrupa sobre más de un millón de contratistas distintos, y Socrata no
+# termina de ordenar ese agregado ni en 100-170s sin ningún límite de Vercel de
+# por medio. Ni el cron de Vercel puede completarlo dentro de una función
+# serverless, así que no hay forma de cachearlo en caliente. Ver el encabezado
+# de scripts/calcular-rankings-contratistas.mjs y ROADMAP.md, punto 9.
+#
+# Se precalcula una vez al día y el resultado
+# (public/rankings-contratistas.json) se sirve como archivo estático.
+
+on:
+  schedule:
+    # 08:00 UTC = 03:00 en Colombia. Después de que termina el cron de
+    # adiciones (07:40 UTC, ~6-18 min) y antes del bloque de crons de Vercel
+    # (09:00-09:50 UTC): los tres usan el mismo SOCRATA_TOKEN, y Socrata encola
+    # las peticiones simultáneas del mismo token (la misma causa que tumbó
+    # /api/noticias — ver ROADMAP.md). Correr en su propia ventana evita esa
+    # cola.
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rankings-contratistas
+  cancel-in-progress: false
+
+jobs:
+  calcular:
+    runs-on: ubuntu-latest
+    # Medido localmente: 8 min en una corrida, 47 min en otra —Socrata varía
+    # mucho de un día a otro—. Margen holgado para los días lentos, como en
+    # adiciones.yml.
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Verificar el token
+        env:
+          SOCRATA_TOKEN: ${{ secrets.SOCRATA_TOKEN }}
+        run: |
+          if [ -z "$SOCRATA_TOKEN" ]; then
+            echo "::error::Falta el secreto SOCRATA_TOKEN (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+
+      - name: Calcular rankings de contratistas
+        env:
+          SOCRATA_BASE: https://www.datos.gov.co/resource
+          SOCRATA_TOKEN: ${{ secrets.SOCRATA_TOKEN }}
+        run: node --max-old-space-size=2048 scripts/calcular-rankings-contratistas.mjs
+
+      - name: Commitear si cambió
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git diff --quiet -- public/rankings-contratistas.json; then
+            echo 'Sin cambios en el ranking de contratistas.'
+            exit 0
+          fi
+          git add public/rankings-contratistas.json
+          git commit -m 'Datos: recalcula ranking de contratistas'
+          git push

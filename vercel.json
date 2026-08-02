@@ -39,14 +39,6 @@
       "schedule": "30 9 * * *"
     },
     {
-      "path": "/api/rankings-contratistas",
-      "schedule": "35 9 * * *"
-    },
-    {
-      "path": "/api/rankings-contratistas-secop1",
-      "schedule": "40 9 * * *"
-    },
-    {
       "path": "/api/panorama-geo",
       "schedule": "45 9 * * *"
     },
@@ -78,12 +70,6 @@
       "maxDuration": 60
     },
     "api/errores-indice.js": {
-      "maxDuration": 60
-    },
-    "api/rankings-contratistas.js": {
-      "maxDuration": 60
-    },
-    "api/rankings-contratistas-secop1.js": {
       "maxDuration": 60
     },
     "api/buscar-ia.js": {

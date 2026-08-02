@@ -902,14 +902,12 @@ distintos** disfrazados del mismo síntoma:
    `useCalidadDatos.js` (beneficia también las vistas filtradas en vivo, no
    solo la cacheada) + Edge Config en `errores-indice.js`.
 
-3. **`rankings-contratistas.js` y `rankings-contratistas-secop1.js`** — **no
-   se pudieron arreglar en esta pasada.** Es un problema de fondo, no de
-   caché: la consulta real (`GROUP BY documento_proveedor ORDER BY
-   sum(valor_del_contrato) DESC`) se probó **directo contra Socrata, sin
-   ningún límite de Vercel de por medio, y no terminó ni en 100 s (SECOP II) ni
-   en 170 s (SECOP I)**. El comentario que decía "~73 s, cachear alcanza" ya no
-   es cierto —o el volumen de datos creció, o Socrata se puso más lento con
-   este patrón—.
+3. **`rankings-contratistas.js` y `rankings-contratistas-secop1.js`** — no se
+   pudieron arreglar con caché. Es un problema de fondo: la consulta real
+   (`GROUP BY documento_proveedor ORDER BY sum(valor_del_contrato) DESC`) se
+   probó **directo contra Socrata, sin ningún límite de Vercel de por medio, y
+   no terminó ni en 100 s (SECOP II) ni en 170 s (SECOP I)**. El comentario que
+   decía "~73 s, cachear alcanza" ya no era cierto.
    - La receta de `errores-indice` (quitar el `ORDER BY`, traer todo y ordenar
      en JS) **no aplica aquí**: ahí funcionó porque el `GROUP BY` ya era barato
      (~5.500 grupos); aquí el `GROUP BY` es sobre **documento_proveedor**, con
@@ -917,24 +915,67 @@ distintos** disfrazados del mismo síntoma:
      personas naturales). Confirmado con una prueba aparte: pedir todos los
      grupos sin ordenar (`LIMIT 500000`) **tampoco** termina en 100 s — el
      costo no está en el `ORDER BY`, está en que Socrata tiene que recorrer y
-     materializar un millón de grupos para poder devolver cualquier cosa más
-     allá de los primeros que encuentra al azar.
-   - Como ni el cron (60 s de techo) puede completar esta consulta, **Edge
-     Config no soluciona nada aquí**: no hay forma de escribir el dato en
-     caché si nada puede calcularlo a tiempo. Se revirtió un intento de
-     envolver estos dos endpoints en Edge Config —quedaba código que nunca se
-     iba a activar—.
-   - **La única salida real es un precálculo diario**, igual al patrón que ya
-     resolvió las adiciones de valor (`scripts/calcular-adiciones.mjs` +
-     GitHub Actions): paginar todo el dataset con keyset pagination, agregar
-     por contratista en Node, ordenar en memoria y publicar un JSON estático
-     (o escribirlo directo a Edge Config desde el workflow, sin pasar por una
-     función de Vercel). **No implementado todavía** — es una decisión de
-     arquitectura del mismo tamaño que la de adiciones, pendiente de acordar
-     con el usuario antes de construirla.
-   - Mientras tanto, estos dos endpoints **seguirán fallando en frío** después
-     de cada deploy, hasta que se aborde. Es la pestaña por defecto de
-     Rankings ("Quién recibe más"), así que el impacto es real y visible.
+     materializar un millón de grupos.
+   - Como ni el cron (60 s de techo) puede completar esta consulta, Edge
+     Config no servía de nada aquí. Se descartó envolver estos dos endpoints en
+     Edge Config.
+
+### HECHO ✅ — Precálculo diario del ranking de contratistas (ago 2026)
+
+Igual patrón que las adiciones de valor: paginación completa por keyset
+(`scripts/calcular-rankings-contratistas.mjs`, ejecutado por
+`.github/workflows/rankings-contratistas.yml`), acumulando en memoria por
+contratista y publicando `public/rankings-contratistas.json` — sin pasar
+nunca por una función de Vercel, así que el techo de 60 s no aplica.
+
+Mucho más simple que el de adiciones: un solo dataset por fuente, sin cruzar
+dos. El barrido acumula solo tres números por contratista (`contratos, valor,
+días`); el nombre y el tipo de documento se resuelven después con la misma
+consulta pequeña (`IN` de los finalistas) que ya usaba el ranking en vivo —
+reutilizando `valorMasFrecuente`, para no reintroducir el bug de "La
+Previsora" (ver punto 4). Se publican **las cuatro combinaciones** —SECOP
+II/I × valor/cantidad— aunque solo se sabía rota la de valor: "por cantidad"
+ordena por `count()` sobre la misma cardinalidad de un millón, así que
+probablemente tenía el mismo problema sin haberse probado en vivo todavía.
+
+Tres hallazgos **al validar localmente antes de programar el cron** —la misma
+disciplina que ya se aplicó con adiciones—:
+- **`buildWhere` anidado** producía `WHERE WHERE ...` (SoQL inválido): el
+  `where` que arma cada llamada ya incluye la palabra `WHERE`, y pasarlo de
+  nuevo a `buildWhere` la duplicaba. Se cambió a pasar el arreglo de
+  condiciones base sin construir, y armar el `WHERE` una sola vez por página.
+- **Las consultas de enriquecimiento no traían `LIMIT` explícito** y caían al
+  límite implícito de Socrata (1.000 filas). En una prueba con muestra
+  parcial, un identificador basura ("00000", con decenas de variantes de
+  nombre mal diligenciadas) llenó esas 1.000 filas y desplazó a contratistas
+  reales — sus nombres salían vacíos. Se agregó `ORDER BY n DESC LIMIT 5000`
+  a ambas consultas.
+- **`'123456'` es un balde de basura compartido, en las dos fuentes.** Con los
+  datos ya limpios de "00000" apareció un solo registro de esa identidad
+  ("PRUEBA", $25.000.000.200.000) como **2º contratista nacional por valor de
+  SECOP I** — un ranking que hasta ahora nunca se había podido calcular en
+  vivo, así que nadie lo había visto. Verificado contra la fuente: en SECOP II
+  agrupa "PRUEBA" (repetido), varios consorcios reales sin relación entre sí y
+  hasta una oficina alemana; en SECOP I agrupa "PRUEBA", "JOHN", "ERROR
+  INVOLUNTARIO", "ZERO 1/2/3", "HOLA HOLA" y más de una decena de nombres
+  sueltos. Se agregó a `DOCUMENTOS_SIN_IDENTIDAD` (`src/lib/identidad.js`),
+  igual que "No Definido" o "000000000" — beneficia también al buscador, a las
+  adiciones de valor y a la concentración de contratistas, no solo a este
+  ranking. En SECOP II, esos 4 contratos (~$956 M) ahora entran a "Errores en
+  SECOP → Sin contratista identificado", como cualquier otro documento sin
+  identidad real.
+
+**Frontend:** `useRankingsContratistasPrecalculados.js` (mismo patrón que
+`useAdicionesPrecalculadas`) sirve el JSON; `useRankingContratistas` en
+`useRankings.js` lo usa **solo sin filtro geográfico** —con departamento,
+ciudad o entidad activo sigue en vivo, como Concentración y Evolución—. De
+paso se corrigió un bug real: antes el caso *filtrado* también se mandaba al
+endpoint cacheado (que solo servía el caso nacional), lo cual nunca tuvo
+sentido.
+
+Se eliminaron `api/rankings-contratistas.js`, `api/rankings-contratistas-secop1.js`
+y sus entradas en `vercel.json` (cron + `functions`): quedaban huérfanos e
+irreparables como endpoint en vivo.
 
 ---
 

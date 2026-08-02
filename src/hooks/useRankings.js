@@ -9,7 +9,7 @@ import {
 import { valorMasFrecuente, documentoIdentifica } from '../lib/identidad.js'
 import { tipoDocSecop1ASecop2 } from '../lib/catalogosSecop1.js'
 import { MODALIDADES_SIN_COMPETENCIA } from '../lib/dashboardQueries.js'
-import { fetchOwnApi } from '../lib/apiClient.js'
+import { useRankingsContratistasPrecalculados } from './useRankingsContratistasPrecalculados.js'
 
 const DS = DATASETS.CONTRATOS
 const DS1 = DATASETS.PROCESOS_SECOP1
@@ -179,15 +179,19 @@ export async function rankingContratistasQuerySecop1(filters = {}, orderBy = 'va
 }
 
 // Es la combinación que carga la pestaña "Quién recibe más" de Rankings al
-// entrar: SECOP II, orden por valor total. Solo ese cruce usa el endpoint
-// cacheado (/api/rankings-contratistas); "Por cantidad" y toda la fuente
-// SECOP I van directo a Socrata (esta última no tiene endpoint cacheado).
+// entrar: SECOP II, orden por valor total. Sin filtro geográfico activo, las
+// dos fuentes y los dos órdenes salen del precálculo diario
+// (rankings-contratistas.json — ver useRankingsContratistasPrecalculados y
+// ROADMAP.md, punto 9): `GROUP BY documento_proveedor ORDER BY sum(...)`
+// agrupa sobre más de un millón de contratistas distintos, y esa consulta no
+// termina ni en 100-170s probada directo contra Socrata. Con un departamento,
+// ciudad o entidad activo va en vivo: el filtro reduce tanto la cardinalidad
+// de contratistas que ordenar sí es viable (igual que Concentración y
+// Evolución, que también solo cachean el caso nacional).
 export function useRankingContratistas(filters = {}, orderBy = 'valor_total', fuente = 'secop2') {
   const esSecop1 = fuente === 'secop1'
-  // SECOP II cachea solo su orden por defecto (valor_total). SECOP I es lento en
-  // los dos órdenes (~73s), así que ambos van por su endpoint cacheado; solo el
-  // orden por valor tiene cron, el de cantidad se cachea al primer uso vía SWR.
-  const usarCache = !import.meta.env.DEV && (esSecop1 || orderBy === 'valor_total')
+  const sinFiltros = !filters.department && !filters.city && !filters.entity
+  const usarPrecalculo = !import.meta.env.DEV && sinFiltros
 
   const directo = useQuery({
     queryKey: ['rank', 'contratistas', fuente, filters, orderBy],
@@ -196,20 +200,24 @@ export function useRankingContratistas(filters = {}, orderBy = 'valor_total', fu
         ? rankingContratistasQuerySecop1(filters, orderBy)
         : rankingContratistasQuery(filters, orderBy),
     select: selectRankingContratistas,
-    enabled: !usarCache,
+    enabled: !usarPrecalculo,
   })
 
-  const ruta = esSecop1 ? '/api/rankings-contratistas-secop1' : '/api/rankings-contratistas'
-  const cache = useQuery({
-    // Para SECOP I el orden cambia el resultado y va en la URL, así que entra en
-    // la clave; para SECOP II el endpoint solo sirve el orden por defecto.
-    queryKey: ['rank', 'contratistas', 'api', fuente, filters, esSecop1 ? orderBy : 'valor_total'],
-    queryFn: () => fetchOwnApi(ruta, filters, esSecop1 ? { orderBy } : {}),
-    select: selectRankingContratistas,
-    enabled: usarCache,
-  })
+  const precalculado = useRankingsContratistasPrecalculados()
+  const fuenteClave = esSecop1 ? 'secop1' : 'secop2'
+  const ordenClave = orderBy === 'total_contratos' ? 'porCantidad' : 'porValor'
+  const filasPrecalculadas = precalculado.data?.[fuenteClave]?.[ordenClave]
 
-  return usarCache ? cache : directo
+  if (usarPrecalculo) {
+    return {
+      data: filasPrecalculadas ? selectRankingContratistas(filasPrecalculadas) : undefined,
+      isLoading: precalculado.isLoading,
+      isError: precalculado.isError,
+      error: precalculado.error,
+      refetch: precalculado.refetch,
+    }
+  }
+  return directo
 }
 
 function rankingEntidadesQuery(filters = {}) {
