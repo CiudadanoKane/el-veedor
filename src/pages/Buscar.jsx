@@ -314,7 +314,16 @@ export function Buscar() {
       const sig = {
         ...criterios,
         modo,
-        texto: filtros.texto || limpio,
+        // Ojo: NO usar `filtros.texto || limpio`. Que la IA devuelva "" es una
+        // respuesta válida y frecuente —cuando ya extrajo todo a otros
+        // campos (tipo, fechas, lugar) y no queda ninguna palabra específica
+        // sobre qué se contrata—, no una falla. Con `||`, ese "" caía en la
+        // frase completa como texto literal, que exige que las palabras
+        // aparezcan juntas y en ese orden en el objeto: nunca coincide con
+        // nada. Verificado: "contratos por prestación de servicio el mes de
+        // julio 2026 en barranquilla" → texto: "", tipo, fechas y ciudad
+        // correctos; con `||` daba 0 resultados por buscar la frase entera.
+        texto: filtros.texto,
         terminos: filtros.terminos || [],
         modalidad: filtros.modalidad || '',
         tipo: filtros.tipo || '',
