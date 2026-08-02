@@ -107,15 +107,28 @@ export async function calidadDatosQuery(filters = {}, extremo = 'peor', metrica 
     .map((d) => `sum(case(${d.condicion}, 1, true, 0)) as ${d.campo}`)
     .join(',\n                ')
 
+  // El ordenamiento se hace en JS, no en el SoQL. Medido (jul 2026): la misma
+  // consulta CON `ORDER BY errores/count(...) DESC` tarda ~90s contra Socrata
+  // —por encima del techo de 60s del plan, y la causa confirmada de que
+  // /api/errores-indice devolviera FUNCTION_INVOCATION_TIMEOUT en producción
+  // (ver ROADMAP.md, punto 9)—; SIN el ORDER BY, la misma consulta baja a
+  // ~28-32s. El GROUP BY de por sí no es el problema —son solo ~5.500
+  // entidades—: es Socrata ordenando por una división calculada sobre el
+  // agregado. Solo ~1.400 entidades pasan el HAVING a nivel país, así que
+  // traerlas todas (LIMIT 6000, igual que directorio.js) y ordenar en JS es
+  // instantáneo y da el mismo resultado.
+  //
   // Al ordenar por la tasa más baja, muchas entidades empatan en cero. El
   // desempate por volumen premia a quien sostiene el registro limpio a lo
   // largo de miles de contratos, no a quien tuvo suerte con quinientos.
-  const orden =
+  const columnaOrden = activa.campo // 'errores' | 'incompletos'
+  const tasaDe = (r) => entero(r[columnaOrden]) / entero(r.n)
+  const comparar =
     extremo === 'peor'
-      ? `${activa.suma} / count(id_contrato) DESC`
-      : `${activa.suma} / count(id_contrato) ASC, count(id_contrato) DESC`
+      ? (a, b) => tasaDe(b) - tasaDe(a)
+      : (a, b) => tasaDe(a) - tasaDe(b) || entero(b.n) - entero(a.n)
 
-  const [entidades, nacional] = await Promise.all([
+  const [entidadesTodas, nacional] = await Promise.all([
     socrataQuery(
       DS,
       `SELECT nombre_entidad, nit_entidad, count(id_contrato) as n,
@@ -125,8 +138,7 @@ export async function calidadDatosQuery(filters = {}, extremo = 'peor', metrica 
        ${where}
        GROUP BY nombre_entidad, nit_entidad
        HAVING count(id_contrato) >= ${UMBRAL_CONTRATOS}
-       ORDER BY ${orden}
-       LIMIT 25`,
+       LIMIT 6000`,
     ),
     socrataQuery(
       DS,
@@ -136,6 +148,8 @@ export async function calidadDatosQuery(filters = {}, extremo = 'peor', metrica 
        ${where}`,
     ),
   ])
+
+  const entidades = [...entidadesTodas].sort(comparar).slice(0, 25)
 
   const g = nacional[0] || {}
   const totalPais = entero(g.n)

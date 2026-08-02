@@ -861,6 +861,81 @@ estado (p. ej. "Cancelado") se sale de `soloContratosValidos()` a propósito, ve
 el punto 3—, pero ahí se listan contratos individuales, no se suman: un valor
 corrupto aparecería como una fila rara, no contaminaría un total.
 
+#### 🔴 Segunda revisión (ago 2026) — 4 endpoints con FUNCTION_INVOCATION_TIMEOUT en vivo
+
+Una nueva revisión general, pedida tras notar que la anterior daba por buenas
+cifras ("34 s", "27 s") que resultaron **estar desactualizadas**. Esta vez se
+midió contra producción de verdad: `curl` a cada endpoint de `el-veedor.vercel.app`
+y `vercel logs` del despliegue activo (CLI vinculada al proyecto para esta
+revisión). Confirmado con **Edge Config sí aprovisionado** —`/api/panorama`
+responde con `X-Panorama-Source: edge-config`—, cerrando la única duda que había
+quedado abierta la vez anterior.
+
+**Hallazgo: 4 de 11 endpoints devolvían 504 (`FUNCTION_INVOCATION_TIMEOUT`,
+confirmado en los logs) en el momento de la revisión:** `/api/directorio`,
+`/api/errores-indice`, `/api/rankings-contratistas`,
+`/api/rankings-contratistas-secop1`. Los 7 restantes (panorama, panorama-geo,
+noticias + sus dos satélites, geo, alertas-vencidos) respondían en 1–3 s sin
+problema.
+
+Los 4 rotos comparten un rasgo: **ninguno usaba Edge Config**, solo
+`Cache-Control` de CDN — que se purga en cada deploy. Con la frecuencia de
+despliegues de estos días, el caché queda en frío con más frecuencia de lo
+habitual, y ahí aparece el problema real, que resultó ser **dos problemas
+distintos** disfrazados del mismo síntoma:
+
+1. **`directorio.js`** — la consulta en sí es rápida (medida: **9,9 s**, `GROUP
+   BY nombre_entidad` sobre ~5.500 entidades, `ORDER BY count DESC`). Solo le
+   faltaba Edge Config. **Corregido**, mismo patrón que `panorama-geo.js` (sin
+   variantes por filtro: es el catálogo completo).
+
+2. **`errores-indice.js`** — la consulta **sí se había vuelto lenta**: medida
+   con su `ORDER BY errores/count(...) DESC` real, tarda **~90 s** —por encima
+   del techo—, pero **sin ese `ORDER BY` baja a ~28-32 s**. El `GROUP BY` de
+   por sí no es caro (~5.500 entidades); es Socrata ordenando por una
+   **división calculada** sobre el agregado lo que se dispara. Solo ~1.400
+   entidades pasan el `HAVING count >= 500` a nivel país, así que **se cambió
+   la estrategia**: traerlas todas (`LIMIT 6000`, sin `ORDER BY`) y ordenar en
+   JavaScript, que para ~1.400 filas es instantáneo. Verificado que da
+   **exactamente el mismo resultado** que el `ORDER BY` original (mismas 5
+   entidades en el mismo orden, con la misma tasa). **Corregido** en
+   `useCalidadDatos.js` (beneficia también las vistas filtradas en vivo, no
+   solo la cacheada) + Edge Config en `errores-indice.js`.
+
+3. **`rankings-contratistas.js` y `rankings-contratistas-secop1.js`** — **no
+   se pudieron arreglar en esta pasada.** Es un problema de fondo, no de
+   caché: la consulta real (`GROUP BY documento_proveedor ORDER BY
+   sum(valor_del_contrato) DESC`) se probó **directo contra Socrata, sin
+   ningún límite de Vercel de por medio, y no terminó ni en 100 s (SECOP II) ni
+   en 170 s (SECOP I)**. El comentario que decía "~73 s, cachear alcanza" ya no
+   es cierto —o el volumen de datos creció, o Socrata se puso más lento con
+   este patrón—.
+   - La receta de `errores-indice` (quitar el `ORDER BY`, traer todo y ordenar
+     en JS) **no aplica aquí**: ahí funcionó porque el `GROUP BY` ya era barato
+     (~5.500 grupos); aquí el `GROUP BY` es sobre **documento_proveedor**, con
+     más de un millón de valores distintos (país: 85% de los contratos van a
+     personas naturales). Confirmado con una prueba aparte: pedir todos los
+     grupos sin ordenar (`LIMIT 500000`) **tampoco** termina en 100 s — el
+     costo no está en el `ORDER BY`, está en que Socrata tiene que recorrer y
+     materializar un millón de grupos para poder devolver cualquier cosa más
+     allá de los primeros que encuentra al azar.
+   - Como ni el cron (60 s de techo) puede completar esta consulta, **Edge
+     Config no soluciona nada aquí**: no hay forma de escribir el dato en
+     caché si nada puede calcularlo a tiempo. Se revirtió un intento de
+     envolver estos dos endpoints en Edge Config —quedaba código que nunca se
+     iba a activar—.
+   - **La única salida real es un precálculo diario**, igual al patrón que ya
+     resolvió las adiciones de valor (`scripts/calcular-adiciones.mjs` +
+     GitHub Actions): paginar todo el dataset con keyset pagination, agregar
+     por contratista en Node, ordenar en memoria y publicar un JSON estático
+     (o escribirlo directo a Edge Config desde el workflow, sin pasar por una
+     función de Vercel). **No implementado todavía** — es una decisión de
+     arquitectura del mismo tamaño que la de adiciones, pendiente de acordar
+     con el usuario antes de construirla.
+   - Mientras tanto, estos dos endpoints **seguirán fallando en frío** después
+     de cada deploy, hasta que se aborde. Es la pestaña por defecto de
+     Rankings ("Quién recibe más"), así que el impacto es real y visible.
+
 ---
 
 ### ~~PRÓXIMO~~ HECHO ✅ — Evolución con SECOP I (opción A: dos líneas)
