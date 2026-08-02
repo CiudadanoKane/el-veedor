@@ -288,17 +288,10 @@ export function conPlazoYPorcentaje(rows) {
   })
 }
 
-export function adicionTiempoConteoQueryOptions(filters = {}, nivel = 'alta') {
-  return {
-    queryKey: ['alerta', 'adiciontiempo', 'conteo', filters, nivel],
-    queryFn: () => {
-      const where = buildWhere(whereFromFilters(filters, condicionesAdicionExcesiva(nivel)))
-      return socrataQuery(DS, `SELECT count(id_contrato) as n ${where} LIMIT 1`)
-    },
-    select: (rows) => ({ total: parseInt(rows[0]?.n ?? 0, 10) }),
-  }
-}
-
+// Usada por Noticias (nivel 'alta' = más del 100%) para su nota de adición de
+// plazo. La pestaña "Adición de tiempo excesiva" que consumía esto en Alertas
+// se unificó con "Adiciones de plazo" (ago 2026): ver usePrevalenciaAdicionTiempo
+// en useAdiciones.js.
 export function adicionTiempoListaQueryOptions(filters = {}, nivel = 'alta') {
   return {
     queryKey: ['alerta', 'adiciontiempo', 'lista', filters, nivel],
@@ -310,13 +303,6 @@ export function adicionTiempoListaQueryOptions(filters = {}, nivel = 'alta') {
       )
     },
     select: conPlazoYPorcentaje,
-  }
-}
-
-export function useAdicionTiempoExcesiva(filters = {}, nivel = 'alta') {
-  return {
-    conteo: useQuery(adicionTiempoConteoQueryOptions(filters, nivel)),
-    lista: useQuery(adicionTiempoListaQueryOptions(filters, nivel)),
   }
 }
 

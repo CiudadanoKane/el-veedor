@@ -3,16 +3,14 @@
 // de calidad del registro en Errores en SECOP. Son cosas distintas — un
 // contrato vencido dice algo de la ejecución; una fecha de fin anterior al
 // inicio dice algo de quién llenó el formulario.
-import { useState } from 'react'
 import { QueryState } from '../ui/QueryState'
 import { DataTable } from '../ui/DataTable'
 import { ContractDetail } from '../ui/ContractDetail'
 import { AlertCard } from '../ui/AlertCard'
-import { Segmented } from '../ui/Segmented'
 import { useFilters } from '../../context/FiltersContext'
 import {
   useFechasInconsistentes, useContratosSinValor, useSinContratista,
-  useObraParalizada, useAdicionTiempoExcesiva, useCerradoSinPago, NIVELES_ADICION,
+  useObraParalizada, useCerradoSinPago,
 } from '../../hooks/useAlertas'
 import { useAdicionesCosto } from '../../hooks/useAdiciones'
 import { useCuantiaImposible } from '../../hooks/useCuantiaImposible'
@@ -520,125 +518,6 @@ export function AlertaObraParalizada() {
       }
     >
       <QueryState query={lista} empty="No se detectaron obras paralizadas con estos filtros.">
-        {(rows) => (
-          <DataTable
-            columns={columns}
-            rows={rows}
-            keyField="id"
-            renderDetail={(row) => <ContractDetail contract={row} />}
-          />
-        )}
-      </QueryState>
-    </AlertCard>
-  )
-}
-
-export function AlertaAdicionTiempo() {
-  const { filters } = useFilters()
-  const [nivel, setNivel] = useState('alta')
-  const { conteo, lista } = useAdicionTiempoExcesiva(filters, nivel)
-
-  const columns = [
-    {
-      key: 'entityName',
-      header: 'Entidad',
-      render: (r) => (
-        <div className="max-w-[240px]">
-          <div className="text-textPrimary">{r.entityName}</div>
-          <div className="text-xs text-textSecondary truncate">{r.description}</div>
-        </div>
-      ),
-    },
-    { key: 'contractorName', header: 'Contratista', render: (r) => r.contractorName || '—' },
-    {
-      key: 'contractValue',
-      header: 'Valor',
-      className: 'text-right tabular-nums',
-      render: (r) => formatCOP(r.contractValue),
-    },
-    {
-      key: 'plazoOriginal',
-      header: 'Plazo pactado',
-      className: 'text-right tabular-nums whitespace-nowrap',
-      render: (r) => {
-        if (r.plazoOriginal == null) return '—'
-        const h = humanDuration(r.plazoOriginal)
-        return (
-          <span>
-            {r.plazoOriginal.toLocaleString('es-CO')} d
-            {h && <span className="text-textSecondary"> ({h})</span>}
-          </span>
-        )
-      },
-    },
-    {
-      key: 'daysAdded',
-      header: 'Días añadidos',
-      className: 'text-right tabular-nums whitespace-nowrap',
-      render: (r) => {
-        const h = humanDuration(r.daysAdded)
-        return (
-          <span className="text-warning font-medium">
-            +{r.daysAdded?.toLocaleString('es-CO')}
-            {h && <span className="text-textSecondary font-normal"> ({h})</span>}
-          </span>
-        )
-      },
-    },
-    {
-      key: 'pct',
-      header: '% adición',
-      className: 'text-right tabular-nums',
-      render: (r) =>
-        r.pctAdicion != null ? (
-          <span className={r.pctAdicion > 200 ? 'text-danger font-bold' : 'text-danger'}>
-            +{r.pctAdicion.toLocaleString('es-CO')}%
-          </span>
-        ) : (
-          '—'
-        ),
-    },
-  ]
-
-  return (
-    <AlertCard
-      icon="reloj"
-      title="Adición de tiempo excesiva"
-      question="¿Qué contratos ampliaron su plazo mucho más allá de lo pactado?"
-      count={conteo.data?.total}
-      tone="warning"
-      methodology={
-        <>
-          Compara los días añadidos contra el <strong>plazo originalmente pactado</strong>,
-          que se calcula como (fecha fin − fecha inicio) − días añadidos. Un contrato de 90
-          días que se extendió 180 tiene una adición del 200%.
-          <br />
-          <br />
-          Que un contrato se prorrogue no es irregular por sí solo; lo llamativo es la
-          magnitud. Un plazo que se duplica o triplica sugiere que la planeación inicial
-          fue deficiente, o que el alcance cambió sustancialmente después de adjudicar —
-          cuando ya no hubo competencia. Se excluyen adiciones mayores a 3.650 días, que
-          son errores de digitación.
-          <br />
-          <br />
-          <strong>Es un subconjunto de "Adiciones de plazo"</strong>: esa pestaña lista
-          todos los contratos con prórroga, y esta se queda solo con los que superan el
-          umbral que elijas arriba. Al nivel "Más del 100%" son unos 51.226 de 750.156.
-        </>
-      }
-    >
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <span className="text-xs text-textSecondary">Magnitud de la adición:</span>
-        <Segmented
-          value={nivel}
-          onChange={setNivel}
-          options={Object.entries(NIVELES_ADICION).map(([v, n]) => ({
-            value: v,
-            label: n.label,
-          }))}
-        />
-      </div>
-      <QueryState query={lista} empty="No se detectaron adiciones excesivas con estos filtros.">
         {(rows) => (
           <DataTable
             columns={columns}

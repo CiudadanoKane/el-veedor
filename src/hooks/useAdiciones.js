@@ -5,6 +5,7 @@ import { whereFromFilters, buildWhere, soloContratosValidos, esc } from '../lib/
 import { adaptList } from '../adapters/secop2Adapter'
 import { CONTRACT_FIELDS } from '../lib/constants'
 import { valorOriginalDe, clasificarAdicion, detectarErrorDigitacion } from '../lib/adiciones'
+import { NIVELES_ADICION } from './useAlertas'
 
 const DS = DATASETS.CONTRATOS
 const DS_PROCESOS = 'p6dx-8zbt'
@@ -63,6 +64,52 @@ export function useAdicionesTiempo(filters = {}, limit = 50, orden = 'dias') {
         }
         return { ...c, plazoOriginal, pctAdicion }
       })
+    },
+  })
+}
+
+// Qué tan extendido está el problema, no solo quiénes son los peores casos.
+// Antes esto vivía en una pestaña aparte ("Adición de tiempo excesiva") con un
+// selector que generaba tres listas —Más del 50%/100%/200%— casi idénticas: al
+// ser umbrales acumulativos (no bandas), un contrato con 300% de adición
+// aparecía en las tres, y el tope de cada lista terminaba siendo el mismo
+// puñado de casos extremos. Se unificó (ago 2026): la lista de arriba ya
+// muestra el detalle con su color por magnitud; esto solo da la cifra de
+// cuántos contratos cruzan cada umbral, en una sola consulta.
+const BASE_ADICION_TIEMPO = [
+  soloContratosValidos(),
+  'dias_adicionados > 0',
+  'dias_adicionados <= 3650',
+  // Sin este resguardo, un contrato con fechas invertidas (fin antes que
+  // inicio) da una duración negativa y "supera" cualquier umbral por error de
+  // dato, no por adición real.
+  'fecha_de_fin_del_contrato > fecha_de_inicio_del_contrato',
+]
+
+export function usePrevalenciaAdicionTiempo(filters = {}) {
+  return useQuery({
+    queryKey: ['adiciones', 'tiempo', 'prevalencia', filters],
+    queryFn: () => {
+      const duracion = 'date_diff_d(fecha_de_fin_del_contrato, fecha_de_inicio_del_contrato)'
+      const umbral = (factor) => `dias_adicionados * ${factor} > ${duracion}`
+      const where = buildWhere(whereFromFilters(filters, BASE_ADICION_TIEMPO))
+      return socrataQuery(
+        DS,
+        `SELECT count(id_contrato) as total,
+                sum(case(${umbral(NIVELES_ADICION.media.factor)}, 1, true, 0)) as mas50,
+                sum(case(${umbral(NIVELES_ADICION.alta.factor)}, 1, true, 0)) as mas100,
+                sum(case(${umbral(NIVELES_ADICION.critica.factor)}, 1, true, 0)) as mas200
+         ${where} LIMIT 1`,
+      )
+    },
+    select: (rows) => {
+      const r = rows[0] || {}
+      return {
+        total: parseInt(r.total ?? 0, 10),
+        mas50: parseInt(r.mas50 ?? 0, 10),
+        mas100: parseInt(r.mas100 ?? 0, 10),
+        mas200: parseInt(r.mas200 ?? 0, 10),
+      }
     },
   })
 }

@@ -8,7 +8,7 @@ import { ContractDetail } from '../ui/ContractDetail'
 import { Methodology } from '../ui/Methodology'
 import { Segmented } from '../ui/Segmented'
 import { useFilters } from '../../context/FiltersContext'
-import { useAdicionesTiempo, useAdicionesCosto } from '../../hooks/useAdiciones'
+import { useAdicionesTiempo, usePrevalenciaAdicionTiempo, useAdicionesCosto } from '../../hooks/useAdiciones'
 import { formatCOP, humanDuration } from '../../lib/formatters'
 
 function PctBadge({ pct }) {
@@ -38,10 +38,13 @@ const colContratista = {
 
 /* ------------------------------ POR TIEMPO ------------------------------ */
 
+const nf = (x) => (x ?? 0).toLocaleString('es-CO')
+
 export function AdicionesTiempo() {
   const { filters } = useFilters()
   const [orden, setOrden] = useState('dias')
   const query = useAdicionesTiempo(filters, 50, orden)
+  const prevalencia = usePrevalenciaAdicionTiempo(filters)
 
   const columns = [
     colEntidad,
@@ -93,7 +96,9 @@ export function AdicionesTiempo() {
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-textSecondary text-sm">
-          {query.data ? `${query.data.length} contratos con adición de plazo` : 'Cargando…'}
+          {prevalencia.data
+            ? `${nf(prevalencia.data.total)} contratos con adición de plazo`
+            : 'Cargando…'}
         </h3>
         <Segmented
           value={orden}
@@ -104,6 +109,13 @@ export function AdicionesTiempo() {
           ]}
         />
       </div>
+      {prevalencia.data && (
+        <p className="mt-1 text-xs text-textSecondary">
+          De esos, <strong>{nf(prevalencia.data.mas50)}</strong> superan el 50% de adición
+          sobre su plazo pactado —<strong>{nf(prevalencia.data.mas100)}</strong> superan el
+          100%, y <strong>{nf(prevalencia.data.mas200)}</strong>, el 200%—.
+        </p>
+      )}
       <Methodology>
         Usamos el campo directo <code>dias_adicionados</code> de SECOP II. El{' '}
         <strong>plazo original</strong> se estima como (fecha fin − fecha inicio) − días
@@ -112,6 +124,14 @@ export function AdicionesTiempo() {
         mayores a 3.650 días (errores de digitación).{' '}
         <strong>Haz clic en una fila para ver el detalle y el historial real de
         modificaciones</strong>, que suele ser más completo que este campo.
+        <br />
+        <br />
+        Las cifras de prevalencia (cuántos superan cada umbral) son{' '}
+        <strong>acumulativas, no excluyentes</strong>: un contrato con 300% de adición está
+        contado en las tres. Antes existía una pestaña aparte ("Adición de tiempo
+        excesiva") con un selector que producía tres listas casi idénticas —al ser
+        umbrales acumulativos, el tope de cada una eran los mismos casos extremos—; se
+        unificó aquí, dejando la lista completa siempre visible.
       </Methodology>
       <div className="mt-4">
         <QueryState query={query} empty="No hay contratos con adición de tiempo con estos filtros.">
