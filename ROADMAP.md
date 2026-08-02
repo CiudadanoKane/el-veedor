@@ -636,8 +636,9 @@ mismo resultado; el `case` se deja mínimo.
 7. ~~Selectores geográficos inline en Evolución y Concentración~~ ✅ (jul 2026)
    — controlan el filtro global (mueven toda la página). Ver sección abajo.
 8. ~~Comparación de ciudades (opción B del análisis)~~ ✅ (jul 2026) — ranking de
-   las ~45 ciudades más pobladas por métrica, en Total y per cápita, en el
-   Panorama bajo el mapa. Ver sección abajo.
+   10 ciudades por métrica, en Total y per cápita, en el Panorama bajo el mapa;
+   el nombre lleva al filtro de esa ciudad, y un selector deja comparar
+   cualquiera de las 126 ciudades de la tabla. Ver sección abajo.
 9. Botón de ayuda: al activarlo, hover/clic sobre cifras, gráficos y tablas
    (p. ej. cada tarjeta del Panorama) muestra una explicación en lenguaje llano
    —qué es y por qué importa— para el público general. Idea, sin diseñar aún.
@@ -680,7 +681,7 @@ mismo resultado; el `case` se deja mínimo.
     **Geografía** ✅ (resuelto después) — el esquema tiene campos
     departamento/ciudad; la IA extrae el lugar (corrigiendo tipeo: "medallo" →
     Medellín) y el cliente lo valida contra el catálogo geográfico real —el que
-    ya carga `GlobalFilters`, sin consulta extra— antes de aplicarlo al filtro
+    ya carga `BarraFiltro`, sin consulta extra— antes de aplicarlo al filtro
     global. Cero invención: si el municipio no existe en el catálogo, no se
     aplica. Ver `resolverLugar` en `src/lib/geoResolver.js` —empareja sin tildes
     ni mayúsculas, y de una ciudad deduce su departamento porque el selector de
@@ -719,28 +720,32 @@ mismo resultado; el `case` se deja mínimo.
 
 ---
 
-### 9. Rendimiento de carga ← **siguiente**
+### 9. Rendimiento de carga
 
-Reportado desde el uso real: la página tarda **decenas de segundos**, no unos
-pocos. Diagnóstico de jul 2026.
+Reportado desde el uso real: la página tardaba **decenas de segundos**, no unos
+pocos. Diagnóstico de jul 2026; los tres pasos principales ya se ejecutaron (ver
+"Hecho ✅" al final de esta sección). Queda un paso opcional (evolución y
+concentración) si la latencia sigue molestando.
 
 #### Qué está cacheado y qué no
 
-Existe una arquitectura buena —endpoint `/api` + Edge Config + cron diario— pero
-**solo cubre una parte**. En Panorama:
+Existe una arquitectura buena —endpoint `/api` + Edge Config + cron diario— y
+tras esta sección **ya cubre la parte que más pesaba**:
 
 | Sección | ¿Cacheada? | Nota |
 |---|---|---|
 | Las 8 cifras | ✅ `/api/panorama` | Edge Config, no se purga con los deploys |
-| Mapa | ❌ Socrata en vivo | `useMapaMetricas` — **no depende del filtro** |
-| Comparación de ciudades | ❌ Socrata en vivo | `useComparacionCiudades` — ~22 s, **no depende del filtro** |
-| Evolución | ❌ Socrata en vivo | 2 series; SECOP I es lento |
-| Concentración | ❌ Socrata en vivo | — |
+| Mapa | ✅ `/api/panorama-geo` | Desde jul 2026, ver "Hecho" abajo |
+| Comparación de ciudades | ✅ `/api/panorama-geo` | Mismo endpoint que el mapa (comparten query) |
+| Noticias | ✅ `/api/noticias` + `-actores` + `-fechas` | Desde jul 2026, ver "Hecho" abajo |
+| Evolución | ❌ Socrata en vivo | 2 series; SECOP I es lento. **Pendiente** |
+| Concentración | ❌ Socrata en vivo | **Pendiente** |
 
-Que el mapa y la comparación de ciudades **no dependan del ámbito** es la
-oportunidad grande: un único payload sirve a todos los visitantes, así que
-encajan en el patrón de `/api/panorama` sin la complicación de las vistas
-filtradas.
+El mapa y la comparación de ciudades **no dependen del ámbito** geográfico: un
+único payload sirve a todos los visitantes, por eso encajaron en el patrón de
+`/api/panorama` sin la complicación de las vistas filtradas. Evolución y
+Concentración sí dependen del filtro, así que cachearlas (si hace falta) tendría
+que ser solo para el caso nacional, dejando las vistas filtradas en vivo.
 
 #### Hecho ✅ — quitada una precarga inútil
 
@@ -789,26 +794,72 @@ curl.exe -sI https://el-veedor.vercel.app/api/panorama | findstr /i panorama
 `X-Panorama-Write: no-config` significaría que faltan `EDGE_CONFIG_ID` o
 `VERCEL_API_TOKEN`, y se arregla configurando variables, sin tocar código.
 
-#### Conclusión y pasos siguientes
+#### Conclusión (jul 2026, ya ejecutada)
 
-Descartadas las hipótesis de infraestructura, **la causa de los tiempos largos
-es la que se describe arriba**: las cuatro secciones sin cachear que pegan
-contra Socrata en cada visita. El camino queda despejado:
+Descartadas las hipótesis de infraestructura, la causa de los tiempos largos
+eran las secciones sin cachear que pegaban contra Socrata en cada visita. Se
+resolvió así:
 
-1. **Cachear mapa y comparación de ciudades** con el patrón de `/api/panorama`.
-   Caben de sobra en Hobby: la de ciudades tarda ~22 s y el techo son 60 s. Al
-   no depender del ámbito, un solo payload sirve a todos.
-2. **Corregir `vercel.json`**: bajar a 60 s las cinco declaraciones que piden
-   más, para que el límite real sea explícito en el código y no una sorpresa.
-3. **Arreglar `/api/noticias`**, que ya está en el límite.
-4. Si hace falta más, evolución y concentración **solo en su caso nacional**,
-   dejando las vistas filtradas en vivo.
+1. ✅ **Cacheado mapa y comparación de ciudades** en `/api/panorama-geo`, mismo
+   patrón que `/api/panorama` (Edge Config + cron diario). Caben de sobra en
+   Hobby: ~22 s de reloj de pared (las dos consultas corren en paralelo) contra
+   un techo de 60 s.
+2. ✅ **Corregido `vercel.json`**: las cinco declaraciones que pedían entre 90 y
+   300 s bajaron a 60, el techo real del plan — declararlo alto no lo concedía,
+   solo escondía el límite.
+3. ✅ **Arreglado `/api/noticias`**: en producción devolvía **HTTP 504** (P75 de
+   1 minuto, justo el techo). Dos causas: las 8 consultas se lanzaban juntas y
+   Socrata encola las del mismo token (el reloj se parecía a la suma, no al
+   máximo) — se repartieron en tres endpoints (`/api/noticias`,
+   `-actores`, `-fechas`); y les faltaba Edge Config, así que cada deploy
+   obligaba a recalcular todo desde cero bajo el límite de tiempo.
+4. **Pendiente (opcional):** si hace falta más, evolución y concentración solo
+   en su caso nacional, dejando las vistas filtradas en vivo.
 
 Ya no hace falta decidir entre subir a Pro o mover a JSON estático: con los
-números reales, todo cabe en Hobby.
+números reales, todo cupo en Hobby.
 
 Pendiente relacionado, del punto 12: la consulta de categorías (~55 s) merece el
-mismo tratamiento que se decida aquí — y esa sí está cerca del techo.
+mismo tratamiento — y esa sí está cerca del techo.
+
+#### ⚠️ Hallazgo grave en el camino (jul 2026) — 33 registros rompían TODAS las cifras de SECOP II
+
+Al verificar los datos del paso 1 aparecieron valores corruptos en la fuente:
+Medellín sumaba **7,7 × 10²⁰ pesos** —un error de captura en SECOP, no un
+contrato caro— y encabezaba el ranking de ciudades por encima de Bogotá. El
+guardia para esto ya existía en el código (`cuantiaPosibleSecop2`), pero estaba
+**definido y sin usar en ninguna parte**: solo se aplicaba su variante de SECOP
+I. El error no era local a la comparación de ciudades: **contaminaba cualquier
+agregado que sumara `valor_del_contrato`** en toda la plataforma. Medido contra
+la fuente, antes → después de corregir:
+
+| Cifra | Antes (corrupta) | Después (real) |
+|---|---|---|
+| Valor contratado (Panorama) | $768.424.235 B | $1.769,1 B (SECOP II + I) |
+| Sector con más valor | $768.261.360 B | $210,7 B |
+| Contratista nº1 del ranking nacional | TERMINALES… (equivocado) | IVONN GARZÓN RODRÍGUEZ |
+| Entidad nº1 del ranking nacional | DISTRITO ESP… (equivocado) | ICANH |
+| Evolución 2025 | $1.126,5 B | $182,3 B |
+
+Los dos rankings no solo mostraban una cifra mal calculada: **nombraban a la
+entidad y al contratista equivocados**. En una plataforma de veeduría es lo más
+grave que puede pasar, y viola directamente el principio de "ningún número sin
+verificar contra la fuente real".
+
+**Corregido** metiendo el guardia dentro de `soloContratosValidos()` — el filtro
+que ya heredan todos los agregados de SECOP II (rankings, Panorama, mapa,
+comparación de ciudades, evolución, concentración, perfiles) — en vez de
+aplicarlo consulta por consulta, donde es fácil que una nueva se olvide de
+incluirlo. Verificado que no cuesta rendimiento (10,6 s con el guardia contra
+10,8 s sin él). No oculta nada: esos registros se siguen listando en "Errores en
+SECOP → Valores implausibles" (`cuantiaImposibleSecop2()`, la condición
+contraria, que no pasa por `soloContratosValidos`).
+
+**Alcance verificado:** la única vía de agregado que NO hereda este guardia es
+`condicionEstado()` del buscador —cuando el ciudadano elige explícitamente un
+estado (p. ej. "Cancelado") se sale de `soloContratosValidos()` a propósito, ver
+el punto 3—, pero ahí se listan contratos individuales, no se suman: un valor
+corrupto aparecería como una fila rara, no contaminaría un total.
 
 ---
 
@@ -920,11 +971,14 @@ ponderación explícita y ajustable.
 ### HECHO ✅ — Comparación de ciudades (opción B)
 
 Ranking de barras en el Panorama, **bajo el mapa** (`ComparacionCiudades.jsx`).
-Compara las **~45 ciudades más pobladas** del país por métrica —Valor, Nº de
-contratos, Plazo vencido, Sin competencia, Con prórroga— en **Total** y **per
-cápita**. Un solo `GROUP BY ciudad, orden` (hook `useComparacionCiudades`, ~22 s,
-cacheado 30 min); el campo `ciudad` está limpio para las grandes. No incluye
-Adiciones (ese dato se precalcula por depto/entidad, no por ciudad).
+Compara ciudades del país por métrica —Valor, Nº de contratos, Plazo vencido,
+Sin competencia, Con prórroga— en **Total** y **per cápita**. Un solo
+`GROUP BY ciudad, orden` (hook `useComparacionCiudades`); el campo `ciudad` está
+limpio para las grandes. No incluye Adiciones (ese dato se precalcula por
+depto/entidad, no por ciudad). Estado actual (tras las ampliaciones más abajo):
+**10 filas visibles**, selector para comparar cualquiera de las **126 ciudades**
+de la tabla, y desde jul 2026 la consulta va **cacheada en `/api/panorama-geo`**
+(antes vivía en el cliente, ~22 s por visitante) — ver "Rendimiento de carga".
 
 Decisiones de diseño:
 - **Conjunto fijo de ~45 ciudades** (las de `poblacionCiudades.js`), aplicado a
@@ -1063,6 +1117,13 @@ paso de secciones señale la barra lateral en escritorio y la inferior en móvil
 **Pendiente de verificar en un deploy real** (no se puede en local): que la
 interpretación con IA de la búsqueda rápida devuelva filtros —`/api/buscar-ia`
 exige `vercel dev` o producción—.
+
+**Corregido tras un reporte de uso en PC (jul 2026):** en escritorio, el ámbito
+quedaba a ~1.000 px a la derecha —en el rincón de la barra, empujado por el
+buscador de 672 px— y se perdía de vista. Se invierte el orden visual en
+pantallas grandes (el ámbito dice QUÉ se mira, así que se lee antes que el
+buscador, que es una acción): la ciudad pasa de x=1306 a x=471. Solo cambia el
+orden (CSS `order`, no el DOM), así que en móvil sigue arriba sin cambios.
 
 ---
 
