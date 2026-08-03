@@ -50,12 +50,14 @@ Va primero porque protege la credibilidad de todo lo demás.
 
 ### 2. Fase 2 pendiente
 
-- **Alerta: Obra Paralizada** — contrato de obra vencido hace más de 180 días con
-  dinero sin ejecutar. La arquitectura la llama "la señal más preocupante".
-  Verificado: existen 45.708 contratos de tipo Obra.
-- **Alerta: Adición de Tiempo Excesiva** — el cálculo del % ya existe; falta la
-  tarjeta de alerta.
-- **Mapa coroplético de Colombia** por índice de mora.
+- ~~**Alerta: Obra Paralizada**~~ ✅ — contrato de obra vencido hace más de 180
+  días con dinero sin ejecutar. Verificado: existen 45.708 contratos de tipo Obra.
+- ~~**Alerta: Adición de Tiempo Excesiva**~~ ✅ resuelta distinto de lo planeado:
+  no se construyó como pestaña propia sino **unificada** dentro de "Adiciones de
+  plazo" (ago 2026), tras verificar que sus tres bandas producían casi las mismas
+  listas. Ver "HECHO ✅ — Alertas: unifica..." más abajo.
+- ~~**Mapa coroplético de Colombia** por índice de mora.~~ ✅ ver punto 5 del plan
+  de Panorama, más abajo.
 - ~~**Replantear "Urgencia Manifiesta"**~~ ✅ — resuelto como filtro dentro del
   buscador (punto 3). No existe como modalidad en SECOP II: es una causal dentro
   de "Contratación directa", que por sí sola es el **74% de toda la contratación
@@ -701,6 +703,25 @@ mismo resultado; el `case` se deja mínimo.
     (sin tildes + con tildes tal cual, las dos escrituras reales), bajando a 22
     por dataset. Ver `variantesReducidas` en `acentos.js`.
 
+    **Bug real en producción, hallado por reporte de usuario (ago 2026)** ✅ —
+    "contratos por prestación de servicio el mes de julio 2026 en barranquilla"
+    daba **cero resultados**, pese a que la IA interpretaba todo bien (tipo,
+    fechas, ciudad). Causa: `texto: filtros.texto || limpio` en `Buscar.jsx`. La
+    IA devuelve `texto: ""` cuando ya extrajo todo a otros campos y no queda
+    ninguna palabra específica sobre qué se contrata —una respuesta válida y
+    frecuente, no una falla—, pero en JavaScript `""` es falsy: el `||`
+    sustituía ese vacío por la frase completa sin depurar, que la búsqueda trata
+    como frase literal exigiendo que las palabras aparezcan juntas y en ese
+    orden — nunca coincide con nada. Diagnosticado reproduciendo la llamada
+    exacta contra `/api/buscar-ia` en producción con `curl` (confirmó que la IA
+    ya respondía bien) antes de tocar el frontend. Se quitó el fallback: el
+    `catch` de la llamada (fallo real de red o parseo) ya tenía su propio manejo
+    aparte. Revisados los demás campos que arma `sig` desde la respuesta de la
+    IA —`valorMin`/`valorMax` con `0` = "no se pidió", `modalidad`/`tipo`/
+    `estados`/fechas con `''`/`[]` = "no se pidió"—: ninguno tiene el mismo
+    problema, porque en todos ellos el valor de "no se pidió" ya coincide con el
+    que se usaría de respaldo.
+
     **Decidido NO hacer (por ahora):** un bucle agéntico que pruebe la búsqueda,
     cuente resultados y reintente. La ampliación semántica entrega casi todo su
     valor sin la latencia ni el costo de varias vueltas contra Socrata y el
@@ -1038,6 +1059,34 @@ local— y los dos ya están corregidos y verificados:
   otra consulta aparte—; antes los dos salían del mismo cálculo en el mismo
   render, así que nunca se desincronizaban. Se agregó el chequeo que faltaba
   (`total != null`) antes de formatear con `total`.
+
+### HECHO ✅ — Alertas: unifica "Adición de tiempo excesiva" con "Adiciones de plazo" (ago 2026)
+
+Reporte del usuario: dos pestañas casi idénticas ("adición excesiva" y "adición
+de plazo"), y dentro de la primera un selector de nivel (Más del 50% / 100% /
+200%) que producía tres listas casi iguales. Preguntó, con razón, qué sentido
+tenían esas bandas frente a una sola lista de "> 50%".
+
+Motivo real: los umbrales son **acumulativos, no bandas excluyentes** — un
+contrato con 300% de adición cumple los tres a la vez, así que el tope de cada
+lista terminaba siendo el mismo puñado de casos extremos. Se eliminó la
+pestaña "Adición de tiempo excesiva" y su selector de nivel
+(`AlertaAdicionTiempo`, `NIVELES_ADICION` como selector visible). "Adiciones de
+plazo" —que ya mostraba el mismo detalle, con color por magnitud— gana una
+cifra de **prevalencia**: cuántos contratos superan cada umbral, calculada con
+una sola consulta (`usePrevalenciaAdicionTiempo` en `useAdiciones.js`, tres
+`sum(case(...))` reutilizando los factores de `NIVELES_ADICION`, en vez de tres
+conteos separados). Se conserva `adicionTiempoListaQueryOptions` (nivel 'alta')
+en `useAlertas.js` porque Noticias depende de ella para su nota de adición de
+plazo.
+
+De paso se corrigió un bug real: el encabezado de "Adiciones de plazo" mostraba
+`query.data.length` —el tope de la página visible, 50— como si fuera el total
+de contratos con adición de plazo del país. Ahora muestra el total real.
+
+Verificado en producción: "779.108 contratos con adición de plazo... De esos,
+225.821 superan el 50% de adición sobre su plazo pactado —53.011 superan el
+100%, y 30.689, el 200%—." Alertas pasó de 5 pestañas a 4.
 
 ---
 
