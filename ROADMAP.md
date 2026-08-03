@@ -865,6 +865,25 @@ dimensiones, los 4 tipos de gráfico, el bloqueo de `adiciones`, el toggle
 Total/Solo locales, el aviso de filtro-de-un-solo-grupo y el móvil (375px, sin
 desborde horizontal).
 
+**Bug real en producción, hallado por reporte de usuario con captura desde el
+celular (ago 2026)** ✅ — la dimensión "Ciudad" (y, en menor medida,
+"Departamento") se quedaba en "Cargando datos de SECOP II…" sin terminar
+nunca en un teléfono real. Causa: aunque `soqlComparacionCiudades()` /
+`soqlMapaMetricas()` —la misma consulta, letra por letra— ya está resuelta con
+un endpoint cacheado (`/api/panorama-geo`, Edge Config) precisamente porque en
+vivo tarda decenas de segundos, `useConstructorGraficos.js` no lo sabía: iba
+siempre en vivo contra Socrata, sin importar el entorno. En una red móvil, más
+lenta y menos estable que la conexión de desarrollo donde se probó, esa espera
+nunca llegaba a resolver. **Corregido reutilizando la caché que ya existía**
+—no una nueva—: cuando la dimensión es departamento o ciudad y no hay filtro
+geográfico activo (la única condición bajo la que esos dos hooks aplican, por
+ser siempre nacionales), `useConstructorGraficos` delega en
+`useMapaMetricas`/`useComparacionCiudades` en vez de construir su propia
+consulta; con un filtro activo sigue en vivo, que es lo único que lo respeta.
+Verificado que produce las mismas cifras que antes (Bogotá: 1.099.131
+contratos en Ciudad, idéntico al valor medido con la consulta en vivo) y que
+en producción ahora responde en menos de un segundo en vez de 30-150s+.
+
 ---
 
 ### 9. Rendimiento de carga
