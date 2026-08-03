@@ -87,16 +87,22 @@ export function Layout() {
 
               {conBusqueda && <BusquedaRapida />}
 
-              {/* Atajo a "Graficar": un ícono, no un botón de texto, para no
-                  competir por espacio con la búsqueda —que ya se estira hasta
-                  672 px— en la misma fila. */}
+              {/* Atajo a "Graficar", con su nombre al lado: solo el ícono no
+                  se leía como una acción, sino como un adorno de la cabecera.
+                  El texto se oculta en el móvil más angosto (debajo de sm),
+                  donde ya compite con la búsqueda que ocupa el resto de la
+                  fila; el ícono solo sigue siendo reconocible ahí porque tiene
+                  el título como respaldo (tooltip / lector de pantalla). */}
               <Link
                 to={rutaConAmbito('/constructor')}
                 aria-label="Graficar"
                 title="Graficar"
-                className="shrink-0 text-sideSoft hover:text-sideActive p-1"
+                className="shrink-0 flex items-center gap-1.5 text-sideSoft hover:text-sideActive p-1"
               >
                 <Icon name="constructor" className="h-[18px] w-[18px]" />
+                <span className="hidden sm:inline text-[13px] font-semibold whitespace-nowrap">
+                  Graficar
+                </span>
               </Link>
             </div>
 
