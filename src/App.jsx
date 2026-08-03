@@ -1,9 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { FiltersProvider } from './context/FiltersContext'
 import { TourProvider } from './components/ui/Tour'
 import { Layout } from './components/layout/Layout'
 import { Dashboard } from './pages/Dashboard'
-import { MiMunicipio } from './pages/MiMunicipio'
 import { Noticias } from './pages/Noticias'
 import { Buscar } from './pages/Buscar'
 import { Alertas } from './pages/Alertas'
@@ -16,6 +15,16 @@ import { Aprender } from './pages/Aprender'
 import { Transparencia } from './pages/Transparencia'
 import { Reportar } from './pages/Reportar'
 
+// Redirección que CONSERVA la query. `<Navigate to="/alertas">` la descarta, y
+// en estas rutas el ámbito viaja ahí: un enlace compartido a
+// /mi-municipio?ciudad=Barranquilla tiene que llegar al retrato de Barranquilla
+// y no al panorama nacional, igual que /mora?departamento=Meta debe seguir
+// filtrando por Meta al aterrizar en Alertas.
+function Redirigir({ a }) {
+  const { search } = useLocation()
+  return <Navigate to={{ pathname: a, search }} replace />
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -24,7 +33,6 @@ function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
-            <Route path="mi-municipio" element={<MiMunicipio />} />
             <Route path="noticias" element={<Noticias />} />
             <Route path="buscar" element={<Buscar />} />
             <Route path="alertas" element={<Alertas />} />
@@ -41,9 +49,12 @@ function App() {
                 otra página. Las rutas viejas siguen vivas: pueden estar
                 compartidas por ahí, y un enlace roto en una plataforma de
                 veeduría es justo lo que no queremos. */}
-            <Route path="mora" element={<Navigate to="/alertas" replace />} />
-            <Route path="adiciones" element={<Navigate to="/alertas" replace />} />
-            <Route path="categorias" element={<Navigate to="/rankings" replace />} />
+            <Route path="mora" element={<Redirigir a="/alertas" />} />
+            <Route path="adiciones" element={<Redirigir a="/alertas" />} />
+            <Route path="categorias" element={<Redirigir a="/rankings" />} />
+            {/* "Mi municipio" dejó de ser una página aparte: el Panorama toma
+                su forma cuando hay un departamento o municipio activo. */}
+            <Route path="mi-municipio" element={<Redirigir a="/" />} />
           </Route>
         </Routes>
         </TourProvider>

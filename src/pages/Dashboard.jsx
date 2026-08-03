@@ -10,6 +10,7 @@ import { EvolucionMensual } from '../components/ui/EvolucionMensual'
 import { MapaColombia } from '../components/ui/MapaColombia'
 import { ComparacionCiudades } from '../components/ui/ComparacionCiudades'
 import { Concentracion } from '../components/ui/Concentracion'
+import { RetratoDeLugar } from '../components/ui/RetratoDeLugar'
 import { useFilters } from '../context/FiltersContext'
 import { useDashboardStats } from '../hooks/useDashboard'
 import { useColumnas } from '../hooks/useColumnas'
@@ -126,7 +127,13 @@ export function Dashboard() {
     ejecucionVencidos, porSector, entidadesMora, porModalidad, cierre, ejecucion,
   } = useDashboardStats(filters, abiertas)
 
-  const scope = filters.city || filters.department || 'Colombia'
+  // Con un departamento o municipio activo, la página deja de ser el panorama
+  // nacional y pasa a ser el retrato de ese lugar: cambia el título, se ocultan
+  // los dos gráficos que son siempre nacionales y se añaden el ranking local y
+  // las salidas. Antes esto vivía en una sección aparte ("Mi municipio") que
+  // repetía la mitad del Panorama y obligaba a elegir entre las dos.
+  const lugar = filters.city || filters.department
+  const hayLugar = !!lugar
   // Cuando el alcance trae SECOP I, cada tarjeta rotula su fuente: las tres que
   // combinan ("SECOP II + I") y las que solo se pueden medir en SECOP II. Si no
   // hay SECOP I en el alcance, la distinción no existe y no se rotula nada.
@@ -156,7 +163,16 @@ export function Dashboard() {
   // posición correcta. Las dos últimas no despliegan nada.
   // Primero los totales: qué hay. Después los indicadores: qué tan bien va.
   // Mezclarlos obligaba a saltar entre dos tipos de lectura en la misma fila.
-  const tarjetas = [
+  // Las cifras van en dos bloques con título, no en una rejilla de ocho: ocho
+  // números seguidos, todos con el mismo peso visual, no se leen —hay que
+  // recorrerlos uno a uno para descubrir cuáles describen el tamaño y cuáles
+  // son una señal—. La partición no se inventó aquí: es la que ya usaba "Mi
+  // municipio" ("El tamaño de lo que se contrata" / "Qué conviene mirar"), y
+  // fusionar las dos páginas la trajo al Panorama.
+  //
+  // Dentro del primer bloque, las dos cifras de "cuánto" van juntas y después
+  // las dos de "quién", en vez de alternarlas.
+  const tarjetasTamano = [
     {
       clave: 'contratos',
       nodo: (
@@ -175,6 +191,29 @@ export function Dashboard() {
           onToggle={() => alternar('contratos')}
           abierta={abierta('contratos')}
           detalle="Ver composición"
+          reservaPct={false}
+        />
+      ),
+    },
+    {
+      clave: 'valor',
+      nodo: (
+        <StatCard
+          label="Valor contratado"
+          fuente={fuenteAmbas}
+          value={formatCOPCorto(generales.data?.valor)}
+          sub={
+            <SubVivo
+              data={ejecucion.data}
+              tipo="valor"
+              nota={null}
+            />
+          }
+          tone="primary"
+          loading={generales.isLoading}
+          onToggle={() => alternar('valor')}
+          abierta={abierta('valor')}
+          detalle="Ver por sector"
           reservaPct={false}
         />
       ),
@@ -221,29 +260,13 @@ export function Dashboard() {
         />
       ),
     },
-    {
-      clave: 'valor',
-      nodo: (
-        <StatCard
-          label="Valor contratado"
-          fuente={fuenteAmbas}
-          value={formatCOPCorto(generales.data?.valor)}
-          sub={
-            <SubVivo
-              data={ejecucion.data}
-              tipo="valor"
-              nota={null}
-            />
-          }
-          tone="primary"
-          loading={generales.isLoading}
-          onToggle={() => alternar('valor')}
-          abierta={abierta('valor')}
-          detalle="Ver por sector"
-          reservaPct={false}
-        />
-      ),
-    },
+  ]
+
+  // Las cuatro que no describen el tamaño sino que señalan algo que mirar. Cada
+  // una conserva su detalle desplegable: la diferencia con las "señales" de Mi
+  // municipio es justo esa —aquí la cifra es la puerta de entrada a su
+  // desglose, no un dato de solo lectura—.
+  const tarjetasSenales = [
     {
       clave: 'vencidos',
       nodo: (
@@ -657,28 +680,24 @@ export function Dashboard() {
   }
 
   // El detalle se intercala al final de la fila donde está la tarjeta abierta,
-  // para que salga justo debajo de su cifra y no al pie de toda la sección.
-  const indiceActiva = tarjetas.findIndex((t) => t.clave && t.clave === activa)
-  const finDeFila =
-    indiceActiva < 0
-      ? -1
-      : Math.min((Math.floor(indiceActiva / columnas) + 1) * columnas - 1, tarjetas.length - 1)
-
-  return (
-    <div>
-      <PageHeader
-        title="Panorama de la contratación"
-        subtitle={`¿Cómo está contratando ${scope} hoy? Cada cifra se puede desplegar para ver de dónde sale.`}
-      />
-
-      {/* Cifras clave: cada una es la puerta de entrada a su detalle. El alcance
-          de fuente (SECOP II + I / solo SECOP II) viaja rotulado en cada tarjeta,
-          no en un banner arriba. */}
-      {/* Dos columnas ya en móvil: apiladas de una en una, las ocho cifras
-          ocupaban 1.580 px —casi un tercio de la página— y empujaban el primer
-          gráfico fuera de alcance; en dos columnas bajan a 1.114. La cifra más
-          ancha mide 129 px y la columna da 158 px, así que ninguna se parte. */}
-      <div data-tour="cifras" className="grid grid-cols-2 lg:grid-cols-4 gap-x-5 sm:gap-x-8 gap-y-8 mb-10">
+  // para que salga justo debajo de su cifra y no al pie de su bloque. Se
+  // resuelve por bloque —cada uno es su propia rejilla— y no una sola vez para
+  // las ocho.
+  const bloqueCifras = (tarjetas, atributos = {}) => {
+    const indiceActiva = tarjetas.findIndex((t) => t.clave && t.clave === activa)
+    const finDeFila =
+      indiceActiva < 0
+        ? -1
+        : Math.min((Math.floor(indiceActiva / columnas) + 1) * columnas - 1, tarjetas.length - 1)
+    return (
+      // Dos columnas ya en móvil: apiladas de una en una, las cifras ocupaban
+      // 1.580 px —casi un tercio de la página— y empujaban el primer gráfico
+      // fuera de alcance; en dos columnas bajan a 1.114. La cifra más ancha
+      // mide 129 px y la columna da 158 px, así que ninguna se parte.
+      <div
+        {...atributos}
+        className="grid grid-cols-2 lg:grid-cols-4 gap-x-5 sm:gap-x-8 gap-y-8"
+      >
         {tarjetas.map((t, i) => (
           <Fragment key={t.clave ?? `fija-${i}`}>
             {t.nodo}
@@ -688,13 +707,53 @@ export function Dashboard() {
           </Fragment>
         ))}
       </div>
+    )
+  }
+
+  return (
+    <div>
+      <PageHeader
+        title={hayLugar ? lugar : 'Panorama de la contratación'}
+        subtitle={
+          hayLugar
+            ? `Todo lo que la plataforma sabe de la contratación en ${lugar}, en una sola lectura.`
+            : 'Cómo está contratando Colombia hoy. Elige un departamento o municipio arriba para ver el retrato de ese lugar; cada cifra se puede desplegar para ver de dónde sale.'
+        }
+      />
+
+      {/* Cifras clave: cada una es la puerta de entrada a su detalle. El alcance
+          de fuente (SECOP II + I / solo SECOP II) viaja rotulado en cada tarjeta,
+          no en un banner arriba. */}
+      <section className="border-t-2 border-textPrimary pt-5 pb-8">
+        <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] leading-tight">
+          El tamaño de lo que se contrata
+        </h2>
+        <div className="mt-5">{bloqueCifras(tarjetasTamano, { 'data-tour': 'cifras' })}</div>
+      </section>
+
+      <section className="border-t-2 border-textPrimary pt-5 pb-8">
+        <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] leading-tight">
+          Qué conviene mirar{hayLugar ? ' aquí' : ''}
+        </h2>
+        <p className="text-[14.5px] text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
+          Cuatro lecturas que suelen decir algo. Ninguna es una acusación: son
+          proporciones que, cuando se salen de lo corriente, merecen que alguien las revise.
+        </p>
+        <div className="mt-5">{bloqueCifras(tarjetasSenales)}</div>
+      </section>
 
       {/* Los gráficos que aportan lo que una lista no puede: concentración,
           geografía y tiempo */}
       <Concentracion filters={filters} contratistas={contratistasActores} tieneSecop1={tieneSecop1} />
-      <MapaColombia />
-      <ComparacionCiudades />
+      {/* El mapa y la comparación de ciudades son SIEMPRE nacionales —no
+          reciben el filtro, ver panoramaGeoQueries.js—, así que con un ámbito
+          activo se ocultan: dejarlos ahí mostraba gráficos de todo el país
+          bajo un título que decía «Barranquilla», sin nada que lo advirtiera.
+          Quien quiera compararse con el resto tiene el enlace de abajo. */}
+      {!hayLugar && <MapaColombia />}
+      {!hayLugar && <ComparacionCiudades />}
       <EvolucionMensual filters={filters} />
+      {hayLugar && <RetratoDeLugar lugar={lugar} generales={generales} />}
     </div>
   )
 }

@@ -9,9 +9,12 @@ import { useFilters } from '../../context/FiltersContext'
 // responde a otra pregunta: no habla de la contratación sino de cuánto se
 // puede confiar en el dato que la describe. Esa es exactamente la pregunta de
 // "Metodología y límites", y juntas se leen mejor que separadas.
+// "Mi municipio" salió de aquí: era la misma página que Panorama con otra
+// forma, y tener las dos obligaba a elegir entre ellas sin que la diferencia
+// fuera evidente. Ahora Panorama toma esa forma cuando hay un departamento o
+// municipio activo en la barra de arriba.
 const NAV = [
   { to: '/', label: 'Panorama', end: true },
-  { to: '/mi-municipio', label: 'Mi municipio' },
   { to: '/noticias', label: 'Noticias' },
   { to: '/buscar', label: 'Buscador inteligente' },
   { to: '/alertas', label: 'Alertas' },

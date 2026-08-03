@@ -18,12 +18,12 @@ import { useFilters } from '../../context/FiltersContext'
 // siempre a la vista. Sigue en el menú lateral para llegar a sus filtros
 // avanzados.
 //
-// "Mi municipio" aparece aquí como "Mi lugar": con cinco pestañas en 375 px
-// cada una dispone de unos 75 px, y la etiqueta larga se partía en dos
-// renglones. También es más exacto —la vista sirve igual para un departamento—.
+// Tampoco lleva "Mi lugar": esa vista dejó de ser una sección aparte y ahora es
+// la forma que toma Panorama cuando hay un departamento o municipio activo, así
+// que la pestaña apuntaría al mismo sitio que la primera. Quedan cuatro, con
+// más aire cada una en los 375 px de un móvil estrecho.
 const ITEMS = [
   { to: '/', label: 'Panorama', icono: 'dashboard', end: true },
-  { to: '/mi-municipio', label: 'Mi lugar', icono: 'lugar' },
   { to: '/noticias', label: 'Noticias', icono: 'noticias' },
   { to: '/alertas', label: 'Alertas', icono: 'alerta' },
   { to: '/rankings', label: 'Rankings', icono: 'rankings' },
