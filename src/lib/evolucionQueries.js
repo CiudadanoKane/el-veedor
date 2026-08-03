@@ -9,14 +9,14 @@ import { DATASETS } from './constants.js'
 export const DS_EVOLUCION = DATASETS.CONTRATOS
 export const DS1_EVOLUCION = DATASETS.PROCESOS_SECOP1
 
-function primerDiaMes(offsetMeses = 0) {
+export function primerDiaMes(offsetMeses = 0) {
   const d = new Date()
   d.setDate(1)
   d.setMonth(d.getMonth() + offsetMeses)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01T00:00:00`
 }
 
-function primerDiaAnio(offsetAnios = 0) {
+export function primerDiaAnio(offsetAnios = 0) {
   const d = new Date()
   return `${d.getFullYear() + offsetAnios}-01-01T00:00:00`
 }

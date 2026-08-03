@@ -5,6 +5,7 @@ import { BarraFiltro } from './BarraFiltro'
 import { BusquedaRapida } from './BusquedaRapida'
 import { NavInferior } from './NavInferior'
 import { ErrorBoundary } from '../ui/ErrorBoundary'
+import { Icon } from '../ui/Icon'
 import { useFilters } from '../../context/FiltersContext'
 
 // Secciones donde el ámbito geográfico significa algo. Se deja fuera el manual
@@ -85,6 +86,18 @@ export function Layout() {
               </Link>
 
               {conBusqueda && <BusquedaRapida />}
+
+              {/* Atajo al constructor de gráficos: un ícono, no un botón de
+                  texto, para no competir por espacio con la búsqueda —que ya
+                  se estira hasta 672 px— en la misma fila. */}
+              <Link
+                to={rutaConAmbito('/constructor')}
+                aria-label="Construir un gráfico"
+                title="Construye tu gráfico"
+                className="shrink-0 text-sideSoft hover:text-sideActive p-1"
+              >
+                <Icon name="constructor" className="h-[18px] w-[18px]" />
+              </Link>
             </div>
 
             {conFiltro && <BarraFiltro />}

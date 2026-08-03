@@ -772,6 +772,98 @@ mismo resultado; el `case` se deja mínimo.
     consulta tarda ~55s (GROUP BY con `substring` sobre 5,3M sin índice); podría
     recibir el mismo tratamiento que el Panorama (endpoint `/api` + Edge Config +
     cron) si se vuelve prioridad.
+13. ~~**Constructor de gráficos ciudadano** ("Power BI ciudadano")~~ ✅ hecho
+    (ago 2026) — ver sección propia más abajo.
+
+---
+
+### HECHO ✅ — Constructor de gráficos ciudadano (ago 2026)
+
+Idea original del usuario desde que concibió la plataforma: una sección estilo
+Power BI de uso fácil — elegir un tipo de gráfico, elegir los datos y
+graficar — pero **sin libertad absoluta**: nunca una consulta libre ni una
+columna cruda, todo pasa por las mismas fórmulas y guardas ya auditadas en el
+resto de la plataforma (principio 4: "los agregados engañosos no se
+publican"). Ruta `/constructor`, entrada propia en el Sidebar ("Construye tu
+gráfico") y un ícono de acceso rápido en la cabecera fija, junto al buscador.
+
+El ciudadano elige **una métrica** (número de contratos, valor contratado,
+valor promedio, % sin competencia, % con prórroga, % plazo vencido, valor
+añadido por adiciones) y **una dimensión de agrupación** (departamento,
+ciudad, sector UNSPSC, modalidad, tipo de contrato, estado, año o mes) — v1
+sin cruces de dos dimensiones — y un tipo de gráfico (barras, línea, dona o
+tabla). Solo SECOP II, en vivo (sin precálculo ni Edge Config nuevos), estado
+compartible por URL (`?metrica=&dim=&tipo=&orden=`), mismo patrón que
+`Buscar.jsx`.
+
+**Ninguna fórmula nueva.** `src/lib/constructorQueries.js` reutiliza
+`soloContratosValidos()`, `whereFromFilters()` y `MODALIDADES_SIN_COMPETENCIA`
+tal cual, y las mismas seis agregaciones que ya usan `soqlMapaMetricas()` /
+`soqlComparacionCiudades()` (`n`, `valor`, `directa`, `prorroga`,
+`en_ejecucion`, `vencidos`) — una sola consulta por dimensión trae las seis a
+la vez, así que **cambiar de métrica nunca dispara una consulta nueva**, solo
+cambiar de dimensión. `condicionVencido()` se exportó desde
+`panoramaGeoQueries.js` (antes privada) para no duplicar esa guarda. Se aplicó
+el mismo umbral mínimo de muestra que ya usa el Mapa (`MIN_MUESTRA = 100`) a
+toda tasa, para no publicar un "100% de plazo vencido" sobre 2 contratos.
+
+**Hallazgo real al verificar contra Socrata antes de construir la UI:**
+`ciudad`, `sector` y `modalidad` tardaban **130–190 s** con la consulta
+completa (seis agregaciones) — muy por encima de lo tolerable para un clic
+interactivo, y sin relación aparente con la cardinalidad real del campo
+(`modalidad` tiene 11 valores y tardaba lo mismo que `sector` con 57). La
+causa: **`ORDER BY n DESC` sobre un agregado** — el mismo hallazgo que ya se
+había diagnosticado para `errores-indice.js` esta misma sesión. Como el orden
+real para graficar depende de la métrica elegida (que se resuelve después de
+traer los datos, no antes), el `ORDER BY` no solo sobraba: nunca podía servir
+para las demás métricas. Se quitó por completo (excepto en año/mes, que ordena
+por el campo crudo, no un agregado) y el orden se resuelve en JavaScript.
+Medido después: `ciudad` bajó de 146 s a 34 s, `modalidad` de ~100 s a 5 s.
+`sector` queda en **~60 s** — mejor, pero el más lento de los ocho; consistente
+con el "~55 s" ya aceptado como deuda conocida para "Qué se contrata" (punto
+12), que agrupa por la misma expresión `substring(...)`.
+
+Otras decisiones tomadas con el usuario:
+- **Sin tipo de gráfico "mapa" en la v1.** `MapaColombia.jsx` (551 líneas) no
+  es reutilizable tal cual: no recibe props, trae sus 6 métricas y sus hooks de
+  datos internos. Reutilizarlo exige refactorizarlo primero, con riesgo de
+  romper el mapa que ya funciona — queda para una v2 con su propia extracción
+  y verificación. Departamento se cubre con barras y tabla.
+- **`ciudad` usa el universo curado de ~126 ciudades** de `poblacionCiudades.js`
+  (mismo criterio que "Comparación de ciudades" del Panorama), no las ~1.100
+  con algún contrato: sin ese tope, las métricas de tasa quedan dominadas por
+  municipios diminutos con muestras mínimas. El filtro se aplica client-side
+  (la tabla de población vive por clave normalizada, no por el nombre exacto
+  de SECOP); el `LIMIT` de la consulta se subió a 1500 (igual que
+  `soqlComparacionCiudades`) para no truncar antes de aplicar ese filtro.
+- **Toggle Total / Solo locales** (por `orden`) para departamento y ciudad,
+  igual que el Mapa: en SECOP II esos campos son la sede de la entidad, no
+  dónde se ejecuta el contrato. Se reimplementó `agregarPorOrden` en
+  `useConstructorGraficos.js` con la misma lógica que ya usa `useMapaMetricas`.
+- **Rango de tiempo fijo** para año/mes (10 años / 24 meses), sin selector
+  adicional, para no sumar un cuarto control a la página.
+- **`adiciones` bloquea la dimensión a solo departamento**: el precálculo
+  diario (`public/adiciones.json`) no desglosa por modalidad, sector ni
+  tiempo. Confirmado en producción (pestaña Network) que esta métrica no toca
+  Socrata en absoluto, solo `/adiciones.json`.
+- **Dona limitada a modalidad/tipo/estado** (≤13 categorías reales), con tope
+  de 9 porciones + "Otros" agrupando el resto — encaja exacto con los 10
+  colores de `SECTOR_COLORS`. **Línea limitada a año/mes**: dibujar una línea
+  sobre categorías sin orden natural (departamento, modalidad...) sugeriría una
+  tendencia que no existe. **Barras** admite cualquier dimensión, capada a las
+  20 de mayor valor en ciudad/sector (con nota y la tabla como respaldo).
+- **Filtro geográfico heredado, nunca deshabilitado**: si el ámbito activo ya
+  acota a un departamento y se agrupa por departamento, se muestra igual (una
+  sola barra) con un aviso explicando por qué, más un botón para quitar el
+  filtro — no se oculta la opción, que sería más sorprendente que útil.
+
+Archivos: `src/lib/constructorQueries.js`, `src/hooks/useConstructorGraficos.js`,
+`src/pages/ConstructorGraficos.jsx`; nuevo ícono `constructor` en `Icon.jsx`;
+entradas en `App.jsx` y `Sidebar.jsx`; atajo en `Layout.jsx` junto a
+`BusquedaRapida`. Verificado en el navegador (servidor local): las 8
+dimensiones, los 4 tipos de gráfico, el bloqueo de `adiciones`, el toggle
+Total/Solo locales, el aviso de filtro-de-un-solo-grupo y el móvil (375px, sin
+desborde horizontal).
 
 ---
 

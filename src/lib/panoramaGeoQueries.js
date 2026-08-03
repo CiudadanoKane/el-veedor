@@ -24,7 +24,7 @@ import { MODALIDADES_SIN_COMPETENCIA } from './dashboardQueries.js'
 // Contratos en ejecución cuyo plazo venció en los últimos 6 meses. Se exige que
 // la fecha de fin no sea anterior a la de inicio para descartar registros con
 // fechas imposibles, que existen y falsearían el conteo.
-function condicionVencido(ejec) {
+export function condicionVencido(ejec) {
   return (
     `${ejec}` +
     ` AND fecha_de_fin_del_contrato >= '${haceDias(180)}'` +

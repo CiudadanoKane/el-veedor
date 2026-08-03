@@ -82,6 +82,20 @@ const PATHS = {
       <line x1="16" y1="3" x2="14" y2="21" />
     </>
   ),
+  // Tres controles deslizantes verticales, cada uno con su perilla a distinta
+  // altura: "elige tus propios valores", para el constructor de gráficos. No
+  // se reutiliza "rankings" (barras ascendentes) porque ese glifo ya es la
+  // identidad visual de esa sección aparte.
+  constructor: (
+    <>
+      <line x1="6" y1="4" x2="6" y2="20" />
+      <circle cx="6" cy="9" r="2" />
+      <line x1="12" y1="4" x2="12" y2="20" />
+      <circle cx="12" cy="16" r="2" />
+      <line x1="18" y1="4" x2="18" y2="20" />
+      <circle cx="18" cy="12" r="2" />
+    </>
+  ),
 }
 
 export function Icon({ name, className = 'h-4 w-4', strokeWidth = 1.75 }) {

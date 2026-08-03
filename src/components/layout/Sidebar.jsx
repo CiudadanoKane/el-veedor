@@ -16,6 +16,7 @@ const NAV = [
   { to: '/buscar', label: 'Buscador inteligente' },
   { to: '/alertas', label: 'Alertas' },
   { to: '/rankings', label: 'Rankings' },
+  { to: '/constructor', label: 'Construye tu gráfico' },
 ]
 
 // Navegación sobre banda oscura: descansa la vista del blanco del contenido.

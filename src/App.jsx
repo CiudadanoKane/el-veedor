@@ -9,6 +9,7 @@ import { Buscar } from './pages/Buscar'
 import { Alertas } from './pages/Alertas'
 import { Errores } from './pages/Errores'
 import { Rankings } from './pages/Rankings'
+import { ConstructorGraficos } from './pages/ConstructorGraficos'
 import { Contratista } from './pages/Contratista'
 import { Entidad } from './pages/Entidad'
 import { Aprender } from './pages/Aprender'
@@ -29,6 +30,7 @@ function App() {
             <Route path="alertas" element={<Alertas />} />
             <Route path="errores" element={<Errores />} />
             <Route path="rankings" element={<Rankings />} />
+            <Route path="constructor" element={<ConstructorGraficos />} />
             <Route path="contratista/:documento" element={<Contratista />} />
             <Route path="entidad/:nombre" element={<Entidad />} />
             <Route path="aprender" element={<Aprender />} />
