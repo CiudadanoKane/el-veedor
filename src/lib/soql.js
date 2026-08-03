@@ -34,6 +34,34 @@ export function rangoNumerico(campo, min, max) {
   return cond
 }
 
+// Rango de valor para SECOP I sobre el mismo campo que se muestra: prioriza
+// valor_contrato_con_adiciones y cae a cuantia_contrato solo si el primero es
+// nulo (mismo criterio que VALOR_SECOP1_SOQL y secop1Adapter.js). No usa
+// coalesce() en el WHERE —fuerza scan completo, ver cuantiaPosibleSecop1—,
+// sino la misma descomposición en OR de las dos columnas (medido: igual de
+// rápido). Antes el filtro corría sobre cuantia_contrato directo: un contrato
+// con adición pasaba el máximo pedido por su valor inicial y se mostraba muy
+// por encima de él (ej. filtrar "hasta $1.000 millones" mostraba contratos de
+// $1.500 millones, verificado contra la fuente).
+export function rangoValorSecop1(min, max) {
+  const cond = []
+  const nMin = Number(min)
+  const nMax = Number(max)
+  if (min != null && min !== '' && Number.isFinite(nMin)) {
+    cond.push(
+      `((valor_contrato_con_adiciones IS NOT NULL AND valor_contrato_con_adiciones >= ${nMin}) OR ` +
+        `(valor_contrato_con_adiciones IS NULL AND cuantia_contrato >= ${nMin}))`,
+    )
+  }
+  if (max != null && max !== '' && Number.isFinite(nMax)) {
+    cond.push(
+      `((valor_contrato_con_adiciones IS NOT NULL AND valor_contrato_con_adiciones <= ${nMax}) OR ` +
+        `(valor_contrato_con_adiciones IS NULL AND cuantia_contrato <= ${nMax}))`,
+    )
+  }
+  return cond
+}
+
 // Rango de fechas sobre un campo de fecha SoQL. Solo acepta 'YYYY-MM-DD'
 // estricto (regex), nunca interpola texto libre. Cotas inclusivas.
 const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/

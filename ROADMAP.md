@@ -726,6 +726,29 @@ mismo resultado; el `case` se deja mínimo.
     cuente resultados y reintente. La ampliación semántica entrega casi todo su
     valor sin la latencia ni el costo de varias vueltas contra Socrata y el
     modelo. Se reevalúa si aparecen casos que lo justifiquen.
+
+    **Bug real en producción, hallado por reporte de usuario (ago 2026)** ✅ —
+    filtrar "hasta $1.000 millones" mostraba contratos de **hasta $1.500
+    millones** de SECOP I. Causa: `rangosSecop1()` en `useBusqueda.js` filtraba
+    sobre `cuantia_contrato` (el valor inicial), pero `secop1Adapter.js` —y por
+    tanto la columna "Valor" que ve el ciudadano— muestra
+    `valor_contrato_con_adiciones` cuando existe. Un contrato con adición podía
+    pasar el máximo pedido por su valor inicial y mostrarse muy por encima de
+    él. Reproducido contra la fuente real antes de tocar el código: con máximo
+    $1.000 millones, un contrato con `cuantia_contrato: 1000000000` y
+    `valor_contrato_con_adiciones: 1500000000` pasaba el filtro y se mostraba en
+    $1.500 millones. **Corregido** con `rangoValorSecop1()` (nueva función en
+    `soql.js`): compara contra el mismo campo que se muestra, descomponiendo la
+    condición en un OR de las dos columnas en vez de usar `coalesce()` en el
+    WHERE —mismo motivo que `cuantiaPosibleSecop1`, evitar el scan completo que
+    el `coalesce()` fuerza sobre ese dataset—. Medido contra Socrata: igual de
+    rápido que el filtro roto (ambos bajo 1,5s con el resto de condiciones
+    reales de la búsqueda). Pendiente, no de este bug: el orden "Mayor cuantía"
+    en SECOP I también ordena por `cuantia_contrato` (no por el valor con
+    adiciones), así que un contrato con adición grande puede no aparecer entre
+    los primeros aunque su valor mostrado sea alto — mismo tipo de
+    inconsistencia, menor porque no rompe un filtro explícito, sin resolver
+    todavía por el mismo costo de rendimiento de ordenar por una expresión.
 11. ~~Limitar el ancho del gráfico **"Evolución de la contratación"**~~ ✅ hecho
     (jul 2026) — `max-w-[820px]` en el contenedor, igual criterio que el tope del
     mapa.

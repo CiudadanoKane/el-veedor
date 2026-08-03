@@ -4,7 +4,7 @@ import { DATASETS, CONTRACT_FIELDS, CONTRACT_FIELDS_SECOP1 } from '../lib/consta
 import {
   esc, whereFromFilters, condicionEstado,
   soloContratosValidosSecop1, condicionEstadoSecop1, whereFromFiltrosSecop1,
-  rangoNumerico, rangoFecha,
+  rangoNumerico, rangoValorSecop1, rangoFecha,
 } from '../lib/soql'
 import { variantesDeFrase, variantesReducidas, tieneTextoBuscable, palabrasDeFrase } from '../lib/acentos'
 import { adaptList as adaptListSecop2 } from '../adapters/secop2Adapter'
@@ -80,8 +80,9 @@ export function hayBusqueda(criterios = {}) {
 }
 
 // Condiciones de rango (valor y fecha) para cada fuente. En SECOP I el rango de
-// valor va sobre cuantia_contrato directo, NO sobre VALOR_SECOP1_SOQL: el
-// coalesce() en el WHERE fuerza un scan sobre ese dataset (ver soql.js).
+// valor usa rangoValorSecop1 (ver soql.js): compara contra el mismo valor que
+// se muestra (con adiciones cuando las hubo), no contra cuantia_contrato solo,
+// sin pagar el costo de un coalesce() en el WHERE.
 function rangosSecop2(c) {
   return [
     ...rangoNumerico('valor_del_contrato', c.valorMin, c.valorMax),
@@ -90,7 +91,7 @@ function rangosSecop2(c) {
 }
 function rangosSecop1(c) {
   return [
-    ...rangoNumerico('cuantia_contrato', c.valorMin, c.valorMax),
+    ...rangoValorSecop1(c.valorMin, c.valorMax),
     ...rangoFecha('fecha_de_firma_del_contrato', c.fechaDesde, c.fechaHasta),
   ]
 }
