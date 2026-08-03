@@ -493,8 +493,8 @@ export function Buscar() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Buscar"
-        subtitle="Busca por palabra en 5,3 millones de contratos, o encuentra a un contratista o entidad por nombre."
+        title="Buscador inteligente"
+        subtitle="Escribe en lenguaje natural y una IA arma los filtros por ti —fecha, valor, lugar, modalidad—, sobre 5,3 millones de contratos. También puedes buscar por palabra exacta, o encontrar a un contratista o entidad por nombre."
       />
 
       <div>

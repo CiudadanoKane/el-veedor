@@ -13,7 +13,7 @@ const NAV = [
   { to: '/', label: 'Panorama', end: true },
   { to: '/mi-municipio', label: 'Mi municipio' },
   { to: '/noticias', label: 'Noticias' },
-  { to: '/buscar', label: 'Buscar' },
+  { to: '/buscar', label: 'Buscador inteligente' },
   { to: '/alertas', label: 'Alertas' },
   { to: '/rankings', label: 'Rankings' },
 ]

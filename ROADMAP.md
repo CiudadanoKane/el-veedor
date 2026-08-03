@@ -749,6 +749,17 @@ mismo resultado; el `case` se deja mínimo.
     los primeros aunque su valor mostrado sea alto — mismo tipo de
     inconsistencia, menor porque no rompe un filtro explícito, sin resolver
     todavía por el mismo costo de rendimiento de ordenar por una expresión.
+
+    **"Buscador inteligente" (ago 2026)** ✅ — la pestaña se llamaba "Buscar" a
+    secas, indistinguible de un buscador de texto común, y nada en la barra fija
+    (`BusquedaRapida`) avisaba que interpreta lenguaje natural con IA salvo un
+    texto de ayuda que se leía solo si alguien reparaba en él. Cambios: la
+    pestaña del menú y el título de la página pasan a **"Buscador inteligente"**;
+    la barra fija suma una insignia **"IA"** siempre visible junto al ícono de
+    lupa (no solo en el placeholder, que desaparece al escribir o tras cada
+    búsqueda) y su placeholder pasa a "Busca con IA: …"; oculta en el móvil más
+    angosto (`hidden sm:inline-flex`) para no competir por espacio con el texto
+    real, verificado en 375px sin desbordar.
 11. ~~Limitar el ancho del gráfico **"Evolución de la contratación"**~~ ✅ hecho
     (jul 2026) — `max-w-[820px]` en el contenedor, igual criterio que el tope del
     mapa.

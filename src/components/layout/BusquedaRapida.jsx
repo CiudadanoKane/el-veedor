@@ -50,15 +50,30 @@ export function BusquedaRapida() {
           <circle cx="11" cy="11" r="7" />
           <line x1="16.5" y1="16.5" x2="21" y2="21" />
         </svg>
+        {/* Insignia "IA" siempre visible, no solo en el placeholder: ese texto
+            desaparece apenas se escribe o tras cada búsqueda (el campo se
+            vacía), y es la única pista de que esto no es un buscador común.
+            Oculta en el móvil más angosto para no competir por espacio con el
+            texto real. */}
+        <span
+          aria-hidden
+          className="hidden sm:inline-flex shrink-0 items-center rounded-sm border
+                     border-primary/40 px-1 py-0.5 text-[9px] font-bold uppercase
+                     tracking-wide text-primary"
+        >
+          IA
+        </span>
         <input
           type="search"
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
-          aria-label="Busca contratos por descripción, ciudad o monto"
+          aria-label="Busca contratos con inteligencia artificial, por descripción, ciudad o monto"
           // Dice las tres cosas que se pueden escribir —qué, dónde, cuánto— con
           // un ejemplo de cada una en vez de explicarlas. Cabe en una línea y
           // no promete nada que la interpretación no haga (ver PARAM_IA).
-          placeholder="Busca contratos: acueducto, Soledad, más de 500 millones…"
+          // "con IA" al frente: sin esa palabra el campo se lee como un buscador
+          // común, y por eso pasa desapercibido que entiende lenguaje natural.
+          placeholder="Busca con IA: acueducto, Soledad, más de 500 millones…"
           className="flex-1 min-w-0 bg-transparent border-0 p-0 text-[13.5px] text-textPrimary
                      placeholder:text-textSecondary focus:outline-none"
         />
