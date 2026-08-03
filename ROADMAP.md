@@ -823,6 +823,12 @@ Medido después: `ciudad` bajó de 146 s a 34 s, `modalidad` de ~100 s a 5 s.
 con el "~55 s" ya aceptado como deuda conocida para "Qué se contrata" (punto
 12), que agrupa por la misma expresión `substring(...)`.
 
+> **Corregido después (ago 2026):** ese "~60 s" resultó optimista. Al volver a
+> medirlo para resolverlo, `sector` tardó **121,7 s en su versión mínima** (solo
+> `count`) y no respondió ni a los 300 s con las seis agregaciones. Ver
+> "Precálculo diario de la agrupación por sector" más abajo: se resolvió con un
+> barrido en lote, no cacheando la consulta.
+
 Otras decisiones tomadas con el usuario:
 - **Sin tipo de gráfico "mapa" en la v1.** `MapaColombia.jsx` (551 líneas) no
   es reutilizable tal cual: no recibe props, trae sus 6 métricas y sus hooks de
@@ -1560,6 +1566,136 @@ verificó cada rama del componente por separado: el error real de permiso
 correctos, y una simulación del éxito confirma que la rama "Copiado" renderiza
 bien. Falta la prueba de extremo a extremo en producción o en un navegador
 normal.
+
+### HECHO ✅ — Panorama y Mi municipio, fusionados (ago 2026)
+
+El usuario lo planteó como una duda de navegación: "Panorama y Municipio son
+bastante similares, podríamos organizar Panorama similar a Mi Municipio, que es
+un poco más fácil de leer". Al mirarlo apareció algo más que una redundancia de
+menú: **un defecto real**.
+
+**Panorama respondía a medias al filtro.** Con Barranquilla activo, las ocho
+cifras se filtraban pero `MapaColombia` y `ComparacionCiudades` seguían
+mostrando todo el país —son nacionales por diseño, no reciben filtros (ver
+`panoramaGeoQueries.js`)— sin nada que lo advirtiera. Es decir: gráficos de
+Colombia bajo un título que decía "Barranquilla". "Mi municipio" no tenía ese
+problema solo porque no incluía esos widgets.
+
+**La forma elegida (de tres opciones ofrecidas): una sola página que cambia de
+forma según el ámbito.**
+- **Sin filtro** — el panorama nacional de siempre, con mapa, comparación de
+  ciudades y evolución.
+- **Con departamento o municipio** — el título es el lugar, se ocultan los dos
+  gráficos siempre-nacionales, y se añaden "Quién recibe el dinero" (los cinco
+  contratistas locales) y "Seguir revisando {lugar}".
+
+Lo que **no** se hizo, aunque también se propuso: fusionar "Mi municipio" con
+"Noticias". Son dos modos de lectura distintos —Noticias es un flujo fechado que
+cambia cada día; el retrato de un lugar es de estructura estable— y no habrían
+resuelto la confusión real, que era Panorama contra Mi municipio.
+
+**Las ocho cifras, en dos bloques con título.** Segunda observación del usuario
+en la misma conversación: "las 8 tarjetas juntas son bastante info no tan fácil
+de leer". Tenía razón y la partición no hubo que inventarla — **es la que "Mi
+municipio" ya usaba**, así que reorganizar las cifras y fusionar las páginas
+resultaron ser el mismo cambio:
+- **El tamaño de lo que se contrata**: Contratos, Valor contratado,
+  Contratistas, Entidades. (Se reordenó: las dos cifras de "cuánto" juntas y
+  después las dos de "quién", en vez de alternarlas.)
+- **Qué conviene mirar**: Vencidos hace poco, Valor en riesgo, Sin competencia,
+  Se cierran bien.
+
+Las cuatro señales conservan su detalle desplegable, que las "señales" de Mi
+municipio no tenían: la versión fusionada es más rica que cualquiera de las dos
+originales, no un promedio.
+
+Detalles de implementación:
+- `pages/MiMunicipio.jsx` se eliminó. Lo único que el Panorama no tenía
+  —ranking local y salidas— pasó a `components/ui/RetratoDeLugar.jsx`; el resto
+  ya estaba arriba y mejor.
+- El detalle desplegable se intercala **por bloque**: cada rejilla calcula su
+  propio fin de fila. Verificado en el navegador que al abrir "Sin competencia"
+  el desglose sale dentro de su bloque (939 px) y no al pie de la página.
+- **Redirección que conserva la query.** `<Navigate to="/">` descarta la
+  cadena de consulta, y en esta ruta el ámbito ES el contenido: un enlace
+  compartido a `/mi-municipio?ciudad=Barranquilla` tiene que llegar al retrato
+  de Barranquilla. Se añadió un `<Redirigir>` que la conserva y se aplicó
+  también a `/mora`, `/adiciones` y `/categorias`, que tenían el mismo defecto
+  desde antes (perdían el filtro al redirigir).
+- Se quitó la entrada de los dos menús: lateral (queda en 6) y barra inferior
+  móvil (queda en 4, con más aire por pestaña).
+
+Verificado en el navegador: la vista nacional conserva mapa y comparación; la de
+Barranquilla los oculta y muestra el ranking local; la redirección preserva el
+ámbito; sin errores de consola. **Y una falsa alarma que casi se reporta como
+bug**: una medición dio 840 px de ancho contra 375 de viewport —la firma exacta
+de un desbordamiento móvil real ya vivido en este proyecto—. Tras recarga en
+frío y cinco lecturas estables: 375/375. Era otra vez el recompilado en caliente
+de Vite a medias. Van dos veces: **conviene no fiarse de una medición de layout
+tomada justo después de editar**.
+
+### HECHO ✅ — Precálculo diario de la agrupación por sector (ago 2026)
+
+Era la última consulta lenta que quedaba pendiente, y la usaban **dos vistas
+que la pedían por separado y en vivo**: Rankings → "Qué se contrata"
+(`useCategorias`) y Graficar → dimensión "Sector" (`soqlConstructor`). La misma
+agrupación, dos veces.
+
+**Por qué no se pudo cachear como Evolución o Concentración.** El primer
+intento fue el patrón habitual —`/api/sector` + Edge Config + cron de Vercel— y
+hubo que descartarlo tras medirlo. Agrupar por segmento UNSPSC exige
+`substring(codigo_de_categoria_principal, 4, 2)`, y una expresión calculada no
+puede usar índice: Socrata recorre los 5,9 millones de registros y la evalúa
+fila por fila. Por eso cuesta lo mismo que `modalidad` con 11 valores distintos
+—el costo está en el scan, no en la cardinalidad—. Medido directo contra la
+fuente, sin ningún límite de Vercel de por medio:
+
+| Consulta | Tiempo |
+|---|---|
+| `sector`, versión mínima (solo `count`) | **121,7 s** |
+| `sector`, las seis agregaciones | **sin responder a los 300 s** |
+| `modalidad` (campo indexado, referencia del mismo día) | 48,4 s |
+
+Con el techo de 60 s de una función serverless, ese camino no solo no ayuda:
+**empeora**. El cron nunca alcanzaría a llenar la caché, así que cada visitante
+caería al cómputo y recibiría un 504 en vez de una espera larga. Mismo
+diagnóstico y misma salida que el ranking de contratistas: barrido en lote por
+GitHub Actions (`scripts/calcular-sector.mjs`, `.github/workflows/sector.yml`),
+publicando `public/sector.json` como archivo estático.
+
+**Una advertencia sobre esas cifras:** ese `modalidad` de 48,4 s está registrado
+más arriba en este mismo documento como ~5 s. No es que haya empeorado 10 veces;
+es que **Socrata varía muchísimo de un día a otro** —ya documentado aquí con
+`/api/evolucion` (56 s en producción contra ~30 s en local) y con el barrido de
+contratistas (8 min una corrida, 47 min otra)—. Así que no se puede afirmar que
+`sector` supere *siempre* los 60 s. Lo que sí se puede afirmar, y es lo que
+decide el diseño: una consulta que en un día normal se acerca al techo y en un
+día malo lo duplica no tiene sitio en una función con corte duro a los 60 s.
+
+**Verificación de correctitud antes de programar el cron** (la misma disciplina
+que con adiciones y contratistas): el script reimplementa en JavaScript lo que
+antes hacía el SoQL —el corte del segmento y las seis agregaciones—, así que se
+comprobó la equivalencia en vez de darla por buena. Sobre una ventana de 50.000
+contratos se compararon los dos caminos campo por campo: **57 segmentos × 6
+campos, todos idénticos**. Ojo con el detalle que más fácil se erraba:
+`substring()` de SoQL indexa desde 1, así que la posición 4 es el índice 3 de
+JavaScript.
+
+Dos decisiones de diseño:
+- **Se publican las seis agregaciones, no las dos que necesita Rankings.** El
+  scan ya está pagado; traer las otras cuatro no cuesta más y evita que las dos
+  vistas se desincronicen. El JSON queda igual de diminuto (57 filas).
+- **Los mismos nombres de campo que devolvía el SoQL** (`clave`, `n`, `valor`,
+  `directa`, `prorroga`, `en_ejecucion`, `vencidos`), para que
+  `normalizarFilas()` lo consuma sin cambios venga de donde venga.
+- **Solo el caso nacional.** Con un filtro de departamento, ciudad o entidad
+  activo el ámbito es mucho más chico y las dos vistas siguen consultando en
+  vivo — igual que Concentración, Evolución y el ranking de contratistas.
+
+La ventana de "plazo vencido" (`fin` entre hace 180 días y hoy) se fija **una
+sola vez al empezar el barrido**: recalcularla por página haría que un barrido
+que cruce la medianoche clasificara distinto las primeras páginas que las
+últimas.
 
 ---
 

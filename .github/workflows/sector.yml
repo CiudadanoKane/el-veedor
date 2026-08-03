@@ -1,0 +1,69 @@
+name: Recalcular agrupación por sector
+
+# La agrupación por sector UNSPSC no se puede calcular en vivo ni cachear con un
+# cron de Vercel: exige `substring(codigo_de_categoria_principal, 4, 2)`, una
+# expresión calculada que no usa índice, así que Socrata recorre los 5,9
+# millones de registros fila por fila. Medido directo contra la fuente, sin
+# ningún límite de Vercel de por medio: 121,7s la versión mínima (solo `count`)
+# y sin responder ni a los 300s la completa — por encima del techo de 60s de una
+# función serverless. Ver el encabezado de scripts/calcular-sector.mjs.
+#
+# Se precalcula una vez al día y el resultado (public/sector.json) se sirve como
+# archivo estático.
+
+on:
+  schedule:
+    # 08:40 UTC = 03:40 en Colombia. Entre el cron de rankings de contratistas
+    # (08:00 UTC) y el bloque de crons de Vercel (09:00-10:05 UTC): todos usan el
+    # mismo SOCRATA_TOKEN, y Socrata encola las peticiones simultáneas del mismo
+    # token (la misma causa que tumbó /api/noticias — ver ROADMAP.md). Correr en
+    # su propia ventana evita esa cola.
+    - cron: '40 8 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sector
+  cancel-in-progress: false
+
+jobs:
+  calcular:
+    runs-on: ubuntu-latest
+    # El barrido son ~120 páginas de 50.000 filas. Margen holgado para los días
+    # lentos: Socrata varía mucho de una corrida a otra (ver rankings-contratistas.yml).
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Verificar el token
+        env:
+          SOCRATA_TOKEN: ${{ secrets.SOCRATA_TOKEN }}
+        run: |
+          if [ -z "$SOCRATA_TOKEN" ]; then
+            echo "::error::Falta el secreto SOCRATA_TOKEN (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+
+      - name: Calcular agrupación por sector
+        env:
+          SOCRATA_BASE: https://www.datos.gov.co/resource
+          SOCRATA_TOKEN: ${{ secrets.SOCRATA_TOKEN }}
+        run: node scripts/calcular-sector.mjs
+
+      - name: Commitear si cambió
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git diff --quiet -- public/sector.json; then
+            echo 'Sin cambios en la agrupación por sector.'
+            exit 0
+          fi
+          git add public/sector.json
+          git commit -m 'Datos: recalcula agrupación por sector'
+          git push

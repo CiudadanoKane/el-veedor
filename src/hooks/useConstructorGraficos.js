@@ -7,6 +7,7 @@ import {
 import { useAdicionesPrecalculadas, tasasAdicion } from './useAdicionesPrecalculadas'
 import { useMapaMetricas } from './useMapaMetricas'
 import { useComparacionCiudades } from './useComparacionCiudades'
+import { useSectorNacional } from './useSectorNacional'
 import { poblacionCiudadDe } from '../lib/poblacionCiudades'
 
 // Adapta el Map ya cacheado de useMapaMetricas/useComparacionCiudades (el
@@ -48,6 +49,10 @@ function desdeCacheGeo(mapaCache, soloLocales, filtrarCurado) {
 //   ciudades, aquí simplemente no se había reutilizado. Con un filtro
 //   geográfico activo esos dos hooks no aplican (son siempre nacionales por
 //   definición) y se cae a la consulta en vivo, que sí lo respeta.
+// - "sector" SIN filtro sale de /api/sector (useSectorNacional), por el mismo
+//   motivo: es la dimensión más lenta de las ocho —`substring(...)` no usa
+//   índice y obliga a recorrer los 5,9 millones de registros— y Rankings pedía
+//   exactamente la misma agrupación por su cuenta. Ahora comparten payload.
 export function useConstructorGraficos(dimensionKey, metricaKey, filters = {}, soloLocales = false) {
   const metrica = METRICAS[metricaKey]
   const esAdiciones = metrica?.fuente === 'precalculado'
@@ -56,17 +61,20 @@ export function useConstructorGraficos(dimensionKey, metricaKey, filters = {}, s
   const sinFiltros = !filters.department && !filters.city && !filters.entity
   const esGeo = dimensionKey === 'departamento' || dimensionKey === 'ciudad'
   const usarCacheGeo = sinFiltros && esGeo
+  const usarCacheSector = sinFiltros && dimensionKey === 'sector'
 
   const mapaCache = useMapaMetricas()
   const ciudadesCache = useComparacionCiudades()
   const cacheGeo = dimensionKey === 'ciudad' ? ciudadesCache : mapaCache
+
+  const sectorCache = useSectorNacional(usarCacheSector)
 
   const precalc = useAdicionesPrecalculadas()
 
   const live = useQuery({
     queryKey: ['constructor', dimensionKey, filters],
     queryFn: () => socrataQuery(DS, soqlConstructor(dimensionKey, filters)),
-    enabled: !esAdiciones && !!dim && !usarCacheGeo,
+    enabled: !esAdiciones && !!dim && !usarCacheGeo && !usarCacheSector,
     select: (rows) => normalizarFilas(rows, dimensionKey, soloLocales),
   })
 
@@ -83,10 +91,21 @@ export function useConstructorGraficos(dimensionKey, metricaKey, filters = {}, s
     }
     const filasBase = usarCacheGeo
       ? desdeCacheGeo(cacheGeo.data, soloLocales, dim?.universoCurado)
-      : (live.data ?? [])
+      : usarCacheSector
+        ? normalizarFilas(sectorCache.data ?? [], 'sector', soloLocales)
+        : (live.data ?? [])
     return filasBase.map((fila) => ({ ...fila, valorMetrica: metrica.calcular(fila) }))
-  }, [esAdiciones, precalc.data, usarCacheGeo, cacheGeo.data, soloLocales, dim, metrica, live.data])
+  }, [
+    esAdiciones, precalc.data, usarCacheGeo, cacheGeo.data, usarCacheSector,
+    sectorCache.data, soloLocales, dim, metrica, live.data,
+  ])
 
-  const query = esAdiciones ? precalc : usarCacheGeo ? cacheGeo : live
+  const query = esAdiciones
+    ? precalc
+    : usarCacheGeo
+      ? cacheGeo
+      : usarCacheSector
+        ? sectorCache
+        : live
   return { data, query }
 }
