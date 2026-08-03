@@ -1497,6 +1497,70 @@ pantallas grandes (el ámbito dice QUÉ se mira, así que se lee antes que el
 buscador, que es una acción): la ciudad pasa de x=1306 a x=471. Solo cambia el
 orden (CSS `order`, no el DOM), así que en móvil sigue arriba sin cambios.
 
+**"Graficar" (jul 2026):** el atajo al constructor de gráficos, en la misma
+barra fija, pasó por dos rondas de feedback. Primero el ícono —antes tres
+deslizadores tipo mezclador, pensados para no repetir el glifo de "Rankings",
+pero que no se leían como "hacer un gráfico"— cambió a un eje en L más tres
+barras: el eje es justo lo que lo distingue de "Rankings" (tres barras sueltas,
+sin eje) y lo vuelve reconocible como gráfico. Segundo, el nombre "Graficar" se
+quedó solo de tooltip la primera vez; el usuario aclaró que lo quería **visible
+al lado del ícono**, no solo accesible. Se agrega desde `sm` (≥640 px); debajo
+de eso compite con el buscador y se queda en ícono con tooltip.
+
+### Links compartibles, de verdad (jul 2026)
+
+Quedaba pendiente desde la revisión de arriba: "Links compartibles" figuraba
+como hecho desde el MVP, pero solo cubría el ámbito geográfico, el buscador,
+las pestañas de Alertas/Errores y Graficar. **Mapa, Comparación de ciudades y
+Evolución mensual —los tres gráficos con toggles del Panorama— vivían en
+`useState` de React**, así que copiar el enlace con una métrica elegida no
+reproducía esa vista: la persona que lo abría veía el estado por defecto.
+
+Los tres pasan a la URL, cada uno con su propio prefijo para no chocar entre sí
+en la misma página (`mapaMetrica`/`mapaModo`/`mapaOrden`,
+`ciudadesMetrica`/`ciudadesModo`/`ciudadesOrden`/`ciudadesExtra`,
+`evolPeriodo`/`evolMetrica`) — mismo patrón que ya usaban Buscar.jsx y
+ConstructorGraficos.jsx: cada control valida su valor contra el catálogo
+vigente y cae al default si el de la URL no aplica. `ciudadesExtra` guarda las
+ciudades añadidas a mano (`YOPAL,POPAYAN`): es la selección que más vale la
+pena que sobreviva a un enlace compartido, una comparación deliberada y no solo
+el estado por defecto de un control. Lo que NO pasó a la URL: qué panel está
+abierto en el mapa (`activo`) y qué detalle está desplegado en las cifras del
+Panorama — son interacciones de paso, no una vista que alguien fijaría en un
+enlace.
+
+Verificado cargando una URL con los seis parámetros a la vez (dos gráficos con
+Yopal y Popayán añadidos, Evolución en 10 años/Valor firmado): los tres widgets
+reproducen su estado exacto desde una carga en frío, y ninguno pisa los
+parámetros de los otros.
+
+**Botón "Compartir"**, junto a Graficar: copia `window.location.href` al
+portapapeles con un clic —antes, con el estado ya en la URL, compartir seguía
+dependiendo de que alguien supiera que podía copiar la barra de direcciones—.
+Usa `navigator.clipboard.writeText`, con `document.execCommand('copy')` como
+respaldo en navegadores sin la API moderna. Tres estados visibles (Compartir /
+Copiado / No se pudo copiar): un fallo silencioso sería peor que mostrar el
+error, porque el permiso de portapapeles puede estar bloqueado por el
+navegador, una extensión o una política corporativa, y sin aviso no hay forma
+de saber si funcionó.
+
+Un hallazgo de accesibilidad en el camino: el rojo semántico (`--c-danger`,
+calibrado para fondo blanco) da ~2,6:1 de contraste sobre la banda oscura de la
+barra —bajo el mínimo de 3:1—. No existe una variante de ese rojo para fondo
+oscuro en la paleta, así que el estado de error se marca con el blanco de
+"activo" ya usado en esa barra, más el ícono de alerta: la forma comunica el
+estado, no el color. Pendiente si se repite el patrón: definir un rojo
+verificado para banda oscura en vez de resolverlo caso por caso.
+
+Nota de verificación: el portapapeles no se pudo probar de punta a punta en
+este entorno —el panel de vista previa embebido bloquea `clipboard-write` (y
+también su respaldo `execCommand`) sin importar el gesto del usuario—. Se
+verificó cada rama del componente por separado: el error real de permiso
+(`NotAllowedError`) confirma que el intento y el manejo de errores son
+correctos, y una simulación del éxito confirma que la rama "Copiado" renderiza
+bien. Falta la prueba de extremo a extremo en producción o en un navegador
+normal.
+
 ---
 
 ## Principios que no se negocian

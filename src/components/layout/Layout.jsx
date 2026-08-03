@@ -3,6 +3,7 @@ import { Outlet, useLocation, Link } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { BarraFiltro } from './BarraFiltro'
 import { BusquedaRapida } from './BusquedaRapida'
+import { BotonCompartir } from './BotonCompartir'
 import { NavInferior } from './NavInferior'
 import { ErrorBoundary } from '../ui/ErrorBoundary'
 import { Icon } from '../ui/Icon'
@@ -104,6 +105,8 @@ export function Layout() {
                   Graficar
                 </span>
               </Link>
+
+              <BotonCompartir />
             </div>
 
             {conFiltro && <BarraFiltro />}

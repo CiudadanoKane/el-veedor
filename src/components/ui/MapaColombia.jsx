@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps'
 import { Methodology } from './Methodology'
 import { Segmented } from './Segmented'
@@ -168,8 +169,16 @@ const OPCIONES = Object.entries(METRICAS).map(([v, m]) => ({ value: v, label: m.
 // puede. Un selector de métrica y, para las de volumen, un toggle Total / per
 // cápita para que la comparación entre departamentos sea justa.
 export function MapaColombia() {
-  const [metrica, setMetrica] = useState('vencidos')
-  const [modo, setModo] = useState('total')
+  // La métrica, el modo y el orden viven en la URL —prefijo "mapa" para no
+  // chocar con los otros gráficos del Panorama— así el enlace reproduce la
+  // vista exacta, no solo el ámbito geográfico. `activo` (qué departamento
+  // tiene el panel abierto) se queda en estado local: es una interacción de
+  // paso —como el detalle desplegable de las cifras del Panorama—, no algo
+  // que valga la pena fijar en un enlace.
+  const [params, setParams] = useSearchParams()
+  const metricaPedida = params.get('mapaMetrica')
+  const metrica = METRICAS[metricaPedida] ? metricaPedida : 'vencidos'
+  const modo = params.get('mapaModo') === 'percapita' ? 'percapita' : 'total'
   // Por defecto TODAS las entidades: es el panorama completo y, salvo las
   // grandes entidades nacionales centralizadas (INVÍAS, ministerios) que se
   // atribuyen a su ciudad-sede e inflan a Bogotá —ya neutralizada al salir de la
@@ -178,8 +187,20 @@ export function MapaColombia() {
   // "Territoriales" queda como lente opcional de solo gobiernos locales; ojo que
   // sobre-corrige (borra actividad regional real y deja sin datos a los deptos
   // chicos). Ver useMapaMetricas y la memoria secop2-geografia-es-sede.
-  const [orden, setOrden] = useState('todas')
+  const orden = params.get('mapaOrden') === 'territorial' ? 'territorial' : 'todas'
   const [activo, setActivo] = useState(null)
+
+  const actualizar = (clave, valor, porDefecto) => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (valor && valor !== porDefecto) next.set(clave, valor)
+      else next.delete(clave)
+      return next
+    })
+  }
+  const setMetrica = (v) => { actualizar('mapaMetrica', v, 'vencidos'); setActivo(null) }
+  const setModo = (v) => actualizar('mapaModo', v, 'total')
+  const setOrden = (v) => { actualizar('mapaOrden', v, 'todas'); setActivo(null) }
 
   const queryMetricas = useMapaMetricas()
   const queryAdic = useAdicionesPrecalculadas()
@@ -271,11 +292,7 @@ export function MapaColombia() {
       </div>
 
       <div className="mt-4">
-        <Segmented
-          value={metrica}
-          onChange={(v) => { setMetrica(v); setActivo(null) }}
-          options={OPCIONES}
-        />
+        <Segmented value={metrica} onChange={setMetrica} options={OPCIONES} />
       </div>
 
       {/* Toggle de orden. En SECOP II `departamento` es la SEDE de la entidad,
@@ -290,7 +307,7 @@ export function MapaColombia() {
           </span>
           <Segmented
             value={orden}
-            onChange={(v) => { setOrden(v); setActivo(null) }}
+            onChange={setOrden}
             options={[
               { value: 'todas', label: 'Todas' },
               { value: 'territorial', label: 'Solo locales' },

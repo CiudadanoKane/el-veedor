@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from 'recharts'
@@ -20,10 +20,30 @@ function formatear(valor, tipo, completo = false) {
 // Serie de tiempo: uno de los dos casos donde un gráfico dice algo que una
 // lista no puede. Dos líneas —SECOP II y SECOP I— sin relleno ni adornos.
 export function EvolucionMensual({ filters }) {
+  // El periodo y la métrica viven en la URL —prefijo "evol" para no chocar
+  // con los otros gráficos del Panorama, que también guardan su vista ahí—,
+  // así el enlace reproduce exactamente lo que se estaba mirando y no solo el
+  // ámbito geográfico. Cada valor se valida contra el catálogo vigente y cae
+  // al default si el de la URL no aplica (enlace viejo, o escrito a mano).
+  const [params, setParams] = useSearchParams()
   // Por defecto la vista anual: la mensual queda dominada por el pico de
   // enero y se vuelve ilegible como panorama general.
-  const [periodo, setPeriodo] = useState('5a')
-  const [metrica, setMetrica] = useState('contratos')
+  const periodoPedido = params.get('evolPeriodo')
+  const periodo = PERIODOS[periodoPedido] ? periodoPedido : '5a'
+  const metricaPedida = params.get('evolMetrica')
+  const metrica = METRICAS[metricaPedida] ? metricaPedida : 'contratos'
+
+  const actualizar = (clave, valor) => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (valor) next.set(clave, valor)
+      else next.delete(clave)
+      return next
+    })
+  }
+  const setPeriodo = (v) => actualizar('evolPeriodo', v === '5a' ? '' : v)
+  const setMetrica = (v) => actualizar('evolMetrica', v === 'contratos' ? '' : v)
+
   const { data, secop2, secop1, porAnio, secop1Viable } = useEvolucion(filters, periodo)
 
   const tipo = METRICAS[metrica].tipo

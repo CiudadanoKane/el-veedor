@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { QueryState } from './QueryState'
 import { Methodology } from './Methodology'
 import { Segmented } from './Segmented'
@@ -133,15 +134,43 @@ function FilaCiudad({ posicion, nombre, valorTexto, detalle, ancho, color, onQui
 // habitante —donde se ve que una capital pequeña puede gastar por persona mucho
 // más que Bogotá—.
 export function ComparacionCiudades() {
-  const [metrica, setMetrica] = useState('valor')
-  const [modo, setModo] = useState('total')
+  // Métrica, modo, orden y las ciudades añadidas a mano viven en la URL
+  // —prefijo "ciudades" para no chocar con los otros gráficos del Panorama—.
+  // Las añadidas son las que más vale la pena que sobrevivan a un enlace
+  // compartido: son una selección deliberada ("compara Yopal con Tunja"), no
+  // solo el estado por defecto de un control.
+  const [params, setParams] = useSearchParams()
+  const metricaPedida = params.get('ciudadesMetrica')
+  const metrica = METRICAS[metricaPedida] ? metricaPedida : 'valor'
+  const modo = params.get('ciudadesModo') === 'percapita' ? 'percapita' : 'total'
   // Por defecto SOLO territorial: a nivel ciudad, "Todas" cargaría a Bogotá con
   // la contratación nacional de medio país (todas las entidades nacionales
   // tienen sede allí). Ver useComparacionCiudades.
-  const [orden, setOrden] = useState('territorial')
+  const orden = params.get('ciudadesOrden') === 'todas' ? 'todas' : 'territorial'
   // Claves de ciudades añadidas a mano con el selector, fuera del top. Persiste
   // al cambiar de métrica o modo: su posición y cifra se recalculan solas.
-  const [agregadas, setAgregadas] = useState([])
+  const agregadas = useMemo(() => {
+    const crudo = params.get('ciudadesExtra')
+    return crudo ? crudo.split(',').filter(Boolean) : []
+  }, [params])
+
+  const actualizar = (clave, valor, porDefecto) => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (valor && valor !== porDefecto) next.set(clave, valor)
+      else next.delete(clave)
+      return next
+    })
+  }
+  const setMetrica = (v) => actualizar('ciudadesMetrica', v, 'valor')
+  const setModo = (v) => actualizar('ciudadesModo', v, 'total')
+  const setOrden = (v) => actualizar('ciudadesOrden', v, 'territorial')
+  const agregar = (clave) => setParams((prev) => {
+    const next = new URLSearchParams(prev)
+    const actuales = (next.get('ciudadesExtra') || '').split(',').filter(Boolean)
+    if (!actuales.includes(clave)) next.set('ciudadesExtra', [...actuales, clave].join(','))
+    return next
+  })
 
   const query = useComparacionCiudades()
 
@@ -179,7 +208,13 @@ export function ComparacionCiudades() {
   const perCapita = !!registro.perCapita && modo === 'percapita'
   const territorial = orden === 'territorial'
 
-  const quitar = (clave) => setAgregadas((prev) => prev.filter((k) => k !== clave))
+  const quitar = (clave) => setParams((prev) => {
+    const next = new URLSearchParams(prev)
+    const restantes = (next.get('ciudadesExtra') || '').split(',').filter((k) => k && k !== clave)
+    if (restantes.length) next.set('ciudadesExtra', restantes.join(','))
+    else next.delete('ciudadesExtra')
+    return next
+  })
 
   return (
     <section className="border-t-2 border-textPrimary pt-5 pb-8 mb-2">
@@ -434,7 +469,7 @@ export function ComparacionCiudades() {
                       value=""
                       onChange={(e) => {
                         const clave = e.target.value
-                        if (clave) setAgregadas((prev) => [...prev, clave])
+                        if (clave) agregar(clave)
                       }}
                       className="bg-bg border-0 border-b border-border px-0 py-1.5 text-[14px] text-textPrimary
                                  focus:border-textPrimary focus:outline-none cursor-pointer min-w-[190px]"

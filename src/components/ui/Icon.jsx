@@ -96,6 +96,17 @@ const PATHS = {
       <rect x="18" y="12" width="3" height="8" rx="0.5" />
     </>
   ),
+  compartir: (
+    <>
+      <circle cx="18" cy="5" r="2.5" />
+      <circle cx="6" cy="12" r="2.5" />
+      <circle cx="18" cy="19" r="2.5" />
+      <line x1="8.2" y1="10.6" x2="15.8" y2="6.4" />
+      <line x1="8.2" y1="13.4" x2="15.8" y2="17.6" />
+    </>
+  ),
+  // Confirmación de "Compartir": reemplaza el ícono un instante tras copiar.
+  visto: <polyline points="4 12 9.5 17.5 20 5" />,
 }
 
 export function Icon({ name, className = 'h-4 w-4', strokeWidth = 1.75 }) {
