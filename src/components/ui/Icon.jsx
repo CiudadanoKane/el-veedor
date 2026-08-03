@@ -82,18 +82,18 @@ const PATHS = {
       <line x1="16" y1="3" x2="14" y2="21" />
     </>
   ),
-  // Tres controles deslizantes verticales, cada uno con su perilla a distinta
-  // altura: "elige tus propios valores", para el constructor de gráficos. No
-  // se reutiliza "rankings" (barras ascendentes) porque ese glifo ya es la
-  // identidad visual de esa sección aparte.
+  // Gráfico de barras con eje, para "Graficar". Antes era un ícono de mezclador
+  // (tres deslizadores), pensado para no repetir el glifo de "rankings" — pero
+  // no se leía como "hacer un gráfico", que es justo lo que hace esta sección.
+  // Se diferencia de "rankings" (tres barras sueltas, sin eje) por el eje en L:
+  // ese trazo extra es lo que lo vuelve un gráfico y no solo unas barras.
   constructor: (
     <>
-      <line x1="6" y1="4" x2="6" y2="20" />
-      <circle cx="6" cy="9" r="2" />
-      <line x1="12" y1="4" x2="12" y2="20" />
-      <circle cx="12" cy="16" r="2" />
-      <line x1="18" y1="4" x2="18" y2="20" />
-      <circle cx="18" cy="12" r="2" />
+      <line x1="4" y1="3" x2="4" y2="20" />
+      <line x1="4" y1="20" x2="21" y2="20" />
+      <rect x="7" y="14" width="3" height="6" rx="0.5" />
+      <rect x="12.5" y="9" width="3" height="11" rx="0.5" />
+      <rect x="18" y="12" width="3" height="8" rx="0.5" />
     </>
   ),
 }

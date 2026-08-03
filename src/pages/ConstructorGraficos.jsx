@@ -227,7 +227,7 @@ export function ConstructorGraficos() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Construye tu gráfico"
+        title="Graficar"
         subtitle="Elige una métrica y cómo agruparla. Todas las cifras usan las mismas fórmulas y exclusiones que el resto de la plataforma — nada se calcula distinto aquí."
       />
 

@@ -87,13 +87,13 @@ export function Layout() {
 
               {conBusqueda && <BusquedaRapida />}
 
-              {/* Atajo al constructor de gráficos: un ícono, no un botón de
-                  texto, para no competir por espacio con la búsqueda —que ya
-                  se estira hasta 672 px— en la misma fila. */}
+              {/* Atajo a "Graficar": un ícono, no un botón de texto, para no
+                  competir por espacio con la búsqueda —que ya se estira hasta
+                  672 px— en la misma fila. */}
               <Link
                 to={rutaConAmbito('/constructor')}
-                aria-label="Construir un gráfico"
-                title="Construye tu gráfico"
+                aria-label="Graficar"
+                title="Graficar"
                 className="shrink-0 text-sideSoft hover:text-sideActive p-1"
               >
                 <Icon name="constructor" className="h-[18px] w-[18px]" />
