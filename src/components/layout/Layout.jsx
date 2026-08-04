@@ -61,6 +61,11 @@ export function Layout() {
             <div className="flex items-center gap-3 py-2.5 lg:flex-1 lg:min-w-0 lg:max-w-2xl lg:order-2">
               <button
                 onClick={() => setMenuAbierto(true)}
+                /* El último paso de la guía lo usa como objetivo en móvil: el
+                   botón para reabrirla vive dentro de este menú, así que en
+                   pantallas pequeñas hay que señalar la puerta, no lo que hay
+                   detrás (ver Tour.jsx). */
+                data-tour="menu"
                 className="lg:hidden shrink-0 text-sideActive p-1 -ml-1"
                 aria-label="Abrir menú"
               >

@@ -23,9 +23,10 @@ deploy en Vercel.
 - **Guía rápida (tour)** — recorrido a medida con foco tipo spotlight, sin
   librería; arranca en la primera visita y se reabre desde el pie de la barra
   lateral
-  - **Pendiente (bug):** en **celular**, el recuadro del tour inicial se ve
-    **cortado a la derecha** (se sale del viewport). Ajustar el ancho/posición
-    del tooltip para que quepa en pantallas angostas.
+  - ~~Pendiente (bug): en celular el recuadro se ve cortado a la derecha.~~
+    **Ya no ocurre** (comprobado ago 2026 en 320×568 y 375×812, los seis pasos):
+    lo resolvió de camino el tope `max-w-[calc(100vw-32px)]` del recuadro. Ver
+    "El tour en móvil" abajo, donde sí apareció otro fallo real.
 
 ---
 
@@ -1566,6 +1567,51 @@ verificó cada rama del componente por separado: el error real de permiso
 correctos, y una simulación del éxito confirma que la rama "Copiado" renderiza
 bien. Falta la prueba de extremo a extremo en producción o en un navegador
 normal.
+
+### HECHO ✅ — El tour en móvil (ago 2026)
+
+Se abordó el pendiente "en celular el recuadro del tour se ve cortado a la
+derecha". **No se reproduce.** Recorridos los seis pasos midiendo el recuadro en
+320×568 y en 375×812, ninguno se sale por ningún borde. Lo arregló en algún
+momento el tope `max-w-[calc(100vw-32px)]`, sin que nadie tachara la nota.
+
+Pero al revisarlo aparecieron tres cosas que sí lo eran:
+
+1. **El último paso señalaba a la nada en móvil.** Su objetivo es el botón
+   "Guía rápida", que vive en la barra lateral; en celular esa barra es un cajón
+   cerrado, así que el objetivo medía 0×0, el paso salía centrado y sin foco, y
+   el texto decía *"puedes reabrir esta guía con **este botón**"* sin que
+   hubiera ningún botón a la vista. Ahora el objetivo admite también el botón de
+   menú (`data-tour="menu"`) —en móvil se señala la puerta, ya que lo de detrás
+   está cerrado— y el texto dice "desde el menú", que es cierto en los dos
+   casos. Verificado que la elección es automática: en escritorio el visible es
+   `guia` y en móvil, `menu`.
+2. **Texto obsoleto**, introducido por la fusión de Panorama y Mi municipio de
+   esta misma sesión: el paso de las secciones seguía listando "Mi municipio"
+   como si existiera. Ahora son cuatro y Panorama menciona que también es la
+   vista de tu municipio.
+3. **Un tope que faltaba en el cálculo de posición.** La rama que coloca el
+   recuadro *al lado* del objetivo calculaba `rect.right + M` y no lo comparaba
+   nunca con el borde derecho; el ajuste final era `Math.max(M, …)`, que solo
+   empuja desde el borde izquierdo. Hoy esa rama solo la activa la barra
+   lateral, que existe desde 1024 px y ahí sobra sitio, así que no se puede
+   provocar —pero el cálculo no debería depender de eso—. Ahora se encaja en los
+   dos ejes y por los dos lados. Se añadió además `max-h-[calc(100vh-32px)]` con
+   scroll interno: el paso de las secciones es una lista y en una pantalla baja
+   sería más alto que el viewport, dejando los botones fuera de alcance (el
+   overlay es `fixed` y la página de debajo no hace scroll durante la guía).
+
+**Una lección de medición, la tercera de esta sesión.** Al verificar, el foco
+parecía *congelado* en la barra inferior durante los cinco pasos: se movía el
+recuadro pero no el foco. Antes de reportarlo como bug se contrastó el
+`getBoundingClientRect()` con el estilo en línea que React aplica — y el estilo
+era correcto en todos los pasos. La causa: el panel de vista previa está oculto
+y **la página no compone cuadros** (`requestAnimationFrame`: 0 en 600 ms,
+`visibilityState: "hidden"`), así que las transiciones CSS no avanzan y el foco
+—que lleva `transition-all`— devuelve su geometría *anterior* para siempre.
+Regla para este entorno: **sobre un elemento con transición, `getBoundingClientRect()`
+no sirve; hay que leer el estilo aplicado.** Las otras dos fueron mediciones
+tomadas mientras Vite recompilaba.
 
 ### HECHO ✅ — Buscar por sector ya no pierde el sector (ago 2026)
 

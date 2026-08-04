@@ -30,8 +30,7 @@ const PASOS = [
     titulo: 'Las secciones',
     cuerpo: (
       <ul className="space-y-1.5">
-        <li><strong className="text-textPrimary">Panorama</strong>: el resumen del país.</li>
-        <li><strong className="text-textPrimary">Mi municipio</strong>: todo lo que sabemos de un lugar, en una sola lectura.</li>
+        <li><strong className="text-textPrimary">Panorama</strong>: el resumen del país —y de tu municipio, si eliges uno arriba.</li>
         <li><strong className="text-textPrimary">Noticias</strong>: las señales del día, ya explicadas.</li>
         <li><strong className="text-textPrimary">Alertas</strong>: patrones de ejecución, como mora, prórrogas y obras paradas.</li>
         <li><strong className="text-textPrimary">Rankings</strong>: quién recibe y quién entrega más recursos, en qué se contrata y cómo se ejecuta.</li>
@@ -57,10 +56,14 @@ const PASOS = [
       'Ninguna cifra es una caja negra. Despliega cualquiera para ver de dónde sale y cómo se calcula.',
   },
   {
-    target: '[data-tour="guia"]',
+    // En escritorio señala el botón de la barra lateral; en móvil ese botón vive
+    // DENTRO del menú cerrado, así que se señala el menú. Antes solo miraba a
+    // "guia": en celular quedaba invisible, el paso salía centrado y sin foco, y
+    // el texto decía "con este botón" señalando a nada.
+    target: '[data-tour="guia"], [data-tour="menu"]',
     titulo: 'Cuando quieras, vuelve',
     cuerpo:
-      'Puedes reabrir esta guía en cualquier momento con este botón, desde cualquier pantalla. Ahora, a explorar.',
+      'Puedes reabrir esta guía en cualquier momento desde el menú, en cualquier pantalla. Ahora, a explorar.',
   },
 ]
 
@@ -130,7 +133,19 @@ function Overlay({ paso, index, total, onAnterior, onSiguiente, onCerrar }) {
       top = rect.bottom + M
       if (top + ph > vh - M) top = Math.max(M, rect.top - ph - M)
     }
-    setPos({ top: Math.max(M, top), left: Math.max(M, left) })
+    // Encaje final dentro de la pantalla, en los dos ejes y por los dos lados.
+    // Antes el ajuste era `Math.max(M, …)`, que solo empuja desde el borde
+    // izquierdo/superior: la rama de al lado del objetivo calculaba
+    // `rect.right + M` sin comparar nunca contra el borde derecho, así que un
+    // objetivo estrecho en una pantalla angosta habría dejado el recuadro
+    // colgando fuera. Hoy esa rama solo la activa la barra lateral, que existe
+    // desde 1024 px y ahí sobra sitio —pero el cálculo no debería depender de
+    // eso—. `Math.max` va al final para que, si el recuadro no cupiera, se
+    // quede pegado al borde visible en vez de salirse por el contrario.
+    setPos({
+      top: Math.max(M, Math.min(top, vh - ph - M)),
+      left: Math.max(M, Math.min(left, vw - pw - M)),
+    })
   }, [rect, index])
 
   // Escape salta la guía
@@ -172,7 +187,13 @@ function Overlay({ paso, index, total, onAnterior, onSiguiente, onCerrar }) {
       {/* Popover */}
       <div
         ref={popRef}
-        className="fixed w-[340px] max-w-[calc(100vw-32px)] bg-bg border border-textPrimary p-5"
+        /* El alto también se topa: el paso de las secciones es una lista de
+           cuatro puntos y en una pantalla baja (un celular pequeño en
+           horizontal) sería más alto que el viewport. Sin el tope, el final del
+           texto y los botones quedarían fuera de alcance, porque el overlay es
+           `fixed` y la página de debajo no hace scroll durante la guía. */
+        className="fixed w-[340px] max-w-[calc(100vw-32px)] max-h-[calc(100vh-32px)] overflow-y-auto
+                   bg-bg border border-textPrimary p-5"
         style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999, visibility: pos ? 'visible' : 'hidden' }}
       >
         <div className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
