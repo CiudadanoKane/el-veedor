@@ -3,12 +3,26 @@ import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO } from '../src/lib/catalo
 
 const client = new Anthropic()
 
-const MODELO = 'claude-haiku-4-5'
+export const MODELO = 'claude-haiku-4-5'
+
+// El comportamiento de este endpoint depende del prompt tanto como del código,
+// así que el esquema y las instrucciones se exportan: se pueden probar contra
+// el modelo sin desplegar, y la prueba usa exactamente lo que corre en
+// producción en vez de una copia que se desincroniza.
+export function promptSistema(hoy) {
+  return (
+    `Traduces una búsqueda en lenguaje natural sobre contratación pública colombiana (SECOP II) ` +
+    `a un objeto de filtros. Hoy es ${hoy}. Quien escribe puede usar lenguaje coloquial, cometer ` +
+    `errores de tipeo o mezclar la tarea con el lugar —tu trabajo es entenderlo, no repetirlo tal ` +
+    `cual—. Extrae solo lo que la persona pidió explícitamente; no inventes ni asumas filtros que ` +
+    `no están en el texto.`
+  )
+}
 
 // Esquema de salida: los mismos campos que criterios/Rangos en Buscar.jsx.
 // modalidad, tipo y estados van con enum contra el catálogo real, así el
 // modelo no puede devolver un valor que la API de SECOP no reconozca.
-const ESQUEMA = {
+export const ESQUEMA = {
   type: 'object',
   properties: {
     texto: {
@@ -27,7 +41,14 @@ const ESQUEMA = {
         'específico dentro de la ciudad —una calle, avenida, barrio o corregimiento— sí puede ir en ' +
         '"texto", porque identifica el contrato en vez de diluirlo. Si la consulta ' +
         'no tiene ningún otro filtro que extraer, "texto" es lo que quede tras corregir y depurar ' +
-        '(nunca vacío solo por ser corta). Vacío únicamente si, tras quitar todo lo anterior, no sobra ' +
+        '(nunca vacío solo por ser corta). ' +
+        'CUANDO LA PERSONA NOMBRA UN SECTOR, TEMA O ÁREA —"sector transporte", "contratos de salud", ' +
+        '"tema educación", "saneamiento básico"— la palabra "sector"/"tema"/"área" sí sobra, pero el ' +
+        'tema NO: va en "texto" (para "contratos del sector transporte en barranquilla", ' +
+        'texto="transporte" y la ciudad en su campo). Descartar también el tema dejaría la búsqueda ' +
+        'sin ningún criterio de contenido y devolvería TODOS los contratos del lugar, que no es lo ' +
+        'que la persona pidió. En estos casos "terminos" es especialmente importante. ' +
+        'Vacío únicamente si, tras quitar todo lo anterior, no sobra ' +
         'ninguna palabra específica sobre qué se contrata.',
     },
     terminos: {
@@ -43,7 +64,12 @@ const ESQUEMA = {
         'traiga ruido ("obra", "contrato", "servicio", "infraestructura" a secas NO). (3) Cada término ' +
         'es una frase corta, como "texto". (4) Deja el arreglo VACÍO cuando la consulta ya es específica ' +
         '(un nombre propio, un lugar exacto, un número) o cuando no hay sinónimos realmente útiles: ' +
-        'ampliar de más mete ruido, así que ante la duda, no amplíes.',
+        'ampliar de más mete ruido, así que ante la duda, no amplíes. (5) La excepción a esa cautela ' +
+        'son las consultas POR SECTOR O TEMA ("sector transporte", "contratos de salud"): ahí el tema ' +
+        'solo nombra el área, y lo que un contrato real escribe es algo más concreto, así que conviene ' +
+        'ampliar. Para "transporte": ["transporte escolar", "parque automotor", "combustible", ' +
+        '"mantenimiento de vehículos"]. Para "salud": ["atención en salud", "insumos médicos", ' +
+        '"dotación hospitalaria", "medicamentos"].',
     },
     modalidad: {
       type: 'string',
@@ -117,12 +143,7 @@ export default async function handler(req, res) {
     const response = await client.messages.create({
       model: MODELO,
       max_tokens: 1024,
-      system:
-        `Traduces una búsqueda en lenguaje natural sobre contratación pública colombiana (SECOP II) ` +
-        `a un objeto de filtros. Hoy es ${hoy}. Quien escribe puede usar lenguaje coloquial, cometer ` +
-        `errores de tipeo o mezclar la tarea con el lugar —tu trabajo es entenderlo, no repetirlo tal ` +
-        `cual—. Extrae solo lo que la persona pidió explícitamente; no inventes ni asumas filtros que ` +
-        `no están en el texto.`,
+      system: promptSistema(hoy),
       output_config: { format: { type: 'json_schema', schema: ESQUEMA } },
       messages: [{ role: 'user', content: consulta }],
     })

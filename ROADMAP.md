@@ -1567,6 +1567,58 @@ correctos, y una simulación del éxito confirma que la rama "Copiado" renderiza
 bien. Falta la prueba de extremo a extremo en producción o en un navegador
 normal.
 
+### HECHO ✅ — Buscar por sector ya no pierde el sector (ago 2026)
+
+Reporte del usuario: al buscar "contratos del sector transporte en
+barranquilla" se aplicaba bien el filtro de ciudad, pero pasaba algo raro con
+"sector transporte".
+
+**Al reproducirlo contra producción resultó ser peor de lo reportado.** No es
+que dejara "sector transporte" como texto literal: lo **descartaba entero**. La
+URL quedaba en `?departamento=Atlántico&ciudad=Barranquilla` y la búsqueda
+devolvía **124.783 contratos —todo Barranquilla—** en vez de los 1.563 cuyo
+objeto habla de transporte. La intención se perdía en silencio, que es peor que
+devolver poco: el ciudadano no tiene forma de notar que su criterio se cayó.
+
+Verificado que era sistemático y no una casualidad del modelo: tres corridas
+idénticas de la misma consulta, y lo mismo con "sector salud", "sector
+educación" y "sector saneamiento básico". El disparador es la palabra
+**"sector"** — sin ella, "transporte escolar en barranquilla" siempre funcionó.
+
+**La causa.** El esquema le pide al modelo descartar las palabras genéricas que
+no aparecen en el objeto de un contrato real ("pintura", "arreglo",
+"mejoramiento") para quedarse con lo específico. Correcto casi siempre —para
+"contrato de pintura de la avenida circunvalar" lo útil es "avenida
+circunvalar"—, pero en "sector transporte" el modelo aplicaba la regla a las
+dos palabras y se quedaba sin nada. Había una salvaguarda ("si no hay ningún
+otro filtro que extraer, texto es lo que quede"), pero aquí sí había otro
+filtro —la ciudad—, así que no entraba.
+
+**El arreglo va en el esquema, no en el código**: se distingue la palabra
+"sector"/"tema"/"área", que sí sobra, del tema en sí, que no. Y se declara que
+las consultas por tema son la excepción a la cautela de "ante la duda, no
+amplíes": es justo donde la ampliación semántica sirve, porque el tema nombra
+el área y un contrato real escribe algo más concreto.
+
+| Consulta | texto | terminos |
+|---|---|---|
+| sector transporte en barranquilla | `transporte` | transporte escolar, parque automotor, combustible, mantenimiento de vehículos… |
+| sector salud en medellín | `salud` | atención en salud, insumos médicos, dotación hospitalaria… |
+| sector saneamiento básico en cali | `saneamiento básico` | agua potable, alcantarillado, tratamiento de aguas residuales… |
+
+Con cuatro controles de regresión que **no** debían cambiar, y no cambiaron:
+"transporte escolar" sigue entrando entero; "pintura de la avenida cirvuncalar"
+sigue dando `avenida circunvalar` (con la errata corregida); "obra de más de
+500 millones en 2024" sigue sin texto y con tipo/valor/fecha; y un
+identificador sigue pasando tal cual.
+
+**De paso, algo que faltaba:** el comportamiento de este endpoint depende del
+prompt tanto como del código, y no había forma de probarlo sin desplegar (es
+una función de Vercel, no corre en `npm run dev`). Se exportaron `ESQUEMA`,
+`MODELO` y `promptSistema()`, así una prueba puede llamar al modelo con
+**exactamente** lo que corre en producción, en vez de una copia que se
+desincroniza al primer cambio.
+
 ### HECHO ✅ — Ciudades homónimas: se agrupa por (departamento, ciudad) (ago 2026)
 
 Figuraba como pendiente menor —"los nombres repetidos se quedan sin enlace"—.
