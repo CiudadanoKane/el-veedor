@@ -4,13 +4,12 @@ import { QueryState } from './QueryState'
 import { Methodology } from './Methodology'
 import { Segmented } from './Segmented'
 import { useComparacionCiudades } from '../../hooks/useComparacionCiudades'
-import { useGeo } from '../../hooks/useGeoOptions'
 import { useFilters } from '../../context/FiltersContext'
 import {
   poblacionCiudadDe,
   POBLACION_CIUDADES_ANIO,
   NUM_CIUDADES,
-  normalizarCiudad,
+  claveCiudad,
 } from '../../lib/poblacionCiudades'
 import { formatPct, formatCOP, formatCOPCorto } from '../../lib/formatters'
 
@@ -174,36 +173,13 @@ export function ComparacionCiudades() {
 
   const query = useComparacionCiudades()
 
-  // Para llevar al usuario a una ciudad hace falta su departamento: el filtro de
-  // ciudad se lee junto al de departamento, y la consulta de esta sección agrupa
-  // solo por `ciudad`, sin saber de cuál es. Se resuelve invirtiendo el catálogo
-  // geográfico, que ya está cargado y cacheado (no cuesta una consulta más).
-  //
-  // Un nombre repetido en dos departamentos se deja SIN enlace a propósito: con
-  // solo el nombre no hay forma de saber a cuál llevar, y adivinar mandaría al
-  // ciudadano al municipio equivocado.
-  const geo = useGeo()
+  // Cada fila trae ya su departamento (la consulta agrupa por el par), así que
+  // llevar al usuario a un municipio es directo. Antes había que invertir el
+  // catálogo geográfico para adivinarlo, y los nombres repetidos se quedaban
+  // SIN enlace porque no había forma de saber a cuál de los dos llevar.
   const { filters, setAmbito } = useFilters()
-  const mapaCiudadDepto = useMemo(() => {
-    const porCiudad = new Map()
-    const catalogo = geo.data?.ciudadesPorDepartamento || {}
-    for (const [depto, ciudades] of Object.entries(catalogo)) {
-      for (const ciudad of ciudades || []) {
-        const clave = normalizarCiudad(ciudad)
-        if (!clave) continue
-        if (!porCiudad.has(clave)) porCiudad.set(clave, [])
-        porCiudad.get(clave).push({ depto, ciudad })
-      }
-    }
-    // Solo las inequívocas quedan utilizables.
-    const unicas = new Map()
-    for (const [clave, lista] of porCiudad) {
-      if (lista.length === 1) unicas.set(clave, lista[0])
-    }
-    return unicas
-  }, [geo.data])
 
-  const claveAmbito = filters.city ? normalizarCiudad(filters.city) : null
+  const claveAmbito = filters.city ? claveCiudad(filters.department, filters.city) : null
   const registro = METRICAS[metrica]
   const perCapita = !!registro.perCapita && modo === 'percapita'
   const territorial = orden === 'territorial'
@@ -315,7 +291,10 @@ export function ComparacionCiudades() {
               const fila = territorial ? c.territorial : c.todas
               const v = registro.valorDe(fila, pob, perCapita)
               if (v == null || !isFinite(v)) continue
-              filas.push({ clave: c.clave, nombre: c.nombre, v, fila, pob })
+              // `depto` viaja hasta aquí porque es lo que necesita el enlace
+              // para fijar el ámbito completo: sin él, tocar "Rionegro" ponía
+              // la ciudad sin departamento y el filtro quedaba a medias.
+              filas.push({ clave: c.clave, nombre: c.nombre, depto: c.depto, v, fila, pob })
             }
             filas.sort((a, b) => b.v - a.v)
 
@@ -387,12 +366,27 @@ export function ComparacionCiudades() {
 
             const anchoDe = (v) => (escala > 0 ? Math.max(1.5, Math.min(100, (v / escala) * 100)) : 0)
 
-            // Acción de "ir a esta ciudad", solo si el nombre es inequívoco.
-            const irA = (clave) => {
-              const ubic = mapaCiudadDepto.get(clave)
-              if (!ubic) return null
-              return () => setAmbito(ubic.depto, ubic.ciudad)
+            // Acción de "ir a esta ciudad". Ya no hay caso sin enlace: la fila
+            // sabe de qué departamento es.
+            const irA = (c) => () => setAmbito(c.depto, c.nombre)
+
+            // Un nombre que corresponde a DOS MUNICIPIOS DISTINTOS entre las
+            // filas visibles se muestra con su departamento al lado. Solo cuando
+            // hace falta: poner "Antioquia" junto a Medellín en todas las filas
+            // sería ruido, pero dos "Rionegro" seguidos son indescifrables.
+            //
+            // Se compara por clave y no por nombre porque una misma ciudad puede
+            // aparecer dos veces —está en el top y además se añadió a mano—, y
+            // eso no la vuelve ambigua.
+            const porNombre = new Map()
+            for (const c of [...top, ...anadidasConDatos]) {
+              if (!porNombre.has(c.nombre)) porNombre.set(c.nombre, new Set())
+              porNombre.get(c.nombre).add(c.clave)
             }
+            const repetidos = new Set(
+              [...porNombre].filter(([, claves]) => claves.size > 1).map(([n]) => n),
+            )
+            const etiqueta = (c) => (repetidos.has(c.nombre) ? `${c.nombre} (${c.depto})` : c.nombre)
 
             return (
               <>
@@ -401,12 +395,12 @@ export function ComparacionCiudades() {
                     <FilaCiudad
                       key={c.clave}
                       posicion={i + 1}
-                      nombre={c.nombre}
+                      nombre={etiqueta(c)}
                       valorTexto={registro.formato(c.v, perCapita)}
                       detalle={registro.detalle(c.fila, perCapita, c.pob)}
                       ancho={anchoDe(c.v)}
                       color={registro.color}
-                      onIr={irA(c.clave)}
+                      onIr={irA(c)}
                       esAmbito={claveAmbito === c.clave}
                     />
                   ))}
@@ -422,13 +416,13 @@ export function ComparacionCiudades() {
                         <FilaCiudad
                           key={c.clave}
                           posicion={c.posicion}
-                          nombre={c.nombre}
+                          nombre={etiqueta(c)}
                           valorTexto={registro.formato(c.v, perCapita)}
                           detalle={registro.detalle(c.fila, perCapita, c.pob)}
                           ancho={anchoDe(c.v)}
                           color={registro.color}
                           onQuitar={c.esAuto ? undefined : () => quitar(c.clave)}
-                          onIr={irA(c.clave)}
+                          onIr={irA(c)}
                           esAmbito={claveAmbito === c.clave}
                         />
                       ))}

@@ -12,7 +12,7 @@ import { MODALIDADES_SIN_COMPETENCIA } from './dashboardQueries.js'
 import { condicionVencido } from './panoramaGeoQueries.js'
 import { primerDiaAnio, primerDiaMes } from './evolucionQueries.js'
 import { nombreSegmento } from './unspsc.js'
-import { normalizarCiudad, poblacionCiudadDe } from './poblacionCiudades.js'
+import { claveCiudad, poblacionCiudadDe } from './poblacionCiudades.js'
 
 export const DS = DATASETS.CONTRATOS
 
@@ -48,7 +48,12 @@ export const DIMENSIONES = {
     // no viene ordenado por volumen, así que un límite ajustado podría cortar
     // ciudades curadas al azar.
     universoCurado: true,
-    limit: 1500,
+    // Agrupa también por departamento: 56 nombres de municipio se repiten en el
+    // país y con el nombre suelto sus cifras se sumaban en una fila (ver
+    // panoramaGeoQueries.js). Es además lo que permite buscar la población, que
+    // ahora se indexa por el par (departamento, ciudad).
+    conDepto: true,
+    limit: 2500,
   },
   sector: {
     label: 'Sector (UNSPSC)',
@@ -160,7 +165,7 @@ export function soqlConstructor(dimensionKey, filters = {}) {
     condiciones.push(`fecha_de_firma >= '${desde}'`, `fecha_de_firma < '${hasta}'`)
   }
   const where = buildWhere(whereFromFilters(filters, condiciones))
-  const orden = dim.conOrden ? ', orden' : ''
+  const orden = (dim.conOrden ? ', orden' : '') + (dim.conDepto ? ', departamento' : '')
   // Sin ORDER BY sobre un agregado a propósito: el orden real para graficar
   // depende de la métrica elegida (valor, % plazo vencido...), que se resuelve
   // después de traer los datos —así que ordenar aquí por `n` no serviría para
@@ -216,18 +221,40 @@ export function normalizarFilas(rows, dimensionKey, soloLocales) {
   const dim = DIMENSIONES[dimensionKey]
 
   if (dim.conOrden) {
+    // Con `conDepto`, la identidad de la fila es el par (departamento, ciudad)
+    // aunque lo que se muestre siga siendo el nombre del municipio: dos
+    // Rionegro no pueden compartir fila. Sin él (departamento), la clave es el
+    // valor agrupado tal cual.
     const porClave = new Map()
     for (const r of rows) {
       if (SIN_GEOGRAFIA.includes(r.clave)) continue
-      if (!porClave.has(r.clave)) porClave.set(r.clave, { todas: filaCero(), territorial: filaCero() })
-      const acc = porClave.get(r.clave)
+      if (dim.conDepto && SIN_GEOGRAFIA.includes(r.departamento)) continue
+      const id = dim.conDepto ? claveCiudad(r.departamento, r.clave) : r.clave
+      if (!id) continue
+      if (!porClave.has(id)) {
+        porClave.set(id, {
+          etiqueta: r.clave, depto: r.departamento, todas: filaCero(), territorial: filaCero(),
+        })
+      }
+      const acc = porClave.get(id)
       acumular(acc.todas, r)
       if (r.orden === 'Territorial') acumular(acc.territorial, r)
     }
     const filas = []
     for (const [clave, acc] of porClave) {
-      if (dim.universoCurado && poblacionCiudadDe(normalizarCiudad(clave)) == null) continue
-      filas.push({ clave, etiqueta: clave, ...(soloLocales ? acc.territorial : acc.todas) })
+      if (dim.universoCurado && poblacionCiudadDe(clave) == null) continue
+      filas.push({
+        clave, etiqueta: acc.etiqueta, depto: acc.depto,
+        ...(soloLocales ? acc.territorial : acc.todas),
+      })
+    }
+    // Un nombre que quede repetido entre las filas resultantes se desambigua con
+    // su departamento; el resto se deja limpio.
+    const repetidos = new Set(
+      filas.map((f) => f.etiqueta).filter((n, i, arr) => arr.indexOf(n) !== i),
+    )
+    for (const f of filas) {
+      if (repetidos.has(f.etiqueta)) f.etiqueta = `${f.etiqueta} (${f.depto})`
     }
     return filas
   }

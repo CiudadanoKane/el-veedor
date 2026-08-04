@@ -1567,6 +1567,81 @@ correctos, y una simulación del éxito confirma que la rama "Copiado" renderiza
 bien. Falta la prueba de extremo a extremo en producción o en un navegador
 normal.
 
+### HECHO ✅ — Ciudades homónimas: se agrupa por (departamento, ciudad) (ago 2026)
+
+Figuraba como pendiente menor —"los nombres repetidos se quedan sin enlace"—.
+Al medirlo resultó ser **un error de cálculo publicado**, no una carencia de
+navegación.
+
+**Lo medido** (`GROUP BY departamento, ciudad` sobre los datos reales, 87,7 s):
+de 882 nombres de municipio distintos en SECOP II, **56 se repiten en más de un
+departamento**. Como la consulta agrupaba solo por `ciudad`, sus contratos se
+**sumaban en una sola fila**. De las 126 ciudades del universo curado, 9
+estaban contaminadas.
+
+El caso peor no era el más obvio. La tabla de población traía `['Granada',
+72_259]` con el comentario "Meta (domina de lejos)" — cierto **en población**,
+pero el **87,8 % de los contratos** bajo ese nombre son de Granada
+(Antioquia). Es decir: se dividía el gasto de un municipio entre los habitantes
+de otro. Comparado sobre los mismos datos, antes y después:
+
+| Ciudad | Antes (mezclado) | Ahora |
+|---|---|---|
+| **Granada** | 18,99 ‰ | **1,90 ‰** |
+| Sabanalarga | 34,71 ‰ | 28,44 ‰ |
+| Rionegro | 85,98 ‰ | 79,29 ‰ |
+| Caldas | 75,69 ‰ | 71,59 ‰ |
+| Florencia | 66,44 ‰ | 62,33 ‰ |
+| Manaure | 0,92 ‰ | 0,73 ‰ |
+
+Granada publicaba una cifra **diez veces mayor que la real**.
+
+**El cambio.** La llave pasa a ser el par `(departamento, ciudad)`
+(`claveCiudad()`, separador `|`). `poblacionCiudades.js` gana una columna de
+departamento en sus 126 filas. Para no escribir 126 departamentos de memoria
+—donde un error significa un denominador equivocado—, **113 se derivaron de los
+pares reales que trae SECOP II** con un script; solo 13 se declararon a mano:
+las 9 que comparten nombre (donde había que decidir a cuál municipio se refiere
+la población) y las 4 que no tienen contratos bajo ese nombre exacto. El
+generador falla si alguna queda sin resolver.
+
+Con la llave compuesta, el enlace de cada fila ya no necesita adivinar: se fija
+departamento **y** ciudad. Desaparece el rodeo que invertía el catálogo
+geográfico (`useGeo`) para deducirlo, y con él la limitación de dejar los
+repetidos sin enlace.
+
+También se alineó la dimensión **Ciudad de Graficar**, que arrastraba el mismo
+defecto (`conDepto` en `constructorQueries.js`).
+
+**Dos bugs que aparecieron al probar en el navegador**, no antes:
+- Al pulsar "Rionegro" la URL quedaba en `?ciudad=Rionegro` **sin
+  departamento**: el `depto` se perdía al construir las filas del ranking, así
+  que el enlace fijaba un ámbito a medias. Corregido y verificado: ahora pone
+  `departamento=Meta&ciudad=Granada`.
+- La etiqueta desambiguadora se disparaba de más. Comparaba **nombres**, y una
+  misma ciudad puede aparecer dos veces (está en el top y además se añadió a
+  mano), así que salía "Rionegro (Antioquia)" sin haber ninguna ambigüedad. Se
+  cambió a comparar por clave: un nombre solo se rotula si corresponde a dos
+  municipios distintos.
+
+**Clave de Edge Config versionada** (`panorama-geo` → `panorama-geo-v2`): el
+payload cambió de forma, y con la clave anterior el cliente nuevo habría leído
+entre el despliegue y el cron el payload viejo —sin `departamento`—, mandando
+todas las ciudades a una llave vacía. Con clave nueva la primera lectura falla,
+se computa una vez y se guarda ya en el formato correcto.
+
+Nota honesta: hoy **ninguna** de las 126 filas comparte nombre con otra, porque
+la tabla heredada excluía a propósito los ambiguos. La etiqueta
+"Ciudad (Departamento)" queda entonces como código defensivo para cuando se
+añadan; su render sí se vio funcionar (lo disparó el segundo bug de arriba).
+
+**Desbloqueado, pendiente de un dato:** ya no hay motivo para excluir los
+nombres ambiguos —Candelaria (Valle) y Candelaria (Atlántico) podrían convivir—.
+No se añadieron porque las únicas cifras a mano son las aproximadas de un
+comentario ("~96k" y "~17k"), y la regla del proyecto es no inventar un
+denominador. Falta buscar su proyección DANE 2023 verificada, como con Puerto
+Carreño.
+
 ### HECHO ✅ — Panorama y Mi municipio, fusionados (ago 2026)
 
 El usuario lo planteó como una duda de navegación: "Panorama y Municipio son

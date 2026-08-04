@@ -3,7 +3,13 @@ import { soqlMapaMetricas, soqlComparacionCiudades } from '../src/lib/panoramaGe
 import { socrataQuery } from '../src/lib/socrataClient.js'
 import { leerEdgeConfig, escribirEdgeConfig } from '../src/lib/edgeConfig.js'
 
-const CLAVE = 'panorama-geo'
+// La clave lleva versión porque el payload cambió de forma: la comparación de
+// ciudades pasó a agrupar por (departamento, ciudad) y sus filas ahora traen
+// `departamento`. Si se reutilizara la clave anterior, entre el despliegue y el
+// siguiente cron el cliente nuevo leería el payload viejo —sin departamento— y
+// todas las ciudades caerían en una llave vacía. Con clave nueva, la primera
+// lectura falla, se computa una vez (~90 s) y se guarda ya en el formato nuevo.
+const CLAVE = 'panorama-geo-v2'
 
 // Las dos secciones geográficas del Panorama: el mapa por departamento y la
 // comparación por ciudad. Antes cada visitante las pedía en vivo a Socrata en

@@ -54,9 +54,21 @@ export function soqlMapaMetricas() {
 // Lo mismo por ciudad. El LIMIT es holgado a propósito: basta con capturar las
 // (ciudad, orden) de más volumen, y así entran también capitales pequeñas como
 // Mitú o Inírida. El LIMIT no encarece el GROUP BY, solo la transferencia.
+//
+// Se agrupa por (departamento, ciudad) y no solo por ciudad: 56 nombres de
+// municipio se repiten en más de un departamento, y agrupando por el nombre
+// suelto sus contratos se SUMABAN en una sola fila. No era un detalle
+// cosmético: "Rionegro" mezclaba Antioquia (92,2%) con Santander (7,8%), y
+// "Granada" publicaba los contratos de Granada (Antioquia, 87,8% del total)
+// divididos entre los habitantes de Granada (Meta), que es de donde salía la
+// población. Medido sobre los datos reales; ver poblacionCiudades.js.
+//
+// De paso resuelve el enlace: con el departamento al lado, cada fila del
+// ranking sabe a qué municipio llevar, cosa que antes era imposible para un
+// nombre repetido.
 export function soqlComparacionCiudades() {
   const ejec = `estado_contrato = '${ESTADO_ACTIVO}'`
-  return `SELECT ciudad, orden,
+  return `SELECT departamento, ciudad, orden,
                 count(id_contrato) as n,
                 sum(valor_del_contrato) as valor,
                 sum(case(${MODALIDADES_SIN_COMPETENCIA}, 1, true, 0)) as directa,
@@ -65,7 +77,8 @@ export function soqlComparacionCiudades() {
                 sum(case(${condicionVencido(ejec)}, 1, true, 0)) as vencidos
          WHERE ${soloContratosValidos()}
                AND ciudad IS NOT NULL AND ciudad NOT IN ('No Definido')
-         GROUP BY ciudad, orden
+               AND departamento IS NOT NULL
+         GROUP BY departamento, ciudad, orden
          ORDER BY n DESC
-         LIMIT 1500`
+         LIMIT 2500`
 }

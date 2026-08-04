@@ -28,7 +28,17 @@ function desdeCacheGeo(mapaCache, soloLocales, filtrarCurado) {
       prorroga: base.prorroga,
       en_ejecucion: base.enEjecucion,
       vencidos: base.vencidos,
+      depto: cruda.depto,
     })
+  }
+  // Mismo criterio que normalizarFilas: si dos filas comparten nombre —hay 56
+  // municipios homónimos en el país—, se les añade el departamento. Solo a
+  // esas: rotular todas sería ruido.
+  const repetidos = new Set(
+    filas.map((f) => f.etiqueta).filter((n, i, arr) => arr.indexOf(n) !== i),
+  )
+  for (const f of filas) {
+    if (repetidos.has(f.etiqueta) && f.depto) f.etiqueta = `${f.etiqueta} (${f.depto})`
   }
   return filas
 }

@@ -1,5 +1,6 @@
 import { usarPedazoGeo } from './usePanoramaGeo'
-import { normalizarCiudad } from '../lib/poblacionCiudades'
+import { claveCiudad } from '../lib/poblacionCiudades'
+import { SIN_GEOGRAFIA } from '../lib/departamentos'
 
 // Métricas por ciudad para la comparación entre municipios. Misma forma que
 // useMapaMetricas, pero agrupando por `ciudad` en vez de `departamento`.
@@ -28,15 +29,29 @@ export function useComparacionCiudades() {
       t.enEjecucion += parseInt(r.en_ejecucion ?? 0, 10)
       t.vencidos += parseInt(r.vencidos ?? 0, 10)
     }
-    // Por ciudad, dos agregados: `todas` (todos los órdenes) y `territorial`
-    // (solo orden = 'Territorial'). El componente elige cuál usar según el
-    // toggle, igual que el mapa.
+    // Por (departamento, ciudad), dos agregados: `todas` (todos los órdenes) y
+    // `territorial` (solo orden = 'Territorial'). El componente elige cuál usar
+    // según el toggle, igual que el mapa.
+    //
+    // La llave lleva el departamento porque 56 nombres de municipio se repiten
+    // en el país: con el nombre suelto, Rionegro (Antioquia) y Rionegro
+    // (Santander) caían en la misma fila y sus cifras se sumaban. Cada fila
+    // guarda además `depto`, que es lo que permite enlazar al municipio
+    // correcto —antes había que adivinarlo y por eso los repetidos se dejaban
+    // sin enlace—.
     const porCiudad = new Map()
     for (const r of rows) {
-      const clave = normalizarCiudad(r.ciudad)
+      if (SIN_GEOGRAFIA.includes(r.departamento)) continue
+      const clave = claveCiudad(r.departamento, r.ciudad)
       if (!clave) continue
       if (!porCiudad.has(clave)) {
-        porCiudad.set(clave, { clave, nombre: r.ciudad, todas: cero(), territorial: cero() })
+        porCiudad.set(clave, {
+          clave,
+          nombre: r.ciudad,
+          depto: r.departamento,
+          todas: cero(),
+          territorial: cero(),
+        })
       }
       const c = porCiudad.get(clave)
       acumular(c.todas, r)
