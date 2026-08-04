@@ -37,7 +37,12 @@ function usePanoramaGeoRaw() {
 // Adapta un pedazo del payload a la forma { data, isLoading, isError, error,
 // refetch } que ya esperan QueryState y los componentes. Mismo recurso que usa
 // useDashboard con el payload del Panorama.
-export function usarPedazoGeo(clave, transformar) {
+//
+// Se llama "use…" y no "usar…" —rompiendo el español del resto del proyecto— a
+// propósito: ES un hook (llama a otro hook por dentro), y solo con ese prefijo
+// las reglas de hooks de React pueden verificarlo. Con el nombre en español el
+// linter no podía, y avisaba en cada revisión.
+export function usePedazoGeo(clave, transformar) {
   const geo = usePanoramaGeoRaw()
   return {
     data: geo.data ? transformar(geo.data[clave] || []) : undefined,

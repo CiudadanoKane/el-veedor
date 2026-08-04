@@ -29,6 +29,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { valorOriginalDe, clasificarAdicion } from '../src/lib/adiciones.js'
 import { DOCUMENTOS_SIN_IDENTIDAD } from '../src/lib/identidad.js'
+import { leerAnterior, exigirCordura } from './guardas.mjs'
 
 const AQUI = dirname(fileURLToPath(import.meta.url))
 const SALIDA = resolve(AQUI, '../public/adiciones.json')
@@ -67,6 +68,10 @@ const opcion = (nombre) => {
 }
 const MAX_PAGINAS = opcion('paginas') ? parseInt(opcion('paginas'), 10) : Infinity
 const SOLO_DEPTO = opcion('depto')
+// Las guardas se saltan en las corridas parciales (--paginas) y acotadas
+// (--depto), que producen cifras pequeñas a propósito y dispararían el aviso
+// sin que haya nada roto.
+const SIN_GUARDAS = args.includes('--sin-guardas') || MAX_PAGINAS !== Infinity || !!SOLO_DEPTO
 
 const esc = (v) => String(v).replace(/'/g, "''")
 
@@ -379,6 +384,20 @@ async function main() {
     formatoClave: 'd|<departamento> · c|<departamento>|<ciudad>',
     ambitos,
   }
+
+  // Antes de publicar: ¿esto se parece a lo de ayer? Si la fuente falló a
+  // medias, es preferible dejar el archivo anterior —correcto, solo viejo— que
+  // pisarlo con uno sesgado que nadie va a revisar.
+  const previo = leerAnterior(SALIDA)
+  const previoAmbitos = leerAnterior(SALIDA_AMBITOS)
+  exigirCordura([
+    { nombre: 'contratos recorridos', ahora: nacional.contratos, antes: previo?.nacional?.contratos, minimo: 4_000_000 },
+    { nombre: 'contratos evaluables', ahora: nacional.evaluables, antes: previo?.nacional?.evaluables, minimo: 2_000_000 },
+    { nombre: 'contratos con adición', ahora: nacional.conAdicion, antes: previo?.nacional?.conAdicion, minimo: 500_000 },
+    { nombre: 'valor adicionado', ahora: nacional.adicion, antes: previo?.nacional?.adicion },
+    { nombre: 'departamentos', ahora: porDepto.size, antes: previo?.departamentos?.length, minimo: 30 },
+    { nombre: 'ámbitos', ahora: Object.keys(ambitos).length, antes: previoAmbitos ? Object.keys(previoAmbitos.ambitos || {}).length : undefined, minimo: 400 },
+  ], { saltar: SIN_GUARDAS })
 
   mkdirSync(dirname(SALIDA), { recursive: true })
   writeFileSync(SALIDA, JSON.stringify(salida))

@@ -40,7 +40,6 @@ export function IndiceEjecucion() {
   const query = useEjecucionContratistas(filters, extremo, metrica)
 
   const referencia = query.data?.referencia
-  const activa = METRICAS[metrica]
 
   const columnaTasa = (clave, conteo, encabezado, refValor, destacada) => ({
     key: clave,

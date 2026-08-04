@@ -1,4 +1,4 @@
-import { usarPedazoGeo } from './usePanoramaGeo'
+import { usePedazoGeo } from './usePanoramaGeo'
 import { normalizarDepto, SIN_GEOGRAFIA } from '../lib/departamentos'
 
 // Métricas por departamento para el mapa.
@@ -28,7 +28,7 @@ import { normalizarDepto, SIN_GEOGRAFIA } from '../lib/departamentos'
 // bien ubicada. Por eso el mapa separa `territorial` de `todas`, y por defecto
 // muestra la territorial. Ver memoria secop2-geografia-es-sede.
 export function useMapaMetricas() {
-  return usarPedazoGeo('mapa', (rows) => {
+  return usePedazoGeo('mapa', (rows) => {
     const cero = () => ({ n: 0, valor: 0, directa: 0, prorroga: 0, enEjecucion: 0, vencidos: 0 })
     const acumular = (t, r) => {
       t.n += parseInt(r.n ?? 0, 10)

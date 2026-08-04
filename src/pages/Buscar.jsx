@@ -308,6 +308,19 @@ export function Buscar() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ consulta: limpio }),
       })
+      // 429: el endpoint tiene un tope de peticiones porque cada llamada
+      // cuesta dinero. Se distingue del resto de fallos —decir "no se pudo
+      // interpretar" cuando en realidad hay que esperar un momento manda a la
+      // persona a reescribir la frase, que no arregla nada—.
+      if (res.status === 429) {
+        const { reintentarEn } = await res.json().catch(() => ({}))
+        const espera = reintentarEn >= 120
+          ? `${Math.ceil(reintentarEn / 60)} minutos`
+          : 'un momento'
+        setErrorIA(`Demasiadas búsquedas seguidas. Espera ${espera} y vuelve a intentarlo; mientras tanto se buscó el texto tal cual.`)
+        actualizar({ texto: limpio, terminos: [] })
+        return
+      }
       if (!res.ok) throw new Error('fallo la traducción')
       const filtros = await res.json()
 

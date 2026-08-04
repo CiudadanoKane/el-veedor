@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO } from '../src/lib/catalogos.js'
+import { excedeLimite } from '../src/lib/limiteTasa.js'
 
 const client = new Anthropic()
 
@@ -135,6 +136,21 @@ export default async function handler(req, res) {
   }
   if (consulta.length > 500) {
     res.status(400).json({ error: 'consulta demasiado larga' })
+    return
+  }
+
+  // Este endpoint es público, sin autenticación, y cada llamada cuesta dinero
+  // (va a la API de Anthropic). El tope va DESPUÉS de validar la entrada —para
+  // no gastar cupo en peticiones malformadas— y ANTES de llamar al modelo, que
+  // es lo que se quiere proteger. Ver src/lib/limiteTasa.js sobre qué cubre y
+  // qué no.
+  const exceso = excedeLimite(req)
+  if (exceso) {
+    res.setHeader('Retry-After', String(exceso.segundos))
+    res.status(429).json({
+      error: 'demasiadas búsquedas seguidas',
+      reintentarEn: exceso.segundos,
+    })
     return
   }
 

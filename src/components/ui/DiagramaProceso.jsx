@@ -74,7 +74,6 @@ export function DiagramaProceso() {
   // Las cajas van más anchas que las de arriba porque su segunda línea lleva la
   // proporción, y con el ancho de una etapa el texto se salía del recuadro.
   const xSel = xs[2] + W / 2
-  const xFirma = xs[3] + W / 2
   const yRama = y + 52
   const RAMA_W = 214
   const xRama = xSel + 16

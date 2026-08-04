@@ -1,4 +1,4 @@
-import { usarPedazoGeo } from './usePanoramaGeo'
+import { usePedazoGeo } from './usePanoramaGeo'
 import { claveCiudad } from '../lib/poblacionCiudades'
 import { SIN_GEOGRAFIA } from '../lib/departamentos'
 
@@ -19,7 +19,7 @@ import { SIN_GEOGRAFIA } from '../lib/departamentos'
 // sí ubica bien; y aun ahí una gobernación gasta en todo su departamento desde
 // la capital (se advierte). Ver memoria secop2-geografia-es-sede.
 export function useComparacionCiudades() {
-  return usarPedazoGeo('ciudades', (rows) => {
+  return usePedazoGeo('ciudades', (rows) => {
     const cero = () => ({ n: 0, valor: 0, directa: 0, prorroga: 0, enEjecucion: 0, vencidos: 0 })
     const acumular = (t, r) => {
       t.n += parseInt(r.n ?? 0, 10)

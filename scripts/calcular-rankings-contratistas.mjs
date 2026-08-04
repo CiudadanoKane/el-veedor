@@ -27,6 +27,7 @@
 //   node scripts/calcular-rankings-contratistas.mjs --paginas 2   # prueba corta
 
 import { writeFileSync, mkdirSync } from 'node:fs'
+import { leerAnterior, exigirCordura } from './guardas.mjs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DATASETS } from '../src/lib/constants.js'
@@ -279,6 +280,16 @@ async function main() {
       porCantidad: filasSecop1(s1Cantidad, porContratistaSecop1),
     },
   }
+
+  // ¿Se parece a lo de ayer? El workflow commitea solo, así que si la fuente
+  // devolvió a medias es preferible dejar el archivo anterior —correcto, solo
+  // viejo— que pisarlo con uno sesgado. Ver scripts/guardas.mjs.
+  const previo = leerAnterior(SALIDA)
+  exigirCordura([
+    { nombre: 'contratistas SECOP II', ahora: mapaSecop2.size, antes: previo?.secop2?.contratistas, minimo: 500_000 },
+    { nombre: 'filas del top por valor (SECOP II)', ahora: salida.secop2.porValor.length, antes: previo?.secop2?.porValor?.length, minimo: 50 },
+    { nombre: 'filas del top por valor (SECOP I)', ahora: salida.secop1.porValor.length, antes: previo?.secop1?.porValor?.length, minimo: 50 },
+  ], { saltar: MAX_PAGINAS !== Infinity || args.includes('--sin-guardas') })
 
   mkdirSync(dirname(SALIDA), { recursive: true })
   writeFileSync(SALIDA, JSON.stringify(salida))

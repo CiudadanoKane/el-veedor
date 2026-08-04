@@ -272,7 +272,6 @@ export function TourProvider({ children }) {
       setActivo(true)
     }, 900)
     return () => clearTimeout(id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (

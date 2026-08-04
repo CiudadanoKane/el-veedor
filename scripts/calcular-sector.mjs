@@ -35,6 +35,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DATASETS } from '../src/lib/constants.js'
 import { esc, buildWhere, soloContratosValidos } from '../src/lib/soql.js'
+import { leerAnterior, exigirCordura } from './guardas.mjs'
 
 const AQUI = dirname(fileURLToPath(import.meta.url))
 const SALIDA = resolve(AQUI, '../public/sector.json')
@@ -162,6 +163,20 @@ const salida = {
   contratos: vistos,
   sector,
 }
+
+// ¿Se parece a lo de ayer? Si Socrata devolvió a medias, es preferible dejar el
+// archivo anterior —correcto, solo viejo— que pisarlo con uno sesgado que
+// nadie va a revisar (el workflow commitea solo). Ver scripts/guardas.mjs.
+const previo = leerAnterior(SALIDA)
+exigirCordura([
+  { nombre: 'contratos recorridos', ahora: vistos, antes: previo?.contratos, minimo: 4_000_000 },
+  { nombre: 'segmentos UNSPSC', ahora: sector.length, antes: previo?.sector?.length, minimo: 40 },
+  {
+    nombre: 'valor total',
+    ahora: sector.reduce((a, r) => a + r.valor, 0),
+    antes: previo?.sector?.reduce((a, r) => a + r.valor, 0),
+  },
+], { saltar: MAX_PAGINAS !== Infinity || args.includes('--sin-guardas') })
 
 mkdirSync(dirname(SALIDA), { recursive: true })
 writeFileSync(SALIDA, JSON.stringify(salida))
