@@ -991,8 +991,10 @@ resolvió así:
 Ya no hace falta decidir entre subir a Pro o mover a JSON estático: con los
 números reales, todo cupo en Hobby.
 
-Pendiente relacionado, del punto 12: la consulta de categorías (~55 s) merece el
-mismo tratamiento — y esa sí está cerca del techo.
+~~Pendiente relacionado, del punto 12: la consulta de categorías (~55 s) merece
+el mismo tratamiento.~~ **Hecho (ago 2026)**, aunque no cacheándola: al medirla
+resultó estar muy por encima del techo, no cerca. Ver "Precálculo diario de la
+agrupación por sector".
 
 #### ⚠️ Hallazgo grave en el camino (jul 2026) — 33 registros rompían TODAS las cifras de SECOP II
 
@@ -1494,9 +1496,10 @@ El tour quedó desincronizado por estos cambios y se actualizó: `objetivoVisibl
 admite varios selectores y elige el que de verdad ocupa espacio, para que el
 paso de secciones señale la barra lateral en escritorio y la inferior en móvil.
 
-**Pendiente de verificar en un deploy real** (no se puede en local): que la
-interpretación con IA de la búsqueda rápida devuelva filtros —`/api/buscar-ia`
-exige `vercel dev` o producción—.
+~~Pendiente de verificar en un deploy real: que la interpretación con IA de la
+búsqueda rápida devuelva filtros.~~ **Verificado en producción (ago 2026)**, y
+más de una vez: al arreglar las consultas por sector se comprobó de punta a
+punta que la frase se traduce a filtros y que el ámbito viaja a la URL.
 
 **Corregido tras un reporte de uso en PC (jul 2026):** en escritorio, el ámbito
 quedaba a ~1.000 px a la derecha —en el rincón de la barra, empujado por el
