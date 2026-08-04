@@ -1569,6 +1569,91 @@ correctos, y una simulación del éxito confirma que la rama "Copiado" renderiza
 bien. Falta la prueba de extremo a extremo en producción o en un navegador
 normal.
 
+### HECHO ✅ — Revisión previa al lanzamiento (ago 2026)
+
+Con la plataforma dada por terminada, se revisó el código buscando fallos,
+ineficiencias y lo que habría que vigilar al abrirla al público. Cuatro cosas
+salieron y se arreglaron.
+
+**1. `/api/buscar-ia` no tenía ningún tope — y cuesta dinero por llamada.** El
+único hallazgo que bloqueaba el lanzamiento. Endpoint público, sin
+autenticación, que llama a la API de Anthropic en cada invocación; su única
+defensa era rechazar consultas de más de 500 caracteres. Un bucle con `curl`
+dejaba la factura abierta, y CORS no defiende de nada porque `curl` no lo mira.
+Ahora: ventana deslizante por IP (8/min, 40/h), tope global de instancia como
+red de seguridad, `429` con `Retry-After`, y el cliente distingue ese caso del
+resto —decir "no se pudo interpretar" cuando en realidad hay que esperar manda
+a la persona a reescribir la frase, que no arregla nada—.
+
+Se documenta lo que **no** cubre: el contador vive en la memoria de la
+instancia, así que frena el caso real (un bucle, un pico accidental) pero no un
+atacante repartido entre muchas IPs; para eso haría falta Redis/KV. El tope
+global es lo que cubre ese caso a medias. Verificado con pruebas de la propia
+lógica: bloquea en la novena petición, no contamina a otras IPs, lee bien la
+cadena de proxies y el tope global se activa.
+
+**2. Los precálculos publicaban sin comprobar nada.** El riesgo más serio que
+quedaba, y no es de seguridad sino de datos: los tres barridos nocturnos
+commitean solos, y ninguno miraba si el resultado tenía sentido. Si Socrata
+renombra una columna o devuelve a medias, se publica un archivo sesgado que
+nadie revisa. **Se vio en vivo esta misma sesión**: una corrida parcial produjo
+un archivo con 0,4 % de contratos evaluables, y de haber corrido en CI se habría
+subido igual.
+
+Ahora comparan contra la corrida anterior antes de escribir y **abortan** si
+algo cae más de un 20 % o baja de un piso absoluto. Solo miran caídas —un salto
+hacia arriba puede ser real, y bloquearlo daría falsos positivos sin proteger
+nada: el daño que importa es publicar de menos—. Se saltan en las corridas
+parciales (`--paginas`, `--depto`), que producen cifras pequeñas a propósito.
+Verificado que salen con código 1, así que el workflow falla y avisa en vez de
+commitear, y que el archivo anterior queda intacto.
+
+**3. El lint era inservible.** ~500 problemas, casi todos `prop-types` y
+comillas de la prosa en español. El daño no era el ruido: era que hacía
+**imposible ver un aviso nuevo** —en cada revisión de esta sesión hubo que
+filtrarlos a mano, que es justo cuando se escapa el que importaba—. Apagadas esas
+dos reglas (el proyecto no usa PropTypes en ninguna parte; React ya escapa el
+texto) quedaron **10 problemas reales**, y se arreglaron todos: `process` sin
+declarar en `socrataClient`/`edgeConfig` (corren en los dos entornos), dos
+variables muertas, un `eslint-disable` que ya no aplicaba, y `usarPedazoGeo`
+renombrado a `usePedazoGeo` —es un hook, y solo con el prefijo `use` las reglas
+de hooks pueden verificarlo—. De ~500 a **0 errores**.
+
+**4. No había pruebas ni CI.** Se añadieron 33 pruebas (Vitest) sobre los tres
+archivos donde un error se publica como cifra creíble y nadie lo nota:
+- `soql.js` — el filtro que heredan **todos** los agregados de SECOP II.
+- `adiciones.js` — la clasificación que decide qué es sobrecosto y qué es
+  errata de registro.
+- `poblacionCiudades.js` — los denominadores per cápita.
+
+Se comprobó que las pruebas **sirven**, no solo que pasan: reintroduciendo el
+bug real de julio (el guardia de cuantías imposibles definido pero sin usar, que
+llevó "Valor contratado" de $1.035 B a $768.424.235 B) la prueba correspondiente
+falla. Y se añadió un workflow que corre lint, pruebas y build en cada cambio;
+sin él habría que acordarse de lanzarlas a mano, y el día que se rompe un
+cálculo es el día que nadie se acuerda.
+
+**Dependencias:** `npm audit fix` resolvió `d3-color` (ReDoS) y `postcss`. Los
+tres avisos restantes son de `react-router` y **no aplican**: el aviso es sobre
+modo RSC y esta app es una SPA con `BrowserRouter`; arreglarlo exigiría bajar a
+7.11 y romper cosas. Revisar cuando salga una 7.19.
+
+**Lo que queda para el lanzamiento, y depende de una decisión, no de código:**
+- **Un segundo token de Socrata solo para el navegador.** El token del cliente
+  viaja en el bundle —correcto, los *app tokens* identifican, no autentican—
+  pero hoy comparte cuota con los crons: una ráfaga de tráfico puede dejar sin
+  cupo al barrido nocturno. Emitir otro token cuesta cinco minutos y aísla las
+  dos cosas.
+- **El peso del repositorio.** `adiciones-ambitos.json` son 2,7 MB reescritos a
+  diario por el cron; git guarda cada versión (~570 KB comprimida), así que la
+  historia crece ~200 MB al año. No es grave hoy; si molesta, la salida es mover
+  los datos grandes a Vercel Blob en vez de a git.
+- **Qué vigilar:** que los crons no fallen en silencio (si el `SOCRATA_TOKEN`
+  expira, los datos se congelan y la página sigue mostrando cifras, solo que
+  viejas — mirar la fecha de "Calculado el…"), los 504 en el panel de Vercel
+  (señal de que Socrata está lento y algún endpoint roza los 60 s), y el gasto de
+  Anthropic.
+
 ### HECHO ✅ — "Quién más adiciona" ahora respeta el filtro (ago 2026)
 
 Reporte del usuario: la pestaña no aplicaba el filtro de ciudad. Cierto, y la

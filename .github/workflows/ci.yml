@@ -1,0 +1,39 @@
+name: Revisión
+
+# Corre en cada cambio, que es lo que hace que las pruebas sirvan de algo: sin
+# esto habría que acordarse de lanzarlas a mano, y justo el día que se rompe un
+# cálculo es el día que nadie se acuerda.
+#
+# Cubre lo que puede fallar en silencio: los cálculos que se publican como cifra
+# (ver src/lib/*.test.js) y que el sitio siga compilando. Los precálculos
+# nocturnos tienen su propia guarda de cordura antes de escribir; esto protege
+# el otro extremo, el código que los alimenta.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Instalar
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Pruebas
+        run: npm test
+
+      - name: Compilar
+        run: npm run build
