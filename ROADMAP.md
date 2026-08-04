@@ -1569,6 +1569,54 @@ correctos, y una simulación del éxito confirma que la rama "Copiado" renderiza
 bien. Falta la prueba de extremo a extremo en producción o en un navegador
 normal.
 
+### HECHO ✅ — "Quién más adiciona" ahora respeta el filtro (ago 2026)
+
+Reporte del usuario: la pestaña no aplicaba el filtro de ciudad. Cierto, y la
+propia página lo declaraba ("Es un cálculo nacional: no cambia con el filtro de
+departamento o ciudad"). Pero declarar una limitación no la justifica, y esta
+escondía algo peor de lo que parecía.
+
+**No era un filtro olvidado en la interfaz.** Eran dos decisiones del precálculo:
+1. Las filas **no traían geografía**: el barrido agrupaba las entidades solo por
+   nombre y ni siquiera pedía la columna `ciudad`.
+2. La lista venía **cortada al top 150 nacional**. Aun con geografía, filtrar esa
+   lista habría dado "los del top nacional que además son de aquí" — en
+   Barranquilla, **ninguno** de sus tres mayores adicionadores aparecía en ella.
+   Ese es justo el agregado engañoso que la plataforma promete no publicar.
+
+**La pregunta del usuario destrabó el diseño:** "¿no puedes filtrar primero los
+contratos de Barranquilla y de ahí revisar quién concentra las adiciones?". Sí se
+puede, y se midió antes de decidir: filtrando los dos datasets por ciudad y
+cruzando después, 61.891 procesos (3,7 s) + 124.866 contratos (20,4 s) = **24,1
+s**, con resultados reales —EDUBAR S.A. $337,4 mil M en 37 contratos, CONSORCIO
+ARC $75,9 mil M en 72—, ninguno de ellos en el top nacional.
+
+**Pero no se hizo en vivo.** 24 s hoy, y esta misma sesión midió a Socrata yendo
+diez veces más lento en un mal día: un endpoint así caería en la misma trampa que
+"Sector" —roza el techo de 60 s del plan y devuelve 504—. La versión buena es más
+simple: **el barrido nocturno ya recorre todos los contratos del país uno por
+uno**, así que basta pedir una columna más (`ciudad`) y acumular también por
+ámbito en esa misma pasada. Cero consultas extra, cero tiempo extra en el cron, e
+instantáneo para el ciudadano en vez de 24 s.
+
+Decisiones de implementación:
+- **La llave del ámbito lleva el departamento junto a la ciudad**
+  (`c|Atlántico|Barranquilla`), mismo criterio que las ciudades homónimas. Sin
+  él, Caldas-departamento y Caldas-municipio caerían en la misma bolsa.
+- **Archivo aparte** (`adiciones-ambitos.json`), que solo se descarga cuando hay
+  un filtro activo: la vista nacional no debe pagar los tops de 34 departamentos
+  y cientos de municipios que no está mirando. Tope de 50 por ámbito (el nacional
+  sigue en 150): en un municipio mediano hay muchas menos entidades con
+  adiciones, y multiplicado por mil ámbitos el peso sí se nota.
+- **`No Definido` no genera ámbito** — se detectó en la prueba corta, que lo
+  estaba emitiendo como si fuera un territorio.
+- **El workflow solo commiteaba `adiciones.json`.** Sin corregirlo, el archivo
+  nuevo se habría congelado en silencio tras la primera generación.
+
+La metodología deja dicho lo que antes no aplicaba: el ámbito es la **sede de la
+entidad**, no dónde se ejecuta el contrato, así que la capital de un departamento
+incluye lo que la gobernación contrata para todo el territorio.
+
 ### HECHO ✅ — Población municipal: al anexo oficial del DANE (ago 2026)
 
 Petición: añadir Candelaria (Valle y Atlántico), que la llave compuesta

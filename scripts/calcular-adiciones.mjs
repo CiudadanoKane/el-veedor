@@ -32,6 +32,7 @@ import { DOCUMENTOS_SIN_IDENTIDAD } from '../src/lib/identidad.js'
 
 const AQUI = dirname(fileURLToPath(import.meta.url))
 const SALIDA = resolve(AQUI, '../public/adiciones.json')
+const SALIDA_AMBITOS = resolve(AQUI, '../public/adiciones-ambitos.json')
 
 const BASE = process.env.SOCRATA_BASE || 'https://www.datos.gov.co/resource'
 const TOKEN = process.env.SOCRATA_TOKEN || ''
@@ -52,6 +53,12 @@ const PAGINA = 50_000
 // Solo se reportan las entidades y contratistas con suficiente materia para que
 // una tasa signifique algo; el resto entra en los totales pero no en el ranking.
 const TOPE_RANKING = 150
+// Topes por ámbito, distintos a propósito. El peso del archivo lo domina el
+// número de ciudades (775 con adiciones, contra 33 departamentos), así que ahí
+// el tope aprieta y en departamentos no hace falta. Con 50 en ambos el archivo
+// pesaba 6,3 MB (872 KB comprimido), demasiado para una descarga en móvil.
+const TOPE_AMBITO_DEPTO = 50
+const TOPE_AMBITO_CIUDAD = 20
 
 const args = process.argv.slice(2)
 const opcion = (nombre) => {
@@ -198,6 +205,17 @@ async function main() {
   const porDepto = new Map()
   const porEntidad = new Map()
   const porContratista = new Map()
+  // Tops por ÁMBITO (departamento y ciudad). Se acumulan en esta misma pasada:
+  // el barrido ya lee todos los contratos del país uno por uno, así que agrupar
+  // además por ámbito no cuesta ni una consulta ni un segundo más.
+  //
+  // Sin esto, la pestaña "Quién más adiciona" mostraba SIEMPRE el top nacional,
+  // ignorando el filtro geográfico. No era un filtro olvidado en la interfaz:
+  // las filas no traían geografía y la lista venía cortada al top 150 del país,
+  // así que filtrarla habría dado "los del top nacional que además son de aquí"
+  // —en Barranquilla, ninguno de sus tres mayores adicionadores aparecía—.
+  const porAmbitoEntidad = new Map()
+  const porAmbitoContratista = new Map()
   const nacional = {
     contratos: 0, evaluables: 0, conAdicion: 0, adicion: 0,
     original: 0, originalConAdicion: 0, actual: 0, anomalias: 0, sinBase: 0,
@@ -217,7 +235,7 @@ async function main() {
 
     const filas = await consultar(
       DS_CONTRATOS,
-      `SELECT id_contrato, proceso_de_compra, departamento, nombre_entidad,
+      `SELECT id_contrato, proceso_de_compra, departamento, ciudad, nombre_entidad,
               proveedor_adjudicado, documento_proveedor, tipodocproveedor,
               valor_del_contrato
        WHERE ${filtros.join(' AND ')}
@@ -258,12 +276,43 @@ async function main() {
       // 'No Definido', '0', 'N/A'… no son contratistas: son el hueco que deja
       // un registro sin diligenciar. Agruparlos crea un contratista falso que
       // suma miles de contratos ajenos entre sí y encabeza cualquier ranking.
-      if (f.documento_proveedor && !DOCUMENTOS_SIN_IDENTIDAD.includes(f.documento_proveedor)) {
+      const contratistaValido =
+        f.documento_proveedor && !DOCUMENTOS_SIN_IDENTIDAD.includes(f.documento_proveedor)
+      if (contratistaValido) {
         const a = acumular(porContratista, f.documento_proveedor, f.proveedor_adjudicado, datos)
         // El nombre y el tipo de documento se toman del último visto; la UI ya
         // sabe enmascarar a las personas naturales (ver identidad.js).
         if (f.proveedor_adjudicado) a.etiqueta = f.proveedor_adjudicado
         if (f.tipodocproveedor) a.tipoDoc = f.tipodocproveedor
+      }
+
+      // Los mismos dos rankings, pero dentro de cada ámbito. Un contrato entra
+      // en el de su departamento Y en el de su ciudad: son dos vistas del mismo
+      // hecho, no dos hechos. Las llaves llevan prefijo para que un municipio y
+      // un departamento con el mismo nombre (Caldas, Córdoba, Sucre…) no se
+      // mezclen.
+      // "No Definido" no es un territorio: es el hueco de un registro sin
+      // diligenciar. Mismo criterio que SIN_GEOGRAFIA en el resto de la
+      // plataforma —el mapa y la comparación de ciudades ya lo descartan—.
+      const depto = f.departamento !== 'No Definido' ? f.departamento : null
+      const ciudad = f.ciudad !== 'No Definido' ? f.ciudad : null
+      for (const ambito of [
+        depto ? `d|${depto}` : null,
+        depto && ciudad ? `c|${depto}|${ciudad}` : null,
+      ]) {
+        if (!ambito) continue
+        if (f.nombre_entidad) {
+          if (!porAmbitoEntidad.has(ambito)) porAmbitoEntidad.set(ambito, new Map())
+          acumular(porAmbitoEntidad.get(ambito), f.nombre_entidad, f.nombre_entidad, datos)
+        }
+        if (contratistaValido) {
+          if (!porAmbitoContratista.has(ambito)) porAmbitoContratista.set(ambito, new Map())
+          const a = acumular(
+            porAmbitoContratista.get(ambito), f.documento_proveedor, f.proveedor_adjudicado, datos,
+          )
+          if (f.proveedor_adjudicado) a.etiqueta = f.proveedor_adjudicado
+          if (f.tipodocproveedor) a.tipoDoc = f.tipodocproveedor
+        }
       }
     }
 
@@ -293,12 +342,54 @@ async function main() {
     contratistas: ordenarPorAdicion(porContratista, TOPE_RANKING),
   }
 
+  // Los ámbitos van en un archivo APARTE, no dentro de éste: la vista nacional
+  // —la que ve todo el mundo al entrar— no debe pagar la descarga de los tops
+  // de 34 departamentos y ~1.100 municipios que no está mirando. El cliente lo
+  // pide solo cuando hay un filtro activo.
+  //
+  // El tope por ámbito es más bajo que el nacional a propósito: en un municipio
+  // mediano hay bastantes menos entidades con adiciones, así que 50 ya cubre de
+  // sobra lo que la tabla muestra, y multiplicado por mil ámbitos la diferencia
+  // de peso sí se nota.
+  // Solo los campos que la tabla usa. `original`, `actual` y `anomalias` se
+  // quedan en el archivo nacional —donde sí se leen— pero multiplicados por
+  // ~800 ámbitos solo engordan la descarga.
+  const soloLoUsado = ({ id, etiqueta, evaluables, conAdicion, adicion, originalConAdicion, tipoDoc }) => {
+    const f = { id, etiqueta, evaluables, conAdicion, adicion, originalConAdicion }
+    if (tipoDoc) f.tipoDoc = tipoDoc
+    return f
+  }
+  const topeDe = (ambito) => (ambito.startsWith('c|') ? TOPE_AMBITO_CIUDAD : TOPE_AMBITO_DEPTO)
+
+  const ambitos = {}
+  for (const [ambito, mapa] of porAmbitoEntidad) {
+    const filas = ordenarPorAdicion(mapa, topeDe(ambito)).map(soloLoUsado)
+    if (filas.length) (ambitos[ambito] ||= {}).entidades = filas
+  }
+  for (const [ambito, mapa] of porAmbitoContratista) {
+    const filas = ordenarPorAdicion(mapa, topeDe(ambito)).map(soloLoUsado)
+    if (filas.length) (ambitos[ambito] ||= {}).contratistas = filas
+  }
+  const salidaAmbitos = {
+    generadoEn: salida.generadoEn,
+    fuente: salida.fuente,
+    // Mismo criterio de llave que el resto de la plataforma: el departamento
+    // acompaña a la ciudad porque 56 nombres de municipio se repiten en el país
+    // (ver poblacionCiudades.js).
+    formatoClave: 'd|<departamento> · c|<departamento>|<ciudad>',
+    ambitos,
+  }
+
   mkdirSync(dirname(SALIDA), { recursive: true })
   writeFileSync(SALIDA, JSON.stringify(salida))
+  writeFileSync(SALIDA_AMBITOS, JSON.stringify(salidaAmbitos))
 
   const seg = ((Date.now() - t0) / 1000).toFixed(0)
   const pct = (n, d) => (d > 0 ? ((n / d) * 100).toFixed(1) : '—')
   console.error(`\nListo en ${seg}s → ${SALIDA}`)
+  console.error(
+    `  ámbitos:            ${Object.keys(ambitos).length.toLocaleString('es-CO')} → ${SALIDA_AMBITOS}`,
+  )
   console.error(`  contratos vistos:   ${nacional.contratos.toLocaleString('es-CO')}`)
   console.error(
     `  evaluables:         ${nacional.evaluables.toLocaleString('es-CO')} (${pct(nacional.evaluables, nacional.contratos)}% con valor original conocido)`,

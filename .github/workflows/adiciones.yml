@@ -60,10 +60,14 @@ jobs:
         run: |
           git config user.name  'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          if git diff --quiet -- public/adiciones.json; then
+          # Los dos archivos: el nacional y los tops por ámbito (departamento y
+          # municipio), que salen del mismo recorrido. Si solo se commiteara el
+          # primero, el ranking por ámbito se quedaría congelado sin que nadie
+          # lo notara.
+          if git diff --quiet -- public/adiciones.json public/adiciones-ambitos.json; then
             echo 'Sin cambios en las adiciones.'
             exit 0
           fi
-          git add public/adiciones.json
+          git add public/adiciones.json public/adiciones-ambitos.json
           git commit -m 'Datos: recalcula adiciones de valor'
           git push

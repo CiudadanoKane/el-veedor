@@ -11,7 +11,9 @@ import { Segmented } from '../components/ui/Segmented'
 import { IndiceEjecucion } from '../components/alertas/IndiceEjecucion'
 import { useFilters } from '../context/FiltersContext'
 import { useRankingContratistas, useRankingEntidades } from '../hooks/useRankings'
-import { useAdicionesPrecalculadas } from '../hooks/useAdicionesPrecalculadas'
+import {
+  useAdicionesPrecalculadas, useAdicionesPorAmbito, claveAmbitoAdiciones,
+} from '../hooks/useAdicionesPrecalculadas'
 import { useCategorias } from '../hooks/useCategorias'
 import { formatCOP, formatCOPFull, formatDate, formatPct, pct } from '../lib/formatters'
 import { CHART, tooltipProps } from '../lib/chartTheme'
@@ -279,12 +281,17 @@ function RankingEntidades({ filters }) {
 // de Procesos, contrato por contrato— y SoQL no puede unir dos datasets dentro
 // de un GROUP BY. Ver useAdicionesPrecalculadas.js.
 //
-// Este ranking NO respeta el filtro geográfico: el precálculo es nacional. Se
-// dice explícitamente en vez de dejar que alguien crea que está viendo su
-// ciudad.
-function RankingAdiciones() {
+// Respeta el filtro geográfico. Los tops por ámbito se acumulan en la misma
+// pasada del barrido nocturno (que ya lee todos los contratos del país, así que
+// no cuesta una consulta más) y viajan en un archivo aparte que solo se
+// descarga cuando hay un filtro puesto. Ver useAdicionesPorAmbito.
+function RankingAdiciones({ filters }) {
   const [lado, setLado] = useState('entidades')
-  const query = useAdicionesPrecalculadas()
+  const nacional = useAdicionesPrecalculadas()
+  const ambito = useAdicionesPorAmbito(filters)
+  const hayAmbito = !!claveAmbitoAdiciones(filters)
+  const query = hayAmbito ? ambito : nacional
+  const lugar = filters.city || filters.department
   const esEntidades = lado === 'entidades'
 
   const columnas = [
@@ -357,15 +364,26 @@ function RankingAdiciones() {
         Una adición es lo que un contrato creció frente al valor con que se firmó.{' '}
         <strong className="font-semibold text-textPrimary">Adicionar es legal</strong> y a
         veces inevitable; lo que esta tabla muestra es dónde ocurre más, para poder
-        preguntar por qué. Es un cálculo <strong className="font-semibold text-textPrimary">
-        nacional</strong>: no cambia con el filtro de departamento o ciudad.
+        preguntar por qué.{' '}
+        {hayAmbito
+          ? <>Estás viendo <strong className="font-semibold text-textPrimary">{lugar}</strong>.</>
+          : 'Elige un departamento o municipio arriba para ver quién adiciona más allí.'}
       </p>
 
       <Methodology>
         El valor inicial no vive en el registro del contrato: hay que buscarlo en el{' '}
         <strong>dataset de Procesos</strong>. Como esa comparación no se puede hacer en
         vivo sobre 5,4 millones de contratos, se <strong>precalcula una vez al día</strong>{' '}
-        y esta tabla lee el resultado.
+        y esta tabla lee el resultado. Ese recorrido diario ya pasa por todos los contratos
+        del país, así que en la misma vuelta arma también el ranking de cada departamento y
+        cada municipio: por eso la tabla <strong>sí responde al filtro</strong> aunque no
+        consulte nada en vivo.
+        <br />
+        <br />
+        <strong>Sede, no destino:</strong> el ámbito es dónde está la entidad que contrata,
+        no necesariamente dónde se ejecuta el contrato —mismo criterio que el mapa y la
+        comparación de ciudades—. En la capital de un departamento las cifras incluyen lo
+        que la gobernación contrata para todo el territorio.
         <br />
         <br />
         La referencia es el <strong>valor adjudicado</strong> cuando hubo concurso, y el{' '}
@@ -388,18 +406,24 @@ function RankingAdiciones() {
       <div className="mt-4">
         <QueryState query={query} empty="Aún no hay adiciones calculadas.">
           {(d) => {
-            const filas = esEntidades ? d.entidades : d.contratistas
+            const filas = esEntidades ? d?.entidades : d?.contratistas
             if (!filas?.length) {
-              return <p className="py-6 text-[14px] text-textSecondary">Sin datos.</p>
+              return (
+                <p className="py-6 text-[14px] text-textSecondary">
+                  {hayAmbito
+                    ? `Sin adiciones registradas en ${lugar}.`
+                    : 'Sin datos.'}
+                </p>
+              )
             }
             return (
               <>
                 <DataTable columns={columnas} rows={filas} keyField="id" />
                 <p className="mt-3 text-[12.5px] text-textSecondary">
-                  {filas.length} primeros por valor añadido. Calculado el{' '}
-                  {formatDate(d.generadoEn)} sobre{' '}
-                  {d.nacional?.evaluables?.toLocaleString('es-CO')} contratos con valor
-                  inicial conocido.
+                  {filas.length} primeros por valor añadido{hayAmbito ? ` en ${lugar}` : ''}.
+                  Calculado el {formatDate(nacional.data?.generadoEn)} sobre{' '}
+                  {nacional.data?.nacional?.evaluables?.toLocaleString('es-CO')} contratos
+                  con valor inicial conocido en todo el país.
                 </p>
               </>
             )
@@ -565,7 +589,7 @@ export function Rankings() {
         {tab === 'contratistas' && <RankingContratistas filters={filters} />}
         {tab === 'entidades' && <RankingEntidades filters={filters} />}
         {tab === 'categorias' && <RankingCategorias filters={filters} />}
-        {tab === 'adiciones' && <RankingAdiciones />}
+        {tab === 'adiciones' && <RankingAdiciones filters={filters} />}
         {tab === 'ejecucion' && <IndiceEjecucion />}
       </div>
     </div>
