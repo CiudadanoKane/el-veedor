@@ -268,8 +268,7 @@ export function ComparacionCiudades() {
         <br />
         <strong>Per cápita:</strong> por cada habitante (valor) o por cada 100.000 habitantes
         (número de contratos), con población municipal de la proyección DANE{' '}
-        {POBLACION_CIUDADES_ANIO}. (El mapa por departamento usa población DANE 2025; aquí la tabla
-        municipal verificable es de {POBLACION_CIUDADES_ANIO}.)
+        {POBLACION_CIUDADES_ANIO} —el mismo año que usa el mapa por departamento—.
         <br />
         <br />
         <strong>Sede, no destino:</strong> en SECOP la ciudad es dónde está la entidad, no dónde se
@@ -345,8 +344,25 @@ export function ComparacionCiudades() {
             // métrica, sin las que ya están en el top, ya añadidas o puestas por
             // el filtro, en orden alfabético —el ranking ya se ve en el "#" de
             // cada opción—.
+            // El nombre del selector se desambigua contra TODO el ranking, no
+            // solo contra lo visible: aquí conviven las dos Candelarias, y dos
+            // opciones idénticas salvo por el "#" no se pueden elegir a
+            // conciencia. En las filas del ranking el criterio es otro (ver
+            // `repetidos`), porque allí solo estorba si las dos están a la vista.
+            const nombresDelRanking = new Map()
+            for (const f of filas) {
+              if (!nombresDelRanking.has(f.nombre)) nombresDelRanking.set(f.nombre, new Set())
+              nombresDelRanking.get(f.nombre).add(f.clave)
+            }
             const opciones = filas
-              .map((f, i) => ({ clave: f.clave, nombre: f.nombre, posicion: i + 1 }))
+              .map((f, i) => ({
+                clave: f.clave,
+                nombre:
+                  nombresDelRanking.get(f.nombre).size > 1 && f.depto
+                    ? `${f.nombre} (${f.depto})`
+                    : f.nombre,
+                posicion: i + 1,
+              }))
               .filter(
                 (f) =>
                   !topClaves.has(f.clave) &&

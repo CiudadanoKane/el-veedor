@@ -30,3 +30,6 @@ dist-ssr
 
 .vercel
 .env*
+
+# Anexo del DANE que descarga scripts/generar-poblacion-municipal.py (4 MB)
+.cache-dane

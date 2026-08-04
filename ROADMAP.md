@@ -1365,10 +1365,11 @@ Decisiones de diseño:
   vencido) la copaban municipios diminutos que apenas pasan el piso de muestra
   (Arjona, Sácama…), no "las ciudades grandes". Con el tope, las tasas comparan
   las mismas grandes ciudades (Maicao, Barrancabermeja, Girón…).
-- **Población municipal DANE 2023** (`poblacionCiudades.js`), la última tabla
-  municipal que se pudo **verificar de punta a punta**; el mapa por departamento
-  usa 2025. Cada vista declara su año. Solo se listan ciudades con población
-  verificada (nunca se inventa un denominador).
+- **Población municipal DANE 2025** (`poblacionCiudades.js`), leída del anexo
+  oficial y **ya en el mismo año que el mapa** por departamento (ver "Población
+  municipal: al anexo oficial" abajo; antes era 2023 y de una serie que el DANE
+  reemplazó). Solo se listan ciudades con población verificada (nunca se inventa
+  un denominador).
 - **Por defecto "Solo locales"** (territorial): a nivel ciudad "Todas" carga a
   Bogotá con la contratación nacional de medio país (todas las entidades
   nacionales tienen sede allí). Toggle "Todas" disponible, con su advertencia.
@@ -1396,9 +1397,9 @@ Ocaña, Duitama, Cartago, Turbaco, Sabaneta…), todas con población DANE 2023
 verificada. Se excluyen nombres **ambiguos** (mismo nombre en dos departamentos
 de tamaño comparable, p. ej. Candelaria) porque `ciudad` no trae el departamento.
 
-Pendiente (menor): **Puerto Carreño** (capital de Vichada, con presencia real en
-SECOP) espera su proyección DANE 2023 —solo se halló censo 2020—. Y, cuando el
-DANE publique la tabla municipal 2025, actualizar y unificar el año con el mapa.
+~~Pendiente (menor): Puerto Carreño espera su proyección DANE 2023, y unificar
+el año con el mapa.~~ **Ambos resueltos** en la migración al anexo oficial
+(ver abajo): Puerto Carreño ya está y el año es 2025 en las dos vistas.
 Si más adelante se quiere resolver los nombres ambiguos, habría que agrupar por
 `departamento, ciudad` (hoy el hook agrupa solo por `ciudad`).
 
@@ -1567,6 +1568,69 @@ verificó cada rama del componente por separado: el error real de permiso
 correctos, y una simulación del éxito confirma que la rama "Copiado" renderiza
 bien. Falta la prueba de extremo a extremo en producción o en un navegador
 normal.
+
+### HECHO ✅ — Población municipal: al anexo oficial del DANE (ago 2026)
+
+Petición: añadir Candelaria (Valle y Atlántico), que la llave compuesta
+`(departamento, ciudad)` acababa de destrabar, **con población verificada**.
+Cumplir esa última palabra obligó a mirar la fuente, y ahí apareció el problema.
+
+**La tabla venía de una serie que el DANE ya no publica.** Las cifras eran de la
+proyección 2018-2035; el DANE la reemplazó por la serie **2018-2042** tras la
+actualización pos-COVID, y las diferencias no son de redondeo:
+
+| | Tabla anterior (2018-2035, año 2023) | Anexo vigente (2018-2042, año 2025) |
+|---|---|---|
+| Medellín | 2.653.729 | 2.528.343 |
+| Barranquilla | 1.327.209 | 1.279.344 |
+| Bogotá | 7.968.095 | 7.942.867 |
+| Montería | 516.217 | 574.570 |
+
+Añadir las dos Candelarias con cifras de la serie nueva las habría puesto a
+competir en el mismo ranking per cápita contra denominadores de otra serie —un
+sesgo sistemático, no ruido—. Se intentó primero la vía mínima, recuperar el
+anexo antiguo para añadirlas en su misma edición: **ya no está publicado** (404
+en las rutas del DANE). Así que la elección real era mezclar ediciones o migrar
+entera; con el usuario se optó por migrar.
+
+**Cómo se hizo.** Un script lee el anexo oficial
+`PPED-AreaMun-2018-2042_VP.xlsx` (año 2025, área "Total") y regenera la tabla.
+La **curaduría se conserva** —qué municipios componen el universo de
+comparación—; lo único que cambia es de dónde sale la cifra: ya no está
+transcrita, se lee de la fuente primaria y se puede volver a generar. El
+generador **aborta** si alguna fila curada no empareja, en vez de descartarla:
+perder un municipio en silencio lo sacaría del ranking sin que nadie lo notara.
+Esa guarda encontró de inmediato cuatro casos donde SECOP usa el nombre
+corriente y el DANE el oficial —Bogotá, Cartagena de Indias, San José de Cúcuta
+y San Andrés de Tumaco—, que se emparejan por **código DANE**, estable, en vez
+de por alias de nombre.
+
+Verificación independiente: releído el anexo y comparadas las **129 filas** del
+módulo resultante contra él, **0 discrepancias**, y todas las llaves únicas.
+
+**Resultado.** 126 → 129 municipios, todos de una sola edición y un solo año:
+- **Candelaria (Valle)** 113.360 y **Candelaria (Atlántico)** 19.516, que
+  convivían mal por el choque de nombres.
+- **Puerto Carreño** 24.341, que llevaba pendiente desde jul 2026 esperando una
+  cifra verificable.
+- El año pasa a **2025**, unificado con el mapa por departamento. Se retiró de
+  la metodología la nota que contrastaba los dos años, ya innecesaria.
+
+**Un hueco que solo se vio con datos reales:** la etiqueta desambiguadora
+("Candelaria (Valle del Cauca)") existía desde el cambio de llave, pero hasta
+ahora era inalcanzable —la tabla heredada excluía a propósito los homónimos—.
+Al entrar las dos Candelarias se disparó por primera vez, y quedó a la vista que
+el **selector** "Comparar con otra ciudad" no la aplicaba: ofrecía dos opciones
+"Candelaria" idénticas salvo por el "#". Corregido con un criterio propio: en el
+selector se desambigua contra **todo** el ranking (dos opciones iguales no se
+pueden elegir a conciencia), mientras que en las filas basta con hacerlo cuando
+las dos están a la vista.
+
+Pendiente relacionado, **no** hecho: `poblacion.js` (departamentos) sigue siendo
+una tercera fuente —sus totales 2025 difieren de sumar los municipios de este
+anexo, p. ej. Cundinamarca 3.657.407 contra 3.535.067—. Regenerarla desde el
+mismo anexo dejaría el mapa y la comparación de ciudades sobre exactamente la
+misma base.
 
 ### HECHO ✅ — El tour en móvil (ago 2026)
 
