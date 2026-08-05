@@ -14,6 +14,26 @@ que las corre en cada cambio). Ver "Revisión previa al lanzamiento" más abajo.
   endpoint roza el techo de 60 s del plan.
 - El gasto de Anthropic (`/api/buscar-ia`).
 
+**PENDIENTE, y lo primero de la próxima sesión: un fallo de la fuente se ve igual
+que "no hay datos".** Encontrado el 5/8/2026, con Socrata devolviendo 503. Las
+tarjetas de cifras hacen `data?.total ?? '—'` con `loading={isLoading}`: cuando la
+consulta **falla**, `isLoading` pasa a `false` y `data` queda `undefined`, así que
+cae al guion. Quien lo vea concluirá que su municipio no tiene contratos, no que
+SECOP está caído — justo la confusión que la plataforma promete no provocar.
+
+Lo llamativo es que el estado de error bien hecho **ya existe** ("es probable que
+la fuente de datos esté respondiendo con lentitud o intermitencia", con botón de
+reintentar); las tarjetas no lo usan, se lo tragan.
+
+Se nota ahora porque la vista nacional se sirve de Edge Config y sobrevive a la
+caída —verificado durante el 503: `HTTP 200`, `X-Panorama-Source: edge-config`—,
+mientras que la **filtrada se calcula en vivo**. Y desde la fusión de Panorama con
+Mi municipio, esa vista filtrada es la portada de quien elige su municipio: el
+caso de uso principal.
+
+Arreglo: que las tarjetas distingan tres estados —cargando, sin dato y fuente
+caída— y que en el tercero salga el aviso que ya existe.
+
 **Pendientes menores, ninguno bloqueante:** cachear la concentración país (~13 s
 en vivo), unificar `poblacion.js` (departamentos) con el anexo municipal del DANE
 —hoy son dos fuentes distintas—, y el peso del repositorio si llega a molestar
