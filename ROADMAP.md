@@ -1,6 +1,23 @@
 # El Veedor — Plan de desarrollo
 
-Estado: **en línea** en <https://el-veedor.vercel.app>
+Estado: **en línea** en <https://el-veedor.vercel.app>, y **lista para abrir al
+público** desde agosto de 2026, tras una revisión previa al lanzamiento (tope de
+peticiones en el endpoint que cuesta dinero, guardas de cordura en los
+precálculos que se publican solos, 33 pruebas sobre los cálculos críticos y CI
+que las corre en cada cambio). Ver "Revisión previa al lanzamiento" más abajo.
+
+**Lo que conviene vigilar tras abrir**, que no es código sino operación:
+- Que los crons no fallen en silencio. Si el `SOCRATA_TOKEN` expira, los datos se
+  congelan y la página sigue mostrando cifras —solo que viejas—. La fecha de
+  "Calculado el…" lo delata.
+- Los 502/504 en el panel de Vercel: señal de que Socrata está lento y algún
+  endpoint roza el techo de 60 s del plan.
+- El gasto de Anthropic (`/api/buscar-ia`).
+
+**Pendientes menores, ninguno bloqueante:** cachear la concentración país (~13 s
+en vivo), unificar `poblacion.js` (departamentos) con el anexo municipal del DANE
+—hoy son dos fuentes distintas—, y el peso del repositorio si llega a molestar
+(`adiciones-ambitos.json` son 2,7 MB reescritos a diario).
 
 ---
 
@@ -15,14 +32,16 @@ deploy en Vercel.
 - Adiciones de valor — con método **exacto** (cruce con el dataset de Procesos),
   mejor que la inferencia vía `saldo_cdp` que planteaba la arquitectura y que
   resultó inservible
-- Módulo de Alertas, con tres alertas activas
+- Módulo de Alertas, con cinco alertas activas: contratos vencidos, obra
+  paralizada, adiciones de plazo, adiciones de presupuesto y la intersección de
+  las dos últimas ("Plazo y presupuesto", ago 2026)
 - Módulo "¿En qué contrata el Estado?" (clasificación UNSPSC)
 - Historial real de modificaciones por contrato
 - Interpretación en lenguaje llano por contrato
 - **Noticias basadas en datos** (punto 7) — feed en vivo de notas factuales
 - **Guía rápida (tour)** — recorrido a medida con foco tipo spotlight, sin
   librería; arranca en la primera visita y se reabre desde el pie de la barra
-  lateral
+  lateral (en móvil, desde el menú)
   - ~~Pendiente (bug): en celular el recuadro se ve cortado a la derecha.~~
     **Ya no ocurre** (comprobado ago 2026 en 320×568 y 375×812, los seis pasos):
     lo resolvió de camino el tope `max-w-[calc(100vw-32px)]` del recuadro. Ver
@@ -208,9 +227,11 @@ Tres hallazgos que cambiaron el resultado:
 Validado contra verdad conocida: el contrato de la calle 72 da
 **$12.601.162.260** sobre un original de **$20.849.779.050** — coincide al peso.
 
-Cifras nacionales: 5,41M contratos vistos · **73,0% evaluables** · **952.541 con
-adición (24,1%)** · **$90,8 billones añadidos** · 2.436 anomalías apartadas
-(múltiplos de digitación y crecimientos >500%).
+Cifras nacionales (corrida del 4/8/2026): 5,44M contratos vistos · **73,0%
+evaluables** · **997.897 con adición (25,1%)** · **$92,2 billones añadidos** ·
+2.450 anomalías apartadas (múltiplos de digitación y crecimientos >500%). Crecen
+un poco cada día; la fecha va explícita para que se sepa a qué corrida
+corresponden.
 
 Las reglas viven en `src/lib/adiciones.js`, compartidas por el hook del
 navegador y el script en lote, para que el mapa y el ranking no puedan
@@ -218,9 +239,10 @@ contradecir a la sección de Adiciones.
 
 Pendiente de este índice:
 
-- **Adición de tiempo y de presupuesto a la vez**, la señal más fuerte de que lo
-  pactado no era realista. Ahora es alcanzable: el precálculo ya tiene la
-  adición de valor por contrato, y `dias_adicionados` está en el registro.
+- ~~**Adición de tiempo y de presupuesto a la vez**, la señal más fuerte de que
+  lo pactado no era realista.~~ ✅ **Hecho (ago 2026)** como pestaña propia de
+  Alertas, "Plazo y presupuesto". Medido antes de construirla: 5,6% de los
+  contratos evaluables del Atlántico caen ahí. Ver su sección más abajo.
 - **Rendimiento:** ordenar por cuantía tarda ~50s. El `GROUP BY` sobre 4,7
   millones con sumas condicionales es caro. Deuda conocida, igual que el ranking
   nacional.
@@ -1466,7 +1488,9 @@ lateral no existía.
   fiarse del dato, que es la pregunta de Metodología—.
 - **Vista "Mi municipio"** (`MiMunicipio.jsx`): el retrato de un lugar en una
   sola lectura. No trae consultas nuevas; reusa el panorama agrupado y el
-  ranking de contratistas.
+  ranking de contratistas. *(Dejó de ser una página aparte en ago 2026: el
+  Panorama toma esa forma cuando hay un ámbito activo. Ver "Panorama y Mi
+  municipio, fusionados".)*
 
 Dos defectos encontrados al probarlo en un teléfono real, no aquí:
 
