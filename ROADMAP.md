@@ -11,7 +11,10 @@ que las corre en cada cambio). Ver "Revisión previa al lanzamiento" más abajo.
   congelan y la página sigue mostrando cifras —solo que viejas—. La fecha de
   "Calculado el…" lo delata.
 - Los 502/504 en el panel de Vercel: señal de que Socrata está lento y algún
-  endpoint roza el techo de 60 s del plan.
+  endpoint roza el techo de 60 s del plan. Desde agosto de 2026 esa caída ya no
+  es invisible para el visitante: sale un aviso en vez de un guion (ver "Un fallo
+  de la fuente ya no se ve como 'no hay datos'"). Conviene saberlo antes de que
+  alguien escriba preguntando por qué su municipio "no tiene contratos".
 - El gasto de Anthropic (`/api/buscar-ia`).
 
 **Pendientes menores, ninguno bloqueante:** cachear la concentración país (~13 s
@@ -2230,6 +2233,22 @@ tocar nada.
 
 Comprobado en 375 px (sin desbordes: documento 375, ventana 375) y en escritorio,
 los dos casos, simulando un 503 de Socrata y una desconexión.
+
+**Verificado en producción** (build `index-myMdollr.js`, commit `bbe479e`), no
+solo en local:
+- Los cinco contratistas de "Quién recibe el dinero" en Barranquilla enlazan a su
+  perfil.
+- Forzando un 502 en `/api/panorama` para Soledad: sale el aviso, las ocho
+  tarjetas dicen "Sin dato", y **Reintentar** devolvió las cifras reales (41.788
+  contratos, $4,6 B).
+- Con un evento `offline` en Malambo: cambia al texto de "sin conexión", se
+  esconde la salida al nacional —que tampoco cargaría—, y al volver la conexión
+  se reanudó solo (6.755 contratos) sin tocar nada.
+
+Lo que **no** se pudo comprobar contra la realidad es el escenario original
+entero —fuente caída de verdad, con el nacional sirviéndose de Edge Config
+mientras el filtrado falla—, porque Socrata ya estaba respondiendo bien. Se
+simuló; el camino de código es el mismo, pero queda dicho.
 
 **Trampa de medición, para la próxima:** el panel del navegador estaba oculto
 (`visibilityState: "hidden"`), y React Query **pausa los reintentos cuando la
