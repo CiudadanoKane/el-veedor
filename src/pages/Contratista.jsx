@@ -10,6 +10,7 @@ import { Methodology } from '../components/ui/Methodology'
 import { usePerfilContratista } from '../hooks/usePerfilContratista'
 import { documentoVisible, etiquetaDocumento, esPersonaJuridica } from '../lib/identidad'
 import { formatCOP, formatDate, pct, formatPct } from '../lib/formatters'
+import { EnlaceEntidad } from '../components/ui/EnlacePerfil'
 
 function Seccion({ titulo, descripcion, children }) {
   return (
@@ -80,7 +81,7 @@ function Perfil({ perfil }) {
       render: (r) => (
         <div className="max-w-[340px]">
           <div className="text-textPrimary">
-            {r.entityName}
+            <EnlaceEntidad nombre={r.entityName} />
             {/* SECOP II es la fuente por defecto y la gran mayoría de los
                 contratos; solo se anota lo distinto de lo esperado. */}
             {r.source === 'SECOP I' && (

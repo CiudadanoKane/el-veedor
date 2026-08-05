@@ -2,6 +2,7 @@ import { interpretContract } from '../../lib/interpret'
 import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/formatters'
 import { SecopLink } from './SecopLink'
 import { ModificationHistory } from './ModificationHistory'
+import { TerminoConAyuda } from './Ayuda'
 
 // Estados donde la fecha de fin pasada no es una alerta: el contrato ya cerró
 // como corresponde, o nunca llegó a ejecutarse. En cualquier otro estado
@@ -93,9 +94,12 @@ export function ContractDetail({ contract: c }) {
 
       {/* Ficha de datos */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-3">
-        <Fact label="Estado" value={c.status} />
-        <Fact label="Modalidad" value={c.modality} />
-        <Fact label="Tipo de contrato" value={c.contractType} />
+        {/* Los tres campos que usan vocabulario de contratación estatal llevan
+            su "?" al lado: son justo los que no significan nada para quien no
+            trabaja en el sector. Ver glosario.js. */}
+        <Fact label="Estado" value={<TerminoConAyuda termino={c.status} />} />
+        <Fact label="Modalidad" value={<TerminoConAyuda termino={c.modality} />} />
+        <Fact label="Tipo de contrato" value={<TerminoConAyuda termino={c.contractType} />} />
         <Fact label="Sector" value={c.sector} />
         <Fact label="Fecha de firma" value={formatDate(c.signDate)} />
         <Fact label="Inicio" value={formatDate(c.startDate)} />

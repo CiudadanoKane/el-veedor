@@ -1595,6 +1595,66 @@ verificó cada rama del componente por separado: el error real de permiso
 correctos, y una simulación del éxito confirma que la rama "Copiado" renderiza
 bien. **Cerrado (ago 2026): el usuario lo probó en su navegador y copia bien.**
 
+### HECHO ✅ — Enlaces a perfil en todas partes, y ayudas "?" (ago 2026)
+
+Dos reportes de uso del mismo día.
+
+**1. "Que contratistas y entidades tengan enlace donde sea que aparezcan."**
+La auditoría confirmó que el criterio estaba repartido y era incoherente: el
+buscador enlazaba al contratista pero no a la entidad, los rankings enlazaban
+los dos, y **las siete tablas de Alertas no enlazaban ninguno**. Para el
+ciudadano eso no tiene explicación: el mismo nombre, en la misma plataforma, a
+veces lleva a algún lado y a veces no.
+
+La regla pasó a `components/ui/EnlacePerfil.jsx` —`EnlaceEntidad` y
+`EnlaceContratista`— en vez de repetirse en ocho archivos. El componente resuelve
+los dos detalles que cada copia tenía que recordar: **frenar el clic**, porque
+muchas de esas tablas despliegan el detalle del contrato al tocar la fila y sin
+eso el nombre hacía las dos cosas a la vez; y **no enlazar a los documentos sin
+identidad** ('No Definido', '0', 'N/A'…), que no son un contratista sino el hueco
+de un registro sin diligenciar y llevarían a un perfil con miles de contratos
+ajenos entre sí.
+
+Medido después en una tabla de Alertas filtrada por Atlántico: **100 enlaces de
+entidad y 99 de contratista donde antes había cero**. La diferencia de uno es
+correcta: es un contratista sin identificar, que queda como texto plano por
+diseño.
+
+**2. "Ayudas explicativas: no sé qué significa cada modalidad."** El ejemplo del
+usuario era exacto —"Licitación pública" y "Licitación pública Obra Publica" en
+el perfil de una entidad— y da en el problema: sin saber qué distingue una de
+otra, ese reparto decora en vez de informar.
+
+Se añadió `lib/glosario.js` (modalidades, tipos de contrato y estados, en
+lenguaje llano) y `components/ui/Ayuda.jsx`, un "?" junto al término. Está en el
+reparto por modalidad del perfil de entidad, en el detalle de cada contrato
+(estado, modalidad y tipo) y, en forma de acordeón para leer de corrido, en dos
+bloques nuevos de **Aprende** — que salen del mismo glosario, así que no pueden
+decir cosas distintas.
+
+Decisiones que vale la pena dejar dichas:
+- **No es solo hover.** Un tooltip que solo responde al puntero no existe para
+  quien usa teclado, lector de pantalla o un teléfono. El "?" es un `button` de
+  verdad: abre con clic o Enter, cierra con Escape o tocando fuera.
+- **Hover y clic no comparten estado.** Con un único estado que ambos alternaran,
+  el evento de hover sintético de un móvil lo abría y el clic siguiente lo
+  cerraba de inmediato. Son dos: `fijado` (clic) y `sobre` (ratón).
+- **Si el término no está en el glosario, no se pinta nada.** Mejor ausencia que
+  un "?" que al tocarlo no explica. Si SECOP añade un valor nuevo, se degrada sin
+  romperse.
+- **Límite declarado en el propio archivo:** son descripciones divulgativas, no
+  asesoría jurídica. Se apoyan en la Ley 80 de 1993, la Ley 1150 de 2007 y el
+  Decreto 1082 de 2015; ante una duda real, manda la norma. **Conviene que
+  alguien con formación jurídica las revise antes de darles por definitivas.**
+
+**Pendiente de verificar:** el globo se reposiciona solo cuando no cabe por la
+derecha (se ancla por su borde derecho en vez del izquierdo). En escritorio se
+comprobó que abre, explica y cierra; **la reposición en móvil no se pudo
+verificar**: la fuente de datos estaba fallando de forma intermitente y los
+componentes se desmontaban a mitad de la prueba —el botón desaparecía del DOM
+entre encontrarlo y pulsarlo—. Queda por comprobar en un teléfono real, tocando
+un "?" de la última columna.
+
 ### HECHO ✅ — Alerta "Plazo y presupuesto" (ago 2026)
 
 Estaba anotada como idea desde el MVP —"adición de tiempo y de presupuesto a la

@@ -9,6 +9,7 @@ import { Segmented } from '../ui/Segmented'
 import { useFilters } from '../../context/FiltersContext'
 import { useMora } from '../../hooks/useMora'
 import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/formatters'
+import { EnlaceEntidad, EnlaceContratista } from '../ui/EnlacePerfil'
 
 // Antes era una pestaña propia del menú. Es una alerta como las demás — un
 // plazo vencido es exactamente el tipo de patrón que esta sección reúne — así
@@ -45,12 +46,16 @@ export function ContratosVencidos() {
       header: 'Entidad',
       render: (r) => (
         <div className="max-w-[200px]">
-          <div className="text-textPrimary">{r.entityName}</div>
+          <div><EnlaceEntidad nombre={r.entityName} /></div>
           <div className="text-xs text-textSecondary truncate">{r.description}</div>
         </div>
       ),
     },
-    { key: 'contractorName', header: 'Contratista', render: (r) => r.contractorName || '—' },
+    {
+      key: 'contractorName',
+      header: 'Contratista',
+      render: (r) => <EnlaceContratista nombre={r.contractorName} documento={r.contractorId} />,
+    },
     {
       key: 'contractValue',
       header: 'Valor',

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../components/layout/Layout'
 import { QueryState } from '../components/ui/QueryState'
 import { DataTable } from '../components/ui/DataTable'
@@ -15,10 +15,10 @@ import { useBusqueda, hayBusqueda, ORDENES, LIMITE, esIdentificador } from '../h
 import { useGeo } from '../hooks/useGeoOptions'
 import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO } from '../lib/catalogos'
 import { ESTADOS_SOLO_SECOP1 } from '../lib/catalogosSecop1'
-import { DOCUMENTOS_SIN_IDENTIDAD } from '../lib/identidad'
 import { sinTildes } from '../lib/acentos'
 import { resolverLugar } from '../lib/geoResolver'
 import { formatCOP, formatDate } from '../lib/formatters'
+import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
 
 // Normaliza texto para comparar sin importar tildes ni espacios de más.
 const norm = (s) => sinTildes(s || '').replace(/\s+/g, ' ').trim()
@@ -446,7 +446,7 @@ export function Buscar() {
       render: (r) => (
         <div className="max-w-[320px]">
           <div className="text-textPrimary">
-            {r.entityName}
+            <EnlaceEntidad nombre={r.entityName} />
             {/* SECOP II es la fuente por defecto y la gran mayoría de los
                 resultados; solo se anota lo distinto de lo esperado. */}
             {r.source === 'SECOP I' && (
@@ -476,22 +476,11 @@ export function Buscar() {
     {
       key: 'contractorName',
       header: 'Contratista',
-      // La fila entera despliega el detalle del contrato, así que el enlace al
-      // perfil tiene que frenar el clic para no hacer las dos cosas a la vez.
-      render: (r) =>
-        r.contractorName &&
-        r.contractorId &&
-        !DOCUMENTOS_SIN_IDENTIDAD.includes(r.contractorId) ? (
-          <Link
-            to={`/contratista/${encodeURIComponent(r.contractorId)}`}
-            onClick={(e) => e.stopPropagation()}
-            className="text-textPrimary enlace-sutil"
-          >
-            {r.contractorName}
-          </Link>
-        ) : (
-          r.contractorName || '—'
-        ),
+      // Este enlace vivía aquí con su propia copia de las reglas (frenar el
+      // clic para no desplegar el detalle a la vez, no enlazar a los documentos
+      // sin identidad). Ahora las pone EnlacePerfil, que es el mismo criterio
+      // que usan las tablas de Alertas y los rankings.
+      render: (r) => <EnlaceContratista nombre={r.contractorName} documento={r.contractorId} />,
     },
     {
       key: 'contractValue',

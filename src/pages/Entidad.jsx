@@ -10,6 +10,7 @@ import { Methodology } from '../components/ui/Methodology'
 import { usePerfilEntidad } from '../hooks/usePerfilEntidad'
 import { ERRORES, INCOMPLETOS } from '../hooks/useCalidadDatos'
 import { formatCOP, formatDate, pct, formatPct } from '../lib/formatters'
+import { EnlaceContratista } from '../components/ui/EnlacePerfil'
 
 function Seccion({ titulo, descripcion, children }) {
   return (
@@ -83,7 +84,11 @@ function Perfil({ perfil }) {
         </div>
       ),
     },
-    { key: 'contractorName', header: 'Contratista', render: (r) => r.contractorName || '—' },
+    {
+      key: 'contractorName',
+      header: 'Contratista',
+      render: (r) => <EnlaceContratista nombre={r.contractorName} documento={r.contractorId} />,
+    },
     {
       key: 'contractValue',
       header: 'Valor',
@@ -256,6 +261,9 @@ function Perfil({ perfil }) {
           items={perfil.modalidades.map((m) => ({
             clave: m.modalidad,
             label: m.modalidad || 'Sin registro',
+            // El "?" explica qué es cada modalidad: el reparto no dice nada si
+            // no se sabe qué distingue una licitación de una directa.
+            ayuda: m.modalidad,
             valor: m.n,
             secundario: formatCOP(m.valor),
             nota: /directa/i.test(m.modalidad || '')

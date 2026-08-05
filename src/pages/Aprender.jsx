@@ -4,6 +4,7 @@ import { Proceso } from '../components/ui/Proceso'
 import { DiagramaProceso } from '../components/ui/DiagramaProceso'
 import { LineaTiempo } from '../components/ui/LineaTiempo'
 import { Glosario } from '../components/ui/Glosario'
+import { MODALIDADES_GLOSARIO, TIPOS_GLOSARIO } from '../lib/glosario'
 import { ListaBarra } from '../components/ui/ListaBarra'
 
 /* ---------------------------------------------------------------------------
@@ -264,6 +265,38 @@ export function Aprender() {
             discipline el precio.
           </p>
         </div>
+      </Bloque>
+
+      {/* El bloque de arriba agrupa las modalidades en tres cubos para explicar
+          lo esencial —hubo competencia o no—. Este las lista una por una, con el
+          nombre EXACTO que verá en la plataforma, porque es el que aparece en el
+          perfil de una entidad y en el detalle de cada contrato. Sale del mismo
+          glosario que alimenta los "?" repartidos por el sitio (lib/glosario.js),
+          así que no pueden decir cosas distintas. */}
+      <Bloque
+        id="modalidades"
+        titulo="Cada modalidad, una por una"
+        intro="Los nombres exactos que usa SECOP, y qué significa cada uno. Son los que verá en el perfil de una entidad cuando mire cómo adjudica."
+      >
+        <Glosario
+          terminos={Object.entries(MODALIDADES_GLOSARIO).map(([termino, d]) => ({
+            termino,
+            definicion: [d.resumen, d.detalle].filter(Boolean).join(' '),
+          }))}
+        />
+      </Bloque>
+
+      <Bloque
+        id="tipos"
+        titulo="Qué clase de contrato es"
+        intro="El tipo describe qué se contrata: una obra, un servicio, un suministro. Es distinto de la modalidad, que describe cómo se escogió al contratista."
+      >
+        <Glosario
+          terminos={Object.entries(TIPOS_GLOSARIO).map(([termino, d]) => ({
+            termino,
+            definicion: [d.resumen, d.detalle].filter(Boolean).join(' '),
+          }))}
+        />
       </Bloque>
 
       <Bloque

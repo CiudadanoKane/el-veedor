@@ -12,6 +12,7 @@ import {
   useAdicionesTiempo, usePrevalenciaAdicionTiempo, useAdicionesCosto, useAdicionesAmbas,
 } from '../../hooks/useAdiciones'
 import { formatCOP, humanDuration } from '../../lib/formatters'
+import { EnlaceEntidad, EnlaceContratista } from '../ui/EnlacePerfil'
 
 function PctBadge({ pct }) {
   if (pct == null) return <span className="text-textSecondary">—</span>
@@ -27,7 +28,7 @@ const colEntidad = {
   header: 'Entidad',
   render: (r) => (
     <div className="max-w-[200px]">
-      <div className="text-textPrimary">{r.entityName}</div>
+      <div><EnlaceEntidad nombre={r.entityName} /></div>
       <div className="text-xs text-textSecondary truncate">{r.description}</div>
     </div>
   ),
@@ -35,7 +36,7 @@ const colEntidad = {
 const colContratista = {
   key: 'contractorName',
   header: 'Contratista',
-  render: (r) => r.contractorName || '—',
+  render: (r) => <EnlaceContratista nombre={r.contractorName} documento={r.contractorId} />,
 }
 
 /* ------------------------------ POR TIEMPO ------------------------------ */

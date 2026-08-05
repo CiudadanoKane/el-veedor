@@ -15,6 +15,7 @@ import {
 import { useAdicionesCosto } from '../../hooks/useAdiciones'
 import { useCuantiaImposible } from '../../hooks/useCuantiaImposible'
 import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/formatters'
+import { EnlaceEntidad, EnlaceContratista } from '../ui/EnlacePerfil'
 
 // Etiqueta de fuente para las filas que mezclan SECOP I y II. SECOP II es lo
 // esperado y mayoritario; solo se marca lo distinto (mismo criterio que Buscar).
@@ -45,12 +46,16 @@ export function AlertaFechasInconsistentes() {
       header: 'Entidad',
       render: (r) => (
         <div className="max-w-[220px]">
-          <div className="text-textPrimary">{r.entityName}</div>
+          <div><EnlaceEntidad nombre={r.entityName} /></div>
           <div className="text-xs text-textSecondary truncate">{r.description}</div>
         </div>
       ),
     },
-    { key: 'contractorName', header: 'Contratista', render: (r) => r.contractorName || '—' },
+    {
+      key: 'contractorName',
+      header: 'Contratista',
+      render: (r) => <EnlaceContratista nombre={r.contractorName} documento={r.contractorId} />,
+    },
     {
       key: 'contractValue',
       header: 'Valor',
@@ -154,14 +159,18 @@ export function AlertaErrorDigitacion() {
       render: (r) => (
         <div className="max-w-[220px]">
           <div className="text-textPrimary">
-            {r.entityName}
+            <EnlaceEntidad nombre={r.entityName} />
             <FuenteBadge source={r.source} />
           </div>
           <div className="text-xs text-textSecondary truncate">{r.description}</div>
         </div>
       ),
     },
-    { key: 'contractorName', header: 'Contratista', render: (r) => r.contractorName || '—' },
+    {
+      key: 'contractorName',
+      header: 'Contratista',
+      render: (r) => <EnlaceContratista nombre={r.contractorName} documento={r.contractorId} />,
+    },
     {
       key: 'valorOriginal',
       header: 'Valor original',
@@ -230,12 +239,16 @@ export function AlertaCerradoSinPago() {
       header: 'Entidad',
       render: (r) => (
         <div className="max-w-[220px]">
-          <div className="text-textPrimary">{r.entityName}</div>
+          <div><EnlaceEntidad nombre={r.entityName} /></div>
           <div className="text-xs text-textSecondary truncate">{r.description}</div>
         </div>
       ),
     },
-    { key: 'contractorName', header: 'Contratista', render: (r) => r.contractorName || '—' },
+    {
+      key: 'contractorName',
+      header: 'Contratista',
+      render: (r) => <EnlaceContratista nombre={r.contractorName} documento={r.contractorId} />,
+    },
     {
       key: 'contractValue',
       header: 'Valor del contrato',
@@ -307,12 +320,16 @@ export function AlertaContratosSinValor() {
       header: 'Entidad',
       render: (r) => (
         <div className="max-w-[220px]">
-          <div className="text-textPrimary">{r.entityName}</div>
+          <div><EnlaceEntidad nombre={r.entityName} /></div>
           <div className="text-xs text-textSecondary truncate">{r.description}</div>
         </div>
       ),
     },
-    { key: 'contractorName', header: 'Contratista', render: (r) => r.contractorName || '—' },
+    {
+      key: 'contractorName',
+      header: 'Contratista',
+      render: (r) => <EnlaceContratista nombre={r.contractorName} documento={r.contractorId} />,
+    },
     { key: 'contractType', header: 'Tipo', render: (r) => r.contractType || '—' },
     {
       key: 'contractValue',
@@ -379,7 +396,7 @@ export function AlertaSinContratista() {
       header: 'Entidad',
       render: (r) => (
         <div className="max-w-[240px]">
-          <div className="text-textPrimary">{r.entityName}</div>
+          <div><EnlaceEntidad nombre={r.entityName} /></div>
           <div className="text-xs text-textSecondary truncate">{r.description}</div>
         </div>
       ),
@@ -388,7 +405,11 @@ export function AlertaSinContratista() {
       key: 'contractorName',
       header: 'Contratista',
       render: (r) => (
-        <span className="text-danger">{r.contractorName || 'Sin nombre'}</span>
+        <EnlaceContratista
+          nombre={r.contractorName || 'Sin nombre'}
+          documento={r.contractorId}
+          className="text-danger"
+        />
       ),
     },
     {
@@ -453,12 +474,16 @@ export function AlertaObraParalizada() {
       header: 'Entidad',
       render: (r) => (
         <div className="max-w-[240px]">
-          <div className="text-textPrimary">{r.entityName}</div>
+          <div><EnlaceEntidad nombre={r.entityName} /></div>
           <div className="text-xs text-textSecondary truncate">{r.description}</div>
         </div>
       ),
     },
-    { key: 'contractorName', header: 'Contratista', render: (r) => r.contractorName || '—' },
+    {
+      key: 'contractorName',
+      header: 'Contratista',
+      render: (r) => <EnlaceContratista nombre={r.contractorName} documento={r.contractorId} />,
+    },
     {
       key: 'contractValue',
       header: 'Valor',
