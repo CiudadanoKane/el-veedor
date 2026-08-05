@@ -7,12 +7,17 @@ import { Ayuda } from './Ayuda'
 // los nombres van completos (no truncados), las cifras siempre visibles (sin
 // depender del cursor) y en pantallas pequeñas se apila sin romperse.
 //
-// items: [{ clave, label, valor, valorTexto?, secundario?, nota?, color?, ayuda? }]
+// items: [{ clave, label, valor, valorTexto?, secundario?, nota?, color?, ayuda?, etiqueta? }]
 //
 // `ayuda` es el término del glosario a explicar junto a la etiqueta (ver
 // Ayuda.jsx). Va aparte de `label` a propósito: `label` también se usa dentro
 // de un atributo `title`, donde un nodo de React se imprimiría como
 // "[object Object]".
+//
+// `etiqueta` es lo que se pinta en lugar de `label` cuando el nombre tiene que
+// ser algo más que texto —hoy, el enlace al perfil del contratista en el
+// Panorama de un municipio—. Misma razón que `ayuda` para no meterlo en
+// `label`: ese sigue siendo la cadena limpia que viaja al `title`.
 export function ListaBarra({ items, total, apilada = false, colores }) {
   const suma = total ?? items.reduce((a, x) => a + x.valor, 0)
   if (!suma) return <p className="text-sm text-textSecondary">Sin datos.</p>
@@ -52,7 +57,7 @@ export function ListaBarra({ items, total, apilada = false, colores }) {
                   />
                 )}
                 <span className="flex-1 min-w-0 text-[14px] text-textPrimary leading-snug">
-                  {it.label}
+                  {it.etiqueta ?? it.label}
                   {it.ayuda && <Ayuda termino={it.ayuda} />}
                 </span>
                 <span className="shrink-0 text-[14px] font-bold tabular-nums text-textPrimary">

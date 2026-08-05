@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { QueryState } from './QueryState'
 import { ListaBarra } from './ListaBarra'
+import { EnlaceContratista } from './EnlacePerfil'
 import { useFilters } from '../../context/FiltersContext'
 import { useRankingContratistas } from '../../hooks/useRankings'
 import { formatCOP, formatCOPCorto } from '../../lib/formatters'
@@ -54,6 +55,11 @@ export function RetratoDeLugar({ lugar, generales }) {
                     items={top.map((r) => ({
                       clave: r.documento,
                       label: r.nombre,
+                      // El texto de arriba promete que cada nombre lleva a su
+                      // perfil, y hasta ahora no lo hacía: era la única lista de
+                      // contratistas de la plataforma sin enlace. `label` se
+                      // conserva como cadena limpia (ver ListaBarra).
+                      etiqueta: <EnlaceContratista nombre={r.nombre} documento={r.documento} />,
                       valor: r.valorTotal,
                       valorTexto: formatCOP(r.valorTotal),
                       secundario: `${N(r.contratos)} ${r.contratos === 1 ? 'contrato' : 'contratos'}`,

@@ -16,8 +16,14 @@ const TONE = {
 //
 // El contenido se reparte en filas de altura uniforme (grid-rows) para que
 // las cifras queden alineadas entre sí aunque los subtítulos midan distinto.
+//
+// `error` no es lo mismo que "sin datos", y la tarjeta tiene que poder decir la
+// diferencia. Antes no podía: la página pasaba `value={dato ?? '—'}`, así que
+// una caída de la fuente pintaba el mismo guion que un municipio sin
+// contratación. Ahora el guion queda reservado para "no hay", y cuando no se
+// pudo preguntar se dice con palabras. Ver FuenteCaida.jsx.
 export function StatCard({
-  label, value, sub, pct, tone = 'default', loading,
+  label, value, sub, pct, tone = 'default', loading, error,
   onToggle, abierta, detalle, accion, reservaPct = true, fuente,
 }) {
   const desplegable = typeof onToggle === 'function'
@@ -78,6 +84,12 @@ export function StatCard({
       <div className="flex items-start pt-3 min-h-[2.5rem] xl:min-h-[2.875rem]">
         {loading ? (
           <div className="h-8 w-32 bg-muted animate-pulse" />
+        ) : error ? (
+          // Sin el tono de la cifra: en gris no se confunde con un valor real,
+          // y no hereda el rojo o el verde de una señal que no se pudo medir.
+          <div className="font-display text-[1.25rem] xl:text-[1.4rem] leading-none font-bold tracking-[-0.03em] text-textSecondary">
+            Sin dato
+          </div>
         ) : (
           <div
             className={`font-display text-[1.75rem] xl:text-[2.125rem] leading-none font-extrabold
@@ -95,7 +107,7 @@ export function StatCard({
           se puede desactivar: en una fila donde NINGUNA lo tiene, el hueco
           vacío solo separa la cifra de su explicación sin motivo. */}
       <div className={reservaPct ? 'pt-2 min-h-[1.75rem]' : 'pt-2 empty:pt-0'}>
-        {pct && (
+        {pct && !error && (
           // Interlineado fijo: heredado daba 21px y la reserva de arriba 20,
           // dejando un descuadre de un píxel entre tarjetas con y sin porcentaje.
           <div className={`text-[13px] leading-5 font-bold ${TONE[tone]}`}>{pct}</div>
@@ -105,8 +117,12 @@ export function StatCard({
       {/* Fila 4: contexto, crece hacia abajo sin mover lo de arriba.
           Es un div y no un p para poder recibir contenido de bloque (varias
           líneas de submétricas), no solo texto. */}
+      {/* Con la fuente caída, el contexto tampoco se pinta: varias tarjetas
+          traen un texto de reserva ("Adjudicados sin concurso", "Pendiente en
+          contratos vencidos") que sin cifra al lado se lee como si algo se
+          hubiera medido. */}
       <div className="pt-1.5">
-        {sub && (
+        {sub && !error && (
           <div className="text-[13px] text-textSecondary leading-snug">{sub}</div>
         )}
       </div>

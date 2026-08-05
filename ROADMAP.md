@@ -14,26 +14,6 @@ que las corre en cada cambio). Ver "Revisión previa al lanzamiento" más abajo.
   endpoint roza el techo de 60 s del plan.
 - El gasto de Anthropic (`/api/buscar-ia`).
 
-**PENDIENTE, y lo primero de la próxima sesión: un fallo de la fuente se ve igual
-que "no hay datos".** Encontrado el 5/8/2026, con Socrata devolviendo 503. Las
-tarjetas de cifras hacen `data?.total ?? '—'` con `loading={isLoading}`: cuando la
-consulta **falla**, `isLoading` pasa a `false` y `data` queda `undefined`, así que
-cae al guion. Quien lo vea concluirá que su municipio no tiene contratos, no que
-SECOP está caído — justo la confusión que la plataforma promete no provocar.
-
-Lo llamativo es que el estado de error bien hecho **ya existe** ("es probable que
-la fuente de datos esté respondiendo con lentitud o intermitencia", con botón de
-reintentar); las tarjetas no lo usan, se lo tragan.
-
-Se nota ahora porque la vista nacional se sirve de Edge Config y sobrevive a la
-caída —verificado durante el 503: `HTTP 200`, `X-Panorama-Source: edge-config`—,
-mientras que la **filtrada se calcula en vivo**. Y desde la fusión de Panorama con
-Mi municipio, esa vista filtrada es la portada de quien elige su municipio: el
-caso de uso principal.
-
-Arreglo: que las tarjetas distingan tres estados —cargando, sin dato y fuente
-caída— y que en el tercero salga el aviso que ya existe.
-
 **Pendientes menores, ninguno bloqueante:** cachear la concentración país (~13 s
 en vivo), unificar `poblacion.js` (departamentos) con el anexo municipal del DANE
 —hoy son dos fuentes distintas—, y el peso del repositorio si llega a molestar
@@ -2213,6 +2193,59 @@ La ventana de "plazo vencido" (`fin` entre hace 180 días y hoy) se fija **una
 sola vez al empezar el barrido**: recalcularla por página haría que un barrido
 que cruce la medianoche clasificara distinto las primeras páginas que las
 últimas.
+
+---
+
+### HECHO ✅ — Un fallo de la fuente ya no se ve como "no hay datos" (ago 2026)
+
+Encontrado el 5/8/2026 con Socrata devolviendo 503, y arreglado al día
+siguiente. Las tarjetas de cifras hacían `data?.total ?? '—'` con
+`loading={isLoading}`: cuando la consulta **falla**, `isLoading` pasa a `false` y
+`data` queda `undefined`, así que caían al guion. Quien lo viera concluiría que
+su municipio no tiene contratos, no que SECOP está caído — justo la confusión que
+la plataforma promete no provocar.
+
+Pesaba más de lo que parece porque la vista nacional se sirve de Edge Config y
+sobrevivió a la caída (`HTTP 200`, `X-Panorama-Source: edge-config`), mientras
+que **la filtrada se calcula en vivo**; y desde la fusión de Panorama con Mi
+municipio, esa vista filtrada es la portada de quien elige su municipio.
+
+Lo que hay ahora:
+- `StatCard` acepta `error` y, en ese caso, escribe **"Sin dato"** en gris en vez
+  de la cifra. El guion queda reservado para lo que de verdad significa: "no
+  hay". También se calla el texto de contexto, porque varias tarjetas traen uno
+  de reserva ("Adjudicados sin concurso") que sin cifra al lado se lee como si
+  algo se hubiera medido.
+- `components/ui/FuenteCaida.jsx`: un aviso arriba del todo, con **Reintentar** y
+  —si hay un lugar filtrado— la salida al panorama nacional, que suele seguir en
+  pie por la caché. Las ocho cifras salen de una sola consulta, así que basta un
+  aviso y un solo reintento.
+
+**Un segundo caso apareció al probarlo**, y estaba tapado por el mismo guion: sin
+internet, React Query no falla —**pausa** la consulta—, así que ni `isLoading` ni
+`isError` se encienden y las tarjetas volvían al guion por otra vía. `isPaused`
+viaja ahora desde `usarPedazo()` y el aviso cambia de texto: "Parece que no hay
+conexión… se reanudará sola". Comprobado que se reanuda al volver la conexión sin
+tocar nada.
+
+Comprobado en 375 px (sin desbordes: documento 375, ventana 375) y en escritorio,
+los dos casos, simulando un 503 de Socrata y una desconexión.
+
+**Trampa de medición, para la próxima:** el panel del navegador estaba oculto
+(`visibilityState: "hidden"`), y React Query **pausa los reintentos cuando la
+ventana no tiene el foco**. Los primeros intentos de reproducir la caída se
+quedaron en `fetchStatus: "paused"` —ni error ni carga—, aparentando que el
+arreglo no funcionaba. Se resuelve forzando `focusManager.setFocused(true)` antes
+de medir. Van varias veces que el panel oculto falsea una medición; ver también
+las transiciones CSS que no avanzan por no componerse frames.
+
+Y de paso, el reporte que vino con esto: en "Quién recibe el dinero" (Panorama de
+un municipio) los cinco contratistas **no enlazaban a su perfil**, aunque el texto
+de la sección prometía que sí —"Cada nombre lleva a su perfil"—. Era la única
+lista de contratistas de la plataforma sin enlace. `ListaBarra` acepta ahora
+`etiqueta` para pintar un nodo en lugar del texto, dejando `label` como la cadena
+limpia que viaja al `title`. Verificados los cinco enlaces y la navegación a un
+perfil.
 
 ---
 

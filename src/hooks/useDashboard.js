@@ -61,6 +61,12 @@ function usarPedazo(panorama, clave, transformar) {
     data: panorama.data ? transformar(panorama.data[clave], panorama.data) : undefined,
     isLoading: panorama.isLoading,
     isError: panorama.isError,
+    // Una consulta "pausada" es la que quiso salir y no pudo: React Query la
+    // deja en espera cuando no hay conexión. No es carga (no está esperando
+    // respuesta) ni error (nadie contestó nada), así que sin este campo caía en
+    // el mismo hueco que llevaba a pintar un guion — y un guion dice "aquí no
+    // hay nada contratado", que es justo lo contrario de lo que sabemos.
+    isPaused: panorama.isPaused,
     error: panorama.error,
     refetch: panorama.refetch,
   }

@@ -11,6 +11,7 @@ import { MapaColombia } from '../components/ui/MapaColombia'
 import { ComparacionCiudades } from '../components/ui/ComparacionCiudades'
 import { Concentracion } from '../components/ui/Concentracion'
 import { RetratoDeLugar } from '../components/ui/RetratoDeLugar'
+import { FuenteCaida } from '../components/ui/FuenteCaida'
 import { useFilters } from '../context/FiltersContext'
 import { useDashboardStats } from '../hooks/useDashboard'
 import { useColumnas } from '../hooks/useColumnas'
@@ -110,7 +111,7 @@ function DesgloseConteoCuantia({ items, colores }) {
 }
 
 export function Dashboard() {
-  const { filters } = useFilters()
+  const { filters, clearFilters } = useFilters()
   // Acordeón: una sola cifra desplegada a la vez. Abrir otra cierra la anterior.
   const [activa, setActiva] = useState(null)
   const columnas = useColumnas()
@@ -159,6 +160,11 @@ export function Dashboard() {
 
   const abierta = (k) => activa === k
 
+  // "No se pudo medir", en sus dos formas: la fuente contestó mal (isError) o
+  // no se pudo ni preguntar (isPaused, sin conexión). Las ocho cifras salen de
+  // la misma consulta, así que la condición es una sola.
+  const sinFuente = generales.isError || generales.isPaused
+
   // Las tarjetas van en una lista para poder intercalar el detalle en la
   // posición correcta. Las dos últimas no despliegan nada.
   // Primero los totales: qué hay. Después los indicadores: qué tan bien va.
@@ -188,6 +194,7 @@ export function Dashboard() {
             />
           }
           loading={generales.isLoading}
+          error={sinFuente}
           onToggle={() => alternar('contratos')}
           abierta={abierta('contratos')}
           detalle="Ver composición"
@@ -211,6 +218,7 @@ export function Dashboard() {
           }
           tone="primary"
           loading={generales.isLoading}
+          error={sinFuente}
           onToggle={() => alternar('valor')}
           abierta={abierta('valor')}
           detalle="Ver por sector"
@@ -227,6 +235,7 @@ export function Dashboard() {
           value={contratistasActores.data?.toLocaleString('es-CO') ?? '—'}
           sub="Personas y empresas distintas"
           loading={contratistasActores.isLoading}
+          error={sinFuente}
           reservaPct={false}
           accion={
             <Link
@@ -248,6 +257,7 @@ export function Dashboard() {
           value={entidadesActoras.data?.toLocaleString('es-CO') ?? '—'}
           sub="Organismos que firmaron"
           loading={entidadesActoras.isLoading}
+          error={sinFuente}
           reservaPct={false}
           accion={
             <Link
@@ -295,6 +305,7 @@ export function Dashboard() {
           }
           tone="danger"
           loading={mora.isLoading || porEstado.isLoading}
+          error={sinFuente}
           onToggle={() => alternar('vencidos')}
           abierta={abierta('vencidos')}
           detalle="Ver antigüedad"
@@ -318,6 +329,7 @@ export function Dashboard() {
           }
           tone="warning"
           loading={mora.isLoading || generales.isLoading}
+          error={sinFuente}
           onToggle={() => alternar('riesgo')}
           abierta={abierta('riesgo')}
           detalle="Ver ejecución"
@@ -341,6 +353,7 @@ export function Dashboard() {
           }
           tone="warning"
           loading={generales.isLoading}
+          error={sinFuente}
           onToggle={() => alternar('competencia')}
           abierta={abierta('competencia')}
           detalle="Ver modalidades"
@@ -364,6 +377,7 @@ export function Dashboard() {
           }
           tone="success"
           loading={cierre.isLoading}
+          error={sinFuente}
           onToggle={() => alternar('cierre')}
           abierta={abierta('cierre')}
           detalle="Ver cómo terminan"
@@ -720,6 +734,14 @@ export function Dashboard() {
             : 'Cómo está contratando Colombia hoy. Elige un departamento o municipio arriba para ver el retrato de ese lugar; cada cifra se puede desplegar para ver de dónde sale.'
         }
       />
+
+      {/* Las ocho cifras salen de una sola consulta (ver useDashboardStats), así
+          que basta un aviso para todas —y un solo Reintentar—. Va arriba del
+          todo: si la fuente no responde, es lo primero que hay que saber, antes
+          que cualquier cifra. */}
+      {sinFuente && (
+        <FuenteCaida query={generales} lugar={lugar} onQuitarFiltro={clearFilters} />
+      )}
 
       {/* Cifras clave: cada una es la puerta de entrada a su detalle. El alcance
           de fuente (SECOP II + I / solo SECOP II) viaja rotulado en cada tarjeta,
