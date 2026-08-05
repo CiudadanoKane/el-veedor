@@ -154,7 +154,20 @@ export function ContractDetail({ contract: c }) {
             Historial de modificaciones no disponible para contratos de SECOP I.
           </div>
         ) : (
-          <ModificationHistory idContrato={c.id} />
+          // El plazo original viaja hasta aquí para poder expresar cada prórroga
+          // en porcentaje: sin él, "+90 días" no dice si es mucho o poco. Se
+          // calcula igual que en la alerta de adiciones de plazo —el endDate ya
+          // incluye lo añadido, así que se resta—.
+          <ModificationHistory
+            idContrato={c.id}
+            plazoOriginal={
+              c.startDate && c.endDate
+                ? Math.round(
+                    (new Date(c.endDate).getTime() - new Date(c.startDate).getTime()) / 86_400_000,
+                  ) - (c.daysAdded || 0)
+                : null
+            }
+          />
         )}
       </div>
 
