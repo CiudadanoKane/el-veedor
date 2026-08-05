@@ -17,6 +17,13 @@ que las corre en cada cambio). Ver "Revisión previa al lanzamiento" más abajo.
   alguien escriba preguntando por qué su municipio "no tiene contratos".
 - El gasto de Anthropic (`/api/buscar-ia`).
 
+**PENDIENTE, y no es código: grabar el video tutorial.** El guion está escrito
+(`GUION-VIDEO.md`) y el bloque que lo fija en el Panorama está construido y
+probado (`components/ui/VideoTutorial.jsx`). Falta grabarlo, subirlo a YouTube y
+**pegar los 11 caracteres del identificador en `VIDEO_ID`**. Mientras esa
+constante esté vacía el bloque no se pinta: está en producción sin mostrar ni un
+hueco ni un reproductor roto.
+
 **Pendientes menores, ninguno bloqueante:** cachear la concentración país (~13 s
 en vivo), unificar `poblacion.js` (departamentos) con el anexo municipal del DANE
 —hoy son dos fuentes distintas—, y el peso del repositorio si llega a molestar
@@ -2265,6 +2272,52 @@ lista de contratistas de la plataforma sin enlace. `ListaBarra` acepta ahora
 `etiqueta` para pintar un nodo en lugar del texto, dejando `label` como la cadena
 limpia que viaja al `title`. Verificados los cinco enlaces y la navegación a un
 perfil.
+
+---
+
+### EN CURSO — Video tutorial fijado en el Panorama (ago 2026)
+
+Lo pidió el propio usuario como último paso: un recorrido corto por la página y
+sus capacidades, fijado en el Panorama, para quien llega sin saber qué es esto.
+
+**Guion**: `GUION-VIDEO.md`. Siete capítulos, 3:55, con narración, qué hacer en
+pantalla y las reglas de grabación. Va partido en capítulos a propósito: permite
+publicar después recortes sueltos sin volver a grabar, y permite rehacer solo el
+capítulo que envejezca.
+
+Tres reglas del guion que valen más que el guion:
+- **La voz no dice cifras.** Los datos cambian a diario y cualquier número
+  narrado queda desmentido por la propia pantalla en semanas. Las cifras se ven;
+  la voz explica qué significan. Única excepción, el capítulo de los límites,
+  donde el porcentaje *es* el argumento.
+- **Ningún contrato se nombra.** "El primero de la lista" sigue existiendo dentro
+  de un año; "el contrato de la calle 30" no.
+- **La guía rápida se abre sola a los 0,9 s en la primera visita** y arruina la
+  toma. Hay que visitar el sitio antes de grabar o borrar `veedor_tour_v1` a
+  conciencia.
+
+**El bloque**: `components/ui/VideoTutorial.jsx`, en el Panorama, después del
+aviso de fuente caída y antes de las cifras.
+
+Se incrusta con **carga diferida**, y no por rendimiento: un `iframe` de YouTube
+en la portada planta cookies de Google en cuanto la página carga, le haya dado
+play alguien o no. En una plataforma que promete que nada es una caja negra, eso
+es contradecirse en el primer bloque. Hasta que no se toca el botón es HTML
+propio y **cero peticiones externas** —verificado: 0 iframes y ninguna petición a
+youtube/ytimg/google al cargar—; al tocarlo se monta el reproductor ya con
+`autoplay`, así que para quien quiere verlo el gesto sigue siendo un solo clic.
+Dominio `youtube-nocookie.com` y subtítulos encendidos de entrada
+(`cc_load_policy=1`): mucha gente lo verá sin sonido, y sin subtítulos ese video
+no existe para quien no oye.
+
+"Ocultar" no lo hace desaparecer: lo deja en una línea para reabrirlo, recordada
+en `localStorage`. Quitarlo del todo obligaría a coordinar dos componentes y
+dejaría sin salida a quien lo ocultó por error. Al ocultarlo se olvida que estaba
+reproduciendo, para que al reabrirlo no arranque solo.
+
+Comprobado en escritorio y en 375 px (sin desbordes, proporción 16:9 en las dos),
+el ciclo ocultar → reabrir con su persistencia, y que con `VIDEO_ID` vacío no se
+pinta nada.
 
 ---
 

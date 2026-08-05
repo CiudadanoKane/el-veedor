@@ -12,6 +12,7 @@ import { ComparacionCiudades } from '../components/ui/ComparacionCiudades'
 import { Concentracion } from '../components/ui/Concentracion'
 import { RetratoDeLugar } from '../components/ui/RetratoDeLugar'
 import { FuenteCaida } from '../components/ui/FuenteCaida'
+import { VideoTutorial } from '../components/ui/VideoTutorial'
 import { useFilters } from '../context/FiltersContext'
 import { useDashboardStats } from '../hooks/useDashboard'
 import { useColumnas } from '../hooks/useColumnas'
@@ -742,6 +743,12 @@ export function Dashboard() {
       {sinFuente && (
         <FuenteCaida query={generales} lugar={lugar} onQuitarFiltro={clearFilters} />
       )}
+
+      {/* El recorrido en video va después del aviso de fuente caída y antes de
+          las cifras: si la fuente está caída eso es lo primero que hay que
+          saber, pero por lo demás el video es la puerta de entrada de quien
+          llega sin saber qué es esto. */}
+      <VideoTutorial />
 
       {/* Cifras clave: cada una es la puerta de entrada a su detalle. El alcance
           de fuente (SECOP II + I / solo SECOP II) viaja rotulado en cada tarjeta,
