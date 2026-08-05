@@ -8,7 +8,9 @@ import { ContractDetail } from '../ui/ContractDetail'
 import { Methodology } from '../ui/Methodology'
 import { Segmented } from '../ui/Segmented'
 import { useFilters } from '../../context/FiltersContext'
-import { useAdicionesTiempo, usePrevalenciaAdicionTiempo, useAdicionesCosto } from '../../hooks/useAdiciones'
+import {
+  useAdicionesTiempo, usePrevalenciaAdicionTiempo, useAdicionesCosto, useAdicionesAmbas,
+} from '../../hooks/useAdiciones'
 import { formatCOP, humanDuration } from '../../lib/formatters'
 
 function PctBadge({ pct }) {
@@ -253,3 +255,143 @@ export function AdicionesCosto() {
   )
 }
 
+
+/* --------------------- POR TIEMPO **Y** PRESUPUESTO --------------------- */
+
+const ORDENES_AMBAS = {
+  adicion: { label: 'Más plata', fn: (a, b) => b.adicion - a.adicion },
+  dias: { label: 'Más días', fn: (a, b) => (b.daysAdded || 0) - (a.daysAdded || 0) },
+  pct: { label: 'Más creció', fn: (a, b) => b.pctAdicion - a.pctAdicion },
+}
+
+// La intersección de las dos alertas anteriores. Se muestra aparte y no como
+// una columna más porque la pregunta que responde es distinta: no "dónde se
+// adiciona" sino "dónde lo pactado no correspondía ni al plazo ni al
+// presupuesto", que es una señal bastante más fuerte que cualquiera de las dos
+// por separado.
+export function AdicionesAmbas() {
+  const { filters } = useFilters()
+  const [orden, setOrden] = useState('adicion')
+  const query = useAdicionesAmbas(filters)
+
+  const filas = useMemo(() => {
+    const base = query.data?.filas ?? []
+    return [...base].sort(ORDENES_AMBAS[orden].fn)
+  }, [query.data, orden])
+
+  const columns = [
+    colEntidad,
+    colContratista,
+    {
+      key: 'daysAdded',
+      header: 'Días añadidos',
+      className: 'text-right tabular-nums whitespace-nowrap',
+      render: (r) => (
+        <div>
+          <div className="text-warning font-medium">+{nf(r.daysAdded)} días</div>
+          <div className="text-[10px] text-textSecondary">{humanDuration(r.daysAdded)}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'adicion',
+      header: 'Plata añadida',
+      className: 'text-right tabular-nums whitespace-nowrap',
+      render: (r) => (
+        <div>
+          <div className="text-danger font-medium">+{formatCOP(r.adicion)}</div>
+          <div className="text-[10px] text-textSecondary">
+            sobre {formatCOP(r.valorOriginal)}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'pct',
+      header: '% adición',
+      className: 'text-right tabular-nums',
+      render: (r) => <PctBadge pct={r.pctAdicion} />,
+    },
+  ]
+
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-textSecondary text-sm">
+          {query.data
+            ? `${filas.length} contratos que crecieron en plazo y en presupuesto`
+            : 'Cargando…'}
+        </h3>
+        <Segmented
+          value={orden}
+          onChange={setOrden}
+          options={Object.entries(ORDENES_AMBAS).map(([v, o]) => ({ value: v, label: o.label }))}
+        />
+      </div>
+
+      <p className="text-[14.5px] text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
+        Pedir más tiempo puede ser un imprevisto. Pedir más plata, también. Las dos
+        cosas a la vez describen un contrato que se firmó con un alcance que no
+        correspondía ni a su plazo ni a su presupuesto —y eso sí es una pregunta que
+        vale la pena hacerle a la entidad—.{' '}
+        <strong className="font-semibold text-textPrimary">Adicionar es legal</strong>:
+        esta lista señala dónde mirar, no acusa a nadie.
+      </p>
+
+      <Methodology>
+        Cruce de las dos alertas anteriores. Un contrato entra aquí si cumple las dos
+        cosas: <strong>días añadidos al plazo</strong> (campo directo de SECOP, con el
+        mismo tope de 3.650 días que descarta la basura del registro) y{' '}
+        <strong>valor actual mayor que el original del proceso</strong>, con el mismo
+        criterio de la pestaña de presupuesto —valor adjudicado en procesos
+        competitivos, precio base en contratación directa—.
+        <br />
+        <br />
+        Se apartan los mismos casos no creíbles que allí: múltiplos exactos de
+        digitación (×100, ×1.000) y crecimientos de más del 500%, que la Ley 80 no
+        permite. Y también por abajo: lo que creció <strong>menos del 1%</strong>{' '}
+        —unos pesos sobre una base de miles de millones— es redondeo del registro, no
+        una adición. Se revisan los contratos de mayor cuantía entre los que ya tienen
+        adición de plazo, así que la lista no es exhaustiva: es la punta por valor.
+        <br />
+        <br />
+        <strong>Cuántos son:</strong> medido sobre el Atlántico, el 5,6% de los
+        contratos con valor original conocido creció en las dos dimensiones (7.829 de
+        138.913). De los que crecieron en plata, casi la mitad creció también en plazo.
+      </Methodology>
+
+      <div className="mt-4">
+        <QueryState query={query} empty="Sin contratos que crecieran en las dos dimensiones con estos filtros.">
+          {(data) =>
+            filas.length === 0 ? (
+              <div className="py-12 text-center text-textSecondary">
+                Ninguno de los {nf(data.revisados)} contratos con adición de plazo
+                revisados creció además en presupuesto con estos filtros.
+              </div>
+            ) : (
+              <>
+                <DataTable
+                  columns={columns}
+                  rows={filas}
+                  keyField="id"
+                  renderDetail={(row) => <ContractDetail contract={row} />}
+                />
+                {/* Sin esta nota, una lista corta se leería como "aquí casi no
+                    pasa", cuando puede ser que no se pudo establecer el valor
+                    original de los demás. */}
+                <p className="mt-3 text-[12.5px] text-textSecondary">
+                  De {nf(data.revisados)} contratos con adición de plazo revisados,{' '}
+                  {nf(filas.length)} crecieron también en presupuesto.
+                  {data.sinValorOriginal > 0 && (
+                    <> En {nf(data.sinValorOriginal)} no se pudo establecer el valor
+                    original del proceso, así que no se pueden clasificar.</>
+                  )}
+                </p>
+              </>
+            )
+          }
+        </QueryState>
+      </div>
+    </>
+  )
+}

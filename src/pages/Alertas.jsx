@@ -1,6 +1,6 @@
 import { SeccionConPestanas } from '../components/alertas/SeccionConPestanas'
 import { ContratosVencidos } from '../components/alertas/ContratosVencidos'
-import { AdicionesTiempo, AdicionesCosto } from '../components/alertas/Adiciones'
+import { AdicionesTiempo, AdicionesCosto, AdicionesAmbas } from '../components/alertas/Adiciones'
 import { AlertaObraParalizada } from '../components/alertas/definiciones'
 
 // Señales sobre la contratación: algo pasó con el contrato.
@@ -20,11 +20,19 @@ import { AlertaObraParalizada } from '../components/alertas/definiciones'
 // producía tres listas casi idénticas —umbrales acumulativos, no bandas—, y
 // "Adiciones de plazo" ya mostraba el mismo detalle con su color por
 // magnitud. Ver usePrevalenciaAdicionTiempo en useAdiciones.js.
+// "Plazo y presupuesto" es la INTERSECCIÓN de las dos anteriores, y va justo
+// después de ellas para que se lea en ese orden. Es redundante por definición
+// —sus contratos están en las dos listas de arriba— pero por la misma razón que
+// obra paralizada: pedir más tiempo puede ser un imprevisto y pedir más plata
+// también, mientras que las dos a la vez son una señal bastante más fuerte, y
+// esconderla dentro de otra lista la desaprovecha. Medido antes de añadirla:
+// 5,6% de los contratos evaluables del Atlántico.
 const ALERTAS = [
   { id: 'vencidos', label: 'Contratos vencidos', Componente: ContratosVencidos },
   { id: 'obra', label: 'Obra paralizada', Componente: AlertaObraParalizada },
   { id: 'adiciones', label: 'Adiciones de plazo', Componente: AdicionesTiempo },
   { id: 'adicionescosto', label: 'Adiciones de presupuesto', Componente: AdicionesCosto },
+  { id: 'ambas', label: 'Plazo y presupuesto', Componente: AdicionesAmbas },
 ]
 
 export function Alertas() {

@@ -160,6 +160,83 @@ async function traerProcesos(ids) {
   return mapa
 }
 
+// Contratos que crecieron en las DOS dimensiones: más plazo y más plata.
+//
+// Es la intersección de las otras dos alertas, y la señal más fuerte de que lo
+// pactado no era realista: pedir más tiempo puede ser un imprevisto, y pedir más
+// plata también, pero las dos cosas a la vez describen un contrato que se firmó
+// con un alcance que no correspondía a su plazo ni a su presupuesto.
+//
+// Medido antes de construirlo, sobre los 138.913 contratos evaluables del
+// Atlántico: 5,6% cayeron aquí (7.829). Ni tan común que no signifique nada, ni
+// tan raro que no valga la pena mirarlo. De los que crecieron en valor, casi la
+// mitad creció también en plazo.
+//
+// El filtro por días va PRIMERO y en el servidor porque `dias_adicionados` está
+// indexado y recorta el universo a una fracción; el crecimiento en valor exige
+// cruzar con el dataset de Procesos y solo se calcula sobre los que ya pasaron
+// ese filtro. Al revés —traer los de mayor valor y mirar el plazo después—
+// habría que cruzar muchísimos más para quedarse con los mismos.
+export function useAdicionesAmbas(filters = {}, limit = 250) {
+  return useQuery({
+    queryKey: ['adiciones', 'ambas', filters, limit],
+    queryFn: async () => {
+      const where = buildWhere(
+        whereFromFilters(filters, [
+          soloContratosValidos(),
+          'proceso_de_compra IS NOT NULL',
+          // Mismas cotas que useAdicionesTiempo: por encima de 3650 días el dato
+          // es basura de SECOP (p. ej. 730.546) y contamina el ranking.
+          'dias_adicionados > 0',
+          'dias_adicionados <= 3650',
+        ]),
+      )
+      // Se ordena por valor: entre los que ya cumplen "creció en plazo", los que
+      // más importan para la veeduría son los de mayor cuantía.
+      const contratos = await socrataQuery(
+        DS,
+        `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT ${limit}`,
+      )
+      const adaptados = adaptList(contratos)
+
+      const ids = [...new Set(adaptados.map((c) => c.processId).filter(Boolean))]
+      const mapa = ids.length ? await traerProcesos(ids) : new Map()
+
+      const filas = []
+      let sinValorOriginal = 0
+      for (const c of adaptados) {
+        const original = valorOriginalDe(mapa.get(c.processId))
+        if (!original) { sinValorOriginal++; continue }
+        const clas = clasificarAdicion(c.contractValue, original.valor)
+        // Sin adición de valor no entra: creció en plazo, pero no en plata, y
+        // eso ya lo cuenta "Adiciones de plazo".
+        if (!clas) continue
+        // Con motivo, el dato no es creíble como sobrecosto (múltiplo exacto de
+        // digitación o crecimiento imposible). Mismo criterio que las otras dos.
+        if (clas.motivo) continue
+        // Y por abajo: un contrato que creció unos pesos sobre una base de miles
+        // de millones no es una adición, es redondeo del registro. Se veía en la
+        // tabla como "+$ 0 · +0%", una fila cuyos propios números dicen que no
+        // creció nada. El corte es el mismo 1% que se muestra, así que no puede
+        // aparecer una fila en 0. Medido en Atlántico: quita 5 de 178.
+        if (clas.pctAdicion < 1) continue
+        filas.push({
+          ...c,
+          valorOriginal: original.valor,
+          adicion: clas.adicion,
+          pctAdicion: clas.pctAdicion,
+          referencia: original.referencia,
+        })
+      }
+      filas.sort((a, b) => b.adicion - a.adicion)
+      // `revisados` y `sinValorOriginal` se declaran en la UI: sin ellos, una
+      // lista corta parecería decir "aquí casi no pasa" cuando en realidad puede
+      // ser que no se pudo establecer el valor original.
+      return { filas, revisados: adaptados.length, sinValorOriginal }
+    },
+  })
+}
+
 export function useAdicionesCosto(filters = {}, limit = 150) {
   return useQuery({
     queryKey: ['adiciones', 'costo', filters, limit],

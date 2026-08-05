@@ -1569,8 +1569,48 @@ también su respaldo `execCommand`) sin importar el gesto del usuario—. Se
 verificó cada rama del componente por separado: el error real de permiso
 (`NotAllowedError`) confirma que el intento y el manejo de errores son
 correctos, y una simulación del éxito confirma que la rama "Copiado" renderiza
-bien. Falta la prueba de extremo a extremo en producción o en un navegador
-normal.
+bien. **Cerrado (ago 2026): el usuario lo probó en su navegador y copia bien.**
+
+### HECHO ✅ — Alerta "Plazo y presupuesto" (ago 2026)
+
+Estaba anotada como idea desde el MVP —"adición de tiempo y de presupuesto a la
+vez, la señal más fuerte de que lo pactado no era realista"— y ya era
+alcanzable. Es la **intersección** de dos alertas que ya existían por separado:
+pedir más tiempo puede ser un imprevisto, pedir más plata también, pero las dos
+cosas a la vez describen un contrato firmado con un alcance que no correspondía
+ni a su plazo ni a su presupuesto.
+
+**Medido antes de construir nada**, que era la duda real: si "ambos" resultaba
+ser casi todos, no señalaría nada; si eran cuatro casos, no valdría una sección.
+Sobre los 138.913 contratos evaluables del Atlántico:
+
+| Cuadrante | Contratos | |
+|---|---|---|
+| **Creció en plata y en tiempo** | 7.829 | **5,6 %** |
+| Solo plata | 8.881 | 6,4 % |
+| Solo tiempo | 12.758 | 9,2 % |
+| Ninguno | 109.445 | 78,8 % |
+
+De los que crecieron en valor, casi la mitad creció también en plazo. Los
+ejemplos confirmaron que la señal apunta a algo: un mismo prestador de servicios
+de salud aparecía cuatro veces seguidas (+272 d y +75 %, +179 d y +35 %…).
+
+**El orden de los filtros importa.** Se filtra primero por `dias_adicionados` en
+el servidor —está indexado y recorta el universo a una fracción— y solo sobre
+esos se cruza con el dataset de Procesos para calcular el crecimiento en valor.
+Al revés (traer los de mayor valor y mirar el plazo después) habría que cruzar
+muchísimos más para quedarse con los mismos.
+
+**Un defecto que solo se vio con datos reales:** la tabla mostraba filas con
+`+$ 0 · +0%` sobre bases de miles de millones. `clasificarAdicion` acepta
+cualquier crecimiento mayor que cero, y unos pesos sobre $10.799 millones no son
+una adición: son redondeo del registro. Se añadió un piso del **1 %** —el mismo
+umbral que se muestra, así que no puede aparecer una fila en 0—. Medido: quita 5
+de 178 en el Atlántico, y deja el mínimo en 1 % y el máximo en 468 %.
+
+La redundancia con las dos pestañas de origen es deliberada y está declarada,
+por la misma razón que "Obra paralizada": es un subconjunto, pero es la señal
+más fuerte y esconderla dentro de otra lista la desaprovecha.
 
 ### HECHO ✅ — Revisión previa al lanzamiento (ago 2026)
 
