@@ -13,6 +13,7 @@ import {
 } from '../../hooks/useAdiciones'
 import { formatCOP, humanDuration } from '../../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../ui/EnlacePerfil'
+import { FuenteBadge } from '../ui/FuenteBadge'
 
 function PctBadge({ pct }) {
   if (pct == null) return <span className="text-textSecondary">—</span>
@@ -28,7 +29,12 @@ const colEntidad = {
   header: 'Entidad',
   render: (r) => (
     <div className="max-w-[200px]">
-      <div><EnlaceEntidad nombre={r.entityName} /></div>
+      <div>
+        <EnlaceEntidad nombre={r.entityName} />
+        {/* Las adiciones de plazo mezclan las dos fuentes: sin la marca, una
+            fila de SECOP I se leería con las reglas del sistema que no es. */}
+        <FuenteBadge source={r.source} />
+      </div>
       <div className="text-xs text-textSecondary truncate">{r.description}</div>
     </div>
   ),
@@ -100,7 +106,7 @@ export function AdicionesTiempo() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-textSecondary text-sm">
           {prevalencia.data
-            ? `${nf(prevalencia.data.total)} contratos con adición de plazo`
+            ? `${nf(prevalencia.data.total)} contratos con adición de plazo en SECOP II`
             : 'Cargando…'}
         </h3>
         <Segmented
@@ -120,8 +126,21 @@ export function AdicionesTiempo() {
         </p>
       )}
       <Methodology>
-        Usamos el campo directo <code>dias_adicionados</code> de SECOP II. El{' '}
-        <strong>plazo original</strong> se estima como (fecha fin − fecha inicio) − días
+        Usamos el campo directo de días añadidos que traen las dos fuentes:{' '}
+        <code>dias_adicionados</code> en SECOP II y <code>tiempo_adiciones_en_dias</code>{' '}
+        en SECOP I. <strong>La lista mezcla las dos</strong>, y las filas de SECOP I van
+        marcadas.
+        <br />
+        <br />
+        <strong>El conteo de arriba, en cambio, es solo de SECOP II</strong>, y conviene
+        saber por qué: contar cuántos superan cada umbral obliga a recorrer los 6,4
+        millones de registros de SECOP I, y eso tarda <strong>casi dos minutos</strong> en
+        el ámbito nacional. Traer los cincuenta de mayor adición, que es lo que se ve en
+        la tabla, tarda 139 milisegundos. Preferimos declarar esa diferencia a esconderla
+        o a que la cifra mida cosas distintas según el filtro que tengas puesto.
+        <br />
+        <br />
+        El <strong>plazo original</strong> se estima como (fecha fin − fecha inicio) − días
         añadidos. El <strong>% de adición</strong> es días añadidos ÷ plazo original.
         Colores: ámbar &gt;50%, rojo &gt;100%, rojo intenso &gt;200%. Se excluyen valores
         mayores a 3.650 días (errores de digitación).{' '}

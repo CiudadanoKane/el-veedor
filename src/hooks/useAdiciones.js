@@ -1,13 +1,18 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
 import { DATASETS } from '../lib/constants'
-import { whereFromFilters, buildWhere, soloContratosValidos, esc } from '../lib/soql'
+import {
+  whereFromFilters, buildWhere, soloContratosValidos, esc,
+  whereFromFiltrosSecop1, soloContratosValidosSecop1, cuantiaPosibleSecop1, VALOR_SECOP1_SOQL,
+} from '../lib/soql'
 import { adaptList } from '../adapters/secop2Adapter'
-import { CONTRACT_FIELDS } from '../lib/constants'
+import { adaptList as adaptListSecop1 } from '../adapters/secop1Adapter'
+import { CONTRACT_FIELDS, CONTRACT_FIELDS_SECOP1 } from '../lib/constants'
 import { valorOriginalDe, clasificarAdicion, detectarErrorDigitacion } from '../lib/adiciones'
 import { NIVELES_ADICION } from './useAlertas'
 
 const DS = DATASETS.CONTRATOS
+const DS1 = DATASETS.PROCESOS_SECOP1
 const DS_PROCESOS = 'p6dx-8zbt'
 
 // Las reglas de qué cuenta como adición viven en lib/adiciones.js, compartidas
@@ -21,14 +26,36 @@ const ORDEN_ADIC = {
   valor: 'valor_del_contrato DESC',
 }
 
-// Contratos con más días adicionados al plazo (campo directo y confiable)
+// Mismo orden, con los nombres de campo de SECOP I.
+const ORDEN_ADIC_SECOP1 = {
+  dias: 'tiempo_adiciones_en_dias DESC',
+  valor: `${VALOR_SECOP1_SOQL} DESC`,
+}
+
+// Contratos con más días adicionados al plazo (campo directo y confiable).
+//
+// LAS DOS FUENTES. SECOP I tiene su propio campo directo de días adicionados
+// (`tiempo_adiciones_en_dias`), y el adaptador ya lo traduce al mismo `daysAdded`
+// que usa SECOP II, así que el cálculo del porcentaje de abajo sirve igual para
+// las dos sin tocarlo. Dejarlo fuera escondía 165.368 contratos que crecieron en
+// plazo — medido contra la API en ago 2026.
+//
+// Se piden en paralelo y se mezclan aquí, mismo patrón que el buscador. Cada una
+// trae su top `limit` y luego se ordena el conjunto: no es lo mismo que pedir el
+// top global —una fuente podría copar la lista—, pero pedir de más y recortar es
+// exactamente lo que hace falta para que el resultado sea el top real de la
+// unión, siempre que ninguna fuente aporte más de `limit` filas al resultado
+// final. Es barato: la lista de SECOP I tarda 139 ms en el ámbito nacional
+// (`tiempo_adiciones_en_dias` está indexado), frente a los 119 s que costaría el
+// agregado de prevalencia — ver usePrevalenciaAdicionTiempo.
 export function useAdicionesTiempo(filters = {}, limit = 50, orden = 'dias') {
   const orderBy = ORDEN_ADIC[orden] || ORDEN_ADIC.dias
+  const orderBy1 = ORDEN_ADIC_SECOP1[orden] || ORDEN_ADIC_SECOP1.dias
   return useQuery({
     queryKey: ['adiciones', 'tiempo', filters, limit, orden],
-    queryFn: () => {
-      // Cota superior 3650 días (10 años): valores mayores en dias_adicionados
-      // son basura de SECOP (p.ej. 730.546) que contamina el ranking.
+    queryFn: async () => {
+      // Cota superior 3650 días (10 años): valores mayores son basura de SECOP
+      // (p.ej. 730.546) que contamina el ranking. Se aplica a las dos fuentes.
       const where = buildWhere(
         whereFromFilters(filters, [
           soloContratosValidos(),
@@ -36,18 +63,29 @@ export function useAdicionesTiempo(filters = {}, limit = 50, orden = 'dias') {
           'dias_adicionados <= 3650',
         ]),
       )
-      return socrataQuery(
-        DS,
-        `SELECT ${CONTRACT_FIELDS}
-         ${where}
-         ORDER BY ${orderBy}
-         LIMIT ${limit}`,
+      const where1 = buildWhere(
+        whereFromFiltrosSecop1(filters, [
+          soloContratosValidosSecop1(),
+          // El saneamiento de cuantías va también aquí: la tabla muestra el
+          // valor del contrato, y SECOP I no tiene los controles de SECOP II.
+          cuantiaPosibleSecop1(),
+          'tiempo_adiciones_en_dias > 0',
+          'tiempo_adiciones_en_dias <= 3650',
+        ]),
       )
+      const [filas2, filas1] = await Promise.all([
+        socrataQuery(DS, `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY ${orderBy} LIMIT ${limit}`),
+        // Si SECOP I falla, la lista sigue saliendo con SECOP II en vez de
+        // dejar la sección entera en error: es un complemento, no la fuente.
+        socrataQuery(DS1, `SELECT ${CONTRACT_FIELDS_SECOP1} ${where1} ORDER BY ${orderBy1} LIMIT ${limit}`)
+          .catch(() => []),
+      ])
+      return { filas2, filas1 }
     },
-    select: (rows) => {
-      const contracts = adaptList(rows)
+    select: ({ filas2, filas1 }) => {
+      const contracts = [...adaptList(filas2), ...adaptListSecop1(filas1)]
       // Calcula plazo original y % de adición en cliente
-      return contracts.map((c) => {
+      const conPlazo = contracts.map((c) => {
         let plazoOriginal = null
         let pctAdicion = null
         if (c.startDate && c.endDate) {
@@ -64,6 +102,12 @@ export function useAdicionesTiempo(filters = {}, limit = 50, orden = 'dias') {
         }
         return { ...c, plazoOriginal, pctAdicion }
       })
+      // El orden se rehace sobre la unión, con el mismo criterio que pidió cada
+      // consulta. Sin esto la tabla saldría con SECOP II entero y SECOP I detrás.
+      const clave = orden === 'valor' ? 'contractValue' : 'daysAdded'
+      return conPlazo
+        .sort((a, b) => (b[clave] ?? 0) - (a[clave] ?? 0))
+        .slice(0, limit)
     },
   })
 }
@@ -86,6 +130,11 @@ const BASE_ADICION_TIEMPO = [
   'fecha_de_fin_del_contrato > fecha_de_inicio_del_contrato',
 ]
 
+// SOLO SECOP II, a diferencia de la lista de arriba, y no por descuido: el
+// agregado equivalente en SECOP I tarda 119 s en el ámbito nacional (medido ago
+// 2026; con un departamento activo baja a 608 ms). No cabe en vivo, y hacerlo
+// depender del filtro haría que la misma cifra midiera cosas distintas según
+// dónde estés parado, que es peor que declarar el alcance. La sección lo dice.
 export function usePrevalenciaAdicionTiempo(filters = {}) {
   return useQuery({
     queryKey: ['adiciones', 'tiempo', 'prevalencia', filters],

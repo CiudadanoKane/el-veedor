@@ -2427,6 +2427,52 @@ corrida del cron.
 
 ---
 
+### HECHO ✅ — Las adiciones de plazo ya incluyen SECOP I (ago 2026)
+
+Primera mitad del hallazgo de `REVISION-2026-08.md`: la sección de Adiciones solo
+miraba SECOP II, dejando fuera **165.368 contratos que crecieron en plazo** y
+286.532 que crecieron en valor.
+
+Lo barato era el plazo, y es lo que se hizo. SECOP I trae su propio campo directo
+(`tiempo_adiciones_en_dias`) y el adaptador ya lo traducía al mismo `daysAdded`,
+así que el cálculo del porcentaje sirvió igual sin tocarlo. Las dos consultas van
+en paralelo —mismo patrón que el buscador—, se mezclan, se reordenan sobre la
+unión y se recorta al tope; sin reordenar, la tabla habría salido con SECOP II
+entero y SECOP I detrás.
+
+**La medición volvió a decidir el alcance:**
+
+| | Nacional | Con departamento |
+|---|---|---|
+| La lista (top 50) | **139 ms** | 224 ms |
+| El agregado de prevalencia | **119 s** | 608 ms |
+
+Por eso la **lista mezcla las dos fuentes** y el **conteo de arriba sigue siendo
+solo de SECOP II**, ahora dicho en el propio encabezado y explicado en la
+metodología con el número. La alternativa —incluir SECOP I en la prevalencia solo
+cuando hay filtro— se descartó a propósito: haría que la misma cifra midiera
+cosas distintas según dónde estés parado, que es peor que declarar el alcance.
+
+Las filas de SECOP I van marcadas con `FuenteBadge`, que salió de
+`definiciones.jsx` a `components/ui/` para poder usarse en las dos secciones. Sin
+la marca, una fila de SECOP I se lee con las reglas del sistema que no es.
+
+**Comprobado en Atlántico**, y de paso apareció algo que vale anotar: ordenando
+por días añadidos **no entra ninguna fila de SECOP I**, y no es un fallo — el
+50.º de SECOP II lleva 425 días añadidos y el mayor de todo SECOP I en el
+departamento llega a 314. Ordenando por cuantía sí entran seis, entre ellas obras
+de control de inundaciones de la Gobernación y alimentación escolar en Soledad,
+que antes no se veían en ninguna parte.
+
+**Queda pendiente la otra mitad: las adiciones de valor de SECOP I.** Ahí están
+los 286.532, y siguen siendo baratas de calcular —las dos mitades están en la
+misma fila (`cuantia_contrato` y `valor_contrato_con_adiciones`), sin el cruce de
+datasets que exige SECOP II—. Con la salvedad de siempre: ese campo no tiene los
+controles de valor de SECOP II y necesita las mismas guardas contra basura de
+digitación.
+
+---
+
 ## Principios que no se negocian
 
 1. **La plataforma señala patrones, no acusa.** Ninguna cifra se presenta como

@@ -136,6 +136,10 @@ Es decir: **la sección de Adiciones se está perdiendo casi 300.000 contratos q
 crecieron en plata, y llegar a ellos es más barato que lo que ya se hizo para
 SECOP II.**
 
+**Avance (ago 2026):** las **adiciones de plazo** ya traen SECOP I —su campo
+`tiempo_adiciones_en_dias` es directo y el adaptador ya lo traducía—. Faltan las
+de valor. Ver el ROADMAP.
+
 **Dos salvedades que hay que resolver antes, no después:**
 
 - El campo de valor de SECOP I **no tiene los controles de SECOP II**. La propia
