@@ -60,14 +60,21 @@ jobs:
         run: |
           git config user.name  'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          # Los dos archivos: el nacional y los tops por ámbito (departamento y
+          # El nacional y la carpeta de tops por ámbito (departamento y
           # municipio), que salen del mismo recorrido. Si solo se commiteara el
           # primero, el ranking por ámbito se quedaría congelado sin que nadie
           # lo notara.
-          if git diff --quiet -- public/adiciones.json public/adiciones-ambitos.json; then
+          #
+          # `git add` ANTES de comprobar, y `--porcelain` sobre el índice en vez
+          # de `git diff --quiet`: la carpeta se rehace entera en cada corrida,
+          # así que puede haber ámbitos NUEVOS —archivos sin seguimiento, que
+          # `git diff` no ve— y ámbitos que desaparecieron. Con la comprobación
+          # anterior, una corrida que solo añadiera municipios se habría dado por
+          # "sin cambios".
+          git add -A public/adiciones.json public/adiciones-ambitos
+          if [ -z "$(git status --porcelain -- public/adiciones.json public/adiciones-ambitos)" ]; then
             echo 'Sin cambios en las adiciones.'
             exit 0
           fi
-          git add public/adiciones.json public/adiciones-ambitos.json
           git commit -m 'Datos: recalcula adiciones de valor'
           git push

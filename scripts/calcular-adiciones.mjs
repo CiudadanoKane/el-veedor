@@ -24,16 +24,18 @@
 //   node scripts/calcular-adiciones.mjs --paginas 2     # prueba corta
 //   node scripts/calcular-adiciones.mjs --depto Amazonas
 
-import { writeFileSync, mkdirSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { writeFileSync, mkdirSync, readdirSync, rmSync, existsSync } from 'node:fs'
+import { dirname, resolve, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { valorOriginalDe, clasificarAdicion } from '../src/lib/adiciones.js'
+import { valorOriginalDe, clasificarAdicion, slugAmbito } from '../src/lib/adiciones.js'
 import { DOCUMENTOS_SIN_IDENTIDAD } from '../src/lib/identidad.js'
 import { leerAnterior, exigirCordura } from './guardas.mjs'
 
 const AQUI = dirname(fileURLToPath(import.meta.url))
 const SALIDA = resolve(AQUI, '../public/adiciones.json')
-const SALIDA_AMBITOS = resolve(AQUI, '../public/adiciones-ambitos.json')
+// Un archivo por ámbito, no uno con los 809: el navegador solo necesita el del
+// municipio que la persona está mirando. Ver slugAmbito() y el ROADMAP.
+const DIR_AMBITOS = resolve(AQUI, '../public/adiciones-ambitos')
 
 const BASE = process.env.SOCRATA_BASE || 'https://www.datos.gov.co/resource'
 const TOKEN = process.env.SOCRATA_TOKEN || ''
@@ -375,39 +377,67 @@ async function main() {
     const filas = ordenarPorAdicion(mapa, topeDe(ambito)).map(soloLoUsado)
     if (filas.length) (ambitos[ambito] ||= {}).contratistas = filas
   }
-  const salidaAmbitos = {
-    generadoEn: salida.generadoEn,
-    fuente: salida.fuente,
-    // Mismo criterio de llave que el resto de la plataforma: el departamento
-    // acompaña a la ciudad porque 56 nombres de municipio se repiten en el país
-    // (ver poblacionCiudades.js).
-    formatoClave: 'd|<departamento> · c|<departamento>|<ciudad>',
-    ambitos,
+  // Un archivo por ámbito. Mismo criterio de llave que el resto de la
+  // plataforma: el departamento acompaña a la ciudad porque 56 nombres de
+  // municipio se repiten en el país (ver poblacionCiudades.js).
+  //
+  // El seudónimo del archivo pierde tildes y separadores (ver slugAmbito), así
+  // que en teoría dos llaves podrían caer en el mismo nombre. Si pasa se aborta:
+  // publicar un ámbito con las cifras de otro es peor que no publicarlo, y
+  // sería invisible desde la interfaz.
+  const porArchivo = new Map()
+  for (const [clave, datos] of Object.entries(ambitos)) {
+    const slug = slugAmbito(clave)
+    if (porArchivo.has(slug)) {
+      throw new Error(
+        `Colisión de nombre de archivo: '${clave}' y '${porArchivo.get(slug).clave}' ` +
+        `dan ambos '${slug}.json'. Hay que cambiar slugAmbito() en src/lib/adiciones.js.`,
+      )
+    }
+    porArchivo.set(slug, { clave, datos })
   }
 
   // Antes de publicar: ¿esto se parece a lo de ayer? Si la fuente falló a
   // medias, es preferible dejar el archivo anterior —correcto, solo viejo— que
   // pisarlo con uno sesgado que nadie va a revisar.
   const previo = leerAnterior(SALIDA)
-  const previoAmbitos = leerAnterior(SALIDA_AMBITOS)
+  // Cuántos ámbitos había ayer: ahora se cuenta por archivos en la carpeta, no
+  // por llaves dentro de un JSON.
+  const ambitosAyer = existsSync(DIR_AMBITOS)
+    ? readdirSync(DIR_AMBITOS).filter((f) => f.endsWith('.json')).length
+    : undefined
   exigirCordura([
     { nombre: 'contratos recorridos', ahora: nacional.contratos, antes: previo?.nacional?.contratos, minimo: 4_000_000 },
     { nombre: 'contratos evaluables', ahora: nacional.evaluables, antes: previo?.nacional?.evaluables, minimo: 2_000_000 },
     { nombre: 'contratos con adición', ahora: nacional.conAdicion, antes: previo?.nacional?.conAdicion, minimo: 500_000 },
     { nombre: 'valor adicionado', ahora: nacional.adicion, antes: previo?.nacional?.adicion },
     { nombre: 'departamentos', ahora: porDepto.size, antes: previo?.departamentos?.length, minimo: 30 },
-    { nombre: 'ámbitos', ahora: Object.keys(ambitos).length, antes: previoAmbitos ? Object.keys(previoAmbitos.ambitos || {}).length : undefined, minimo: 400 },
+    { nombre: 'ámbitos', ahora: porArchivo.size, antes: ambitosAyer, minimo: 400 },
   ], { saltar: SIN_GUARDAS })
 
   mkdirSync(dirname(SALIDA), { recursive: true })
   writeFileSync(SALIDA, JSON.stringify(salida))
-  writeFileSync(SALIDA_AMBITOS, JSON.stringify(salidaAmbitos))
+
+  // La carpeta se rehace entera, para que un ámbito que dejó de tener adiciones
+  // desaparezca en vez de quedarse con las cifras del mes pasado. Se borra
+  // DESPUÉS de las guardas: si el barrido salió mal, el aborto deja intactos los
+  // archivos de ayer —viejos pero correctos—.
+  if (existsSync(DIR_AMBITOS)) rmSync(DIR_AMBITOS, { recursive: true })
+  mkdirSync(DIR_AMBITOS, { recursive: true })
+  for (const [slug, { clave, datos }] of porArchivo) {
+    writeFileSync(
+      join(DIR_AMBITOS, `${slug}.json`),
+      // La llave viaja dentro del archivo: sin ella, un archivo suelto no dice
+      // de qué municipio habla, y el seudónimo no siempre es reversible.
+      JSON.stringify({ clave, generadoEn: salida.generadoEn, fuente: salida.fuente, ...datos }),
+    )
+  }
 
   const seg = ((Date.now() - t0) / 1000).toFixed(0)
   const pct = (n, d) => (d > 0 ? ((n / d) * 100).toFixed(1) : '—')
   console.error(`\nListo en ${seg}s → ${SALIDA}`)
   console.error(
-    `  ámbitos:            ${Object.keys(ambitos).length.toLocaleString('es-CO')} → ${SALIDA_AMBITOS}`,
+    `  ámbitos:            ${porArchivo.size.toLocaleString('es-CO')} archivos → ${DIR_AMBITOS}`,
   )
   console.error(`  contratos vistos:   ${nacional.contratos.toLocaleString('es-CO')}`)
   console.error(

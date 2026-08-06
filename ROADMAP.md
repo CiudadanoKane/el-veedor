@@ -25,9 +25,9 @@ constante esté vacía el bloque no se pinta: está en producción sin mostrar n
 hueco ni un reproductor roto.
 
 **Pendientes menores, ninguno bloqueante:** cachear la concentración país (~13 s
-en vivo), unificar `poblacion.js` (departamentos) con el anexo municipal del DANE
-—hoy son dos fuentes distintas—, y el peso del repositorio si llega a molestar
-(`adiciones-ambitos.json` son 2,7 MB reescritos a diario).
+en vivo) y unificar `poblacion.js` (departamentos) con el anexo municipal del
+DANE —hoy son dos fuentes distintas—. Ver también `REVISION-2026-08.md`, con lo
+que queda de rendimiento y de cobertura de SECOP I.
 
 ---
 
@@ -2318,6 +2318,67 @@ reproduciendo, para que al reabrirlo no arranque solo.
 Comprobado en escritorio y en 375 px (sin desbordes, proporción 16:9 en las dos),
 el ciclo ocultar → reabrir con su persistencia, y que con `VIDEO_ID` vacío no se
 pinta nada.
+
+---
+
+### HECHO ✅ — Un archivo por ámbito para las adiciones (ago 2026)
+
+Salido de `REVISION-2026-08.md`, y el hallazgo más grande de esa revisión.
+
+`adiciones-ambitos.json` traía **809 ámbitos en un solo archivo** y el navegador
+usaba **uno**: se descargaba **2,78 MB (546 KB comprimidos) para leer 7,5 KB**.
+Un sobrecosto de 370×, y disparado justo al elegir municipio —el caso de uso
+principal desde que Panorama y Mi municipio se fusionaron—, con lo que el peso
+de la página se **más que duplicaba** en ese momento exacto. Aparte de la
+descarga, eran 2,78 MB de JSON que parsear en el teléfono.
+
+Ahora es un archivo por ámbito en `public/adiciones-ambitos/`. Medido en el
+navegador tras el cambio:
+
+| Ámbito | Antes | Ahora |
+|---|---|---|
+| Barranquilla | 546 KB | **7,5 KB** |
+| Atlántico (departamento) | 546 KB | **18,1 KB** |
+
+809 archivos, mediana de 3,7 KB, el mayor 19,2 KB.
+
+**El nombre del archivo es un seudónimo, no la llave** (`slugAmbito`, en
+`src/lib/adiciones.js`, compartido por el script y el navegador). La llave lleva
+`|` y tildes, y ninguno de los dos viaja bien: `|` hay que escaparlo en la URL, y
+las tildes se guardan descompuestas en macOS (NFD) y compuestas en Windows y
+Linux (NFC), así que el mismo nombre dejaría de coincidir consigo mismo al
+cambiar de sistema. `c|Atlántico|Barranquilla` → `c-atlantico-barranquilla.json`.
+El riesgo de que dos llaves den el mismo seudónimo no se deja al azar: el script
+aborta si detecta una colisión, porque publicar un ámbito con las cifras de otro
+sería invisible desde la interfaz. Comprobado sobre los 809 reales: ninguna.
+
+Hay cinco pruebas nuevas sobre el seudónimo (38 en total). No son ceremonia: si
+el que calcula el script y el que calcula el navegador dejan de coincidir, **no
+falla nada visiblemente** —el ranking del municipio sale vacío para siempre—. Una
+de ellas compara NFC contra NFD explícitamente.
+
+**El fallo que apareció al probarlo, y que vale por sí solo:** un ámbito sin
+adiciones no tiene archivo, y yo asumí que eso daría un 404. No lo da. El
+`rewrites` de `vercel.json` manda todo lo que no existe a `/index.html` para que
+funcionen las rutas de la SPA, así que el archivo ausente **responde 200 con
+HTML** —y el servidor de Vite hace lo mismo—. Pedirle `json()` a eso revienta, y
+el municipio sin adiciones se veía como un error de la fuente, con su reintento
+incluido. Se resolvió mirando el tipo de contenido en vez del código, dejando el
+`res.ok` aparte y antes para que un 500 de verdad siga siendo un error. Es el
+mismo principio que el aviso de fuente caída: que un fallo y un "no hay datos"
+nunca se vean igual.
+
+El flujo de trabajo también cambió: `git add` antes de comprobar, y
+`git status --porcelain` en vez de `git diff --quiet`. La carpeta se rehace
+entera en cada corrida, así que puede haber ámbitos nuevos —archivos sin
+seguimiento, que `git diff` no ve— y ámbitos que desaparecieron; con la
+comprobación anterior, una corrida que solo añadiera municipios se habría dado
+por "sin cambios".
+
+**Contrapartida asumida:** son 809 archivos que el cron reescribe a diario, más
+objetos en el historial que un archivo grande. A cambio, los ámbitos que no
+cambian de un día para otro no cuestan nada. Si el historial llega a molestar,
+la salida es sacarlos del repositorio, no volver al archivo único.
 
 ---
 

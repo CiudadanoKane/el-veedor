@@ -17,6 +17,31 @@
 // scripts/calcular-adiciones.mjs. Si las reglas vivieran duplicadas, el mapa y
 // el ranking podrían contradecir a la sección de Adiciones.
 
+// Nombre de archivo del precálculo de un ámbito ('d|Atlántico',
+// 'c|Atlántico|Barranquilla').
+//
+// El precálculo por ámbito se guarda en un archivo por ámbito y no en uno solo
+// con todos: eran 809 ámbitos en un archivo de 2,78 MB del que el navegador
+// usaba 7,5 KB —el del municipio que la persona está mirando—. Ver ROADMAP.
+//
+// POR QUÉ UN SEUDÓNIMO Y NO LA LLAVE TAL CUAL. La llave lleva '|' y tildes, y
+// ninguno de los dos sobrevive bien el viaje: '|' hay que escaparlo en la URL, y
+// las tildes se guardan descompuestas en macOS (NFD) y compuestas en Windows y
+// Linux (NFC), así que el mismo nombre de archivo deja de coincidir consigo
+// mismo al cambiar de sistema. Reducirlo a [a-z0-9-] quita las dos trampas.
+//
+// El precio es que dos llaves distintas podrían dar el mismo seudónimo (un
+// municipio con guion en el nombre). No se deja al azar: el script que los
+// genera aborta si detecta una colisión (ver calcular-adiciones.mjs).
+export function slugAmbito(clave) {
+  return String(clave)
+    .normalize('NFD')                // separa la letra de su tilde…
+    .replace(/[\u0300-\u036f]/g, '') // …y descarta la tilde
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 // Valor original mínimo para que el % de adición sea interpretable: con una
 // base de $100.000 cualquier contrato normal parece un crecimiento de miles
 // por ciento.

@@ -29,7 +29,7 @@ a SECOP.** Eso ya está atacado donde más dolía (precálculos diarios, Edge
 Config). Lo que sigue son las tres cosas que quedan, en orden de cuánto rinden
 por el trabajo que cuestan.
 
-### 1.1 · `adiciones-ambitos.json`: se descargan 2,78 MB para usar 7,5 KB
+### 1.1 · ~~`adiciones-ambitos.json`: se descargan 2,78 MB para usar 7,5 KB~~ ARREGLADO
 
 Lo más grave que encontré, y con diferencia.
 
@@ -60,6 +60,12 @@ La alternativa —una función que corte el archivo en el servidor— gasta
 invocaciones del plan Hobby. Mi recomendación es los archivos por ámbito y
 sacarlos del repositorio si el historial molesta; pero es una decisión con
 contrapartida real, no una obviedad.
+
+**Hecho (ago 2026).** Un archivo por ámbito. Medido en el navegador: Barranquilla
+pasó de descargar 546 KB a **7,5 KB**, y un departamento a 18,1 KB. Ver
+"Un archivo por ámbito" en el ROADMAP, incluido el fallo que apareció al
+probarlo: el ámbito sin adiciones no llega como 404 sino como 200 con HTML,
+por el `rewrites` de `vercel.json`.
 
 ### 1.2 · El logo: 67 KB para pintar 32 píxeles
 

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
-  clasificarAdicion, valorOriginalDe, detectarErrorDigitacion, BASE_MINIMA, PCT_SOSPECHOSO,
+  clasificarAdicion, valorOriginalDe, detectarErrorDigitacion, slugAmbito,
+  BASE_MINIMA, PCT_SOSPECHOSO,
 } from './adiciones.js'
 
 // Estas reglas las usan DOS consumidores que deben coincidir: el hook del
@@ -79,5 +80,46 @@ describe('clasificarAdicion', () => {
     expect(clasificarAdicion(0, 100)).toBeNull()
     expect(clasificarAdicion(100, 0)).toBeNull()
     expect(clasificarAdicion(null, undefined)).toBeNull()
+  })
+})
+
+// El seudónimo decide QUÉ ARCHIVO pide el navegador. Si el que calcula el script
+// y el que calcula el navegador dejan de coincidir, no falla nada visiblemente:
+// simplemente el ranking del municipio sale vacío para siempre. De ahí que se
+// pruebe carácter a carácter.
+describe('slugAmbito', () => {
+  it('quita las tildes y el separador de la llave', () => {
+    expect(slugAmbito('d|Atlántico')).toBe('d-atlantico')
+    expect(slugAmbito('c|Atlántico|Barranquilla')).toBe('c-atlantico-barranquilla')
+    expect(slugAmbito('c|Nariño|Túquerres')).toBe('c-narino-tuquerres')
+  })
+
+  it('resuelve los nombres con puntos y espacios', () => {
+    expect(slugAmbito('d|Bogotá D.C.')).toBe('d-bogota-d-c')
+    expect(slugAmbito('c|Valle del Cauca|Santiago de Cali')).toBe(
+      'c-valle-del-cauca-santiago-de-cali',
+    )
+  })
+
+  it('no deja guiones sueltos en los extremos', () => {
+    expect(slugAmbito('d|Bogotá D.C.')).not.toMatch(/^-|-$/)
+    expect(slugAmbito('c|Chocó|Nuquí ')).toBe('c-choco-nuqui')
+  })
+
+  it('da el mismo resultado venga el texto compuesto o descompuesto', () => {
+    // El mismo nombre, escrito con la tilde pegada a la letra (NFC, como lo
+    // guarda Windows) y separada (NFD, como lo guarda macOS). Si estas dos no
+    // coincidieran, el archivo generado en un sistema no se encontraría desde
+    // el otro — que es justo la trampa que este seudónimo existe para evitar.
+    const nfc = 'c|Atlántico|Barranquilla'.normalize('NFC')
+    const nfd = 'c|Atlántico|Barranquilla'.normalize('NFD')
+    expect(nfc).not.toBe(nfd)
+    expect(slugAmbito(nfd)).toBe(slugAmbito(nfc))
+  })
+
+  it('produce solo caracteres seguros en una URL y en un sistema de archivos', () => {
+    for (const clave of ['d|Atlántico', 'c|Bogotá D.C.|Bogotá D.C.', 'c|Chocó|Bahía Solano']) {
+      expect(slugAmbito(clave)).toMatch(/^[a-z0-9-]+$/)
+    }
   })
 })
