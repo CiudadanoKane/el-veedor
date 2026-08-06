@@ -1,10 +1,16 @@
 // Envuelve el renderizado de una query: maneja carga, error y vacío.
+//
+// Los textos dicen "SECOP" a secas y no "SECOP II": este componente envuelve
+// consultas de las dos fuentes —el buscador, la evolución, los vencidos y los
+// perfiles traen SECOP I— y rotular todas como SECOP II era heredado de cuando
+// la plataforma solo leía el sistema nuevo. Donde de verdad es una sola fuente,
+// se dice en la propia cifra (ver las tarjetas del Panorama).
 export function QueryState({ query, empty = 'Sin resultados.', children }) {
   if (query.isLoading) {
     return (
       <div className="flex items-center justify-center py-12 text-textSecondary">
         <div className="h-5 w-5 mr-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-        Cargando datos de SECOP II…
+        Cargando datos de SECOP…
       </div>
     )
   }

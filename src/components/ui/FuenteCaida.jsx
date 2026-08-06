@@ -32,7 +32,7 @@ export function FuenteCaida({ query, lugar, onQuitarFiltro }) {
       <p className="text-[14px] text-textSecondary leading-relaxed mt-2 max-w-2xl">
         {sinConexion
           ? 'La consulta quedó en espera porque el dispositivo no tiene internet. Se reanudará sola en cuanto vuelva la conexión.'
-          : 'La fuente oficial (SECOP II, en datos.gov.co) no está respondiendo. Es una interrupción del origen, no un dato de la contratación. Suele resolverse en unos minutos.'}{' '}
+          : 'La fuente oficial (SECOP, en datos.gov.co) no está respondiendo. Es una interrupción del origen, no un dato de la contratación. Suele resolverse en unos minutos.'}{' '}
         <strong className="text-textPrimary">
           Las cifras vacías de abajo no significan que aquí no se contrate.
         </strong>

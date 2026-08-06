@@ -31,8 +31,8 @@ export class ErrorBoundary extends Component {
         <p className="text-textSecondary text-sm leading-relaxed mb-4">
           No pudimos mostrar esta vista. El resto de la plataforma sigue funcionando:
           puedes usar el menú para ir a otra sección. Si el problema persiste, es
-          probable que la fuente de datos (SECOP II) esté respondiendo con lentitud o
-          intermitencia.
+          probable que la fuente de datos (SECOP, en datos.gov.co) esté respondiendo con
+          lentitud o intermitencia.
         </p>
         <details className="mb-4">
           <summary className="text-xs text-textSecondary cursor-pointer hover:text-textPrimary">

@@ -146,7 +146,7 @@ export function Sidebar({ abierto, onCerrar }) {
           </button>
 
           <p className="text-[11px] text-sideSoft leading-relaxed mt-4">
-            Datos públicos de SECOP II
+            Datos públicos de SECOP I y II
           </p>
           <p className="text-[11px] text-sideSoft/60 leading-relaxed mt-1">
             La plataforma señala patrones, no acusa.
