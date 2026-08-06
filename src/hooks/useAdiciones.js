@@ -298,10 +298,32 @@ export function useAdicionesCosto(filters = {}, limit = 150) {
           'valor_del_contrato < 1000000000000',
         ]),
       )
-      const contratos = await socrataQuery(
-        DS,
-        `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT ${limit}`,
+      // SECOP I no necesita el cruce: sus dos mitades viven en la MISMA fila
+      // —`cuantia_contrato` es lo pactado y `valor_contrato_con_adiciones` lo
+      // vigente—. Es la razón por la que llegar a estos 286.532 contratos que
+      // crecieron en valor (medido ago 2026) sale más barato que lo que ya se
+      // construyó para SECOP II, donde hace falta cruzar dos datasets.
+      const where1 = buildWhere(
+        whereFromFiltrosSecop1(filters, [
+          soloContratosValidosSecop1(),
+          cuantiaPosibleSecop1(),
+          'cuantia_contrato > 0',
+          // Que de verdad haya crecido. Si `valor_contrato_con_adiciones` viene
+          // vacío, el coalesce devuelve la propia cuantía y la fila no entra:
+          // es exactamente lo que queremos, un contrato sin adiciones anotadas.
+          `${VALOR_SECOP1_SOQL} > cuantia_contrato`,
+          // Mismas cotas de cuantía que el lado de SECOP II, para que las dos
+          // mitades de la tabla hablen del mismo tamaño de contrato.
+          `${VALOR_SECOP1_SOQL} > 100000000`,
+          `${VALOR_SECOP1_SOQL} < 1000000000000`,
+        ]),
       )
+      const [contratos, filas1] = await Promise.all([
+        socrataQuery(DS, `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT ${limit}`),
+        // Complemento, no fuente: si SECOP I falla, la tabla sale igual.
+        socrataQuery(DS1, `SELECT ${CONTRACT_FIELDS_SECOP1} ${where1} ORDER BY ${VALOR_SECOP1_SOQL} DESC LIMIT ${limit}`)
+          .catch(() => []),
+      ])
       const adaptados = adaptList(contratos)
 
       const ids = [...new Set(adaptados.map((c) => c.processId).filter(Boolean))]
@@ -309,24 +331,39 @@ export function useAdicionesCosto(filters = {}, limit = 150) {
 
       const adiciones = []
       const anomalias = []
-      for (const c of adaptados) {
-        const original = valorOriginalDe(mapa.get(c.processId))
-        if (!original) continue
-
-        const clas = clasificarAdicion(c.contractValue, original.valor)
-        if (!clas) continue
-
+      const clasificar = (c, valorOriginal, referencia) => {
+        const clas = clasificarAdicion(c.contractValue, valorOriginal)
+        if (!clas) return
         const fila = {
-          ...c,
-          valorOriginal: original.valor,
+          ...c, valorOriginal, referencia,
           adicion: clas.adicion,
           pctAdicion: clas.pctAdicion,
-          referencia: original.referencia,
         }
         // Con motivo, el dato no es creíble como sobrecosto real (múltiplo
         // exacto de digitación o crecimiento imposible): va a anomalías.
         if (clas.motivo) anomalias.push({ ...fila, multiplo: clas.multiplo, motivo: clas.motivo })
         else adiciones.push(fila)
+      }
+
+      for (const c of adaptados) {
+        const original = valorOriginalDe(mapa.get(c.processId))
+        if (!original) continue
+        clasificar(c, original.valor, original.referencia)
+      }
+
+      // SECOP I. Pasa por el MISMO `clasificarAdicion` a propósito: es donde
+      // viven las guardas que este campo necesita más que ninguno —su valor no
+      // tiene los controles de SECOP II—, y así los múltiplos de digitación y
+      // los crecimientos imposibles se apartan con el mismo criterio en las dos
+      // fuentes en vez de con dos varas distintas.
+      const adaptados1 = adaptListSecop1(filas1)
+      for (let i = 0; i < adaptados1.length; i++) {
+        // adaptList mantiene el orden 1:1, así que la fila cruda de al lado es
+        // la de este contrato. Se lee de ahí porque el adaptador expone el valor
+        // vigente, no la cuantía pactada, que es justo el original que hace falta.
+        const original = parseFloat(filas1[i]?.cuantia_contrato)
+        if (!(original > 0)) continue
+        clasificar(adaptados1[i], original, 'cuantia')
       }
 
       adiciones.sort((a, b) => b.adicion - a.adicion)

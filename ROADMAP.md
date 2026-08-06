@@ -2464,12 +2464,27 @@ departamento llega a 314. Ordenando por cuantía sí entran seis, entre ellas ob
 de control de inundaciones de la Gobernación y alimentación escolar en Soledad,
 que antes no se veían en ninguna parte.
 
-**Queda pendiente la otra mitad: las adiciones de valor de SECOP I.** Ahí están
-los 286.532, y siguen siendo baratas de calcular —las dos mitades están en la
-misma fila (`cuantia_contrato` y `valor_contrato_con_adiciones`), sin el cruce de
-datasets que exige SECOP II—. Con la salvedad de siempre: ese campo no tiene los
-controles de valor de SECOP II y necesita las mismas guardas contra basura de
-digitación.
+**La otra mitad, hecha el mismo día: las adiciones de valor.** SECOP I no
+necesita el cruce con Procesos —lo pactado (`cuantia_contrato`) y lo vigente
+(`valor_contrato_con_adiciones`) están en la misma fila—, así que llegar a esos
+286.532 contratos salió más barato que lo ya construido para SECOP II.
+
+Las dos fuentes pasan por el **mismo** `clasificarAdicion`, y eso no es
+comodidad: ahí viven las guardas que este campo necesita más que ninguno —el
+valor de SECOP I no tiene los controles del sistema nuevo—, así que los múltiplos
+exactos de digitación y los crecimientos imposibles se apartan con la misma vara
+en las dos.
+
+La columna "Valor original" pasó de dos referencias a **tres** (adjudicado,
+precio base, y ahora cuantía pactada). Era un ternario: cualquier valor nuevo
+caía en "precio base", y habría etiquetado mal todas las filas de SECOP I.
+
+**Comprobado en Atlántico:** 222 filas, de las cuales **148 son de SECOP I** —la
+fuente vieja domina esta vista, que es justamente lo que estaba invisible—. Una
+fila se verificó contra la API cruda, aparte del código: la sede regional de la
+Universidad del Atlántico en Sabanalarga, $29.828.843.779 pactados contra
+$39.551.795.097 vigentes, adición de $9.723 millones, 32,6% → la tabla dice
+"+33%".
 
 ---
 

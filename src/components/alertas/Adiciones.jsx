@@ -201,8 +201,13 @@ export function AdicionesCosto() {
       render: (r) => (
         <div>
           <div>{formatCOP(r.valorOriginal)}</div>
+          {/* Tres referencias, no dos: SECOP I no tiene proceso que cruzar, su
+              valor original es la cuantía pactada del propio contrato. Antes
+              esto era un ternario y cualquier valor nuevo caía en "precio base",
+              que habría etiquetado mal cada fila de SECOP I. */}
           <div className="text-[10px] text-textSecondary">
-            {r.referencia === 'adjudicado' ? 'adjudicado' : 'precio base'}
+            {{ adjudicado: 'adjudicado', cuantia: 'cuantía pactada' }[r.referencia]
+              ?? 'precio base'}
           </div>
         </div>
       ),
@@ -244,11 +249,18 @@ export function AdicionesCosto() {
         />
       </div>
       <Methodology>
-        <strong>Adición = valor actual del contrato − valor original del proceso.</strong>{' '}
-        El valor original se toma de dos referencias según la modalidad: el{' '}
-        <strong>valor adjudicado</strong> en procesos competitivos (exacto), o el{' '}
-        <strong>precio base</strong> del proceso en contratación directa (donde no existe
-        adjudicación porque no hubo competencia). Cada fila indica cuál se usó. Se
+        <strong>Adición = valor actual del contrato − valor original.</strong>{' '}
+        En <strong>SECOP II</strong> el valor original hay que ir a buscarlo al proceso, y
+        sale de dos referencias según la modalidad: el <strong>valor adjudicado</strong> en
+        procesos competitivos (exacto), o el <strong>precio base</strong> del proceso en
+        contratación directa (donde no existe adjudicación porque no hubo competencia).
+        En <strong>SECOP I</strong> no hace falta cruzar nada: lo pactado y lo vigente
+        están en el mismo registro, y la referencia es la <strong>cuantía pactada</strong>{' '}
+        del contrato. Cada fila indica cuál se usó, y las de SECOP I van marcadas.
+        <br />
+        <br />
+        Las dos fuentes pasan por las <strong>mismas guardas</strong>, que en SECOP I
+        importan más porque su campo de valor no tiene los controles del sistema nuevo. Se
         descartan los contratos cuyo valor es un múltiplo exacto de 10 del original
         (×100, ×1.000, ×10.000): no son adiciones sino errores de digitación, y los
         mostramos aparte en <strong>Errores en SECOP</strong>.
