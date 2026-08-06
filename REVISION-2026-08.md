@@ -149,11 +149,14 @@ SECOP II.**
 
 ### Lo demás, por orden de valor
 
-2. **El desglose por modalidad del Panorama es incoherente consigo mismo.** La
-   tarjeta "Sin competencia" suma las dos fuentes, pero al desplegarla el
-   reparto por modalidad es solo de SECOP II. Y el mapa de equivalencias ya
-   existe (`catalogosSecop1.js`, con 3,03M de 6,4M procesos mapeados). Cierra un
-   hueco lógico visible: la cifra y su explicación no cuadran.
+2. ~~**El desglose por modalidad del Panorama es incoherente consigo mismo.**~~
+   **ARREGLADO (ago 2026).** La tarjeta "Sin competencia" sumaba las dos fuentes
+   y su desglose era solo de SECOP II, así que sumar las filas no daba el número
+   de arriba. Al medirlo apareció el motivo por el que nunca se había cerrado:
+   agrupar SECOP I por modalidad cuesta **187 s** en el ámbito nacional (2,6 s en
+   un departamento, 451 ms en un municipio) — no cabe en vivo ni en el techo de
+   60 s de una función. Se resolvió sin consulta nueva, con lo que el barrido
+   diario ya cuenta. Ver el ROADMAP.
 3. **"Errores en SECOP" no mide SECOP I.** El nombre promete el sistema entero y
    la sección mide la mitad — y encima la mitad *nueva*, que es la más limpia. El
    registro viejo es donde más hay que medir.

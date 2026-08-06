@@ -2382,6 +2382,51 @@ la salida es sacarlos del repositorio, no volver al archivo único.
 
 ---
 
+### HECHO ✅ — El desglose de "Sin competencia" ya cuadra con su cifra (ago 2026)
+
+La tarjeta sumaba SECOP II + I; su desplegable mostraba el reparto por modalidad
+**solo de SECOP II**. Sumar las filas no daba el número de arriba, y lo único que
+había era una nota diciéndolo. Advertido no es lo mismo que coherente: era de los
+pocos sitios donde la plataforma le pedía a alguien creer que dos cifras hablan
+de universos distintos sin poder comprobarlo.
+
+**Por qué no se había cerrado, medido antes de empezar:** agrupar los 6,4
+millones de registros de SECOP I por modalidad tarda **187 s** en el ámbito
+nacional. En un departamento son 2,6 s y en un municipio 451 ms — o sea que el
+caso filtrado sí cabría en vivo, pero el nacional no cabe ni en el techo de 60 s
+de una función de Vercel. Un desglose fino habría exigido otro precálculo diario
+con su script y su flujo de trabajo.
+
+**Cómo se cerró sin ninguna consulta nueva.** El barrido diario de SECOP I ya
+contaba cuántos contratos hay y cuántos son directa; solo le faltaba el *valor* de
+esa parte, que es un agregado más en un escaneo que ya se paga (`v_directa` en
+`soqlGeneralesSecop1`). Con eso, SECOP I entra al desglose en dos filas:
+"Contratación directa · SECOP I" y "Otras modalidades · SECOP I".
+
+Van **con etiqueta propia en vez de fundirse** en las filas de SECOP II. Prometer
+el mismo nivel de detalle para las dos fuentes cuando no lo tenemos sería peor que
+decir hasta dónde llega cada una: es el criterio de las dos líneas separadas de
+Evolución.
+
+Comprobado en Barranquilla, que es lo que había que comprobar:
+
+| | Suma de las filas | Cifra de la tarjeta |
+|---|---|---|
+| Total de contratos | 173.420 | 173.420 |
+| Sin competencia | 142.400 | 142.400 |
+
+Los 29.210 de "Contratación directa · SECOP I" coinciden además con una consulta
+independiente contra la API, hecha aparte para no comprobar el código contra sí
+mismo.
+
+**Detalle de despliegue:** `v_directa` no existe en las respuestas guardadas antes
+del cambio, y la caché del Panorama nacional dura 24 h. Mientras falte, las dos
+filas no se pintan y el texto vuelve al anterior, en vez de dibujar un cero que
+se leería como "SECOP I no adjudicó nada así". Se corrige solo en la siguiente
+corrida del cron.
+
+---
+
 ## Principios que no se negocian
 
 1. **La plataforma señala patrones, no acusa.** Ninguna cifra se presenta como

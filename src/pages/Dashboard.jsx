@@ -166,6 +166,46 @@ export function Dashboard() {
   // la misma consulta, así que la condición es una sola.
   const sinFuente = generales.isError || generales.isPaused
 
+  // Las dos filas de SECOP I del desglose de "Sin competencia".
+  //
+  // La tarjeta suma las dos fuentes, pero el reparto por modalidad se consulta
+  // solo contra SECOP II: agrupar SECOP I por modalidad cuesta 187 s en el caso
+  // nacional (medido ago 2026), más que el techo de 60 s de una función. Así que
+  // el detalle contradecía a su propia cifra —sumar sus filas no daba el número
+  // de arriba— y lo único que había era una nota diciéndolo.
+  //
+  // Con lo que el barrido diario ya cuenta (total de SECOP I y cuántos son
+  // directa) se puede cerrar la resta sin ninguna consulta nueva. Es una
+  // partición gruesa, y por eso va con etiqueta propia en vez de fundirse en las
+  // filas de SECOP II: prometer el mismo detalle para las dos fuentes cuando no
+  // lo tenemos sería peor que decir hasta dónde llega cada una — el mismo
+  // criterio de las dos líneas separadas de Evolución.
+  const g = generales.data
+  const filasSecop1Modalidad = useMemo(() => {
+    // valorDirectaSecop1 falta en las respuestas cacheadas de antes del cambio;
+    // hasta que el cron refresque, mejor no pintar estas filas que pintarlas con
+    // una cuantía inventada. Se corrige solo en la siguiente corrida diaria.
+    if (!g?.tieneSecop1 || g.valorDirectaSecop1 == null) return []
+    const restoN = g.totalSecop1 - g.directaSecop1
+    const restoValor = g.valorSecop1 - g.valorDirectaSecop1
+    return [
+      {
+        clave: 'secop1-directa',
+        label: 'Contratación directa · SECOP I',
+        n: g.directaSecop1,
+        valor: g.valorDirectaSecop1,
+        nota: 'Sin concurso abierto. Va aparte porque SECOP I no se puede desglosar por modalidad sin una consulta que tarda minutos',
+      },
+      {
+        clave: 'secop1-resto',
+        label: 'Otras modalidades · SECOP I',
+        n: restoN > 0 ? restoN : 0,
+        valor: restoValor > 0 ? restoValor : 0,
+        nota: 'Todo lo demás de SECOP I junto: licitaciones, mínima cuantía, régimen especial y las modalidades que solo existen en esa fuente',
+      },
+    ]
+  }, [g])
+
   // Las tarjetas van en una lista para poder intercalar el detalle en la
   // posición correcta. Las dos últimas no despliegan nada.
   // Primero los totales: qué hay. Después los indicadores: qué tan bien va.
@@ -543,7 +583,11 @@ export function Dashboard() {
     competencia: (
       <Detalle
         titulo="¿Cómo se escoge a quién contrata el Estado?"
-        intro="Cuánto se adjudica por concurso y cuánto de forma directa. El porcentaje de arriba suma las dos fuentes; este desglose por modalidad es solo de SECOP II."
+        intro={
+          generales.data?.tieneSecop1 && filasSecop1Modalidad.length
+            ? 'Cuánto se adjudica por concurso y cuánto de forma directa. Las filas suman lo mismo que el porcentaje de arriba: las de SECOP II van desglosadas una a una, y las dos últimas reúnen SECOP I, que solo se puede partir entre directa y el resto.'
+            : 'Cuánto se adjudica por concurso y cuánto de forma directa.'
+        }
         metodologia={
           <>
             Contamos como <strong>sin competencia</strong> las modalidades
@@ -555,6 +599,16 @@ export function Dashboard() {
             se adjudican así, vale la pena preguntarse por qué. La "urgencia
             manifiesta" no aparece como modalidad propia en SECOP II: es una causal
             dentro de la contratación directa.
+            <br />
+            <br />
+            <strong>Por qué SECOP I va en dos filas y no desglosado.</strong> Su
+            equivalente de contratación directa es "Contratación Directa (Ley 1150 de
+            2007)", y hasta ahí llega lo que se puede afirmar sin pagar una consulta
+            de tres minutos: agrupar los 6,4 millones de registros de SECOP I por
+            modalidad tarda <strong>187 segundos</strong> en el ámbito nacional. Antes
+            esas filas no estaban y el desglose no cuadraba con su propia cifra —
+            preferimos una partición gruesa que sí suma, a un detalle fino al que le
+            falta media fuente.
           </>
         }
       >
@@ -562,15 +616,19 @@ export function Dashboard() {
           {(data) => (
             <DesgloseConteoCuantia
               colores={SECTOR_COLORS}
-              items={data.map((m) => ({
-                clave: m.modalidad,
-                label: m.modalidad,
-                n: m.n,
-                valor: m.valor,
-                nota: /directa/i.test(m.modalidad)
-                  ? 'Sin concurso abierto: la entidad escoge al contratista'
-                  : undefined,
-              }))}
+              items={[
+                ...data.map((m) => ({
+                  clave: m.modalidad,
+                  label: m.modalidad,
+                  ayuda: m.modalidad,
+                  n: m.n,
+                  valor: m.valor,
+                  nota: /directa/i.test(m.modalidad)
+                    ? 'Sin concurso abierto: la entidad escoge al contratista'
+                    : undefined,
+                })),
+                ...filasSecop1Modalidad,
+              ]}
             />
           )}
         </QueryState>

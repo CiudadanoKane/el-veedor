@@ -133,8 +133,15 @@ export function soqlGeneralesSecop1(filters) {
     `fecha_fin_ejec_contrato < '${HOY()}T00:00:00'`,
     `fecha_fin_ejec_contrato >= fecha_ini_ejec_contrato`,
   ].join(' AND ')
+  // `v_directa` acompaña a `directa` para que el desglose de "Sin competencia"
+  // pueda leerse también por cuantía. Es un agregado más en un barrido que ya se
+  // paga: agrupar SECOP I por modalidad en vivo cuesta 187 s en el caso nacional
+  // (medido ago 2026) —más que el techo de 60 s de una función—, así que la
+  // partición gruesa que sale de aquí es la única que se puede mostrar sin
+  // montar otro precálculo diario.
   return `SELECT count(uid) as n, sum(${V}) as valor,
                  sum(case(modalidad_de_contratacion = '${esc(MODALIDAD_SIN_COMPETENCIA_SECOP1)}', 1, true, 0)) as directa,
+                 sum(case(modalidad_de_contratacion = '${esc(MODALIDAD_SIN_COMPETENCIA_SECOP1)}', ${V}, true, 0)) as v_directa,
                  sum(case(${vivo}, 1, true, 0)) as n_ejec,
                  sum(case(${vivo}, ${V}, true, 0)) as v_ejec,
                  sum(case(${vigente}, 1, true, 0)) as n_vig,

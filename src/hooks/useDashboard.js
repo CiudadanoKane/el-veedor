@@ -124,6 +124,17 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
       totalSecop2,
       valorSecop2,
       totalSecop1,
+      // La parte de SECOP I que entra en "Sin competencia", por separado. La
+      // usa el desglose de esa tarjeta para poder cuadrar con ella: el reparto
+      // por modalidad se consulta solo contra SECOP II, así que sin estas dos
+      // filas la suma del detalle no daba el número de arriba.
+      directaSecop1: i(g1.directa),
+      valorSecop1: f(g1.valor),
+      // Ausente en las respuestas guardadas antes de agosto de 2026 (la caché
+      // del Panorama nacional dura 24 h). `null` y no 0: son cosas distintas, y
+      // el desglose por cuantía se abstiene mientras no lo tenga en vez de
+      // dibujar un cero que se leería como "SECOP I no adjudicó nada así".
+      valorDirectaSecop1: g1.v_directa == null ? null : f(g1.v_directa),
       tieneSecop1: totalSecop1 > 0,
     }
   })
