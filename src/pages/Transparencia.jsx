@@ -110,7 +110,7 @@ export function Transparencia() {
 
       <Bloque id="fuentes" titulo="De dónde salen los datos">
         <p>
-          Todo proviene de <strong>SECOP II</strong>, el sistema oficial de contratación
+          Todo proviene de <strong>SECOP</strong>, el sistema oficial de contratación
           pública, a través del portal de datos abiertos{' '}
           <a
             href="https://www.datos.gov.co"
@@ -120,9 +120,17 @@ export function Transparencia() {
           >
             datos.gov.co
           </a>
-          . Es información pública por mandato de la Ley 1712 de 2014. Consultamos la API
-          en vivo: no guardamos copias, así que lo que ves es lo que SECOP publica en este
-          momento.
+          . Es información pública por mandato de la Ley 1712 de 2014.
+        </p>
+        <p>
+          Son <strong>dos sistemas, no uno</strong>. <strong>SECOP II</strong> es el
+          actual, transaccional, y es la fuente principal de la plataforma.{' '}
+          <strong>SECOP I</strong> es el anterior, de solo publicación: no registra
+          ejecución financiera ni clasifica por sector, y su campo de valor no tiene los
+          controles del actual. Por eso <strong>no siempre se pueden sumar</strong>, y
+          cada cifra dice de cuál viene: las tarjetas del Panorama van rotuladas
+          "SECOP II + I" o "solo SECOP II", y la evolución en el tiempo pinta dos líneas
+          separadas en vez de una suma.
         </p>
 
         <div className="overflow-x-auto mt-4">
@@ -141,8 +149,9 @@ export function Transparencia() {
             </thead>
             <tbody>
               {[
-                ['Contratos Electrónicos', 'jbjy-vk9h', 'Fuente principal de todos los módulos'],
-                ['Modificaciones a contratos', 'u8cx-r425', 'Historial de adiciones y prórrogas de cada contrato'],
+                ['Contratos Electrónicos (SECOP II)', 'jbjy-vk9h', 'Fuente principal de todos los módulos'],
+                ['Contratos (SECOP I)', 'f789-7hwg', 'Contratación anterior a SECOP II: cifras del Panorama, buscador, evolución, vencidos, rankings y perfiles'],
+                ['Modificaciones a contratos', 'u8cx-r425', 'Historial de adiciones y prórrogas de cada contrato. Solo cubre SECOP II'],
                 ['Procesos de Contratación', 'p6dx-8zbt', 'Valor original, para calcular adiciones de costo'],
               ].map(([nombre, id, uso]) => (
                 <tr key={id} className="border-b border-border/60">
@@ -156,8 +165,48 @@ export function Transparencia() {
         </div>
 
         <p className="text-[14px] text-textSecondary font-light pt-2">
-          El mapa usa la división departamental del Geoportal del DANE.
+          El mapa usa la división departamental del Geoportal del DANE, y la población
+          municipal, el anexo de proyecciones del DANE (serie 2018-2042).
         </p>
+
+        {/* Esta sección se añadió en agosto de 2026, corrigiendo una afirmación que
+            había dejado de ser cierta: la página decía "no guardamos copias, así que
+            lo que ves es lo que SECOP publica en este momento". Cuando se escribió lo
+            era; después llegaron los precálculos diarios y la caché en el borde. En
+            una página cuyo argumento entero es que aquí no se esconde nada, la
+            desactualización de esa frase pesaba más que el dato en sí. */}
+        <div className="pt-4 space-y-4">
+          <h3 className="font-display font-extrabold text-[1.05rem] tracking-[-0.02em]">
+            Qué se consulta en vivo y qué viene precalculado
+          </h3>
+          <p>
+            La mayor parte del sitio consulta la API en el momento en que la abres. Pero
+            algunas cifras exigen recorrer millones de registros y tardarían minutos, así
+            que se calculan <strong>una vez al día</strong> y se guardan. Esas las ves con
+            hasta <strong>24 horas de antigüedad</strong>:
+          </p>
+          <ul className="list-disc pl-5 space-y-1.5 text-[14.5px] text-textSecondary font-light">
+            <li>La agrupación por sector (clasificación UNSPSC) del Panorama.</li>
+            <li>Las adiciones de valor, que exigen cruzar contrato a contrato dos conjuntos de datos.</li>
+            <li>El ranking nacional de contratistas.</li>
+            <li>
+              Las cifras del Panorama nacional, la concentración y la evolución, guardadas
+              en la caché del servidor.
+            </li>
+          </ul>
+          <p className="text-[14.5px] text-textSecondary font-light">
+            El ranking de contratistas y las adiciones del mapa muestran su fecha de
+            cálculo en pantalla. <strong>Los demás todavía no</strong>, y deberían: queda
+            anotado aquí como lo que es, un pendiente.
+          </p>
+          <p className="text-[14.5px] text-textSecondary font-light">
+            Guardar estas copias tiene además una ventaja que se vio el 5 de agosto de
+            2026, cuando datos.gov.co estuvo caído: el Panorama nacional siguió en pie. Y
+            cuando una cifra sí depende de la fuente y la fuente no responde, la
+            plataforma lo dice — nunca deja un vacío que se pueda confundir con "aquí no
+            se contrata nada".
+          </p>
+        </div>
       </Bloque>
 
       <Bloque id="exclusiones" titulo="Qué excluimos y por qué">
