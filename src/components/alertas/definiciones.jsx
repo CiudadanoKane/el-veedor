@@ -83,13 +83,27 @@ export function AlertaFechasInconsistentes() {
       }
       methodology={
         <>
-          Detecta contratos donde <code>fecha_de_fin</code> es anterior a{' '}
-          <code>fecha_de_inicio</code> — algo lógicamente imposible: un contrato no puede
-          terminar antes de empezar. Casi siempre es un <strong>error de registro</strong>{' '}
-          de la entidad en SECOP, pero en contratos de alto valor merece revisión, pues
-          refleja descuido en la información pública o inconsistencias en el expediente.
-          Ordenados de mayor a menor cuantía. <strong>Haz clic en una fila</strong> para
-          ver el detalle.
+          Detecta contratos cuya fecha de fin es anterior a la de inicio — algo
+          lógicamente imposible: un contrato no puede terminar antes de empezar. Casi
+          siempre es un <strong>error de registro</strong> de la entidad en SECOP, pero en
+          contratos de alto valor merece revisión, pues refleja descuido en la información
+          pública o inconsistencias en el expediente. Ordenados de mayor a menor cuantía.{' '}
+          <strong>Haz clic en una fila</strong> para ver el detalle.
+          <br />
+          <br />
+          <strong>Esta alerta es solo de SECOP II, y no por falta de ganas.</strong> La
+          comprobación se puede hacer igual en SECOP I, se hizo, y devolvió{' '}
+          <strong>cero</strong> — no en un municipio: en todo el país. De sus{' '}
+          <strong>5.824.905</strong> contratos con las dos fechas registradas,{' '}
+          <strong>5.819.005</strong> terminan después de empezar y <strong>5.900</strong>{' '}
+          empiezan y terminan el mismo día. Los dos números suman exactamente el total, así
+          que no queda ni un solo caso invertido.
+          <br />
+          <br />
+          La conclusión es incómoda para el sistema nuevo: <strong>SECOP I impedía
+          registrar una fecha de fin anterior a la de inicio, y SECOP II lo permite</strong>.
+          Aquí no falta la fuente vieja; sobra un control en la nueva.
+          {' '}(Comprobado en agosto de 2026.)
         </>
       }
     >

@@ -2488,6 +2488,50 @@ $39.551.795.097 vigentes, adición de $9.723 millones, 32,6% → la tabla dice
 
 ---
 
+### HECHO ✅ — "Errores en SECOP" declara su alcance, y de paso desmiente una suposición mía (ago 2026)
+
+En `REVISION-2026-08.md` escribí que la sección medía solo SECOP II y que "el
+registro viejo es donde más hay que medir". Sonaba razonable: SECOP I es el
+sistema antiguo, de solo publicación. **Lo medí y es falso.**
+
+La alerta de fechas imposibles se tradujo a SECOP I —tiene las dos fechas, el
+adaptador ya las mapea— y devolvió **cero**. No en un municipio: en el país
+entero. Antes de creerlo se verificó que la comparación funcionara:
+
+| SECOP I, contratos con ambas fechas | 5.824.905 |
+|---|---|
+| Fin posterior al inicio | 5.819.005 |
+| Fin igual al inicio | 5.900 |
+| **Fin ANTERIOR al inicio** | **0** |
+
+Los dos primeros suman exactamente el total, así que la partición es exhaustiva
+y el cero es real, no un fallo de la consulta. La conclusión es incómoda para el
+sistema nuevo: **SECOP I impedía registrar una fecha de fin anterior a la de
+inicio, y SECOP II lo permite.** Ahí no falta la fuente vieja; sobra un control
+en la nueva.
+
+Por eso la consulta se **quitó** en vez de dejarla: 1,4 s por carga para
+devolver siempre una lista vacía. El hallazgo vale más dicho en la metodología, y
+ahí está con sus cifras.
+
+**El mapa completo de las cinco pestañas**, ya medido:
+
+| Pestaña | ¿SECOP I? | Por qué |
+|---|---|---|
+| Cerrados sin pago | Imposible | Nunca tuvo módulo de ejecución financiera |
+| Contratos sin valor | Incompatible | La alerta se apoya en el CDP comprometido, que SECOP I no registra. Sus 29.043 contratos en $0 no significan lo mismo |
+| Fechas imposibles | Innecesario | Cero casos, comprobado |
+| Sin contratista | Posible | 832 en todo el país: volumen bajo pero el concepto calza exacto |
+| Valores implausibles | Parcial | La parte de cuantía imposible ya cubre las dos fuentes |
+
+La sección ya no promete lo que no hace: el encabezado dice que mide SECOP II y
+cada pestaña explica su caso. **Es la conclusión correcta y no la que yo esperaba**
+— que es justo el motivo de medir antes de construir.
+
+Queda como pendiente menor la única fusión limpia: "Sin contratista" con sus 832.
+
+---
+
 ## Principios que no se negocian
 
 1. **La plataforma señala patrones, no acusa.** Ninguna cifra se presenta como

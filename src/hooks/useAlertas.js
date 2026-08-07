@@ -18,6 +18,22 @@ const CONDICIONES_FECHAS = [
   'fecha_de_fin_del_contrato < fecha_de_inicio_del_contrato',
 ]
 
+// POR QUÉ ESTA ALERTA NO CONSULTA SECOP I, habiéndolo intentado (ago 2026).
+//
+// La comprobación se traduce sin problema a SECOP I —tiene las dos fechas y el
+// adaptador ya las mapea—, así que se implementó. Y devolvió **cero**: no en un
+// departamento, en todo el país.
+//
+// Antes de creerlo se verificó que la comparación funcionara, y funciona: de los
+// 5.824.905 contratos con ambas fechas, 5.819.005 tienen fin posterior al inicio
+// y 5.900 tienen fin igual al inicio. Los dos números suman exactamente el
+// total, así que la partición es exhaustiva y no queda ni un caso invertido.
+//
+// O sea que SECOP I valida esto en el registro y SECOP II no. Es un hallazgo
+// sobre la calidad de cada sistema —justo lo que esta sección mide—, y vale más
+// dicho en la metodología que como una consulta de 1,4 s que siempre devolvería
+// una lista vacía. Ver la nota de la alerta.
+
 // ALERTA: contratos registrados en $0 que SÍ tienen presupuesto comprometido.
 // Muchos $0 son legítimos (comodatos, convenios de "aunar esfuerzos", acuerdos
 // marco). Pero si la entidad reservó presupuesto vía CDP y aun así dejó el valor

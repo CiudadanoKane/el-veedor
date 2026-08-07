@@ -162,9 +162,16 @@ ROADMAP.
    un departamento, 451 ms en un municipio) — no cabe en vivo ni en el techo de
    60 s de una función. Se resolvió sin consulta nueva, con lo que el barrido
    diario ya cuenta. Ver el ROADMAP.
-3. **"Errores en SECOP" no mide SECOP I.** El nombre promete el sistema entero y
-   la sección mide la mitad — y encima la mitad *nueva*, que es la más limpia. El
-   registro viejo es donde más hay que medir.
+3. ~~**"Errores en SECOP" no mide SECOP I.**~~ **RESUELTO, y al revés de lo que
+   yo suponía (ago 2026).** Escribí que "el registro viejo es donde más hay que
+   medir". Lo medí y es falso, al menos en lo comprobable: SECOP I tiene **cero**
+   fechas invertidas en 5,8 millones de contratos —partición exhaustiva
+   verificada— mientras SECOP II sí las tiene. De las cinco pestañas, una es
+   imposible en SECOP I (no reporta pagos), otra es incompatible (la de $0 se
+   apoya en el CDP, que SECOP I no tiene), la de fechas da cero, y quedan dos con
+   volumen bajo (832 contratos sin contratista identificado, y digitación
+   parcial). La sección ahora declara su alcance y explica el porqué en cada
+   caso. Ver el ROADMAP.
 4. **Evolución a 10 años deja fuera SECOP I** por costo, y lo dice. Un precálculo
    diario lo resolvería, igual que resolvió lo del sector.
 5. **El constructor de gráficos dice "Solo SECOP II por ahora".** Es honesto;
