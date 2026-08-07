@@ -34,6 +34,27 @@ export const PERIODOS = {
 // millones de registros no baja de ~50s y con el saneamiento de cuantías pasa
 // de 150s (medido). En vivo es inviable, así que en ese rango se muestra solo
 // SECOP II.
+//
+// REMEDIDO EN AGO 2026, y el número de arriba ya no se reproduce: la misma
+// consulta dio entre 1,8 s y 30 s según lo caliente que estuviera el barrido en
+// Socrata. Antes de mover nada conviene saber dos cosas que salieron de esa
+// tanda:
+//
+//   1. NO sirve partirlo por pestaña. Se probó pedir solo el conteo, o el
+//      conteo sin el agregado por modalidad, buscando una métrica barata que
+//      pudiera mostrar SECOP I a 10 años. En una primera pasada parecía que el
+//      agregado de modalidad era el caro (37 s contra 5 s); repetida la
+//      medición, las tres variantes vinieron entre 1,5 s y 3,1 s. La diferencia
+//      entre métricas es MUCHO menor que la del mismo query entre corridas: era
+//      ruido, no estructura.
+//   2. Lo que manda es la varianza de la fuente, no el agregado que se pida. Y
+//      un primer golpe en frío todavía llegó a 30 s, demasiado cerca del techo
+//      de 60 s de una función como para servirlo en vivo con confianza.
+//
+// O sea que el límite sigue siendo razonable, pero por un motivo distinto del
+// que dice el párrafo original. Si algún día se quiere SECOP I a 10 años, el
+// camino no es afinar la consulta sino precalcularla a diario —como ya se hizo
+// con el sector y las adiciones—, que esquiva la varianza por completo.
 export function secop1EsViable(periodoClave) {
   const periodo = PERIODOS[periodoClave] || PERIODOS['24m']
   return periodo.anios ? periodo.anios <= 5 : true
