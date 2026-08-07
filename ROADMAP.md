@@ -2528,7 +2528,27 @@ La sección ya no promete lo que no hace: el encabezado dice que mide SECOP II y
 cada pestaña explica su caso. **Es la conclusión correcta y no la que yo esperaba**
 — que es justo el motivo de medir antes de construir.
 
-Queda como pendiente menor la única fusión limpia: "Sin contratista" con sus 832.
+**Y la fusión limpia se hizo el mismo día.** "Sin contratista identificado" ya
+cubre las dos fuentes. `documentoIdentifica()` recibe el nombre del campo
+justamente para esto, así que la lista de documentos de relleno —"No Definido",
+ceros, "N/A"— es **una sola** para los dos sistemas; duplicarla habría sido la
+forma silenciosa de que se separaran con el tiempo.
+
+Los conteos aquí **sí se suman**, a diferencia de casi todo el sitio: no se mide
+contratación —donde los universos difieren y sumar engaña— sino registros mal
+llenados, y un contratista sin identificar lo está igual en los dos.
+
+**Corrección a mi propia medición:** dije 832 en todo el país. Esa consulta usaba
+una lista de rellenos más corta que la real (`DOCUMENTOS_SIN_IDENTIDAD` incluye
+además '000000000', '00000000', '1', '123456'…), así que 832 era un piso, no el
+total. Medido ya con la regla completa: en Atlántico son **134 de 362**, el 37%.
+
+De paso, un defecto que salió al mirarlo: la columna "Identificación" escribía
+**"No Definido" fijo** para todas las filas. Esa es la etiqueta de SECOP II, pero
+la alerta también recoge ceros y "N/A" —y ahora filas de SECOP I—. Ahora muestra
+el valor real: en Atlántico aparecen `No Definido`, `000000000` y `00000000`.
+Escribir siempre lo mismo era inventar justo el dato que la alerta denuncia que
+falta.
 
 ---
 

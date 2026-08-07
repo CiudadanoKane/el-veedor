@@ -1,13 +1,18 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient.js'
-import { DATASETS, CONTRACT_FIELDS, ESTADO_ACTIVO } from '../lib/constants.js'
+import {
+  DATASETS, CONTRACT_FIELDS, CONTRACT_FIELDS_SECOP1, ESTADO_ACTIVO,
+} from '../lib/constants.js'
 import {
   whereFromFilters, buildWhere, soloContratosValidos, haceDias,
+  whereFromFiltrosSecop1, soloContratosValidosSecop1, cuantiaPosibleSecop1, VALOR_SECOP1_SOQL,
 } from '../lib/soql.js'
 import { adaptList } from '../adapters/secop2Adapter.js'
+import { adaptList as adaptListSecop1 } from '../adapters/secop1Adapter.js'
 import { documentoIdentifica } from '../lib/identidad.js'
 
 const DS = DATASETS.CONTRATOS
+const DS1 = DATASETS.PROCESOS_SECOP1
 
 // ALERTA: Fechas inconsistentes — fecha de fin anterior a la fecha de inicio.
 // Lógicamente imposible; señala descuido en el registro público (o amerita revisión).
@@ -160,38 +165,85 @@ const CONDICIONES_SIN_CONTRATISTA = [
 // Cota para que un valor mal digitado no distorsione el total
 const SIN_CONTRATISTA_TOPE = 'valor_del_contrato < 1000000000000'
 
+// La misma regla en SECOP I. De las cinco pestañas de "Errores en SECOP" es la
+// única que se traduce sin perder ni inventar nada: no depende de pagos (que
+// SECOP I no reporta) ni del CDP (que tampoco), solo de si el documento de quien
+// recibió el dinero identifica a alguien.
+//
+// `documentoIdentifica` recibe el nombre del campo justamente para esto: la
+// lista de documentos de relleno —ceros, "N/A", "No Definido"— es UNA sola y
+// vale para las dos fuentes. Duplicarla habría sido la forma silenciosa de que
+// se separaran con el tiempo.
+//
+// Son 832 en todo el país (medido ago 2026), frente a decenas de miles en SECOP
+// II. Poco volumen, pero el concepto calza exacto y el criterio de la sección es
+// que un contrato sin contratista identificable es un pago que nadie puede
+// rastrear — eso no cambia según el sistema donde esté registrado.
+const CONDICIONES_SIN_CONTRATISTA_SECOP1 = [
+  soloContratosValidosSecop1(),
+  `NOT (${documentoIdentifica('identificacion_del_contratista')})`,
+]
+
 export function sinContratistaConteoQueryOptions(filters = {}) {
   return {
     queryKey: ['alerta', 'sincontratista', 'conteo', filters],
-    queryFn: () => {
+    queryFn: async () => {
       const where = buildWhere(
         whereFromFilters(filters, [...CONDICIONES_SIN_CONTRATISTA, SIN_CONTRATISTA_TOPE]),
       )
-      return socrataQuery(
-        DS,
-        `SELECT count(id_contrato) as n, sum(valor_del_contrato) as valor ${where} LIMIT 1`,
+      const where1 = buildWhere(
+        whereFromFiltrosSecop1(filters, [...CONDICIONES_SIN_CONTRATISTA_SECOP1, cuantiaPosibleSecop1()]),
       )
+      const [f2, f1] = await Promise.all([
+        socrataQuery(DS, `SELECT count(id_contrato) as n, sum(valor_del_contrato) as valor ${where} LIMIT 1`),
+        // Complemento, no fuente: si SECOP I falla, el conteo sale con SECOP II.
+        socrataQuery(DS1, `SELECT count(uid) as n, sum(${VALOR_SECOP1_SOQL}) as valor ${where1} LIMIT 1`)
+          .catch(() => []),
+      ])
+      return { f2, f1 }
     },
-    select: (rows) => ({
-      total: parseInt(rows[0]?.n ?? 0, 10),
-      valor: parseFloat(rows[0]?.valor ?? 0),
-    }),
+    // Los dos conteos SÍ se suman, a diferencia de casi todas las cifras del
+    // sitio. Aquí no se mide contratación —donde los universos y las reglas de
+    // cada sistema difieren y sumar engañaría— sino registros mal llenados, y un
+    // contratista sin identificar lo está igual en los dos. El desglose viaja
+    // aparte para poder decir cuánto aporta cada fuente.
+    select: ({ f2, f1 }) => {
+      const n = (r) => parseInt(r?.n ?? 0, 10)
+      const v = (r) => parseFloat(r?.valor ?? 0)
+      const totalSecop1 = n(f1?.[0])
+      return {
+        total: n(f2?.[0]) + totalSecop1,
+        valor: v(f2?.[0]) + v(f1?.[0]),
+        totalSecop1,
+      }
+    },
   }
 }
 
 export function sinContratistaListaQueryOptions(filters = {}) {
   return {
     queryKey: ['alerta', 'sincontratista', 'lista', filters],
-    queryFn: () => {
+    queryFn: async () => {
       const where = buildWhere(
         whereFromFilters(filters, [...CONDICIONES_SIN_CONTRATISTA, SIN_CONTRATISTA_TOPE]),
       )
-      return socrataQuery(
-        DS,
-        `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT 100`,
+      const where1 = buildWhere(
+        whereFromFiltrosSecop1(filters, [...CONDICIONES_SIN_CONTRATISTA_SECOP1, cuantiaPosibleSecop1()]),
       )
+      const [f2, f1] = await Promise.all([
+        socrataQuery(DS, `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT 100`),
+        socrataQuery(DS1, `SELECT ${CONTRACT_FIELDS_SECOP1} ${where1} ORDER BY ${VALOR_SECOP1_SOQL} DESC LIMIT 100`)
+          .catch(() => []),
+      ])
+      return { f2, f1 }
     },
-    select: adaptList,
+    // Se reordena sobre la unión: sin esto saldría SECOP II entero y SECOP I
+    // detrás, sugiriendo que la fuente vieja solo tiene los casos de menor
+    // cuantía.
+    select: ({ f2, f1 }) =>
+      [...adaptList(f2), ...adaptListSecop1(f1)]
+        .sort((a, b) => (b.contractValue ?? 0) - (a.contractValue ?? 0))
+        .slice(0, 100),
   }
 }
 

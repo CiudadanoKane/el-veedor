@@ -399,7 +399,10 @@ export function AlertaSinContratista() {
       header: 'Entidad',
       render: (r) => (
         <div className="max-w-[240px]">
-          <div><EnlaceEntidad nombre={r.entityName} /></div>
+          <div>
+            <EnlaceEntidad nombre={r.entityName} />
+            <FuenteBadge source={r.source} />
+          </div>
           <div className="text-xs text-textSecondary truncate">{r.description}</div>
         </div>
       ),
@@ -418,7 +421,14 @@ export function AlertaSinContratista() {
     {
       key: 'contractorId',
       header: 'Identificación',
-      render: () => <span className="text-danger font-medium">No Definido</span>,
+      // El valor real y no "No Definido" fijo: esa es la etiqueta de SECOP II,
+      // pero la alerta también recoge documentos de relleno ('0', 'N/A', ceros)
+      // y ahora filas de SECOP I, donde el hueco se llena de otras formas.
+      // Escribir siempre lo mismo habría sido inventar el dato que la alerta
+      // denuncia que falta.
+      render: (r) => (
+        <span className="text-danger font-medium">{r.contractorId || 'Sin registrar'}</span>
+      ),
     },
     {
       key: 'contractValue',
@@ -450,6 +460,20 @@ export function AlertaSinContratista() {
           contratistas: al agruparlos por identificación aparecían como un solo
           contratista falso de tamaño enorme. Ordenados de mayor a menor cuantía; se
           excluyen valores con errores de digitación evidentes.
+          <br />
+          <br />
+          <strong>Es la única alerta de esta sección que cubre las dos fuentes</strong>, y
+          aquí los conteos sí se suman: no se está midiendo contratación —donde los
+          universos de cada sistema difieren y sumarlos engañaría— sino registros mal
+          llenados, y un contratista sin identificar lo está igual en SECOP I que en SECOP
+          II. Las filas de SECOP I van marcadas.
+          {conteo.data?.totalSecop1 > 0 && (
+            <>
+              {' '}De los {conteo.data.total.toLocaleString('es-CO')} de este ámbito,{' '}
+              <strong>{conteo.data.totalSecop1.toLocaleString('es-CO')}</strong> están en
+              SECOP I.
+            </>
+          )}
         </>
       }
     >
