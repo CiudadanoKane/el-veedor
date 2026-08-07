@@ -24,6 +24,33 @@ probado (`components/ui/VideoTutorial.jsx`). Falta grabarlo, subirlo a YouTube y
 constante esté vacía el bloque no se pinta: está en producción sin mostrar ni un
 hueco ni un reproductor roto.
 
+**PENDIENTE Y SERIO — SECOP I desaparece en silencio en Bogotá y Norte de
+Santander.** Encontrado por el usuario el 6/8/2026: la gráfica de evolución de
+Bogotá solo pintaba SECOP II, sin aviso. No es un fallo de la consulta: **los dos
+sistemas nombran esos departamentos distinto**, y el filtro de SECOP I reutiliza
+tal cual el valor que viene de SECOP II.
+
+| | SECOP II | SECOP I |
+|---|---|---|
+| Bogotá | `Distrito Capital de Bogotá` (1.996.739) | `Bogotá D.C.` (529.250) |
+| N. de Santander | `Norte de Santander` (143.243) | `Norte De Santander` (236.676) |
+
+Son los dos únicos desajustes de 34 valores —el resto calza exacto—, pero pesan
+**765.926 contratos de SECOP I** que hoy no aparecen al filtrar por ahí.
+
+**Lo grave no es la gráfica**: es que las tarjetas del Panorama rotuladas
+"SECOP II + I" muestran en esos ámbitos **solo SECOP II bajo una etiqueta que
+promete las dos**. Un cero silencioso en un gráfico se nota; una cifra
+mal rotulada, no. Afecta también al buscador, alertas, rankings y perfiles.
+
+Arreglo: traducir el nombre en `whereFromFiltrosSecop1` (soql.js), donde hoy se
+interpola el valor sin más. Dos entradas bastan para el departamento. **Falta
+comprobar lo mismo para `municipio_entidad`** antes de darlo por cerrado: SECOP I
+usa `Bogotá D.C.` como municipio y no se verificó qué escribe SECOP II en
+`ciudad` para ese ámbito. Y conviene, además, el aviso que pedía el usuario:
+cuando SECOP I devuelva cero filas en un ámbito, decirlo en vez de dibujar una
+línea ausente.
+
 **Pendientes menores, ninguno bloqueante:** cachear la concentración país (~13 s
 en vivo) y unificar `poblacion.js` (departamentos) con el anexo municipal del
 DANE —hoy son dos fuentes distintas—. Ver también `REVISION-2026-08.md`, con lo
