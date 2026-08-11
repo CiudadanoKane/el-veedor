@@ -51,6 +51,28 @@ usa `Bogotá D.C.` como municipio y no se verificó qué escribe SECOP II en
 cuando SECOP I devuelva cero filas en un ámbito, decirlo en vez de dibujar una
 línea ausente.
 
+### HECHO ✅ — El mapa por departamento avisa que está cargando (ago 2026)
+
+Reportado por el usuario: mientras cargaban los datos del mapa, no había ninguna
+señal de que estuviera cargando. Y tenía razón — `MapaColombia.jsx` no envuelve
+su consulta en `QueryState` (necesita seguir mostrando los controles y la
+metodología mientras carga), así que no heredaba el spinner que sí tienen las
+demás secciones.
+
+El efecto era el mismo defecto que el aviso de fuente caída de esta semana, con
+otra cara: mientras `porDepto` está vacío, **los 33 departamentos se pintan en el
+gris de "sin dato"** (`GRIS_SIN_DATO`), indistinguible de un país sin ninguna
+cifra.
+
+Arreglo: un velo (`bg-bg/80` + el mismo spinner que `QueryState`) sobre el mapa
+mientras `query.isLoading`, con `z-10` para quedar encima del SVG. Comprobado en
+el navegador: al cargar la página el velo cubre exactamente el área del mapa (600
+× 646 px, medido, no la aproximación de un `inset-0` a ciegas) y desaparece en
+cuanto llega la respuesta —confirmado por el color de relleno pasando del gris de
+"sin dato" a un tono real de la escala—. Sin desbordes en 375 px.
+
+---
+
 **Pendientes menores, ninguno bloqueante:** cachear la concentración país (~13 s
 en vivo) y unificar `poblacion.js` (departamentos) con el anexo municipal del
 DANE —hoy son dos fuentes distintas—. Ver también `REVISION-2026-08.md`, con lo

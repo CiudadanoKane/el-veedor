@@ -386,6 +386,19 @@ export function MapaColombia() {
           y la cifra aparecía donde no se veía. */}
       <div className="mt-5 grid grid-cols-1 lg:grid-cols-[minmax(0,600px)_260px] gap-x-8 gap-y-4 items-start">
         <div className="relative order-2 lg:order-1">
+          {/* Sin esto, mientras carga el mapa se pinta ENTERO en el gris de "sin
+              dato" (GRIS_SIN_DATO): porDepto está vacío hasta que llega la
+              respuesta, y ese gris es indistinguible de un país sin cifras. Un
+              velo con el mismo spinner que QueryState dice que se está
+              cargando, no que no hay nada que mostrar. */}
+          {query.isLoading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-bg/80">
+              <div className="flex items-center text-textSecondary text-[13px]">
+                <div className="h-4 w-4 mr-2.5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                Cargando el mapa…
+              </div>
+            </div>
+          )}
           <ComposableMap
             projection="geoMercator"
             projectionConfig={{ center: [-74, 4.2], scale: 1750 }}
