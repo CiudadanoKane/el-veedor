@@ -51,6 +51,52 @@ usa `Bogotá D.C.` como municipio y no se verificó qué escribe SECOP II en
 cuando SECOP I devuelva cero filas en un ámbito, decirlo en vez de dibujar una
 línea ausente.
 
+### HECHO ✅ — Elegir el lugar es el primer gesto, no una instrucción (ago 2026)
+
+Primer punto de una revisión de la navegación para público general.
+
+**El diagnóstico.** La plataforma abría en Colombia entera, que es la vista menos
+útil para un ciudadano: lo primero que veía en un teléfono era "Valor contratado ·
+$1.776,9 B", una cifra nacional en billones con la que no puede hacer nada. Lo
+que sirve es su municipio — y el sitio ya lo hacía muy bien desde la fusión de
+Panorama con Mi municipio.
+
+El problema era llegar. La única señal de que se podía era una frase del
+subtítulo: *"Elige un departamento o municipio arriba"*. **Cuando la interfaz
+necesita una oración que indique dónde hacer clic, esa oración está haciendo el
+trabajo que debería hacer el control** — y el control eran dos desplegables de
+152 px compitiendo en la barra oscura con el buscador y el botón de compartir.
+
+**Lo que hay ahora** (`components/ui/ElegirLugar.jsx`): un bloque al entrar,
+antes de las cifras nacionales, con sus propios selectores grandes (45 px de
+alto, cómodos para el pulgar). No reemplaza la barra de arriba —esa sigue siendo
+donde se cambia de ámbito a mitad de camino, desde cualquier sección—: es solo la
+puerta de entrada, y se retira sola.
+
+**Tres cosas que salieron al probarlo, no al diseñarlo:**
+
+- **Desaparecía demasiado pronto.** La primera versión se ocultaba en cuanto
+  había *cualquier* ámbito, así que al elegir el departamento se esfumaba y el
+  municipio —el paso que de verdad le interesa a un vecino— quedaba inalcanzable
+  desde ahí. Ahora acompaña el segundo paso: el título pasa a "¿En qué municipio
+  de Atlántico?" mientras la página de abajo **ya muestra Atlántico**, así que se
+  ve el efecto y se puede afinar.
+- **"No Definido" aparecía en la lista de departamentos.** Es el hueco de un
+  registro sin diligenciar, no un lugar. Se filtra aquí y no en `useDepartamentos`
+  porque el selector de la barra lo usan también quienes vienen a auditar el dato
+  en sí, donde ese valor sí significa algo.
+- **El último lugar se recuerda, pero NO se aplica solo.** Cambiarle el ámbito a
+  alguien sin que lo pida convierte una cifra nacional en municipal sin aviso —la
+  confusión que la barra existe para evitar—. Se ofrece a un toque:
+  "Volver a Barranquilla →".
+
+Verificado el recorrido entero en el navegador: portada → departamento →
+municipio → el bloque se retira → volver a la portada muestra el botón de vuelta
+→ un toque restaura el ámbito. Y en 375 px cabe completo sin scroll (bloque de
+411 px en una pantalla de 812), sin desbordes.
+
+---
+
 ### HECHO ✅ — El mapa por departamento avisa que está cargando (ago 2026)
 
 Reportado por el usuario: mientras cargaban los datos del mapa, no había ninguna

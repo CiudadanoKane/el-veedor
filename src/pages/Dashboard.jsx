@@ -13,6 +13,7 @@ import { Concentracion } from '../components/ui/Concentracion'
 import { RetratoDeLugar } from '../components/ui/RetratoDeLugar'
 import { FuenteCaida } from '../components/ui/FuenteCaida'
 import { VideoTutorial } from '../components/ui/VideoTutorial'
+import { ElegirLugar } from '../components/ui/ElegirLugar'
 import { useFilters } from '../context/FiltersContext'
 import { useDashboardStats } from '../hooks/useDashboard'
 import { useColumnas } from '../hooks/useColumnas'
@@ -790,7 +791,10 @@ export function Dashboard() {
         subtitle={
           hayLugar
             ? `Todo lo que la plataforma sabe de la contratación en ${lugar}, en una sola lectura.`
-            : 'Cómo está contratando Colombia hoy. Elige un departamento o municipio arriba para ver el retrato de ese lugar; cada cifra se puede desplegar para ver de dónde sale.'
+            // Ya no manda a "arriba" a buscar los selectores: elegir el lugar
+            // es ahora un bloque propio justo debajo (ver ElegirLugar). Repetir
+            // la instrucción sobraba y además señalaba al sitio equivocado.
+            : 'Cómo está contratando Colombia hoy. Cada cifra se puede desplegar para ver de dónde sale.'
         }
       />
 
@@ -801,6 +805,12 @@ export function Dashboard() {
       {sinFuente && (
         <FuenteCaida query={generales} lugar={lugar} onQuitarFiltro={clearFilters} />
       )}
+
+      {/* Elegir el lugar va primero que todo lo demás (salvo el aviso de fuente
+          caída): para un ciudadano, la vista nacional es la menos útil, y este
+          bloque es el gesto que convierte la página en la de su municipio. Se
+          quita solo en cuanto hay un lugar elegido. */}
+      <ElegirLugar />
 
       {/* El recorrido en video va después del aviso de fuente caída y antes de
           las cifras: si la fuente está caída eso es lo primero que hay que
