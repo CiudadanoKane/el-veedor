@@ -87,11 +87,24 @@ describe('clasificarAdicion', () => {
 // El acumulado de prórrogas y el plazo original que se deriva de él. Nacen de un
 // fallo real: `dias_adicionados` de SECOP II no acumula, y usarlo como si lo
 // hiciera daba "+8%" donde el contrato había crecido más del 100%.
+//
 // El contrato 202002796, el caso real que destapó las dos versiones del fallo.
-// Fíjese en las dos modificaciones que declaran 31 días sin mover la fecha de
-// fin: son 62 días fantasma. Sumar da 1.076; el fin se movió 1.014.
+// Fíjese en las modificaciones que declaran 31 días sin mover la fecha de fin:
+// esas SÍ son días fantasma —el dataset repite la misma prórroga en varias
+// filas— y `plazoDelContrato` las descarta porque no cambian `finContrato`.
+//
+// La PRIMERA modificación (2021-11-18) es distinta: no hay una fecha de fin
+// anterior con la que contrastarla —es el ancla—, así que su `dias` no se
+// puede verificar contra nada. Y el dato crudo trae DOS versiones de esa misma
+// modificación con `dias_extendidos` distinto (0 y 31) y la misma
+// `fecha_fin_contrato`. La deduplicación (useModificaciones.js,
+// useAdiciones.js) se queda con la MÁS ALTA de forma determinista —para que la
+// tabla y la ficha no puedan volver a elegir versiones distintas del mismo
+// grupo, que es justo lo que pasó (ver ROADMAP: 913/1.014/6/+111% en una vista,
+// 882/1.045/7/+118% en la otra, del mismo contrato)—, así que aquí se modela
+// con `dias: 31`, el valor que la app realmente usa hoy.
 const MODS_202002796 = [
-  { fecha: '2021-11-18', dias: 0, finContrato: '2023-04-23' },
+  { fecha: '2021-11-18', dias: 31, finContrato: '2023-04-23' },
   { fecha: '2022-07-11', dias: 161, finContrato: '2023-10-01' },
   { fecha: '2022-12-23', dias: 0, finContrato: '2023-10-01' },
   { fecha: '2023-09-29', dias: 92, finContrato: '2024-01-01' },
@@ -105,12 +118,13 @@ const MODS_202002796 = [
 
 describe('finOriginalDe', () => {
   it('reconstruye el fin previo restando lo que extendió la primera modificación', () => {
-    // La primera dejó el fin en 2023-04-23 sin extender nada: ese era el fin.
-    expect(finOriginalDe(MODS_202002796)).toBe('2023-04-23')
+    // La primera dejó el fin en 2023-04-23 habiendo extendido 31 días: el fin
+    // previo a ella era un mes antes.
+    expect(finOriginalDe(MODS_202002796)).toBe('2023-03-23')
   })
 
   it('no depende del orden en que lleguen las filas', () => {
-    expect(finOriginalDe([...MODS_202002796].reverse())).toBe('2023-04-23')
+    expect(finOriginalDe([...MODS_202002796].reverse())).toBe('2023-03-23')
   })
 
   it('resta los días de la primera cuando esa misma ya extendía', () => {
@@ -148,10 +162,10 @@ describe('plazoDelContrato', () => {
       fin: '2026-01-31',
       diasCampo: 30,
     })
-    // 1.014, no los 1.076 que daba sumar: 62 días los declaran dos
-    // modificaciones que no movieron la fecha de fin.
-    expect(p.diasAcumulados).toBe(1014)
-    expect(p.plazoOriginal).toBe(913)
+    // 1.045, no los 1.076 que daba sumar TODO: 31 días los declaran dos
+    // modificaciones que no movieron la fecha de fin, y esos sí se descartan.
+    expect(p.diasAcumulados).toBe(1045)
+    expect(p.plazoOriginal).toBe(882)
     expect(p.fuente).toBe('historial')
   })
 
@@ -172,10 +186,11 @@ describe('plazoDelContrato', () => {
       inicio: '2020-10-22',
       fin: '2026-01-31',
     })
-    // Diez modificaciones en el historial, seis fechas de fin nuevas: las
-    // otras cuatro no movieron el plazo, aunque dos de ellas declaren 31 días.
+    // Diez modificaciones en el historial, siete fechas de fin nuevas contando
+    // la de la propia ancla (2023-04-23, ya posterior al fin reconstruido):
+    // las otras tres no movieron el plazo, aunque declaren 31 días.
     // (El contrato real trae 15 filas; aquí van las que cambian el resultado.)
-    expect(p.prorrogas).toBe(6)
+    expect(p.prorrogas).toBe(7)
   })
 
   it('no pierde la prórroga cuando el dataset repite la misma fecha de fin', () => {

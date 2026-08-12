@@ -167,6 +167,64 @@ puedan volver a dar cifras distintas del mismo hecho (ya pasó: +3.289 en una y
 fin, no las filas del historial. Doce pruebas nuevas, incluida la del formato de
 fecha.
 
+### CORREGIDO UNA TERCERA VEZ — la reconstrucción por fechas seguía dependiendo de un valor ambiguo (ago 2026)
+
+Esta corrección se escribió, se probó (doce aserciones) y se publicó como
+cerrada. Verificando de nuevo en el navegador —fila de la tabla, ficha
+desplegada y resumen, los tres a la vez, para el mismo 202002796— **la
+contradicción original seguía ahí**: la tabla decía "882 d · +1.045 · en 7
+prórrogas · +118%" y la ficha, en la misma pantalla, "+1.014 · en 6 prórrogas ·
++111%". Exactamente los dos números que el commit anterior documenta como "antes"
+y "después".
+
+**La causa, aislada con precisión matemática** (reproducida con
+`finOriginalDe` real, no a mano): de las diez modificaciones del historial,
+nueve no dependen de ningún `dias_extendidos` —`plazoDelContrato` ya las deriva
+solo de `fecha_fin_contrato`, que es sólida—. La única que sí depende de ese
+campo es la **primera**, porque no hay una fecha de fin anterior con la que
+contrastarla: `finOriginalDe` le resta su propio `dias` al fin que dejó, y ese
+es el ancla de todo lo demás. Y esa primera modificación del 202002796 tiene
+**dos versiones en el dato crudo, con `dias_extendidos` distinto (0 y 31) y la
+misma `fecha_fin_contrato`** —el mismo patrón de inconsistencia que motivó toda
+esta cadena de correcciones, aplicado ahora al único punto que seguía sin
+protección—.
+
+```
+primera.dias = 0  → finOriginal 2023-04-23 → 913 / 1.014 / 6 / +111%
+primera.dias = 31 → finOriginal 2023-03-23 → 882 / 1.045 / 7 / +118%
+```
+
+`useModificaciones.js` (la ficha) y `traerHistorial` en `useAdiciones.js` (la
+tabla) deduplican esa modificación por separado, cada uno con "la primera fila
+que llegue" — y Socrata no promete un orden estable entre versiones que
+comparten `fecha_de_aprobacion`, que es el caso normal dentro de un mismo grupo.
+Dos consultas, dos órdenes posibles, dos respuestas.
+
+**El arreglo:** las dos deduplicaciones ahora se quedan con el
+`dias_extendidos` **más alto** de cada grupo, no con el primero que llegue. Es
+determinista —las dos consultas convergen siempre al mismo valor—, y es una
+elección razonada y no arbitraria: en los grupos donde SÍ se puede verificar
+contra una transición real de `fecha_fin_contrato` (los otros nueve), el valor
+más alto coincidió con el delta correcto en todos los casos revisados. Pero
+**no es una certeza**: para esta modificación en concreto no hay ninguna fecha
+anterior contra la que comprobar ni 0 ni 31, así que sigue siendo la mejor
+estimación disponible, no un hecho verificado. Queda dicho así en el código.
+
+**Para el 202002796, el número que queda —verificado en las tres vistas a la
+vez, dos veces, y en otros dos contratos más para no fiarlo todo a este caso—:
+882 días de plazo original, 1.045 añadidos, en 7 prórrogas, +118%.** El fixture
+de las pruebas de la corrección anterior asumía `dias: 0` para esa primera
+modificación —el valor que le tocaba con la deduplicación vieja—; se actualizó a
+`dias: 31` y sus aserciones, para que la prueba describa lo que la aplicación
+calcula hoy y no lo que calculaba antes de esta vuelta.
+
+Ninguna de las piezas que se habían dado por buenas en la corrección anterior
+—la reconstrucción por fechas en vez de sumas, el caso CD 2025-079, el bug de
+zona horaria— se tocó ni hacía falta tocarla: seguían siendo correctas. El
+hueco era uno solo, y quedaba fuera de lo que esas pruebas alcanzaban a ver
+porque operaban sobre un historial ya deduplicado a mano, no sobre las dos
+consultas reales.
+
 **PENDIENTE Y SERIO — SECOP I desaparece en silencio en Bogotá y Norte de
 Santander.** Encontrado por el usuario el 6/8/2026: la gráfica de evolución de
 Bogotá solo pintaba SECOP II, sin aviso. No es un fallo de la consulta: **los dos

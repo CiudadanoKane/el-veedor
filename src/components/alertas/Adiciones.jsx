@@ -147,7 +147,7 @@ export function AdicionesTiempo() {
       <Methodology>
         En <strong>SECOP II</strong> los días no se leen del campo{' '}
         <code>dias_adicionados</code>, porque <strong>no acumula</strong>: declara una sola
-        prórroga —en un contrato con seis, decía 30 días de los 1.014 reales—. Se
+        prórroga —en un contrato con siete, decía 30 días de los 1.045 reales—. Se
         reconstruye desde el <strong>historial de modificaciones</strong>, que dice en qué
         fecha quedaba el contrato después de cada una: la fecha de fin con la que se firmó
         sale de ahí, y los días añadidos son la diferencia hasta la fecha de fin actual.

@@ -61,12 +61,16 @@ async function traerHistorial(ids) {
       const vistas = porContrato.get(r.id_contrato)
       const clave =
         r.identificador_modificacion || `${r.fecha_de_aprobacion}-${r.valor_modificacion}`
-      if (!vistas.has(clave)) {
-        vistas.set(clave, {
-          fecha: r.fecha_de_aprobacion,
-          dias: parseInt(r.dias_extendidos ?? 0, 10) || 0,
-          finContrato: r.fecha_fin_contrato,
-        })
+      const dias = parseInt(r.dias_extendidos ?? 0, 10) || 0
+      const existente = vistas.get(clave)
+      // Mismo criterio EXACTO que useModificaciones (ver ahí el porqué): el
+      // `dias_extendidos` más alto entre versiones de una misma modificación,
+      // para que esta consulta por lote y la individual de la ficha no puedan
+      // elegir versiones distintas del mismo grupo y divergir.
+      if (!existente) {
+        vistas.set(clave, { fecha: r.fecha_de_aprobacion, dias, finContrato: r.fecha_fin_contrato })
+      } else if (dias > existente.dias) {
+        existente.dias = dias
       }
     }
   }
