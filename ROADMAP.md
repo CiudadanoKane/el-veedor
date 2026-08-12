@@ -76,10 +76,44 @@ El camino: desduplicar por `identificador_modificacion` (existe en el dataset) y
 comprobar el resultado contra varios contratos con historial conocido antes de
 tocar ninguna cifra publicada.
 
-**Mitigación aplicada ya**, para que la cifra deje de afirmar lo que no es: la
-ficha del contrato muestra el campo con la advertencia *"Según el campo de SECOP,
-que no acumula: si hubo varias prórrogas, el total es mayor. Ver el historial
-abajo."* El historial sí las lista una a una.
+**ARREGLADO EN LA FICHA DEL CONTRATO (ago 2026).** La desduplicación que hacía
+falta **ya existía**: `useModificaciones` agrupa por `identificador_modificacion`
+desde antes. Solo faltaba usar esa lista para el total en vez de leer el campo.
+
+- `diasAcumuladosDe(mods)` suma el historial desduplicado. Para el 202002796 da
+  **1.076 días** — exactamente la suma de las prórrogas visibles en la captura
+  del usuario (161+92+212+31+316+31+203+30).
+- `plazoOriginalDe(inicio, fin, dias)` deriva el plazo con que se firmó. Para ese
+  contrato: **851 días**, no los 1.897 que salían antes, y el crecimiento real
+  pasa de "+8%" a **+126%**.
+- La casilla "Días adicionados" muestra el total y, cuando difiere, **también lo
+  que declara SECOP**: que el campo oficial diga menos de lo que su propio
+  historial demuestra es información de veeduría, no ruido que convenga esconder.
+
+**Guarda importante:** `plazoOriginalDe` devuelve `null` —no un negativo— cuando
+lo acumulado supera el plazo transcurrido. Pasa de verdad: en dos de los ocho
+contratos revisados, por suspensiones, modificaciones solapadas o fechas de fin
+sin actualizar. Ahí no sabemos el plazo original, y un cero se leería como si lo
+supiéramos.
+
+**Y de paso, la adición total de PRESUPUESTO**, que la ficha no traía. No sale
+del historial: ese dataset da el acumulado tras cada modificación pero no el
+valor anterior a la primera, así que sumar diferencias deja fuera la primera
+adición. Se toma el valor con que se adjudicó el proceso (`p6dx-8zbt`) y se pasa
+por el mismo `clasificarAdicion` de la sección de Adiciones, para que las guardas
+sean unas solas. Tres estados, los tres verificados en contratos reales:
+"+$15.000 millones · +48% sobre los $31.500 millones del precio base", "Sin
+adición · Sigue en el valor con que se adjudicó", y "No verificable · Crecimiento
+de +2.482%" cuando la cifra no es creíble como sobrecosto.
+
+Siete pruebas nuevas sobre las dos reglas (45 en total), incluida la del caso que
+lo destapó y la de la guarda del plazo negativo.
+
+**Lo que NO arregla esto:** las vistas agregadas —el ranking de "Adiciones de
+plazo", la prevalencia, el mapa— siguen ordenando por `dias_adicionados`, porque
+consultan millones de contratos con SoQL y no pueden cruzar el historial contrato
+a contrato. Corregirlas exige un precálculo diario como el de las adiciones de
+valor. **Queda pendiente, y es la mitad grande del problema.**
 
 **PENDIENTE Y SERIO — SECOP I desaparece en silencio en Bogotá y Norte de
 Santander.** Encontrado por el usuario el 6/8/2026: la gráfica de evolución de

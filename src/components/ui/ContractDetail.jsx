@@ -1,5 +1,7 @@
 import { interpretContract } from '../../lib/interpret'
 import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/formatters'
+import { diasAcumuladosDe, plazoOriginalDe, clasificarAdicion } from '../../lib/adiciones'
+import { useModificaciones, useValorOriginalProceso } from '../../hooks/useModificaciones'
 import { SecopLink } from './SecopLink'
 import { ModificationHistory } from './ModificationHistory'
 import { TerminoConAyuda } from './Ayuda'
@@ -43,6 +45,37 @@ function Fact({ label, value }) {
 export function ContractDetail({ contract: c }) {
   const sentences = interpretContract(c)
   const atraso = diasAtraso(c)
+
+  // El historial de modificaciones es la ÚNICA fuente fiable de cuánto se
+  // prorrogó un contrato: `dias_adicionados` no acumula (ver diasAcumuladosDe).
+  // Se pide aquí además de en ModificationHistory, pero no cuesta una petición
+  // extra: misma queryKey, así que React Query la sirve una sola vez.
+  //
+  // Solo SECOP II: el dataset de modificaciones no cubre SECOP I, y pedirlo con
+  // un uid de la fuente vieja sería una consulta condenada a volver vacía.
+  const esSecop2 = c.source !== 'SECOP I'
+  const modificaciones = useModificaciones(esSecop2 ? c.id : null)
+  const mods = modificaciones.data || []
+  const diasAcumulados = diasAcumuladosDe(mods)
+  const hayHistorial = mods.length > 0 && diasAcumulados > 0
+
+  // Con historial mandan sus días; sin él, lo único que hay es el campo de
+  // SECOP, que para un contrato de una sola prórroga sí coincide.
+  const diasReales = hayHistorial ? diasAcumulados : c.daysAdded
+  const plazoOriginal = plazoOriginalDe(c.startDate, c.endDate, diasReales)
+
+  // Adición TOTAL de presupuesto. No sale del historial de modificaciones: ese
+  // dataset trae el valor acumulado tras cada una, pero no el anterior a la
+  // primera, así que sumar sus diferencias deja fuera la primera adición. El
+  // valor con el que se adjudicó el proceso sí cierra la cuenta.
+  //
+  // Pasa por el mismo `clasificarAdicion` que la sección de Adiciones para que
+  // las guardas sean unas solas: los múltiplos exactos de digitación y los
+  // crecimientos imposibles se apartan igual aquí que allá.
+  const valorOriginal = useValorOriginalProceso(esSecop2 ? c.processId : null)
+  const adicionValor = valorOriginal.data
+    ? clasificarAdicion(c.contractValue, valorOriginal.data.valor)
+    : null
 
   return (
     <div className="bg-muted rounded-none p-4 space-y-4">
@@ -118,33 +151,72 @@ export function ContractDetail({ contract: c }) {
             )
           }
         />
-        {/* NO es el total acumulado, aunque el nombre del campo lo sugiera.
-            Comprobado en agosto de 2026 sobre 8 contratos del Atlántico: en 5 de
-            los 8, `dias_adicionados` declara MENOS que una sola de las
-            modificaciones del contrato. El caso que lo destapó (referencia
-            202002796) declara 30 días sobre un contrato que corre 1.927 días y
-            acumula prórrogas de 161, 92, 212, 316 y 203 días entre otras.
-            Mientras no sepamos calcular el acumulado correcto —el dataset de
-            modificaciones trae varias filas por modificación, una por versión
-            del registro—, la cifra se muestra diciendo lo que es y remitiendo al
-            historial de abajo, que sí las lista una a una. Ver ROADMAP. */}
+        {/* Se suman las prórrogas del historial en vez de leer
+            `dias_adicionados`, que no acumula. Cuando los dos números difieren se
+            dicen los dos: en una plataforma de veeduría, que el campo oficial
+            declare menos de lo que su propio historial demuestra es información,
+            no ruido que convenga esconder. */}
         <Fact
           label="Días adicionados"
           value={
-            c.daysAdded ? (
+            hayHistorial ? (
               <span>
-                +{c.daysAdded.toLocaleString('es-CO')}
+                +{diasAcumulados.toLocaleString('es-CO')}
                 <span className="block text-[11px] text-textSecondary font-normal leading-snug mt-0.5">
-                  Según el campo de SECOP, que no acumula: si hubo varias prórrogas,
-                  el total es mayor. Ver el historial abajo.
+                  {mods.length === 1
+                    ? 'De la única modificación del historial.'
+                    : `Sumando las ${mods.length} modificaciones del historial.`}
+                  {c.daysAdded !== diasAcumulados && (
+                    <> El campo de SECOP declara +{(c.daysAdded || 0).toLocaleString('es-CO')}.</>
+                  )}
                 </span>
               </span>
+            ) : c.daysAdded ? (
+              `+${c.daysAdded.toLocaleString('es-CO')}`
             ) : (
               '0'
             )
           }
         />
         <Fact label="Valor del contrato" value={formatCOP(c.contractValue)} />
+        {/* La pareja de "Días adicionados": cuánto creció en plata. Se muestra
+            siempre que se pueda establecer el valor original del proceso; cuando
+            no se puede —o el crecimiento no es creíble como adición real— se
+            dice, en vez de dejar la casilla en cero como si no hubiera crecido. */}
+        <Fact
+          label="Adición de presupuesto"
+          value={
+            valorOriginal.isLoading ? (
+              '…'
+            ) : !valorOriginal.data ? (
+              <span className="text-textSecondary">Sin valor original en el proceso</span>
+            ) : adicionValor?.motivo ? (
+              <span className="text-textSecondary">
+                No verificable
+                <span className="block text-[11px] font-normal leading-snug mt-0.5">
+                  {adicionValor.motivo}
+                </span>
+              </span>
+            ) : adicionValor?.adicion > 0 ? (
+              <span>
+                +{formatCOP(adicionValor.adicion)}
+                <span className="block text-[11px] text-textSecondary font-normal leading-snug mt-0.5">
+                  +{adicionValor.pctAdicion}% sobre los {formatCOP(valorOriginal.data.valor)}{' '}
+                  {valorOriginal.data.referencia === 'adjudicado'
+                    ? 'adjudicados'
+                    : 'del precio base'}.
+                </span>
+              </span>
+            ) : (
+              <span>
+                Sin adición
+                <span className="block text-[11px] text-textSecondary font-normal leading-snug mt-0.5">
+                  Sigue en el valor con que se adjudicó.
+                </span>
+              </span>
+            )
+          }
+        />
         {/* SECOP I no reporta ejecución financiera (ver ROADMAP.md sección 8):
             un guion ahí se leería como "$0 registrado" en vez de "esta fuente
             no lo mide". */}
@@ -177,19 +249,13 @@ export function ContractDetail({ contract: c }) {
           </div>
         ) : (
           // El plazo original viaja hasta aquí para poder expresar cada prórroga
-          // en porcentaje: sin él, "+90 días" no dice si es mucho o poco. Se
-          // calcula igual que en la alerta de adiciones de plazo —el endDate ya
-          // incluye lo añadido, así que se resta—.
-          <ModificationHistory
-            idContrato={c.id}
-            plazoOriginal={
-              c.startDate && c.endDate
-                ? Math.round(
-                    (new Date(c.endDate).getTime() - new Date(c.startDate).getTime()) / 86_400_000,
-                  ) - (c.daysAdded || 0)
-                : null
-            }
-          />
+          // en porcentaje: sin él, "+90 días" no dice si es mucho o poco.
+          //
+          // Antes se restaba `dias_adicionados`, que no acumula, y el
+          // denominador salía enorme: en el contrato 202002796 daba 1.897 días
+          // de "plazo original" —y por tanto prórrogas de "+8%"— cuando el
+          // original era de unos 851 y el crecimiento real supera el 100%.
+          <ModificationHistory idContrato={c.id} plazoOriginal={plazoOriginal} />
         )}
       </div>
 

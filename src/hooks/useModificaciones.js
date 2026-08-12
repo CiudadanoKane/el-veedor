@@ -1,10 +1,36 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
 import { esc } from '../lib/soql'
+import { valorOriginalDe } from '../lib/adiciones'
 
 // Dataset dedicado de modificaciones a contratos de SECOP II.
 // Enlaza con jbjy-vk9h por id_contrato (formato CO1.PCCNTR.xxx).
 const DS_MOD = 'u8cx-r425'
+
+// Valor con el que se adjudicó un proceso, para poder decir cuánto creció el
+// contrato en plata. Vive aquí y no en useAdiciones porque allá el cruce se hace
+// por lotes de 75 contratos; esto es la ficha de UNO solo.
+//
+// Las dos referencias posibles y por qué, en lib/adiciones.js: la adjudicación
+// en procesos competitivos, el precio base en contratación directa (donde no
+// hubo adjudicación pero sí presupuesto oficial).
+export function useValorOriginalProceso(idProceso) {
+  return useQuery({
+    queryKey: ['proceso', 'valor-original', idProceso],
+    enabled: !!idProceso,
+    staleTime: 30 * 60 * 1000,
+    queryFn: () =>
+      socrataQuery(
+        'p6dx-8zbt',
+        // max() resuelve entre las varias filas por fase del mismo proceso
+        // (apertura, selección, adjudicación…), igual que en el precálculo.
+        `SELECT max(valor_total_adjudicacion) as adjudicado, max(precio_base) as base
+         WHERE id_del_portafolio = '${esc(idProceso)}'
+         GROUP BY id_del_portafolio LIMIT 1`,
+      ),
+    select: (rows) => valorOriginalDe(rows?.[0]),
+  })
+}
 
 export function useModificaciones(idContrato) {
   return useQuery({

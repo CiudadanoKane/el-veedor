@@ -42,6 +42,34 @@ export function slugAmbito(clave) {
     .replace(/^-+|-+$/g, '')
 }
 
+// Días de prórroga ACUMULADOS de un contrato, a partir de su historial de
+// modificaciones ya desduplicado (ver useModificaciones).
+//
+// Existe porque el campo `dias_adicionados` de SECOP II **no acumula**, aunque
+// el nombre lo sugiera. Comprobado en agosto de 2026 sobre ocho contratos del
+// Atlántico: en cinco declara menos que UNA SOLA de las modificaciones del
+// contrato. El caso que lo destapó (referencia 202002796) declaraba 30 días
+// sobre un contrato con prórrogas de 161, 92, 212, 316 y 203 entre otras —1.076
+// en total—.
+export function diasAcumuladosDe(modificaciones) {
+  return (modificaciones || []).reduce((total, m) => total + (m.dias || 0), 0)
+}
+
+// Plazo con el que se firmó el contrato: lo que dura hoy menos lo que se le
+// añadió. La fecha de fin ya incluye las prórrogas, así que se restan.
+//
+// Devuelve null —y no un número negativo— cuando la resta no da: hay contratos
+// donde los días acumulados SUPERAN el plazo transcurrido (medido: dos de los
+// ocho revisados), sea por suspensiones, por modificaciones que se solapan o
+// porque la fecha de fin no quedó actualizada. Ahí no sabemos el plazo original,
+// y tanto un negativo como un cero se leerían como si lo supiéramos.
+export function plazoOriginalDe(inicio, fin, diasAnadidos) {
+  if (!inicio || !fin) return null
+  const plazoActual = Math.round((new Date(fin).getTime() - new Date(inicio).getTime()) / 86_400_000)
+  const original = plazoActual - (diasAnadidos || 0)
+  return original > 0 ? original : null
+}
+
 // Valor original mínimo para que el % de adición sea interpretable: con una
 // base de $100.000 cualquier contrato normal parece un crecimiento de miles
 // por ciento.
