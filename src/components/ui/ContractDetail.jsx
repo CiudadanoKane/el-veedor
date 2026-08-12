@@ -43,7 +43,6 @@ function Fact({ label, value }) {
 
 // Panel que se despliega bajo una fila: interpretación en lenguaje llano + ficha de datos.
 export function ContractDetail({ contract: c }) {
-  const sentences = interpretContract(c)
   const atraso = diasAtraso(c)
 
   // El historial de modificaciones es la ÚNICA fuente fiable de cuánto se
@@ -76,6 +75,16 @@ export function ContractDetail({ contract: c }) {
   const adicionValor = valorOriginal.data
     ? clasificarAdicion(c.contractValue, valorOriginal.data.valor)
     : null
+
+  // El resumen en palabras simples se arma con las cifras ya corregidas, no con
+  // el contrato crudo: si no, seguiría diciendo "el plazo se amplió 30 días"
+  // mientras la ficha de al lado muestra 1.076.
+  const sentences = interpretContract({
+    ...c,
+    diasAcumulados: hayHistorial ? diasAcumulados : undefined,
+    nModificaciones: mods.length,
+    plazoOriginal,
+  })
 
   return (
     <div className="bg-muted rounded-none p-4 space-y-4">

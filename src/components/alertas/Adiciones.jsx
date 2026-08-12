@@ -62,7 +62,19 @@ export function AdicionesTiempo() {
       key: 'contractValue',
       header: 'Valor',
       className: 'text-right tabular-nums',
-      render: (r) => formatCOP(r.contractValue),
+      // El valor de arriba es el ACTUAL, ya con adiciones. Solo dice algo si se
+      // ve desde cuánto partió: "$280 mil millones" no distingue un contrato que
+      // se firmó así de uno que creció un 56%.
+      render: (r) => (
+        <span>
+          {formatCOP(r.contractValue)}
+          {r.valorOriginal > 0 && r.adicionValor > 0 && (
+            <span className="block text-[11px] text-textSecondary font-normal">
+              desde {formatCOP(r.valorOriginal)} · +{r.pctValor}%
+            </span>
+          )}
+        </span>
+      ),
     },
     {
       key: 'plazoOriginal',
@@ -80,15 +92,22 @@ export function AdicionesTiempo() {
       },
     },
     {
-      key: 'daysAdded',
+      key: 'diasAcumulados',
       header: 'Días añadidos',
       className: 'text-right tabular-nums whitespace-nowrap',
+      // Los días del HISTORIAL, no el campo `dias_adicionados`, que declara una
+      // sola de las prórrogas. Ver traerHistorial en useAdiciones.
       render: (r) => {
-        const h = humanDuration(r.daysAdded)
+        const h = humanDuration(r.diasAcumulados)
         return (
           <span className="text-warning font-medium">
-            +{r.daysAdded?.toLocaleString('es-CO')}
+            +{r.diasAcumulados?.toLocaleString('es-CO')}
             {h && <span className="text-textSecondary font-normal"> ({h})</span>}
+            {r.nModificaciones > 1 && (
+              <span className="block text-[11px] text-textSecondary font-normal">
+                en {r.nModificaciones} prórrogas
+              </span>
+            )}
           </span>
         )
       },

@@ -8,7 +8,9 @@ import {
 import { adaptList } from '../adapters/secop2Adapter'
 import { adaptList as adaptListSecop1 } from '../adapters/secop1Adapter'
 import { CONTRACT_FIELDS, CONTRACT_FIELDS_SECOP1 } from '../lib/constants'
-import { valorOriginalDe, clasificarAdicion, detectarErrorDigitacion } from '../lib/adiciones'
+import {
+  valorOriginalDe, clasificarAdicion, detectarErrorDigitacion, plazoOriginalDe,
+} from '../lib/adiciones'
 import { NIVELES_ADICION } from './useAlertas'
 
 const DS = DATASETS.CONTRATOS
@@ -24,6 +26,51 @@ export { detectarErrorDigitacion }
 const ORDEN_ADIC = {
   dias: 'dias_adicionados DESC',
   valor: 'valor_del_contrato DESC',
+}
+
+// Días de prórroga ACUMULADOS de varios contratos, en una consulta por lote.
+//
+// Es la misma cuenta que hace la ficha de un contrato (ver diasAcumuladosDe),
+// pero para las 50 filas de la tabla a la vez: una consulta por lote en vez de
+// cincuenta. Sin esto, el ranking mostraba `dias_adicionados`, que declara UNA
+// sola de las prórrogas —en el contrato 202002796, 30 días de los 1.076 reales—.
+//
+// La desduplicación por `identificador_modificacion` es la misma que hace
+// useModificaciones: el dataset trae varias filas por modificación, una por
+// versión del registro, y sumarlas a secas cuenta de más.
+async function traerHistorial(ids) {
+  const porContrato = new Map()
+  if (!ids.length) return porContrato
+  const CHUNK = 40
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const lote = ids.slice(i, i + CHUNK).map((x) => `'${esc(x)}'`).join(',')
+    const rows = await socrataQuery(
+      'u8cx-r425',
+      // fecha_de_aprobacion y valor_modificacion se traen solo para la clave de
+      // respaldo. Tiene que ser EXACTAMENTE la de useModificaciones: con claves
+      // distintas, la misma modificación se contaba en un sitio y no en el otro,
+      // y la fila de la tabla decía +3.289 donde su propio desplegable decía
+      // +3.286. Dos cifras del mismo hecho en la misma pantalla.
+      `SELECT id_contrato, identificador_modificacion, dias_extendidos,
+              fecha_de_aprobacion, valor_modificacion
+       WHERE id_contrato IN (${lote}) AND estado_modificacion = 'Publicado'
+       LIMIT 5000`,
+    )
+    for (const r of rows) {
+      if (!porContrato.has(r.id_contrato)) porContrato.set(r.id_contrato, new Map())
+      const vistas = porContrato.get(r.id_contrato)
+      const clave =
+        r.identificador_modificacion || `${r.fecha_de_aprobacion}-${r.valor_modificacion}`
+      if (!vistas.has(clave)) vistas.set(clave, parseInt(r.dias_extendidos ?? 0, 10) || 0)
+    }
+  }
+  // De mapa de modificaciones a { dias, n } por contrato
+  const resumen = new Map()
+  for (const [id, vistas] of porContrato) {
+    const dias = [...vistas.values()].reduce((a, b) => a + b, 0)
+    resumen.set(id, { dias, n: vistas.size })
+  }
+  return resumen
 }
 
 // Mismo orden, con los nombres de campo de SECOP I.
@@ -80,32 +127,62 @@ export function useAdicionesTiempo(filters = {}, limit = 50, orden = 'dias') {
         socrataQuery(DS1, `SELECT ${CONTRACT_FIELDS_SECOP1} ${where1} ORDER BY ${orderBy1} LIMIT ${limit}`)
           .catch(() => []),
       ])
-      return { filas2, filas1 }
+
+      // El campo `dias_adicionados` por el que se ordena arriba NO acumula (ver
+      // diasAcumuladosDe): declara una sola de las prórrogas. Sirve para
+      // preseleccionar candidatos —quien tiene el campo en cero no tiene
+      // prórrogas—, pero las cifras que se MUESTRAN se recalculan aquí desde el
+      // historial real, en dos consultas por lote para las 50 filas en vez de
+      // una por contrato.
+      const ids = [...new Set(adaptList(filas2).map((c) => c.id).filter(Boolean))]
+      const procesos = [...new Set(adaptList(filas2).map((c) => c.processId).filter(Boolean))]
+      const [historial, base] = await Promise.all([
+        traerHistorial(ids).catch(() => new Map()),
+        procesos.length ? traerProcesos(procesos).catch(() => new Map()) : Promise.resolve(new Map()),
+      ])
+      return { filas2, filas1, historial: [...historial], base: [...base] }
     },
-    select: ({ filas2, filas1 }) => {
+    select: ({ filas2, filas1, historial, base }) => {
+      const porContrato = new Map(historial || [])
+      const porProceso = new Map(base || [])
       const contracts = [...adaptList(filas2), ...adaptListSecop1(filas1)]
-      // Calcula plazo original y % de adición en cliente
-      const conPlazo = contracts.map((c) => {
-        let plazoOriginal = null
-        let pctAdicion = null
-        if (c.startDate && c.endDate) {
-          const inicio = new Date(c.startDate).getTime()
-          const fin = new Date(c.endDate).getTime()
-          // El endDate ya incluye los días adicionados; el plazo original los resta
-          const plazoActual = Math.round((fin - inicio) / 86_400_000)
-          const original = plazoActual - (c.daysAdded || 0)
-          // Solo confiamos en el plazo si es positivo y coherente
-          if (original > 0) {
-            plazoOriginal = original
-            pctAdicion = Math.round(((c.daysAdded || 0) / original) * 100)
-          }
+
+      const enriquecidos = contracts.map((c) => {
+        // El historial manda cuando existe; si no —SECOP I no tiene ese dataset,
+        // y algún contrato de SECOP II puede no traer modificaciones publicadas—
+        // queda el campo, que para una sola prórroga sí coincide.
+        const h = porContrato.get(c.id)
+        const diasAcumulados = h?.dias > 0 ? h.dias : c.daysAdded
+        const plazoOriginal = plazoOriginalDe(c.startDate, c.endDate, diasAcumulados)
+        const pctAdicion =
+          plazoOriginal > 0 ? Math.round(((diasAcumulados || 0) / plazoOriginal) * 100) : null
+
+        // Valor inicial del contrato, para poder mostrarlo al lado del actual:
+        // "creció a $280 mil millones" no dice nada sin saber desde cuánto.
+        const original = valorOriginalDe(porProceso.get(c.processId))
+        const clas = original ? clasificarAdicion(c.contractValue, original.valor) : null
+
+        return {
+          ...c,
+          diasAcumulados,
+          // Cuántas modificaciones lo sustentan, para poder decirlo en la tabla.
+          nModificaciones: h?.n ?? 0,
+          plazoOriginal,
+          pctAdicion,
+          valorOriginal: original?.valor ?? null,
+          // Solo se publica como adición lo que pasa las guardas compartidas
+          // (múltiplos de digitación, crecimientos imposibles).
+          adicionValor: clas && !clas.motivo ? clas.adicion : null,
+          pctValor: clas && !clas.motivo ? clas.pctAdicion : null,
         }
-        return { ...c, plazoOriginal, pctAdicion }
       })
-      // El orden se rehace sobre la unión, con el mismo criterio que pidió cada
-      // consulta. Sin esto la tabla saldría con SECOP II entero y SECOP I detrás.
-      const clave = orden === 'valor' ? 'contractValue' : 'daysAdded'
-      return conPlazo
+
+      // El orden se rehace sobre la unión —si no, saldría SECOP II entero y
+      // SECOP I detrás— y ahora con los días REALES, no con el campo: un
+      // contrato con diez prórrogas encadenadas ya no queda por debajo de uno
+      // con una sola prórroga grande.
+      const clave = orden === 'valor' ? 'contractValue' : 'diasAcumulados'
+      return enriquecidos
         .sort((a, b) => (b[clave] ?? 0) - (a[clave] ?? 0))
         .slice(0, limit)
     },

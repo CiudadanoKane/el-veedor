@@ -59,13 +59,21 @@ export function interpretContract(c) {
   }
 
   // 5. Adición de tiempo
-  if (c.daysAdded > 0) {
-    const orig = plazoOriginalDias(c)
-    const h = humanDuration(c.daysAdded)
-    let frase = `El plazo se amplió ${c.daysAdded.toLocaleString('es-CO')} días`
+  //
+  // Usa `diasAcumulados` cuando quien llama ya cruzó el historial de
+  // modificaciones, y cae al campo `dias_adicionados` solo si no lo tiene. Ese
+  // campo NO acumula —declara una sola prórroga—, así que la frase afirmaba
+  // "se amplió 30 días, es decir un +2%" en un contrato que había crecido 1.076
+  // días (+126%). Ver diasAcumuladosDe en lib/adiciones.js.
+  const diasAnadidos = c.diasAcumulados > 0 ? c.diasAcumulados : c.daysAdded
+  if (diasAnadidos > 0) {
+    const orig = c.plazoOriginal > 0 ? c.plazoOriginal : plazoOriginalDias(c)
+    const h = humanDuration(diasAnadidos)
+    let frase = `El plazo se amplió ${diasAnadidos.toLocaleString('es-CO')} días`
     if (h) frase += ` (${h})`
+    if (c.nModificaciones > 1) frase += ` en ${c.nModificaciones} prórrogas`
     if (orig) {
-      const pctAdd = Math.round((c.daysAdded / orig) * 100)
+      const pctAdd = Math.round((diasAnadidos / orig) * 100)
       frase += `, es decir un +${pctAdd}% sobre el plazo original de ${orig.toLocaleString(
         'es-CO',
       )} días`
