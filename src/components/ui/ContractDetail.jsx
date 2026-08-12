@@ -118,9 +118,31 @@ export function ContractDetail({ contract: c }) {
             )
           }
         />
+        {/* NO es el total acumulado, aunque el nombre del campo lo sugiera.
+            Comprobado en agosto de 2026 sobre 8 contratos del Atlántico: en 5 de
+            los 8, `dias_adicionados` declara MENOS que una sola de las
+            modificaciones del contrato. El caso que lo destapó (referencia
+            202002796) declara 30 días sobre un contrato que corre 1.927 días y
+            acumula prórrogas de 161, 92, 212, 316 y 203 días entre otras.
+            Mientras no sepamos calcular el acumulado correcto —el dataset de
+            modificaciones trae varias filas por modificación, una por versión
+            del registro—, la cifra se muestra diciendo lo que es y remitiendo al
+            historial de abajo, que sí las lista una a una. Ver ROADMAP. */}
         <Fact
           label="Días adicionados"
-          value={c.daysAdded ? `+${c.daysAdded.toLocaleString('es-CO')}` : '0'}
+          value={
+            c.daysAdded ? (
+              <span>
+                +{c.daysAdded.toLocaleString('es-CO')}
+                <span className="block text-[11px] text-textSecondary font-normal leading-snug mt-0.5">
+                  Según el campo de SECOP, que no acumula: si hubo varias prórrogas,
+                  el total es mayor. Ver el historial abajo.
+                </span>
+              </span>
+            ) : (
+              '0'
+            )
+          }
         />
         <Fact label="Valor del contrato" value={formatCOP(c.contractValue)} />
         {/* SECOP I no reporta ejecución financiera (ver ROADMAP.md sección 8):

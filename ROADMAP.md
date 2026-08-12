@@ -24,6 +24,63 @@ probado (`components/ui/VideoTutorial.jsx`). Falta grabarlo, subirlo a YouTube y
 constante esté vacía el bloque no se pinta: está en producción sin mostrar ni un
 hueco ni un reproductor roto.
 
+**PENDIENTE Y SERIO — `dias_adicionados` NO es el acumulado, y media plataforma
+lo trata como si lo fuera.** Encontrado por el usuario el 6/8/2026 mirando el
+contrato de referencia **202002796** (Gerencia Integral de Proyectos,
+Departamento del Atlántico): la ficha declaraba **+30 días adicionados**, pero su
+propio historial de modificaciones —justo debajo, en la misma pantalla— lista
+prórrogas de 161, 92, 212, 316 y 203 días entre otras.
+
+Comprobado contra la API sobre 8 contratos del Atlántico con estado "Modificado":
+
+| Contrato | Declara | Mayor modificación | Plazo total (fin − inicio) |
+|---|---|---|---|
+| CO1.PCCNTR.1901891 | **30** | 316 | 1.927 |
+| CO1.PCCNTR.2974208 | 365 | 426 | 1.974 |
+| CO1.PCCNTR.2055051 | 119 | 245 | 1.589 |
+| CO1.PCCNTR.2480847 | 153 | 365 | 2.059 |
+| CO1.PCCNTR.5790208 | 184 | 273 | 1.073 |
+| CO1.PCCNTR.5018218 | 312 | 312 | 1.104 |
+| CO1.PCCNTR.5791089 | 365 | 365 | 1.073 |
+| CO1.PCCNTR.6880374 | 92 | 92 | 729 |
+
+**En 5 de los 8 el campo declara menos que UNA SOLA de las modificaciones del
+contrato.** No es la suma, no es el máximo, y no es el acumulado. En el caso que
+lo destapó coincide con la última modificación registrada, pero un caso no basta
+para afirmar la regla.
+
+**Qué queda mal por esto**, y es lo grave:
+
+- `plazoOriginal = (fin − inicio) − daysAdded`. Para el 202002796 da **1.897 días
+  de "plazo original"** en un contrato que casi con certeza empezó pactado en
+  unos 880. La resta es válida solo si el campo acumula, y no acumula.
+- `pctAdicion = daysAdded / plazoOriginal` → **+2%** donde el crecimiento real
+  supera el 100%. Ese porcentaje se muestra en la tabla de Adiciones de plazo y
+  alimenta los colores de severidad.
+- **El ranking de "Adiciones de plazo" está mal ordenado**: un contrato con diez
+  prórrogas encadenadas aparece por debajo de uno con una sola prórroga grande.
+- `usePrevalenciaAdicionTiempo` (cuántos superan el 50/100/200%) subestima por el
+  mismo motivo.
+- Los porcentajes del propio `ModificationHistory`, que reciben ese
+  `plazoOriginal` como denominador.
+
+**Por qué no se arregló de una vez.** El dataset de modificaciones (`u8cx-r425`)
+trae **varias filas por modificación** —una por versión del registro: 40 filas
+para este contrato, con valores repetidos (cuatro veces 212, muchas veces 31)—,
+así que sumar `dias_extendidos` a secas cuenta de más. La suma de valores
+distintos da 1.045 días para el 202002796, que es una aproximación, no un
+cálculo. Publicar un total mal desduplicado sería cambiar un número equivocado
+por otro equivocado, con más apariencia de rigor.
+
+El camino: desduplicar por `identificador_modificacion` (existe en el dataset) y
+comprobar el resultado contra varios contratos con historial conocido antes de
+tocar ninguna cifra publicada.
+
+**Mitigación aplicada ya**, para que la cifra deje de afirmar lo que no es: la
+ficha del contrato muestra el campo con la advertencia *"Según el campo de SECOP,
+que no acumula: si hubo varias prórrogas, el total es mayor. Ver el historial
+abajo."* El historial sí las lista una a una.
+
 **PENDIENTE Y SERIO — SECOP I desaparece en silencio en Bogotá y Norte de
 Santander.** Encontrado por el usuario el 6/8/2026: la gráfica de evolución de
 Bogotá solo pintaba SECOP II, sin aviso. No es un fallo de la consulta: **los dos
