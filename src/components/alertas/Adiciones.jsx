@@ -95,17 +95,17 @@ export function AdicionesTiempo() {
       key: 'diasAcumulados',
       header: 'Días añadidos',
       className: 'text-right tabular-nums whitespace-nowrap',
-      // Los días del HISTORIAL, no el campo `dias_adicionados`, que declara una
-      // sola de las prórrogas. Ver traerHistorial en useAdiciones.
+      // Reconstruido desde el HISTORIAL, no el campo `dias_adicionados`, que
+      // declara una sola de las prórrogas. Ver plazoDelContrato.
       render: (r) => {
         const h = humanDuration(r.diasAcumulados)
         return (
           <span className="text-warning font-medium">
             +{r.diasAcumulados?.toLocaleString('es-CO')}
             {h && <span className="text-textSecondary font-normal"> ({h})</span>}
-            {r.nModificaciones > 1 && (
+            {r.prorrogas > 1 && (
               <span className="block text-[11px] text-textSecondary font-normal">
-                en {r.nModificaciones} prórrogas
+                en {r.prorrogas} prórrogas
               </span>
             )}
           </span>
@@ -145,10 +145,17 @@ export function AdicionesTiempo() {
         </p>
       )}
       <Methodology>
-        Usamos el campo directo de días añadidos que traen las dos fuentes:{' '}
-        <code>dias_adicionados</code> en SECOP II y <code>tiempo_adiciones_en_dias</code>{' '}
-        en SECOP I. <strong>La lista mezcla las dos</strong>, y las filas de SECOP I van
-        marcadas.
+        En <strong>SECOP II</strong> los días no se leen del campo{' '}
+        <code>dias_adicionados</code>, porque <strong>no acumula</strong>: declara una sola
+        prórroga —en un contrato con seis, decía 30 días de los 1.014 reales—. Se
+        reconstruye desde el <strong>historial de modificaciones</strong>, que dice en qué
+        fecha quedaba el contrato después de cada una: la fecha de fin con la que se firmó
+        sale de ahí, y los días añadidos son la diferencia hasta la fecha de fin actual.
+        Tampoco se suman los días que declara cada modificación: el dataset{' '}
+        <strong>repite la misma prórroga</strong> en varias, y sumarlas contaba de más. En{' '}
+        <strong>SECOP I</strong> no hay historial que cruzar, así que se usa su campo
+        directo (<code>tiempo_adiciones_en_dias</code>). <strong>La lista mezcla las
+        dos</strong>, y las filas de SECOP I van marcadas.
         <br />
         <br />
         <strong>El conteo de arriba, en cambio, es solo de SECOP II</strong>, y conviene
@@ -159,12 +166,15 @@ export function AdicionesTiempo() {
         o a que la cifra mida cosas distintas según el filtro que tengas puesto.
         <br />
         <br />
-        El <strong>plazo original</strong> se estima como (fecha fin − fecha inicio) − días
-        añadidos. El <strong>% de adición</strong> es días añadidos ÷ plazo original.
-        Colores: ámbar &gt;50%, rojo &gt;100%, rojo intenso &gt;200%. Se excluyen valores
-        mayores a 3.650 días (errores de digitación).{' '}
-        <strong>Haz clic en una fila para ver el detalle y el historial real de
-        modificaciones</strong>, que suele ser más completo que este campo.
+        El <strong>plazo original</strong> es de la fecha de inicio a esa fecha de fin
+        reconstruida, así que las dos cifras cuadran con las fechas del contrato: plazo
+        original + días añadidos = fin − inicio. Un <strong>guion</strong> significa que el
+        registro no cuadra consigo mismo y ahí no sabemos el plazo, en vez de publicar un
+        número inventado. El <strong>% de adición</strong> es días añadidos ÷ plazo
+        original. Colores: ámbar &gt;50%, rojo &gt;100%, rojo intenso &gt;200%. Se excluyen
+        valores mayores a 3.650 días (errores de digitación).{' '}
+        <strong>Haz clic en una fila para ver el detalle y el historial completo de
+        modificaciones.</strong>
         <br />
         <br />
         Las cifras de prevalencia (cuántos superan cada umbral) son{' '}

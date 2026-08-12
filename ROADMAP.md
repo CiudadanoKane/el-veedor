@@ -115,6 +115,58 @@ consultan millones de contratos con SoQL y no pueden cruzar el historial contrat
 a contrato. Corregirlas exige un precálculo diario como el de las adiciones de
 valor. **Queda pendiente, y es la mitad grande del problema.**
 
+### CORREGIDO OTRA VEZ — sumar el historial también contaba de más (ago 2026)
+
+Al preguntar el usuario **por qué tantos contratos mostraban "—" en plazo
+original**, resultó que la respuesta no era "el dato no da": era que la suma del
+historial —lo que se acababa de publicar— **cuenta de más**. El dataset repite
+la misma prórroga en varias modificaciones, con `identificador_modificacion`
+distinto, así que desduplicar por ese campo no basta.
+
+En el 202002796, dos modificaciones declaran 31 días cada una **sin mover la
+fecha de fin ni un día**: 62 días fantasma. La suma daba 1.076; el plazo creció
+1.014. Ese exceso es justo lo que empujaba el plazo original a negativo y lo
+dejaba en "—".
+
+**La regla correcta no es sumar nada, es leer las fechas.** El dataset dice en
+qué fecha quedaba el contrato DESPUÉS de cada modificación, así que el fin
+ORIGINAL se reconstruye tomando la primera y restándole lo que esa misma
+extendió. De ahí salen las dos cifras, y cuadran con lo que muestra la ficha:
+
+```
+plazo original + días añadidos = fin actual − inicio
+```
+
+Para el 202002796: **913 días de plazo original + 1.014 añadidos = 1.927**, que
+es exactamente 22-oct-2020 → 31-ene-2026. Antes las tres cifras no cerraban
+entre sí.
+
+**Se descartó una alternativa más obvia** —"fin más reciente menos fin más
+antiguo"—, que parecía equivalente y no lo es: pierde lo que extendió la PRIMERA
+modificación, que muchas veces es todo. En el contrato CD 2025-079, dos
+modificaciones que reportan la misma fecha de fin, daría **0 días** para un
+contrato que sí se prorrogó 30. Medido sobre 199 contratos, esa fórmula
+coincidía con el campo de SECOP en 36 de ellos; la de anclar en el fin original,
+en 157.
+
+**Y un bug de zona horaria que salió al verificar.** SECOP devuelve la misma
+fecha en dos formas según el campo (`2023-04-23` y `2023-04-23T00:00:00.000`) y
+**JavaScript las parsea en zonas distintas**: la primera como UTC, la segunda
+como hora local. Compararlas a secas metía el desfase del navegador, y en
+Colombia (UTC-5) hacía que el fin original pareciera posterior a sí mismo — el
+contrato contaba 7 prórrogas donde hay 6. Ahora toda fecha se recorta al día y
+se ancla en UTC; comprobado que da lo mismo desde UTC-5 y desde UTC+5.
+
+Efecto medido en la tabla nacional: los contratos sin plazo original calculable
+pasan de ser la mayoría a **3 de 50**.
+
+Detalles: `plazoDelContrato` en `lib/adiciones.js` es ahora la única vía —la usan
+la fila de la tabla y la ficha desplegada, con los mismos datos, para que no
+puedan volver a dar cifras distintas del mismo hecho (ya pasó: +3.289 en una y
++3.286 en la otra)—. "En N prórrogas" cuenta solo las que movieron la fecha de
+fin, no las filas del historial. Doce pruebas nuevas, incluida la del formato de
+fecha.
+
 **PENDIENTE Y SERIO — SECOP I desaparece en silencio en Bogotá y Norte de
 Santander.** Encontrado por el usuario el 6/8/2026: la gráfica de evolución de
 Bogotá solo pintaba SECOP II, sin aviso. No es un fallo de la consulta: **los dos

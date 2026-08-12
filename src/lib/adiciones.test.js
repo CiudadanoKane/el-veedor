@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   clasificarAdicion, valorOriginalDe, detectarErrorDigitacion, slugAmbito,
-  diasAcumuladosDe, plazoOriginalDe,
+  finOriginalDe, plazoDelContrato, plazoOriginalDe,
   BASE_MINIMA, PCT_SOSPECHOSO,
 } from './adiciones.js'
 
@@ -87,20 +87,136 @@ describe('clasificarAdicion', () => {
 // El acumulado de prórrogas y el plazo original que se deriva de él. Nacen de un
 // fallo real: `dias_adicionados` de SECOP II no acumula, y usarlo como si lo
 // hiciera daba "+8%" donde el contrato había crecido más del 100%.
-describe('diasAcumuladosDe', () => {
-  it('suma las prórrogas del historial', () => {
-    // Las del contrato 202002796, el caso que destapó el fallo.
-    const mods = [161, 92, 212, 31, 316, 31, 203, 30].map((dias) => ({ dias }))
-    expect(diasAcumuladosDe(mods)).toBe(1076)
+// El contrato 202002796, el caso real que destapó las dos versiones del fallo.
+// Fíjese en las dos modificaciones que declaran 31 días sin mover la fecha de
+// fin: son 62 días fantasma. Sumar da 1.076; el fin se movió 1.014.
+const MODS_202002796 = [
+  { fecha: '2021-11-18', dias: 0, finContrato: '2023-04-23' },
+  { fecha: '2022-07-11', dias: 161, finContrato: '2023-10-01' },
+  { fecha: '2022-12-23', dias: 0, finContrato: '2023-10-01' },
+  { fecha: '2023-09-29', dias: 92, finContrato: '2024-01-01' },
+  { fecha: '2024-01-22', dias: 212, finContrato: '2024-07-31' },
+  { fecha: '2025-03-07', dias: 31, finContrato: '2024-07-31' }, // no movió nada
+  { fecha: '2025-03-11', dias: 316, finContrato: '2025-06-12' },
+  { fecha: '2025-11-13', dias: 31, finContrato: '2025-06-12' }, // no movió nada
+  { fecha: '2025-11-14', dias: 203, finContrato: '2026-01-01' },
+  { fecha: '2025-12-31', dias: 30, finContrato: '2026-01-31' },
+]
+
+describe('finOriginalDe', () => {
+  it('reconstruye el fin previo restando lo que extendió la primera modificación', () => {
+    // La primera dejó el fin en 2023-04-23 sin extender nada: ese era el fin.
+    expect(finOriginalDe(MODS_202002796)).toBe('2023-04-23')
   })
 
-  it('ignora las modificaciones que no añaden plazo', () => {
-    expect(diasAcumuladosDe([{ dias: 90 }, { dias: 0 }, {}, { dias: 30 }])).toBe(120)
+  it('no depende del orden en que lleguen las filas', () => {
+    expect(finOriginalDe([...MODS_202002796].reverse())).toBe('2023-04-23')
   })
 
-  it('devuelve 0 sin historial', () => {
-    expect(diasAcumuladosDe([])).toBe(0)
-    expect(diasAcumuladosDe(null)).toBe(0)
+  it('resta los días de la primera cuando esa misma ya extendía', () => {
+    // CD 2025-079: dos modificaciones que reportan la MISMA fecha de fin.
+    const mods = [
+      { fecha: '2025-11-21', dias: 30, finContrato: '2025-12-29' },
+      { fecha: '2026-04-30', dias: 30, finContrato: '2025-12-29' },
+    ]
+    expect(finOriginalDe(mods)).toBe('2025-11-29')
+  })
+
+  it('devuelve null sin historial utilizable', () => {
+    expect(finOriginalDe([])).toBeNull()
+    expect(finOriginalDe(null)).toBeNull()
+    expect(finOriginalDe([{ fecha: '2024-01-01', dias: 30 }])).toBeNull()
+  })
+
+  // SECOP devuelve la misma fecha en dos formas según el campo, y JavaScript
+  // las parsea en zonas distintas: 'YYYY-MM-DD' como UTC, 'YYYY-MM-DDT00:00:00'
+  // como hora local. Mezclarlas metía el desfase del navegador y hacía que una
+  // fecha pareciera posterior a sí misma.
+  it('trata las dos formas de fecha de SECOP como el mismo día', () => {
+    const conHora = [{ fecha: '2021-11-18T00:00:00.000', dias: 0, finContrato: '2023-04-23T00:00:00.000' }]
+    const sinHora = [{ fecha: '2021-11-18', dias: 0, finContrato: '2023-04-23' }]
+    expect(finOriginalDe(conHora)).toBe('2023-04-23')
+    expect(finOriginalDe(sinHora)).toBe('2023-04-23')
+  })
+})
+
+describe('plazoDelContrato', () => {
+  it('no cuenta dos veces la prórroga que el dataset repite', () => {
+    const p = plazoDelContrato({
+      modificaciones: MODS_202002796,
+      inicio: '2020-10-22',
+      fin: '2026-01-31',
+      diasCampo: 30,
+    })
+    // 1.014, no los 1.076 que daba sumar: 62 días los declaran dos
+    // modificaciones que no movieron la fecha de fin.
+    expect(p.diasAcumulados).toBe(1014)
+    expect(p.plazoOriginal).toBe(913)
+    expect(p.fuente).toBe('historial')
+  })
+
+  it('las dos cifras cuadran con las fechas que muestra la ficha', () => {
+    const p = plazoDelContrato({
+      modificaciones: MODS_202002796,
+      inicio: '2020-10-22',
+      fin: '2026-01-31',
+    })
+    // plazo original + días añadidos = fin − inicio. Si no cuadrara, la ficha
+    // mostraría tres cifras que se contradicen entre sí.
+    expect(p.plazoOriginal + p.diasAcumulados).toBe(1927)
+  })
+
+  it('cuenta solo las prórrogas que movieron la fecha de fin', () => {
+    const p = plazoDelContrato({
+      modificaciones: MODS_202002796,
+      inicio: '2020-10-22',
+      fin: '2026-01-31',
+    })
+    // Diez modificaciones en el historial, seis fechas de fin nuevas: las
+    // otras cuatro no movieron el plazo, aunque dos de ellas declaren 31 días.
+    // (El contrato real trae 15 filas; aquí van las que cambian el resultado.)
+    expect(p.prorrogas).toBe(6)
+  })
+
+  it('no pierde la prórroga cuando el dataset repite la misma fecha de fin', () => {
+    // El caso que descarta "fin más reciente − fin más antiguo", que aquí
+    // daría 0 días para un contrato que sí se prorrogó 30.
+    const p = plazoDelContrato({
+      modificaciones: [
+        { fecha: '2025-11-21', dias: 30, finContrato: '2025-12-29' },
+        { fecha: '2026-04-30', dias: 30, finContrato: '2025-12-29' },
+      ],
+      inicio: '2025-07-31',
+      fin: '2025-12-29',
+      diasCampo: 30,
+    })
+    expect(p.diasAcumulados).toBe(30)
+    expect(p.plazoOriginal).toBe(121)
+    expect(p.prorrogas).toBe(1)
+  })
+
+  it('cae al campo de SECOP cuando no hay historial (SECOP I)', () => {
+    const p = plazoDelContrato({
+      modificaciones: [],
+      inicio: '2024-01-01',
+      fin: '2024-07-01',
+      diasCampo: 30,
+    })
+    expect(p.fuente).toBe('campo')
+    expect(p.diasAcumulados).toBe(30)
+    expect(p.plazoOriginal).toBe(152)
+  })
+
+  it('cae al campo si el fin reconstruido no cuadra con las fechas del contrato', () => {
+    // Fin original posterior al fin actual: el registro se contradice, así que
+    // no se publica un plazo inventado.
+    const p = plazoDelContrato({
+      modificaciones: [{ fecha: '2024-01-01', dias: 0, finContrato: '2030-01-01' }],
+      inicio: '2024-01-01',
+      fin: '2024-06-01',
+      diasCampo: 10,
+    })
+    expect(p.fuente).toBe('campo')
   })
 })
 

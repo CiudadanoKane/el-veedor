@@ -42,30 +42,127 @@ export function slugAmbito(clave) {
     .replace(/^-+|-+$/g, '')
 }
 
-// Días de prórroga ACUMULADOS de un contrato, a partir de su historial de
-// modificaciones ya desduplicado (ver useModificaciones).
+const DIA_MS = 86_400_000
+
+// Fechas de SECOP a milisegundos, normalizadas al DÍA en UTC.
 //
-// Existe porque el campo `dias_adicionados` de SECOP II **no acumula**, aunque
-// el nombre lo sugiera. Comprobado en agosto de 2026 sobre ocho contratos del
-// Atlántico: en cinco declara menos que UNA SOLA de las modificaciones del
-// contrato. El caso que lo destapó (referencia 202002796) declaraba 30 días
-// sobre un contrato con prórrogas de 161, 92, 212, 316 y 203 entre otras —1.076
-// en total—.
-export function diasAcumuladosDe(modificaciones) {
-  return (modificaciones || []).reduce((total, m) => total + (m.dias || 0), 0)
+// No es una precaución teórica: la misma fecha llega en dos formas según el
+// campo —'2023-04-23' y '2023-04-23T00:00:00.000'— y JavaScript las parsea en
+// zonas distintas (la primera como UTC, la segunda como hora local, según el
+// estándar). Compararlas a secas metía el desfase horario del navegador, y en
+// Colombia (UTC-5) hacía que la fecha de fin original pareciera POSTERIOR a sí
+// misma: el contrato CO1.PCCNTR.1901891 contaba 7 prórrogas donde hay 6.
+// Recortar al día y anclar en UTC deja la cuenta igual para cualquier
+// visitante, mire desde donde mire.
+function enMs(fecha) {
+  if (!fecha) return null
+  const t = Date.parse(`${String(fecha).slice(0, 10)}T00:00:00Z`)
+  return Number.isNaN(t) ? null : t
+}
+function diasEntre(desde, hasta) {
+  const a = enMs(desde)
+  const b = enMs(hasta)
+  return a == null || b == null ? null : Math.round((b - a) / DIA_MS)
 }
 
-// Plazo con el que se firmó el contrato: lo que dura hoy menos lo que se le
-// añadió. La fecha de fin ya incluye las prórrogas, así que se restan.
+// Fecha de fin que tenía el contrato ANTES de cualquier modificación.
+//
+// El dataset de modificaciones no la trae directamente, pero sí trae, por cada
+// modificación, en qué fecha quedaba el contrato DESPUÉS de ella
+// (`fecha_fin_contrato`). Así que basta con tomar la primera y restarle lo que
+// esa misma modificación extendió.
+//
+// POR QUÉ NO SE SUMAN LOS `dias_extendidos`. Es lo que se hacía, y contaba de
+// más: el dataset repite la misma prórroga en varias modificaciones. En el
+// contrato 202002796 hay dos que declaran 31 días cada una sin mover la fecha
+// de fin ni un día — 62 días fantasma, justo la diferencia entre los 1.076 que
+// daba la suma y los 1.014 reales. Verificado a mano, modificación por
+// modificación, en agosto de 2026.
+//
+// POR QUÉ NO BASTA "FIN MÁS RECIENTE − FIN MÁS ANTIGUO". Es la alternativa
+// obvia y se descartó porque pierde lo que extendió la PRIMERA modificación,
+// que muchas veces es todo: en el contrato CD 2025-079 —dos modificaciones que
+// reportan la misma fecha de fin— daría 0 días para un contrato que sí se
+// prorrogó 30. Anclar en el fin original no tiene ese punto ciego.
+export function finOriginalDe(modificaciones) {
+  const conFin = (modificaciones || [])
+    .filter((m) => m && enMs(m.finContrato) != null)
+    .sort((a, b) => (enMs(a.fecha) ?? 0) - (enMs(b.fecha) ?? 0))
+  const primera = conFin[0]
+  if (!primera) return null
+  return new Date(enMs(primera.finContrato) - (primera.dias || 0) * DIA_MS)
+    .toISOString()
+    .slice(0, 10)
+}
+
+// Cuántas prórrogas REALES hubo: las modificaciones que movieron la fecha de
+// fin, no cuántas filas trae el historial. Decir "en 15 prórrogas" cuando nueve
+// de ellas no cambiaron nada sería el mismo error de contar de más, pero en la
+// frase en vez de en el número.
+export function prorrogasEfectivas(modificaciones, finOriginal) {
+  const base = enMs(finOriginal)
+  if (base == null) return 0
+  const fines = new Set()
+  for (const m of modificaciones || []) {
+    const t = enMs(m?.finContrato)
+    if (t != null && t > base) fines.add(t)
+  }
+  return fines.size
+}
+
+// El plazo de un contrato: con cuánto se firmó y cuánto se le añadió después.
+//
+// Las dos cifras salen de la MISMA reconstrucción para que no puedan
+// contradecirse, y cuadran con lo que muestra la ficha:
+//   plazo original + días añadidos = fin actual − inicio
+//
+// Sin historial utilizable —SECOP I no tiene ese dataset, y un contrato de
+// SECOP II puede no tener modificaciones publicadas— se cae al campo
+// `dias_adicionados`, que para una sola prórroga sí coincide. Se declara en
+// `fuente` para que la UI pueda decir de dónde viene cada cifra.
+export function plazoDelContrato({ modificaciones, inicio, fin, diasCampo = 0 }) {
+  const finOriginal = finOriginalDe(modificaciones)
+  if (finOriginal) {
+    const plazoOriginal = diasEntre(inicio, finOriginal)
+    const diasAcumulados = diasEntre(finOriginal, fin)
+    // Un plazo original nulo o negativo, o una fecha de fin anterior a la
+    // reconstruida, significan que el registro no cuadra consigo mismo. Ahí no
+    // sabemos el plazo: se cae al campo en vez de publicar un número inventado.
+    if (plazoOriginal > 0 && diasAcumulados >= 0) {
+      return {
+        finOriginal,
+        plazoOriginal,
+        diasAcumulados,
+        prorrogas: prorrogasEfectivas(modificaciones, finOriginal),
+        fuente: 'historial',
+      }
+    }
+  }
+  return {
+    finOriginal: null,
+    plazoOriginal: plazoOriginalDe(inicio, fin, diasCampo),
+    diasAcumulados: diasCampo || 0,
+    prorrogas: 0,
+    fuente: 'campo',
+  }
+}
+
+// Plazo con el que se firmó el contrato, DERIVADO por resta: lo que dura hoy
+// menos lo que se le añadió. La fecha de fin ya incluye las prórrogas.
+//
+// Es el camino de respaldo de `plazoDelContrato`, para cuando no hay historial
+// que reconstruir (SECOP I, o un contrato sin modificaciones publicadas).
+// Cuando sí lo hay, el plazo original se obtiene directamente del fin
+// reconstruido, sin pasar por esta resta.
 //
 // Devuelve null —y no un número negativo— cuando la resta no da: hay contratos
-// donde los días acumulados SUPERAN el plazo transcurrido (medido: dos de los
-// ocho revisados), sea por suspensiones, por modificaciones que se solapan o
-// porque la fecha de fin no quedó actualizada. Ahí no sabemos el plazo original,
-// y tanto un negativo como un cero se leerían como si lo supiéramos.
+// donde los días declarados SUPERAN el plazo transcurrido, sea por
+// suspensiones, por modificaciones que se solapan o porque la fecha de fin no
+// quedó actualizada. Ahí no sabemos el plazo original, y tanto un negativo como
+// un cero se leerían como si lo supiéramos.
 export function plazoOriginalDe(inicio, fin, diasAnadidos) {
-  if (!inicio || !fin) return null
-  const plazoActual = Math.round((new Date(fin).getTime() - new Date(inicio).getTime()) / 86_400_000)
+  const plazoActual = diasEntre(inicio, fin)
+  if (plazoActual == null) return null
   const original = plazoActual - (diasAnadidos || 0)
   return original > 0 ? original : null
 }

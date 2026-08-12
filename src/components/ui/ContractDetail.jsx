@@ -1,6 +1,6 @@
 import { interpretContract } from '../../lib/interpret'
 import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/formatters'
-import { diasAcumuladosDe, plazoOriginalDe, clasificarAdicion } from '../../lib/adiciones'
+import { plazoDelContrato, clasificarAdicion } from '../../lib/adiciones'
 import { useModificaciones, useValorOriginalProceso } from '../../hooks/useModificaciones'
 import { SecopLink } from './SecopLink'
 import { ModificationHistory } from './ModificationHistory'
@@ -46,7 +46,7 @@ export function ContractDetail({ contract: c }) {
   const atraso = diasAtraso(c)
 
   // El historial de modificaciones es la ÚNICA fuente fiable de cuánto se
-  // prorrogó un contrato: `dias_adicionados` no acumula (ver diasAcumuladosDe).
+  // prorrogó un contrato: `dias_adicionados` no acumula (ver plazoDelContrato).
   // Se pide aquí además de en ModificationHistory, pero no cuesta una petición
   // extra: misma queryKey, así que React Query la sirve una sola vez.
   //
@@ -55,13 +55,17 @@ export function ContractDetail({ contract: c }) {
   const esSecop2 = c.source !== 'SECOP I'
   const modificaciones = useModificaciones(esSecop2 ? c.id : null)
   const mods = modificaciones.data || []
-  const diasAcumulados = diasAcumuladosDe(mods)
-  const hayHistorial = mods.length > 0 && diasAcumulados > 0
-
-  // Con historial mandan sus días; sin él, lo único que hay es el campo de
-  // SECOP, que para un contrato de una sola prórroga sí coincide.
-  const diasReales = hayHistorial ? diasAcumulados : c.daysAdded
-  const plazoOriginal = plazoOriginalDe(c.startDate, c.endDate, diasReales)
+  // Misma función y mismos datos que la fila de la tabla (ver useAdiciones):
+  // las dos cifras salen del fin original reconstruido, no de sumar lo que
+  // declara cada modificación.
+  const plazo = plazoDelContrato({
+    modificaciones: mods,
+    inicio: c.startDate,
+    fin: c.endDate,
+    diasCampo: c.daysAdded,
+  })
+  const { diasAcumulados, plazoOriginal, prorrogas } = plazo
+  const hayHistorial = plazo.fuente === 'historial' && diasAcumulados > 0
 
   // Adición TOTAL de presupuesto. No sale del historial de modificaciones: ese
   // dataset trae el valor acumulado tras cada una, pero no el anterior a la
@@ -82,7 +86,7 @@ export function ContractDetail({ contract: c }) {
   const sentences = interpretContract({
     ...c,
     diasAcumulados: hayHistorial ? diasAcumulados : undefined,
-    nModificaciones: mods.length,
+    prorrogas,
     plazoOriginal,
   })
 
@@ -160,11 +164,11 @@ export function ContractDetail({ contract: c }) {
             )
           }
         />
-        {/* Se suman las prórrogas del historial en vez de leer
-            `dias_adicionados`, que no acumula. Cuando los dos números difieren se
-            dicen los dos: en una plataforma de veeduría, que el campo oficial
-            declare menos de lo que su propio historial demuestra es información,
-            no ruido que convenga esconder. */}
+        {/* Se reconstruye desde el historial en vez de leer `dias_adicionados`,
+            que no acumula. Cuando los dos números difieren se dicen los dos: en
+            una plataforma de veeduría, que el campo oficial declare menos de lo
+            que su propio historial demuestra es información, no ruido que
+            convenga esconder. */}
         <Fact
           label="Días adicionados"
           value={
@@ -172,9 +176,9 @@ export function ContractDetail({ contract: c }) {
               <span>
                 +{diasAcumulados.toLocaleString('es-CO')}
                 <span className="block text-[11px] text-textSecondary font-normal leading-snug mt-0.5">
-                  {mods.length === 1
-                    ? 'De la única modificación del historial.'
-                    : `Sumando las ${mods.length} modificaciones del historial.`}
+                  {prorrogas === 1
+                    ? 'En una prórroga, según el historial.'
+                    : `En ${prorrogas} prórrogas, según el historial.`}
                   {c.daysAdded !== diasAcumulados && (
                     <> El campo de SECOP declara +{(c.daysAdded || 0).toLocaleString('es-CO')}.</>
                   )}

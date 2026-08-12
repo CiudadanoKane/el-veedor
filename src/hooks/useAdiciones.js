@@ -9,7 +9,7 @@ import { adaptList } from '../adapters/secop2Adapter'
 import { adaptList as adaptListSecop1 } from '../adapters/secop1Adapter'
 import { CONTRACT_FIELDS, CONTRACT_FIELDS_SECOP1 } from '../lib/constants'
 import {
-  valorOriginalDe, clasificarAdicion, detectarErrorDigitacion, plazoOriginalDe,
+  valorOriginalDe, clasificarAdicion, detectarErrorDigitacion, plazoDelContrato,
 } from '../lib/adiciones'
 import { NIVELES_ADICION } from './useAlertas'
 
@@ -28,16 +28,21 @@ const ORDEN_ADIC = {
   valor: 'valor_del_contrato DESC',
 }
 
-// Días de prórroga ACUMULADOS de varios contratos, en una consulta por lote.
+// Historial de modificaciones de varios contratos, en una consulta por lote:
+// las 50 filas de la tabla a la vez en vez de cincuenta consultas. Sin esto, el
+// ranking mostraba `dias_adicionados`, que declara UNA sola de las prórrogas
+// —en el contrato 202002796, 30 días de los 1.014 reales—.
 //
-// Es la misma cuenta que hace la ficha de un contrato (ver diasAcumuladosDe),
-// pero para las 50 filas de la tabla a la vez: una consulta por lote en vez de
-// cincuenta. Sin esto, el ranking mostraba `dias_adicionados`, que declara UNA
-// sola de las prórrogas —en el contrato 202002796, 30 días de los 1.076 reales—.
+// Devuelve las modificaciones con la MISMA FORMA que useModificaciones
+// ({ fecha, dias, finContrato }), a propósito: así las dos vistas —la fila de
+// la tabla y la ficha que se despliega al hacer clic— pasan por el mismo
+// `plazoDelContrato` y no pueden dar cifras distintas del mismo hecho. Ya pasó:
+// con dos implementaciones parecidas pero no idénticas, la fila decía +3.289
+// donde su propio desplegable decía +3.286.
 //
-// La desduplicación por `identificador_modificacion` es la misma que hace
+// La desduplicación por `identificador_modificacion` también es la de
 // useModificaciones: el dataset trae varias filas por modificación, una por
-// versión del registro, y sumarlas a secas cuenta de más.
+// versión del registro.
 async function traerHistorial(ids) {
   const porContrato = new Map()
   if (!ids.length) return porContrato
@@ -46,13 +51,8 @@ async function traerHistorial(ids) {
     const lote = ids.slice(i, i + CHUNK).map((x) => `'${esc(x)}'`).join(',')
     const rows = await socrataQuery(
       'u8cx-r425',
-      // fecha_de_aprobacion y valor_modificacion se traen solo para la clave de
-      // respaldo. Tiene que ser EXACTAMENTE la de useModificaciones: con claves
-      // distintas, la misma modificación se contaba en un sitio y no en el otro,
-      // y la fila de la tabla decía +3.289 donde su propio desplegable decía
-      // +3.286. Dos cifras del mismo hecho en la misma pantalla.
       `SELECT id_contrato, identificador_modificacion, dias_extendidos,
-              fecha_de_aprobacion, valor_modificacion
+              fecha_de_aprobacion, valor_modificacion, fecha_fin_contrato
        WHERE id_contrato IN (${lote}) AND estado_modificacion = 'Publicado'
        LIMIT 5000`,
     )
@@ -61,15 +61,17 @@ async function traerHistorial(ids) {
       const vistas = porContrato.get(r.id_contrato)
       const clave =
         r.identificador_modificacion || `${r.fecha_de_aprobacion}-${r.valor_modificacion}`
-      if (!vistas.has(clave)) vistas.set(clave, parseInt(r.dias_extendidos ?? 0, 10) || 0)
+      if (!vistas.has(clave)) {
+        vistas.set(clave, {
+          fecha: r.fecha_de_aprobacion,
+          dias: parseInt(r.dias_extendidos ?? 0, 10) || 0,
+          finContrato: r.fecha_fin_contrato,
+        })
+      }
     }
   }
-  // De mapa de modificaciones a { dias, n } por contrato
   const resumen = new Map()
-  for (const [id, vistas] of porContrato) {
-    const dias = [...vistas.values()].reduce((a, b) => a + b, 0)
-    resumen.set(id, { dias, n: vistas.size })
-  }
+  for (const [id, vistas] of porContrato) resumen.set(id, [...vistas.values()])
   return resumen
 }
 
@@ -129,7 +131,7 @@ export function useAdicionesTiempo(filters = {}, limit = 50, orden = 'dias') {
       ])
 
       // El campo `dias_adicionados` por el que se ordena arriba NO acumula (ver
-      // diasAcumuladosDe): declara una sola de las prórrogas. Sirve para
+      // plazoDelContrato): declara una sola de las prórrogas. Sirve para
       // preseleccionar candidatos —quien tiene el campo en cero no tiene
       // prórrogas—, pero las cifras que se MUESTRAN se recalculan aquí desde el
       // historial real, en dos consultas por lote para las 50 filas en vez de
@@ -148,12 +150,16 @@ export function useAdicionesTiempo(filters = {}, limit = 50, orden = 'dias') {
       const contracts = [...adaptList(filas2), ...adaptListSecop1(filas1)]
 
       const enriquecidos = contracts.map((c) => {
-        // El historial manda cuando existe; si no —SECOP I no tiene ese dataset,
-        // y algún contrato de SECOP II puede no traer modificaciones publicadas—
-        // queda el campo, que para una sola prórroga sí coincide.
-        const h = porContrato.get(c.id)
-        const diasAcumulados = h?.dias > 0 ? h.dias : c.daysAdded
-        const plazoOriginal = plazoOriginalDe(c.startDate, c.endDate, diasAcumulados)
+        // Mismo cálculo que la ficha desplegada, con la misma función y los
+        // mismos datos: el fin original se reconstruye del historial y de ahí
+        // salen las dos cifras. Sin historial se cae al campo de SECOP.
+        const plazo = plazoDelContrato({
+          modificaciones: porContrato.get(c.id),
+          inicio: c.startDate,
+          fin: c.endDate,
+          diasCampo: c.daysAdded,
+        })
+        const { diasAcumulados, plazoOriginal } = plazo
         const pctAdicion =
           plazoOriginal > 0 ? Math.round(((diasAcumulados || 0) / plazoOriginal) * 100) : null
 
@@ -165,8 +171,9 @@ export function useAdicionesTiempo(filters = {}, limit = 50, orden = 'dias') {
         return {
           ...c,
           diasAcumulados,
-          // Cuántas modificaciones lo sustentan, para poder decirlo en la tabla.
-          nModificaciones: h?.n ?? 0,
+          // Las prórrogas que de verdad movieron la fecha de fin, no cuántas
+          // filas trae el historial: ver prorrogasEfectivas.
+          prorrogas: plazo.prorrogas,
           plazoOriginal,
           pctAdicion,
           valorOriginal: original?.valor ?? null,
