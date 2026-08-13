@@ -257,6 +257,23 @@ ficha, desglose—, calzando con `plazoDelContrato` corrida a mano contra los
 datos crudos. 53 pruebas siguen en verde (no se tocó `lib/adiciones.js`, solo
 cómo lo consume este componente).
 
+**El usuario reportó que seguía igual, con razón: arreglar el TOTAL no
+arreglaba la LISTA.** El encabezado ya decía «5 prórrogas», pero las 6 filas de
+abajo seguían mostrando cada una su «+365» o «+426» con el mismo color de
+prórroga real —a simple vista seguían pareciendo 6, chocando con el 5 de
+arriba—. Faltaba decir CUÁL de las 6 no cuenta.
+
+Se exportó `enMs` de `lib/adiciones.js` (ya existía, solo no era pública) y se
+usó para marcar, fila por fila, si esa modificación en concreto movió la fecha
+de fin más allá de lo ya alcanzado por las anteriores —el mismo criterio que
+`prorrogasEfectivas`, pero aplicado a cada fila en vez de solo al conteo—.
+Verificado contra el 202104397: la fila del 23/11/2023 ("Otrosí 3") es
+exactamente la que no mueve nada —su `fecha_fin_contrato` es idéntica a la de
+la fila anterior—, y ahora se lee «declara +365 días, pero no amplió el plazo»
+en vez de un badge de prórroga real. Las otras 5 conservan su badge normal:
+5 badges de prórroga real + 1 fila marcada = 6 filas, calzando con el 5 de
+arriba sin que haga falta contar nada a mano.
+
 **PENDIENTE Y SERIO — SECOP I desaparece en silencio en Bogotá y Norte de
 Santander.** Encontrado por el usuario el 6/8/2026: la gráfica de evolución de
 Bogotá solo pintaba SECOP II, sin aviso. No es un fallo de la consulta: **los dos

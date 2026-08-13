@@ -1,10 +1,11 @@
 import { useModificaciones } from '../../hooks/useModificaciones'
 import { formatCOP, formatDate } from '../../lib/formatters'
+import { enMs } from '../../lib/adiciones'
 
 // Línea de tiempo de modificaciones (adiciones de dinero y prórrogas) de un contrato.
 // Se consulta de forma perezosa: solo cuando el desplegable del contrato está abierto.
 export function ModificationHistory({
-  idContrato, plazoOriginal = null, diasAcumulados = null, prorrogas = null,
+  idContrato, plazoOriginal = null, diasAcumulados = null, prorrogas = null, finOriginal = null,
 }) {
   const q = useModificaciones(idContrato)
 
@@ -50,15 +51,28 @@ export function ModificationHistory({
   //     usa la alerta de adiciones de plazo.
   // Un "+90 días" o un "+$50 millones" sueltos no dicen si es mucho o poco; un
   // porcentaje sin decir sobre qué se calcula es peor, porque parece que sí.
+  // ¿Esta modificación en concreto movió la fecha de fin más allá de lo ya
+  // alcanzado, o repite —sin efecto— una que ya se había registrado? Sin esto
+  // la lista se leía como "6 prórrogas" (una fila por modificación con
+  // dias > 0) aunque el total de arriba ya dijera 5: el contrato 202104397
+  // tiene dos modificaciones que declaran 365 días cada una y terminan en la
+  // MISMA fecha de fin —la segunda no amplió nada—. `null` cuando no hay
+  // `finOriginal` que comparar (SECOP I, o el registro no cuadra consigo
+  // mismo): ahí no se puede saber, así que no se marca ninguna.
+  let finMax = enMs(finOriginal)
   const conAdicion = mods.map((m, i) => {
     const previo = i === 0 ? null : mods[i - 1].valorResultante
     const adicionValor = i === 0 ? null : m.valorResultante - previo
+    const t = enMs(m.finContrato)
+    const efectiva = finMax == null ? null : t != null && t > finMax
+    if (efectiva) finMax = t
     return {
       ...m,
       adicionValor,
       pctValor: previo > 0 && adicionValor > 0 ? Math.round((adicionValor / previo) * 100) : null,
       pctDias:
         plazoOriginal > 0 && m.dias > 0 ? Math.round((m.dias / plazoOriginal) * 100) : null,
+      efectiva,
     }
   })
 
@@ -93,11 +107,17 @@ export function ModificationHistory({
             <span className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-warning" />
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <span className="text-textPrimary font-medium">{formatDate(m.fecha)}</span>
-              {m.dias > 0 && (
-                <span className="rounded bg-warning/15 text-warning px-2 py-0.5 text-xs whitespace-nowrap">
-                  +{m.dias.toLocaleString('es-CO')} días
-                  {m.pctDias != null && <span className="opacity-80"> · +{m.pctDias}%</span>}
+              {m.dias > 0 && m.efectiva === false ? (
+                <span className="rounded bg-muted text-textSecondary px-2 py-0.5 text-xs whitespace-nowrap">
+                  declara +{m.dias.toLocaleString('es-CO')} días, pero no amplió el plazo
                 </span>
+              ) : (
+                m.dias > 0 && (
+                  <span className="rounded bg-warning/15 text-warning px-2 py-0.5 text-xs whitespace-nowrap">
+                    +{m.dias.toLocaleString('es-CO')} días
+                    {m.pctDias != null && <span className="opacity-80"> · +{m.pctDias}%</span>}
+                  </span>
+                )
               )}
               {m.adicionValor > 0 && (
                 <span className="rounded bg-danger/15 text-danger px-2 py-0.5 text-xs whitespace-nowrap">
@@ -125,9 +145,9 @@ export function ModificationHistory({
         tenía el contrato justo antes de esa modificación; el de plazo, sobre el plazo
         original. Del total de dinero no se da porcentaje porque este dataset no trae el
         valor anterior a la primera modificación. El total de días de arriba no es la suma
-        de las prórrogas de la lista: el dataset repite algunas sin mover la fecha de fin,
-        y sumarlas contaría de más, así que se toma el mismo dato reconstruido por fechas
-        que usan el resumen y la ficha.
+        de las prórrogas de la lista: el dataset repite algunas sin mover la fecha de fin
+        —marcadas abajo como "no amplió el plazo"—, y sumarlas contaría de más, así que se
+        toma el mismo dato reconstruido por fechas que usan el resumen y la ficha.
       </p>
     </div>
   )

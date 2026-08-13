@@ -64,7 +64,7 @@ export function ContractDetail({ contract: c }) {
     fin: c.endDate,
     diasCampo: c.daysAdded,
   })
-  const { diasAcumulados, plazoOriginal, prorrogas } = plazo
+  const { diasAcumulados, plazoOriginal, prorrogas, finOriginal } = plazo
   const hayHistorial = plazo.fuente === 'historial' && diasAcumulados > 0
 
   // Adición TOTAL de presupuesto. No sale del historial de modificaciones: ese
@@ -273,6 +273,7 @@ export function ContractDetail({ contract: c }) {
             plazoOriginal={plazoOriginal}
             diasAcumulados={hayHistorial ? diasAcumulados : null}
             prorrogas={hayHistorial ? prorrogas : null}
+            finOriginal={hayHistorial ? finOriginal : null}
           />
         )}
       </div>

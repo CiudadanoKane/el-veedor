@@ -54,7 +54,7 @@ const DIA_MS = 86_400_000
 // misma: el contrato CO1.PCCNTR.1901891 contaba 7 prórrogas donde hay 6.
 // Recortar al día y anclar en UTC deja la cuenta igual para cualquier
 // visitante, mire desde donde mire.
-function enMs(fecha) {
+export function enMs(fecha) {
   if (!fecha) return null
   const t = Date.parse(`${String(fecha).slice(0, 10)}T00:00:00Z`)
   return Number.isNaN(t) ? null : t
