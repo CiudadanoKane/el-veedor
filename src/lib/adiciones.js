@@ -59,7 +59,7 @@ export function enMs(fecha) {
   const t = Date.parse(`${String(fecha).slice(0, 10)}T00:00:00Z`)
   return Number.isNaN(t) ? null : t
 }
-function diasEntre(desde, hasta) {
+export function diasEntre(desde, hasta) {
   const a = enMs(desde)
   const b = enMs(hasta)
   return a == null || b == null ? null : Math.round((b - a) / DIA_MS)
