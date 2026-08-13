@@ -225,6 +225,38 @@ hueco era uno solo, y quedaba fuera de lo que esas pruebas alcanzaban a ver
 porque operaban sobre un historial ya deduplicado a mano, no sobre las dos
 consultas reales.
 
+### CORREGIDO UNA CUARTA VEZ — el desglose seguía sumando el campo crudo (ago 2026)
+
+Reportado por el usuario sobre el contrato 202104397: el resumen decía «1.242
+días añadidos en 5 prórrogas», pero el desglose de abajo (el historial fila por
+fila) mostraba 6 prórrogas y sumaba 2.251 días.
+
+La causa era la misma de siempre —el dataset repite una prórroga sin mover la
+fecha de fin— pero en un cuarto sitio que las tres correcciones anteriores no
+tocaron: `ModificationHistory.jsx`, el componente que pinta la lista
+desplegable, calculaba su total con
+`mods.reduce((acc, m) => acc + (m.dias || 0), 0)` — la suma cruda que
+`plazoDelContrato` dejó de usar hace dos correcciones. Verificado contra la API
+real: de las 6 modificaciones deduplicadas del 202104397, la del 18/5/2023 y la
+del 23/11/2023 declaran ambas `dias_extendidos = 365` pero terminan en la
+MISMA `fecha_fin_contrato` (2025-12-11) — una de las dos no movió nada, y
+sumarla contó 365 días fantasma. `prorrogasEfectivas` ya lo filtraba bien (5,
+no 6); el componente simplemente no lo usaba.
+
+**El arreglo:** `ContractDetail.jsx` ya calculaba `plazoDelContrato` para la
+ficha y el resumen; ahora le pasa ese mismo `diasAcumulados` y `prorrogas` a
+`ModificationHistory`, que los usa para el total y cae a la suma cruda solo
+cuando no hay historial reconstruible (mismo criterio que `hayHistorial` en
+`ContractDetail`). Las filas individuales de la lista siguen mostrando su
+`dias_extendidos` crudo tal como lo declara SECOP —eso es honesto de mostrar
+fila por fila—, pero el total de arriba ya no es la suma de esas filas.
+
+**Verificado en la API real y en el navegador:** 202104397 pasó de «2.251 días
+· 6» (desglose, antes) a «1.242 días · 5» en las tres vistas a la vez —resumen,
+ficha, desglose—, calzando con `plazoDelContrato` corrida a mano contra los
+datos crudos. 53 pruebas siguen en verde (no se tocó `lib/adiciones.js`, solo
+cómo lo consume este componente).
+
 **PENDIENTE Y SERIO — SECOP I desaparece en silencio en Bogotá y Norte de
 Santander.** Encontrado por el usuario el 6/8/2026: la gráfica de evolución de
 Bogotá solo pintaba SECOP II, sin aviso. No es un fallo de la consulta: **los dos

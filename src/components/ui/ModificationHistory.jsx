@@ -3,7 +3,9 @@ import { formatCOP, formatDate } from '../../lib/formatters'
 
 // Línea de tiempo de modificaciones (adiciones de dinero y prórrogas) de un contrato.
 // Se consulta de forma perezosa: solo cuando el desplegable del contrato está abierto.
-export function ModificationHistory({ idContrato, plazoOriginal = null }) {
+export function ModificationHistory({
+  idContrato, plazoOriginal = null, diasAcumulados = null, prorrogas = null,
+}) {
   const q = useModificaciones(idContrato)
 
   if (q.isLoading) {
@@ -24,7 +26,14 @@ export function ModificationHistory({ idContrato, plazoOriginal = null }) {
     )
   }
 
-  const diasTotales = mods.reduce((acc, m) => acc + (m.dias || 0), 0)
+  // El total no se suma de las filas: dos modificaciones distintas pueden
+  // declarar días sin haber movido la fecha de fin ni un día (ver
+  // finOriginalDe en lib/adiciones.js), y sumarlas cuenta de más. Se usa el
+  // mismo número ya reconstruido que muestran el resumen y la ficha —cuando
+  // no llega (SECOP I, o el registro no cuadra consigo mismo) se cae a la
+  // suma cruda, que es lo único que hay.
+  const diasTotales = diasAcumulados ?? mods.reduce((acc, m) => acc + (m.dias || 0), 0)
+  const prorrogasTotales = prorrogas ?? mods.filter((m) => m.dias > 0).length
   const valorFinal = mods[mods.length - 1]?.valorResultante
 
   // valorResultante es el acumulado tras cada modificación, no lo que esa
@@ -70,6 +79,7 @@ export function ModificationHistory({ idContrato, plazoOriginal = null }) {
             <>
               {diasTotales.toLocaleString('es-CO')} días de prórroga
               {pctDiasTotal != null && ` (+${pctDiasTotal}% del plazo original)`}
+              {prorrogasTotales > 0 && ` en ${prorrogasTotales} prórroga${prorrogasTotales === 1 ? '' : 's'}`}
               {' · '}
             </>
           )}
@@ -114,7 +124,10 @@ export function ModificationHistory({ idContrato, plazoOriginal = null }) {
         porcentajes se calculan sobre bases distintas: el de dinero, sobre el valor que
         tenía el contrato justo antes de esa modificación; el de plazo, sobre el plazo
         original. Del total de dinero no se da porcentaje porque este dataset no trae el
-        valor anterior a la primera modificación.
+        valor anterior a la primera modificación. El total de días de arriba no es la suma
+        de las prórrogas de la lista: el dataset repite algunas sin mover la fecha de fin,
+        y sumarlas contaría de más, así que se toma el mismo dato reconstruido por fechas
+        que usan el resumen y la ficha.
       </p>
     </div>
   )

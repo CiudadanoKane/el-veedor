@@ -268,7 +268,12 @@ export function ContractDetail({ contract: c }) {
           // denominador salía enorme: en el contrato 202002796 daba 1.897 días
           // de "plazo original" —y por tanto prórrogas de "+8%"— cuando el
           // original era de unos 851 y el crecimiento real supera el 100%.
-          <ModificationHistory idContrato={c.id} plazoOriginal={plazoOriginal} />
+          <ModificationHistory
+            idContrato={c.id}
+            plazoOriginal={plazoOriginal}
+            diasAcumulados={hayHistorial ? diasAcumulados : null}
+            prorrogas={hayHistorial ? prorrogas : null}
+          />
         )}
       </div>
 
