@@ -274,6 +274,31 @@ en vez de un badge de prórroga real. Las otras 5 conservan su badge normal:
 5 badges de prórroga real + 1 fila marcada = 6 filas, calzando con el 5 de
 arriba sin que haga falta contar nada a mano.
 
+**El usuario volvió a hacer la cuenta a mano, y esta vez sí encontró un hueco
+real: 365+365+365+365+426 = 1.886, no 1.242.** Las 5 filas ya bien contadas
+seguían mostrando el `dias_extendidos` CRUDO de esa modificación —el mismo
+campo que ya se sabía poco fiable, y no solo en la fila que no cuenta. En el
+202104397 la fila del 20/8/2025 declara 365 días, pero el fin del contrato
+solo avanzó 86: ya venía adelantado por una prórroga previa (la del
+18/5/2023), y sumar los 365 declarados cuenta ese tramo dos veces. Lo mismo la
+del 6/3/2026 (declara 365, avanza 61) y la del 8/5/2026 (declara 426, avanza
+365).
+
+Se exportó también `diasEntre` de `lib/adiciones.js` y se usó junto con `enMs`
+para calcular, fila por fila, el delta REAL —la diferencia contra la fecha de
+fin que el contrato ya tenía, no el campo declarado—. Cuando los dos difieren
+se muestran ambos: «+86 días (SECOP declara +365)». Verificado contra la API
+real: 365 + 365 + 86 + 61 + 365 = 1.242, exacto, sin redondeos que cuadren por
+casualidad.
+
+Van tres correcciones seguidas sobre la MISMA pantalla porque cada una
+resolvía una capa distinta del mismo problema de fondo —el dato crudo de
+SECOP es honesto por modificación pero engañoso al sumarlo— sin que la
+anterior lo hubiera agotado: el total, luego el conteo visual de la lista,
+luego el valor de cada fila individual. El patrón para la próxima vez que
+aparezca algo parecido: si un número visible se puede sumar a mano y no da la
+cuenta de al lado, es un bug, no una casualidad de redondeo.
+
 **PENDIENTE Y SERIO — SECOP I desaparece en silencio en Bogotá y Norte de
 Santander.** Encontrado por el usuario el 6/8/2026: la gráfica de evolución de
 Bogotá solo pintaba SECOP II, sin aviso. No es un fallo de la consulta: **los dos
