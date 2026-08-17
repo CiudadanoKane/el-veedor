@@ -53,7 +53,7 @@ export function BuscadorEntidad() {
           ? 'Cargando el directorio de entidades… se hace una sola vez, después la búsqueda es instantánea.'
           : isError
             ? 'No pudimos cargar el directorio de entidades. Recarga la página para intentarlo de nuevo.'
-            : `${(directorio?.length ?? 0).toLocaleString('es-CO')} entidades. Escribe para ver su perfil: cómo contrata, con quién y qué tan bien registra.`}
+            : `${(directorio?.length ?? 0).toLocaleString('es-CO')} entidades de SECOP II. Escribe para ver su perfil: cómo contrata, con quién y qué tan bien registra.`}
       </p>
 
       {escribio && !isLoading && resultados.length === 0 && (

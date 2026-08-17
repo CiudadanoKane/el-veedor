@@ -496,7 +496,7 @@ export function Buscar() {
     <div className="space-y-6">
       <PageHeader
         title="Buscador inteligente"
-        subtitle="Escribe en lenguaje natural y una IA arma los filtros por ti —fecha, valor, lugar, modalidad—, sobre 5,3 millones de contratos. También puedes buscar por palabra exacta, o encontrar a un contratista o entidad por nombre."
+        subtitle="Escribe en lenguaje natural y una IA arma los filtros por ti —fecha, valor, lugar, modalidad—, sobre más de 11 millones de contratos de SECOP II y SECOP I. También puedes buscar por palabra exacta, o encontrar a un contratista o entidad por nombre —estos dos, solo con datos de SECOP II—."
       />
 
       <div>

@@ -57,8 +57,8 @@ export function BuscadorContratista() {
         />
       </div>
       <p className="text-[12.5px] text-textSecondary mt-2">
-        Escribe para ver coincidencias y entrar a su perfil. El ranking solo muestra los
-        30 primeros del país.
+        Escribe para ver coincidencias y entrar a su perfil, sobre datos de SECOP II. El
+        ranking solo muestra los 30 primeros del país.
       </p>
 
       {buscando && (
