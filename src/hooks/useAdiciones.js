@@ -314,6 +314,14 @@ async function traerProcesos(ids) {
 // cruzar con el dataset de Procesos y solo se calcula sobre los que ya pasaron
 // ese filtro. Al revés —traer los de mayor valor y mirar el plazo después—
 // habría que cruzar muchísimos más para quedarse con los mismos.
+//
+// `dias_adicionados` sirve para PRESELECCIONAR (mismo criterio que
+// useAdicionesTiempo: quien tiene el campo en cero no tiene prórrogas), pero
+// los "Días añadidos" que se MUESTRAN salen del historial real, igual que en
+// esa otra lista — hasta ago 2026 esta pestaña no lo cruzaba, y por eso podía
+// mostrar un número distinto del que ya corregía "Adiciones de plazo" para el
+// mismo contrato: verificado sobre 25 contratos reales, 13 diferían, hasta 2x
+// (CTO690-18: 2.012 declarados, 4.023 reales).
 export function useAdicionesAmbas(filters = {}, limit = 250) {
   return useQuery({
     queryKey: ['adiciones', 'ambas', filters, limit],
@@ -336,8 +344,12 @@ export function useAdicionesAmbas(filters = {}, limit = 250) {
       )
       const adaptados = adaptList(contratos)
 
-      const ids = [...new Set(adaptados.map((c) => c.processId).filter(Boolean))]
-      const mapa = ids.length ? await traerProcesos(ids) : new Map()
+      const idsProceso = [...new Set(adaptados.map((c) => c.processId).filter(Boolean))]
+      const idsContrato = [...new Set(adaptados.map((c) => c.id).filter(Boolean))]
+      const [mapa, historial] = await Promise.all([
+        idsProceso.length ? traerProcesos(idsProceso) : Promise.resolve(new Map()),
+        idsContrato.length ? traerHistorial(idsContrato).catch(() => new Map()) : Promise.resolve(new Map()),
+      ])
 
       const filas = []
       let sinValorOriginal = 0
@@ -357,12 +369,28 @@ export function useAdicionesAmbas(filters = {}, limit = 250) {
         // creció nada. El corte es el mismo 1% que se muestra, así que no puede
         // aparecer una fila en 0. Medido en Atlántico: quita 5 de 178.
         if (clas.pctAdicion < 1) continue
+        // Mismo cálculo que useAdicionesTiempo y la ficha: si el historial no
+        // reconstruye (SECOP I no aplica aquí, pero un contrato sin
+        // modificaciones publicadas sí puede darse), se cae al campo crudo.
+        const plazo = plazoDelContrato({
+          modificaciones: historial.get(c.id),
+          inicio: c.startDate,
+          fin: c.endDate,
+          diasCampo: c.daysAdded,
+        })
         filas.push({
           ...c,
           valorOriginal: original.valor,
           adicion: clas.adicion,
           pctAdicion: clas.pctAdicion,
           referencia: original.referencia,
+          // Se sobreescribe daysAdded (no se añade un campo aparte) para que el
+          // orden "Más días" y la columna de Adiciones.jsx usen el real sin
+          // tocar ese archivo; se conserva el declarado por SECOP para decirlo
+          // en la tabla cuando difiere, igual que en "Adiciones de plazo".
+          daysAdded: plazo.diasAcumulados,
+          daysAddedCampo: c.daysAdded,
+          prorrogas: plazo.prorrogas,
         })
       }
       filas.sort((a, b) => b.adicion - a.adicion)

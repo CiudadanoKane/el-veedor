@@ -347,10 +347,17 @@ export function AdicionesAmbas() {
       key: 'daysAdded',
       header: 'Días añadidos',
       className: 'text-right tabular-nums whitespace-nowrap',
+      // Del historial real, no de dias_adicionados —ver useAdicionesAmbas—: se
+      // dice el campo de SECOP aparte cuando difiere, igual que en "Adiciones
+      // de plazo".
       render: (r) => (
         <div>
           <div className="text-warning font-medium">+{nf(r.daysAdded)} días</div>
-          <div className="text-[10px] text-textSecondary">{humanDuration(r.daysAdded)}</div>
+          <div className="text-[10px] text-textSecondary">
+            {humanDuration(r.daysAdded)}
+            {r.prorrogas > 1 && ` · en ${r.prorrogas} prórrogas`}
+            {r.daysAddedCampo !== r.daysAdded && ` · SECOP declara +${nf(r.daysAddedCampo)}`}
+          </div>
         </div>
       ),
     },
@@ -401,8 +408,10 @@ export function AdicionesAmbas() {
 
       <Methodology>
         Cruce de las dos alertas anteriores. Un contrato entra aquí si cumple las dos
-        cosas: <strong>días añadidos al plazo</strong> (campo directo de SECOP, con el
-        mismo tope de 3.650 días que descarta la basura del registro) y{' '}
+        cosas: <strong>días añadidos al plazo</strong> (para preseleccionar se usa el
+        campo directo de SECOP, con el mismo tope de 3.650 días que descarta la basura
+        del registro, pero los días que se <strong>muestran</strong> salen del historial
+        real de modificaciones, igual que en "Adiciones de plazo") y{' '}
         <strong>valor actual mayor que el original del proceso</strong>, con el mismo
         criterio de la pestaña de presupuesto —valor adjudicado en procesos
         competitivos, precio base en contratación directa—.

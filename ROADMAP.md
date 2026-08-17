@@ -299,6 +299,34 @@ luego el valor de cada fila individual. El patrón para la próxima vez que
 aparezca algo parecido: si un número visible se puede sumar a mano y no da la
 cuenta de al lado, es un bug, no una casualidad de redondeo.
 
+### CORREGIDO UNA QUINTA VEZ — una pestaña entera no cruzaba el historial (ago 2026)
+
+Pedida una revisión de si quedaba algún otro lugar sumando `dias_extendidos`
+crudo. La respuesta corta: no —los dos únicos sitios que lo leen ya
+deduplican por el máximo—. La respuesta larga: **"Plazo y presupuesto"**
+(`useAdicionesAmbas`) no sumaba nada, pero tampoco cruzaba el historial en
+absoluto. Seguía mostrando, ordenando y filtrando por `dias_adicionados`, el
+campo que declara una sola prórroga —el bug original de toda esta cadena,
+intacto en un cuarto lugar que las cuatro correcciones anteriores no
+tocaron, porque esta pestaña no comparte código con las otras dos—.
+
+Verificado contra la API sobre 25 contratos reales de esa pestaña: **13 de 25
+diferían**, alguno hasta el doble (CTO690-18: 2.012 días declarados, 4.023
+reales). Nada teórico: son los contratos que la propia pestaña muestra hoy.
+
+**Arreglo, mismo patrón que `useAdicionesTiempo`:** el campo crudo sigue
+sirviendo para PRESELECCIONAR candidatos en el `WHERE` de Socrata —barato,
+indexado—, pero `useAdicionesAmbas` ahora cruza `traerHistorial` para las
+filas que sí pasan el resto de guardas y usa `plazoDelContrato` para calcular
+el real. La columna dice el declarado por SECOP aparte cuando difiere, igual
+que "Adiciones de plazo": "+670 días · en 3 prórrogas · SECOP declara +153".
+
+Verificado en el navegador contra los mismos tres contratos de la muestra:
+las cifras del campo (153, 25, 212) y las del historial (670, 549, 1.046)
+salen idénticas a las medidas por API antes de tocar el código. 12 pruebas
+de `adiciones.js` siguen en verde (no se tocó ese archivo, solo quién lo
+consume).
+
 **PENDIENTE Y SERIO — SECOP I desaparece en silencio en Bogotá y Norte de
 Santander.** Encontrado por el usuario el 6/8/2026: la gráfica de evolución de
 Bogotá solo pintaba SECOP II, sin aviso. No es un fallo de la consulta: **los dos
