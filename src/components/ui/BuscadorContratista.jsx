@@ -32,16 +32,30 @@ export function BuscadorContratista() {
       >
         Buscar un contratista
       </label>
-      <input
-        id="buscar-contratista"
-        type="search"
-        value={texto}
-        onChange={(e) => setTexto(e.target.value)}
-        placeholder="Nombre o número de documento…"
-        className="mt-1 bg-bg border-0 border-b border-border px-0 py-1.5 text-[15px]
-                   text-textPrimary placeholder:text-textSecondary/60
-                   focus:border-textPrimary focus:outline-none w-full max-w-xl block"
-      />
+      {/* Caja propia, no el subrayado de los demás campos: es la acción principal
+          de esta pestaña y se perdía en el blanco de fondo (mismo ajuste que la
+          caja de texto libre de la pestaña Contratos). */}
+      <div
+        className="mt-1 flex items-center gap-2 bg-muted border border-border max-w-xl
+                   focus-within:border-primary transition-colors px-3 py-2"
+      >
+        <svg
+          width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeWidth="2.4" strokeLinecap="round" className="shrink-0 text-primary" aria-hidden
+        >
+          <circle cx="11" cy="11" r="7" />
+          <line x1="16.5" y1="16.5" x2="21" y2="21" />
+        </svg>
+        <input
+          id="buscar-contratista"
+          type="search"
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          placeholder="Nombre o número de documento…"
+          className="flex-1 min-w-0 bg-transparent border-0 p-0 text-[15px]
+                     text-textPrimary placeholder:text-textSecondary/60 focus:outline-none"
+        />
+      </div>
       <p className="text-[12.5px] text-textSecondary mt-2">
         Escribe para ver coincidencias y entrar a su perfil. El ranking solo muestra los
         30 primeros del país.

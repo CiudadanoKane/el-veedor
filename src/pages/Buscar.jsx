@@ -521,16 +521,39 @@ export function Buscar() {
                 >
                   Palabra o frase
                 </label>
-                <input
-                  id="busqueda"
-                  type="search"
-                  value={borrador}
-                  onChange={(e) => setBorrador(e.target.value)}
-                  placeholder="alimentación escolar, acueducto, o el número del proceso…"
-                  className="bg-bg border-0 border-b border-border px-0 py-1.5 text-[15px]
-                             text-textPrimary placeholder:text-textSecondary/60
-                             focus:border-textPrimary focus:outline-none w-full"
-                />
+                {/* Es la acción principal de toda la página, así que lleva una caja
+                    propia (fondo + borde completo) en vez del subrayado que usan los
+                    demás campos —ese estilo mínimo se perdía en el blanco de fondo y
+                    dejaba el buscador sin ninguna pista visual de dónde escribir. */}
+                <div
+                  className="flex items-center gap-2 bg-muted border border-border
+                             focus-within:border-primary transition-colors px-3 py-2"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    className="shrink-0 text-primary"
+                    aria-hidden
+                  >
+                    <circle cx="11" cy="11" r="7" />
+                    <line x1="16.5" y1="16.5" x2="21" y2="21" />
+                  </svg>
+                  <input
+                    id="busqueda"
+                    type="search"
+                    value={borrador}
+                    onChange={(e) => setBorrador(e.target.value)}
+                    placeholder="alimentación escolar, acueducto, o el número del proceso…"
+                    className="flex-1 min-w-0 bg-transparent border-0 p-0 text-[15px]
+                               text-textPrimary placeholder:text-textSecondary/60
+                               focus:outline-none"
+                  />
+                </div>
                 <span className="text-[12px] text-textSecondary mt-1">
                   Escribe en lenguaje natural: la IA convierte fecha, valor, lugar o modalidad
                   en filtros. ¿Número de proceso o código SECOP? Va directo al contrato.
