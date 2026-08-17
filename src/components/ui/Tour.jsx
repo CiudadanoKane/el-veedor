@@ -21,7 +21,7 @@ const PASOS = [
     target: null,
     titulo: 'Bienvenido a El Veedor',
     cuerpo:
-      'Convierte los datos de contratación pública de Colombia (SECOP II) en señales que cualquiera puede leer. Su principio: señala patrones, no acusa. Te muestro lo básico en un minuto.',
+      'Convierte los datos de contratación pública de Colombia (SECOP I y II) en señales que cualquiera puede leer. Su principio: señala patrones, no acusa. Te muestro lo básico en un minuto.',
   },
   {
     // Dos selectores: la barra lateral manda en escritorio y la barra de
