@@ -2,6 +2,7 @@ import { DATASETS } from '../src/lib/constants.js'
 import { socrataQuery } from '../src/lib/socrataClient.js'
 import { soqlDirectorio } from '../src/lib/directorioQueries.js'
 import { leerEdgeConfig, escribirEdgeConfig } from '../src/lib/edgeConfig.js'
+import { refrescoBloqueado } from '../src/lib/limiteTasa.js'
 
 const CLAVE = 'directorio'
 
@@ -15,8 +16,10 @@ const CLAVE = 'directorio'
 // plan: **FUNCTION_INVOCATION_TIMEOUT confirmado en producción** (jul 2026,
 // ver ROADMAP.md punto 9). Edge Config sobrevive a los despliegues.
 export default async function handler(req, res) {
-  const forzar =
-    req.query.refresh === '1' || (req.headers['user-agent'] || '').includes('vercel-cron')
+  const cronReal = (req.headers['user-agent'] || '').includes('vercel-cron')
+  const pideRefresh = req.query.refresh === '1'
+  if (pideRefresh && !cronReal && refrescoBloqueado(req, res)) return
+  const forzar = pideRefresh || cronReal
 
   try {
     if (!forzar) {

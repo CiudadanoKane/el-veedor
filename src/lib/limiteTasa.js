@@ -66,3 +66,26 @@ export function excedeLimite(req, { porMinuto = 8, porHora = 40, global = 600 } 
   ventanas.set(ip, marcas)
   return null
 }
+
+// Protege el `?refresh=1` de los endpoints con caché (panorama, geo,
+// directorio, noticias*, errores-indice, concentracion, evolucion,
+// panorama-geo): son públicos y sin autenticar, y ese parámetro salta el
+// caché de Edge Config para forzar el cómputo completo —hasta 60s, varias
+// consultas a Socrata en paralelo—. Sin límite, cualquiera podía repetirlo a
+// voluntad: la misma clase de abuso que ya se protegió en buscar-ia.js, pero
+// sin cubrir aquí. El cron real (identificado por su user-agent) nunca pasa
+// por esta función, así que su refresco diario no se ve afectado.
+//
+// Límites más estrictos que buscar-ia: forzar el recómputo no tiene ningún
+// caso de uso legítimo para un visitante —el cron ya lo hace solo cada
+// día—, así que no hace falta dejar margen para uso real.
+//
+// Responde 429 y devuelve true si bloqueó (el llamador debe cortar ahí);
+// false si puede seguir.
+export function refrescoBloqueado(req, res) {
+  const exceso = excedeLimite(req, { porMinuto: 1, porHora: 3, global: 20 })
+  if (!exceso) return false
+  res.setHeader('Retry-After', String(exceso.segundos))
+  res.status(429).json({ error: 'demasiados refrescos seguidos', reintentarEn: exceso.segundos })
+  return true
+}

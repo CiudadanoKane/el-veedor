@@ -2,6 +2,7 @@ import { DATASETS } from '../src/lib/constants.js'
 import { soqlMapaMetricas, soqlComparacionCiudades } from '../src/lib/panoramaGeoQueries.js'
 import { socrataQuery } from '../src/lib/socrataClient.js'
 import { leerEdgeConfig, escribirEdgeConfig } from '../src/lib/edgeConfig.js'
+import { refrescoBloqueado } from '../src/lib/limiteTasa.js'
 
 // La clave lleva versión porque el payload cambió de forma: la comparación de
 // ciudades pasó a agrupar por (departamento, ciudad) y sus filas ahora traen
@@ -30,8 +31,10 @@ const CLAVE = 'panorama-geo-v2'
 // calienta PoP por PoP, así que la primera visita tras cada deploy volvería a
 // pagar los 22 s. Edge Config sobrevive a los despliegues.
 export default async function handler(req, res) {
-  const forzar =
-    req.query.refresh === '1' || (req.headers['user-agent'] || '').includes('vercel-cron')
+  const cronReal = (req.headers['user-agent'] || '').includes('vercel-cron')
+  const pideRefresh = req.query.refresh === '1'
+  if (pideRefresh && !cronReal && refrescoBloqueado(req, res)) return
+  const forzar = pideRefresh || cronReal
 
   try {
     if (!forzar) {

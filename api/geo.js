@@ -2,6 +2,7 @@ import { DATASETS } from '../src/lib/constants.js'
 import { socrataQuery } from '../src/lib/socrataClient.js'
 import { soqlGeo } from '../src/lib/geoQueries.js'
 import { leerEdgeConfig, escribirEdgeConfig } from '../src/lib/edgeConfig.js'
+import { refrescoBloqueado } from '../src/lib/limiteTasa.js'
 
 const CLAVE = 'geo'
 
@@ -18,8 +19,10 @@ const CLAVE = 'geo'
 // Config; también se puede forzar con ?refresh=1. Si Edge Config aún no está
 // aprovisionado, se cae al cómputo con el caché de CDN por encima, como antes.
 export default async function handler(req, res) {
-  const forzar =
-    req.query.refresh === '1' || (req.headers['user-agent'] || '').includes('vercel-cron')
+  const cronReal = (req.headers['user-agent'] || '').includes('vercel-cron')
+  const pideRefresh = req.query.refresh === '1'
+  if (pideRefresh && !cronReal && refrescoBloqueado(req, res)) return
+  const forzar = pideRefresh || cronReal
 
   try {
     // Camino rápido: lectura instantánea de Edge Config (salvo refresco forzado).

@@ -3,6 +3,7 @@ import {
   soqlConcentracionTotal, soqlConcentracionTop, DATASET_CONCENTRACION, derivarConcentracion,
 } from '../src/lib/concentracionQueries.js'
 import { leerEdgeConfig, escribirEdgeConfig } from '../src/lib/edgeConfig.js'
+import { refrescoBloqueado } from '../src/lib/limiteTasa.js'
 
 const CLAVE = 'concentracion'
 
@@ -25,8 +26,10 @@ const CLAVE = 'concentracion'
 // Con un departamento, ciudad o entidad activo el ámbito es mucho más chico y
 // se consulta en vivo (useConcentracion.js), como Evolución.
 export default async function handler(req, res) {
-  const forzar =
-    req.query.refresh === '1' || (req.headers['user-agent'] || '').includes('vercel-cron')
+  const cronReal = (req.headers['user-agent'] || '').includes('vercel-cron')
+  const pideRefresh = req.query.refresh === '1'
+  if (pideRefresh && !cronReal && refrescoBloqueado(req, res)) return
+  const forzar = pideRefresh || cronReal
 
   try {
     if (!forzar) {

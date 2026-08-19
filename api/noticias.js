@@ -8,6 +8,7 @@ import {
   sinContratistaConteoQueryOptions,
 } from '../src/hooks/useAlertas.js'
 import { leerEdgeConfig, escribirEdgeConfig } from '../src/lib/edgeConfig.js'
+import { refrescoBloqueado } from '../src/lib/limiteTasa.js'
 
 const CLAVE = 'noticias'
 
@@ -38,8 +39,10 @@ export default async function handler(req, res) {
     entity: req.query.entity || undefined,
   }
   const sinFiltros = !filters.department && !filters.city && !filters.entity
-  const forzar =
-    req.query.refresh === '1' || (req.headers['user-agent'] || '').includes('vercel-cron')
+  const cronReal = (req.headers['user-agent'] || '').includes('vercel-cron')
+  const pideRefresh = req.query.refresh === '1'
+  if (pideRefresh && !cronReal && refrescoBloqueado(req, res)) return
+  const forzar = pideRefresh || cronReal
 
   try {
     if (sinFiltros && !forzar) {
