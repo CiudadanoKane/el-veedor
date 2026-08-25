@@ -15,11 +15,11 @@ import { EnlaceContratista } from '../components/ui/EnlacePerfil'
 function Seccion({ titulo, descripcion, children }) {
   return (
     <section className="border-t-2 border-textPrimary pt-5 pb-8">
-      <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] leading-tight">
+      <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
         {titulo}
       </h2>
       {descripcion && (
-        <p className="text-[14.5px] text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
+        <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
           {descripcion}
         </p>
       )}
@@ -43,13 +43,13 @@ function Tasa({ etiqueta, valor, referencia, casos, total, decimales = 2 }) {
 
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+      <div className="text-micro uppercase tracking-label text-textSecondary font-semibold">
         {etiqueta}
       </div>
       <div className={`font-display text-[1.75rem] leading-none font-extrabold tracking-[-0.04em] mt-3 ${tono}`}>
         {formatPct(valor, decimales)}
       </div>
-      <p className="text-[13px] text-textSecondary mt-2 leading-snug">
+      <p className="text-cuerpo text-textSecondary mt-2 leading-snug">
         {casos.toLocaleString('es-CO')} de {total.toLocaleString('es-CO')} contratos
         <br />
         Media nacional: {formatPct(referencia, decimales)}
@@ -75,7 +75,7 @@ function Perfil({ perfil }) {
       render: (r) => (
         <div className="max-w-[340px]">
           {r.source === 'SECOP I' && (
-            <span className="mr-2 align-middle text-[10px] uppercase tracking-label
+            <span className="mr-2 align-middle text-micro uppercase tracking-label
                              text-textSecondary border border-border px-1.5 py-0.5">
               SECOP I
             </span>
@@ -119,7 +119,7 @@ function Perfil({ perfil }) {
           se suma por NIT — pero solo si es inequívoco. Cuando el NIT lo comparten
           varias dependencias, no se puede atribuir a esta entidad y se omite. */}
       {perfil.nitCompartido && (
-        <p className="text-[13px] text-textSecondary -mt-2 max-w-3xl leading-snug">
+        <p className="text-cuerpo text-textSecondary -mt-2 max-w-3xl leading-snug">
           Esta entidad comparte su NIT con otras dependencias, así que su historia en
           <strong className="text-textPrimary"> SECOP I</strong> no se pudo sumar por
           separado: por NIT se mezclaría con la de las demás. Las cifras de abajo son de
@@ -198,7 +198,7 @@ function Perfil({ perfil }) {
           />
         </div>
         {perfil.tieneSecop1 && (
-          <p className="text-[13px] text-textSecondary mt-4 max-w-2xl leading-snug">
+          <p className="text-cuerpo text-textSecondary mt-4 max-w-2xl leading-snug">
             Calculado solo sobre los <strong className="text-textPrimary">
             {perfil.totalContratosSecop2.toLocaleString('es-CO')}</strong> contratos de esta
             entidad en <strong className="text-textPrimary">SECOP II</strong>: SECOP I no
@@ -211,7 +211,7 @@ function Perfil({ perfil }) {
             {defectos.map(({ d, n }) => (
               <li
                 key={d.campo}
-                className="flex items-baseline justify-between gap-4 text-[14px] border-b border-border pb-1.5"
+                className="flex items-baseline justify-between gap-4 text-cuerpo border-b border-border pb-1.5"
               >
                 <span className="text-textPrimary">{d.label}</span>
                 <span className="shrink-0 tabular-nums font-semibold text-textPrimary">
@@ -314,7 +314,7 @@ export function Entidad() {
       <QueryState query={query} empty="No encontramos contratos de esta entidad.">
         {(perfil) =>
           perfil.totalContratos === 0 ? (
-            <p className="text-[15px] text-textSecondary py-8">
+            <p className="text-lectura text-textSecondary py-8">
               No encontramos contratos registrados con este nombre de entidad.
             </p>
           ) : (

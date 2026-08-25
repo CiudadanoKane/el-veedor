@@ -73,8 +73,12 @@ export function Ayuda({ termino, definicion, className = '' }) {
         aria-expanded={abierto}
         aria-controls={id}
         aria-label={`Qué significa "${termino}"`}
-        className="ml-1 inline-flex h-[14px] w-[14px] items-center justify-center rounded-full
-                   border border-border text-[9px] font-bold leading-none align-super
+        // 16px y no 14: al cerrar la escala tipográfica la "?" pasó de 9px a
+        // 11px (el escalón `micro`) y su caja dejó de caber en el círculo.
+        // Subirlo arregla el encaje y de paso agranda un objetivo táctil que
+        // era demasiado pequeño para un control que se puede tocar.
+        className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full
+                   border border-border text-micro font-bold leading-none align-super
                    text-textSecondary hover:border-textPrimary hover:text-textPrimary
                    focus:outline-none focus:ring-1 focus:ring-textPrimary transition-colors"
       >
@@ -90,14 +94,14 @@ export function Ayuda({ termino, definicion, className = '' }) {
                      border border-textPrimary bg-bg p-3 text-left font-normal normal-case
                      tracking-normal shadow-lg ${aLaIzquierda ? 'right-0' : 'left-0'}`}
         >
-          <span className="block text-[11px] uppercase tracking-label text-textSecondary font-semibold">
+          <span className="block text-micro uppercase tracking-label text-textSecondary font-semibold">
             {termino}
           </span>
-          <span className="mt-1 block text-[13px] text-textPrimary leading-snug">
+          <span className="mt-1 block text-cuerpo text-textPrimary leading-snug">
             {def.resumen}
           </span>
           {def.detalle && (
-            <span className="mt-2 block text-[12px] text-textSecondary leading-snug">
+            <span className="mt-2 block text-nota text-textSecondary leading-snug">
               {def.detalle}
             </span>
           )}

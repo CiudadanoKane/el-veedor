@@ -16,7 +16,7 @@ export function Volver({ a, etiqueta }) {
   const navigate = useNavigate()
   const location = useLocation()
   const clases =
-    'text-[13px] text-textSecondary hover:text-textPrimary enlace-sutil inline-block mb-6'
+    'text-cuerpo text-textSecondary hover:text-textPrimary enlace-sutil inline-block mb-6'
 
   if (location.key !== 'default') {
     return (

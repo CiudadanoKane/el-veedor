@@ -26,7 +26,7 @@ import { documentoVisible, etiquetaDocumento, esPersonaJuridica } from '../lib/i
 function Encabezado({ titulo, children }) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
-      <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em]">
+      <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
         {titulo}
       </h2>
       {children}
@@ -45,7 +45,7 @@ const FUENTES = [
 function SelectorFuente({ fuente, onChange }) {
   return (
     <div className="flex flex-wrap items-center gap-2 mb-4">
-      <span className="text-xs text-textSecondary">Fuente:</span>
+      <span className="text-nota text-textSecondary">Fuente:</span>
       <Segmented value={fuente} onChange={onChange} options={FUENTES} />
     </div>
   )
@@ -58,10 +58,10 @@ function SelectorFuente({ fuente, onChange }) {
 function AvisoSecop1() {
   return (
     <div className="border-l-2 border-warning pl-4 py-1 mb-4">
-      <p className="text-[13.5px] text-textPrimary font-semibold">
+      <p className="text-cuerpo text-textPrimary font-semibold">
         El valor en SECOP I no es confiable
       </p>
-      <p className="text-[13.5px] text-textSecondary font-light leading-relaxed mt-1 max-w-3xl">
+      <p className="text-cuerpo text-textSecondary font-light leading-relaxed mt-1 max-w-3xl">
         SECOP I no tiene los controles de valor de SECOP II. Ya se excluyen las{' '}
         <strong className="font-semibold text-textPrimary">cuantías imposibles</strong>{' '}
         (aparecen en Errores → Valores implausibles), pero el orden por valor puede
@@ -93,7 +93,7 @@ function RankingContratistas({ filters }) {
           >
             {r.nombre || '(sin nombre)'}
           </Link>
-          <div className="text-xs text-textSecondary">
+          <div className="text-nota text-textSecondary">
             {etiquetaDocumento(r.tipoDocumento)}: {documentoVisible(r.documento, r.tipoDocumento)}
           </div>
         </div>
@@ -151,7 +151,7 @@ function RankingContratistas({ filters }) {
       <SelectorFuente fuente={fuente} onChange={setFuente} />
       {esSecop1 && <AvisoSecop1 />}
 
-      <p className="text-[14.5px] text-textSecondary font-light -mt-1 mb-4 max-w-2xl leading-relaxed">
+      <p className="text-lectura text-textSecondary font-light -mt-1 mb-4 max-w-2xl leading-relaxed">
         Haz clic en el nombre de un contratista para ver su perfil: con qué entidades
         contrata, cómo se le adjudica y su historial completo. Esta tabla solo muestra
         los 30 primeros —{' '}
@@ -225,7 +225,7 @@ function RankingEntidades({ filters }) {
               {r.entidad}
             </Link>
           )}
-          <div className="text-xs text-textSecondary">NIT: {r.nit}</div>
+          <div className="text-nota text-textSecondary">NIT: {r.nit}</div>
         </div>
       ),
     },
@@ -316,7 +316,7 @@ function RankingAdiciones({ filters }) {
             >
               {r.etiqueta || '(sin nombre)'}
             </Link>
-            <div className="text-xs text-textSecondary">
+            <div className="text-nota text-textSecondary">
               {etiquetaDocumento(r.tipoDoc)}: {documentoVisible(r.id, r.tipoDoc)}
             </div>
           </div>
@@ -360,7 +360,7 @@ function RankingAdiciones({ filters }) {
         />
       </Encabezado>
 
-      <p className="text-[14.5px] text-textSecondary font-light -mt-1 mb-4 max-w-2xl leading-relaxed">
+      <p className="text-lectura text-textSecondary font-light -mt-1 mb-4 max-w-2xl leading-relaxed">
         Una adición es lo que un contrato creció frente al valor con que se firmó.{' '}
         <strong className="font-semibold text-textPrimary">Adicionar es legal</strong> y a
         veces inevitable; lo que esta tabla muestra es dónde ocurre más, para poder
@@ -409,7 +409,7 @@ function RankingAdiciones({ filters }) {
             const filas = esEntidades ? d?.entidades : d?.contratistas
             if (!filas?.length) {
               return (
-                <p className="py-6 text-[14px] text-textSecondary">
+                <p className="py-6 text-cuerpo text-textSecondary">
                   {hayAmbito
                     ? `Sin adiciones registradas en ${lugar}.`
                     : 'Sin datos.'}
@@ -419,7 +419,7 @@ function RankingAdiciones({ filters }) {
             return (
               <>
                 <DataTable columns={columnas} rows={filas} keyField="id" />
-                <p className="mt-3 text-[12.5px] text-textSecondary">
+                <p className="mt-3 text-nota text-textSecondary">
                   {filas.length} primeros por valor añadido{hayAmbito ? ` en ${lugar}` : ''}.
                   Calculado el {formatDate(nacional.data?.generadoEn)} sobre{' '}
                   {nacional.data?.nacional?.evaluables?.toLocaleString('es-CO')} contratos
@@ -458,7 +458,7 @@ function RankingCategorias({ filters }) {
         <div>
           <span className="text-textPrimary">{r.nombre}</span>
           {r.segmento !== '—' && (
-            <span className="text-xs text-textSecondary ml-2">UNSPSC {r.segmento}</span>
+            <span className="text-nota text-textSecondary ml-2">UNSPSC {r.segmento}</span>
           )}
         </div>
       ),
@@ -499,7 +499,7 @@ function RankingCategorias({ filters }) {
         />
       </Encabezado>
 
-      <p className="text-[14.5px] text-textSecondary font-light -mt-1 mb-4 max-w-2xl leading-relaxed">
+      <p className="text-lectura text-textSecondary font-light -mt-1 mb-4 max-w-2xl leading-relaxed">
         Qué compra el Estado, clasificado por tipo de bien o servicio con el estándar
         internacional UNSPSC. A diferencia de los demás rankings, esta vista{' '}
         <strong className="font-semibold text-textPrimary">sí responde</strong> al filtro

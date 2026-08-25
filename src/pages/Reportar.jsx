@@ -28,18 +28,18 @@ const SECCIONES = [
 function Campo({ etiqueta, ayuda, children, requerido }) {
   return (
     <label className="block">
-      <span className="block text-[10px] uppercase tracking-label text-textSecondary font-semibold mb-1.5">
+      <span className="block text-micro uppercase tracking-label text-textSecondary font-semibold mb-1.5">
         {etiqueta}
         {requerido && <span className="text-danger ml-1">*</span>}
       </span>
       {children}
-      {ayuda && <span className="block text-[12.5px] text-textSecondary mt-1.5">{ayuda}</span>}
+      {ayuda && <span className="block text-nota text-textSecondary mt-1.5">{ayuda}</span>}
     </label>
   )
 }
 
 const estiloCampo =
-  'w-full bg-bg border-0 border-b border-border px-0 py-2 text-[15px] text-textPrimary ' +
+  'w-full bg-bg border-0 border-b border-border px-0 py-2 text-lectura text-textPrimary ' +
   'focus:border-textPrimary focus:outline-none'
 
 export function Reportar() {
@@ -91,13 +91,13 @@ export function Reportar() {
           subtitle="Recibimos tu reporte y lo vamos a revisar."
         />
         <div className="border-t-2 border-textPrimary pt-6 max-w-2xl">
-          <p className="text-[15px] leading-relaxed">
+          <p className="text-lectura leading-relaxed">
             Cada corrección hace la plataforma más confiable. Si dejaste tu correo, te
             escribiremos cuando revisemos el caso.
           </p>
           <button
             onClick={() => setEstado('inicial')}
-            className="mt-6 inline-block border-2 border-textPrimary px-5 py-2.5 text-[14px] font-bold hover:bg-textPrimary hover:text-bg transition-colors"
+            className="mt-6 inline-block border-2 border-textPrimary px-5 py-2.5 text-cuerpo font-bold hover:bg-textPrimary hover:text-bg transition-colors"
           >
             Enviar otro reporte
           </button>
@@ -115,7 +115,7 @@ export function Reportar() {
 
       {!CLAVE_FORMULARIO ? (
         <div className="border-t-2 border-textPrimary pt-6 max-w-2xl">
-          <p className="text-[15px] leading-relaxed">
+          <p className="text-lectura leading-relaxed">
             El formulario todavía no está configurado.
             {CORREO_RESPALDO && (
               <>
@@ -189,7 +189,7 @@ export function Reportar() {
             </Campo>
 
             {estado === 'error' && (
-              <div className="border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
+              <div className="border border-danger/40 bg-danger/10 p-4 text-cuerpo text-danger">
                 No pudimos enviar el reporte. {mensajeError}
                 {CORREO_RESPALDO && (
                   <>
@@ -207,7 +207,7 @@ export function Reportar() {
               <button
                 type="submit"
                 disabled={estado === 'enviando'}
-                className="border-2 border-textPrimary px-6 py-2.5 text-[14px] font-bold
+                className="border-2 border-textPrimary px-6 py-2.5 text-cuerpo font-bold
                            hover:bg-textPrimary hover:text-bg transition-colors
                            disabled:opacity-50 disabled:cursor-wait"
               >
@@ -215,7 +215,7 @@ export function Reportar() {
               </button>
             </div>
 
-            <p className="text-[12.5px] text-textSecondary leading-relaxed border-t border-border pt-5">
+            <p className="text-nota text-textSecondary leading-relaxed border-t border-border pt-5">
               El envío se procesa a través de Web3Forms, un servicio externo que nos
               reenvía el mensaje por correo. No pedimos ningún dato que no necesitemos, y
               el correo es opcional.

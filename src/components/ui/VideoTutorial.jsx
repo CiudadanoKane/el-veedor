@@ -55,7 +55,7 @@ export function VideoTutorial() {
     return (
       <button
         onClick={() => guardar(false)}
-        className="mb-8 text-[12.5px] font-semibold text-primary enlace-sutil"
+        className="mb-8 text-nota font-semibold text-primary enlace-sutil"
       >
         Ver el recorrido en video ({DURACION}) →
       </button>
@@ -66,10 +66,10 @@ export function VideoTutorial() {
     <section className="border-2 border-textPrimary p-4 sm:p-5 mb-8">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h2 className="font-display font-extrabold text-[1.15rem] tracking-[-0.03em] leading-tight">
+          <h2 className="font-display font-extrabold text-titulo-3 tracking-[-0.03em] leading-tight">
             Cómo usar esta página, en {DURACION}
           </h2>
-          <p className="text-[13.5px] text-textSecondary leading-relaxed mt-1.5 max-w-xl">
+          <p className="text-cuerpo text-textSecondary leading-relaxed mt-1.5 max-w-xl">
             Un recorrido corto: elegir tu municipio, leer las señales y llegar hasta el
             contrato y quien lo firmó.
           </p>
@@ -77,7 +77,7 @@ export function VideoTutorial() {
         {/* Quien ya lo vio no debería encontrárselo entero cada vez que entra. */}
         <button
           onClick={() => guardar(true)}
-          className="shrink-0 text-[12px] text-textSecondary hover:text-textPrimary transition-colors"
+          className="shrink-0 text-nota text-textSecondary hover:text-textPrimary transition-colors"
         >
           Ocultar
         </button>
@@ -113,12 +113,12 @@ export function VideoTutorial() {
                   <path d="M6 3.5 20 12 6 20.5Z" fill="currentColor" />
                 </svg>
               </span>
-              <span className="text-[12.5px] font-semibold text-textPrimary">
+              <span className="text-nota font-semibold text-textPrimary">
                 Ver el recorrido · {DURACION}
               </span>
               {/* Se avisa antes, no después: quien prefiera no cargar YouTube
                   tiene derecho a saberlo mientras todavía puede no hacerlo. */}
-              <span className="text-[11px] text-textSecondary max-w-[24rem] text-center leading-snug px-4">
+              <span className="text-micro text-textSecondary max-w-[24rem] text-center leading-snug px-4">
                 Se reproduce desde YouTube. Nada suyo se carga hasta que toques aquí.
               </span>
             </span>

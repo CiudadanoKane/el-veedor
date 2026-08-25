@@ -20,7 +20,7 @@ import { Ayuda } from './Ayuda'
 // `label`: ese sigue siendo la cadena limpia que viaja al `title`.
 export function ListaBarra({ items, total, apilada = false, colores }) {
   const suma = total ?? items.reduce((a, x) => a + x.valor, 0)
-  if (!suma) return <p className="text-sm text-textSecondary">Sin datos.</p>
+  if (!suma) return <p className="text-cuerpo text-textSecondary">Sin datos.</p>
 
   const colorDe = (item, i) =>
     item.color || (colores ? colores[i % colores.length] : null)
@@ -56,14 +56,14 @@ export function ListaBarra({ items, total, apilada = false, colores }) {
                     style={{ background: color }}
                   />
                 )}
-                <span className="flex-1 min-w-0 text-[14px] text-textPrimary leading-snug">
+                <span className="flex-1 min-w-0 text-cuerpo text-textPrimary leading-snug">
                   {it.etiqueta ?? it.label}
                   {it.ayuda && <Ayuda termino={it.ayuda} />}
                 </span>
-                <span className="shrink-0 text-[14px] font-bold tabular-nums text-textPrimary">
+                <span className="shrink-0 text-cuerpo font-bold tabular-nums text-textPrimary">
                   {it.valorTexto ?? it.valor.toLocaleString('es-CO')}
                 </span>
-                <span className="shrink-0 w-14 text-right text-[13px] tabular-nums text-textSecondary">
+                <span className="shrink-0 w-14 text-right text-cuerpo tabular-nums text-textSecondary">
                   {formatPct(porcentaje)}
                 </span>
               </div>
@@ -82,12 +82,12 @@ export function ListaBarra({ items, total, apilada = false, colores }) {
               {(it.nota || it.secundario) && (
                 <div className="mt-1.5 flex items-baseline justify-between gap-3">
                   {it.nota && (
-                    <p className="text-[12.5px] text-textSecondary leading-snug">
+                    <p className="text-nota text-textSecondary leading-snug">
                       {it.nota}
                     </p>
                   )}
                   {it.secundario && (
-                    <span className="shrink-0 text-[12.5px] text-textSecondary tabular-nums">
+                    <span className="shrink-0 text-nota text-textSecondary tabular-nums">
                       {it.secundario}
                     </span>
                   )}

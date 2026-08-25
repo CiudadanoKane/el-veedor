@@ -106,7 +106,7 @@ export function Layout() {
                 className="shrink-0 flex items-center gap-1.5 text-sideSoft hover:text-sideActive p-1"
               >
                 <Icon name="constructor" className="h-[18px] w-[18px]" />
-                <span className="hidden sm:inline text-[13px] font-semibold whitespace-nowrap">
+                <span className="hidden sm:inline text-cuerpo font-semibold whitespace-nowrap">
                   Graficar
                 </span>
               </Link>
@@ -139,11 +139,11 @@ export function Layout() {
 export function PageHeader({ title, subtitle }) {
   return (
     <header className="mb-10">
-      <h1 className="font-display text-[2.25rem] md:text-[3.25rem] font-extrabold text-textPrimary leading-[1.02] tracking-[-0.04em]">
+      <h1 className="font-display text-titulo-1 md:text-hero font-extrabold text-textPrimary leading-[1.02] tracking-[-0.04em]">
         {title}
       </h1>
       {subtitle && (
-        <p className="text-textSecondary mt-4 text-[19px] max-w-2xl leading-[1.55] font-light">
+        <p className="text-textSecondary mt-4 text-intro max-w-2xl leading-[1.55] font-light">
           {subtitle}
         </p>
       )}

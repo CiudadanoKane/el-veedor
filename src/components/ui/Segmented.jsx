@@ -23,7 +23,7 @@ export function Segmented({ options, value, onChange }) {
               key={o.value}
               type="button"
               onClick={() => onChange(o.value)}
-              className={`px-3.5 py-1.5 text-[13px] whitespace-nowrap border-r border-border last:border-r-0 ${
+              className={`px-3.5 py-1.5 text-cuerpo whitespace-nowrap border-r border-border last:border-r-0 ${
                 activo
                   ? 'bg-textPrimary text-bg font-bold'
                   : 'text-textSecondary font-normal hover:bg-muted hover:text-textPrimary'

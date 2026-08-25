@@ -139,7 +139,7 @@ function DonaConstructor({ data, tipo }) {
           </Pie>
         </PieChart>
       </ResponsiveContainer>
-      <ul className="flex-1 min-w-[220px] space-y-1.5 text-[13px]">
+      <ul className="flex-1 min-w-[220px] space-y-1.5 text-cuerpo">
         {data.map((f, i) => (
           <li key={f.clave} className="flex items-center gap-2">
             <span
@@ -233,7 +233,7 @@ export function ConstructorGraficos() {
 
       <div className="space-y-3">
         <div>
-          <span className="block text-[10px] uppercase tracking-label text-textSecondary font-semibold mb-1.5">
+          <span className="block text-micro uppercase tracking-label text-textSecondary font-semibold mb-1.5">
             Métrica
           </span>
           <Segmented
@@ -243,7 +243,7 @@ export function ConstructorGraficos() {
           />
         </div>
         <div>
-          <span className="block text-[10px] uppercase tracking-label text-textSecondary font-semibold mb-1.5">
+          <span className="block text-micro uppercase tracking-label text-textSecondary font-semibold mb-1.5">
             Agrupar por
           </span>
           <Segmented
@@ -254,7 +254,7 @@ export function ConstructorGraficos() {
         </div>
         <div className="flex flex-wrap items-end gap-5">
           <div>
-            <span className="block text-[10px] uppercase tracking-label text-textSecondary font-semibold mb-1.5">
+            <span className="block text-micro uppercase tracking-label text-textSecondary font-semibold mb-1.5">
               Tipo de gráfico
             </span>
             <Segmented
@@ -265,7 +265,7 @@ export function ConstructorGraficos() {
           </div>
           {mostrarOrden && (
             <div>
-              <span className="block text-[10px] uppercase tracking-label text-textSecondary font-semibold mb-1.5">
+              <span className="block text-micro uppercase tracking-label text-textSecondary font-semibold mb-1.5">
                 Entidades
               </span>
               <Segmented
@@ -312,7 +312,7 @@ export function ConstructorGraficos() {
       </Methodology>
 
       {soloUnGrupo && (
-        <div className="border border-border bg-muted px-4 py-3 text-[13.5px] text-textPrimary flex items-center justify-between gap-4 flex-wrap">
+        <div className="border border-border bg-muted px-4 py-3 text-cuerpo text-textPrimary flex items-center justify-between gap-4 flex-wrap">
           <span>
             El filtro geográfico activo ya limita a un solo grupo aquí; para comparar, quita el
             filtro.
@@ -352,7 +352,7 @@ export function ConstructorGraficos() {
               {tipo === 'linea' && <LineaConstructor data={filasBase} tipo={METRICAS[metrica].tipo} />}
               {tipo === 'dona' && <DonaConstructor data={filasDona} tipo={METRICAS[metrica].tipo} />}
               {DIMS_CAPADAS.includes(dim) && tipo === 'barras' && filasBase.length > TOP_BARRAS && (
-                <p className="mt-3 text-[12.5px] text-textSecondary">
+                <p className="mt-3 text-nota text-textSecondary">
                   Mostrando las {TOP_BARRAS} con mayor {tituloMetrica.toLowerCase()} — usa la
                   tabla para ver el resto.
                 </p>

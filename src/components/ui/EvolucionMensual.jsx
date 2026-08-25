@@ -52,10 +52,10 @@ export function EvolucionMensual({ filters }) {
     <section className="border-t-2 border-textPrimary pt-5 pb-8 mb-2">
       <div className="flex items-start justify-between gap-6 flex-wrap">
         <div className="min-w-0">
-          <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] leading-tight">
+          <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
             Evolución de la contratación
           </h2>
-          <p className="text-[14.5px] text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
+          <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
             Cómo cambia lo que contrata el Estado a lo largo del tiempo. Cada punto es
             lo firmado en ese {porAnio ? 'año' : 'mes'}, no un acumulado. Se muestran las
             dos fuentes por separado: <strong>SECOP II</strong> y <strong>SECOP I</strong>.
@@ -175,7 +175,7 @@ export function EvolucionMensual({ filters }) {
           )}
         </QueryState>
 
-        <p className="mt-3 text-[12.5px] text-textSecondary">
+        <p className="mt-3 text-nota text-textSecondary">
           {!secop1Viable
             ? 'En la vista de 10 años se muestra solo SECOP II: agrupar SECOP I por año sobre 6,4 millones de registros es demasiado pesado para hacerlo en vivo. Usa 5 años o menos para ver también SECOP I.'
             : secop1.isLoading

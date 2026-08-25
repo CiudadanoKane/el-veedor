@@ -8,7 +8,7 @@ export function Methodology({ children }) {
     <div className="mt-3">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="group inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-textPrimary"
+        className="group inline-flex items-center gap-1.5 text-nota font-semibold text-primary hover:text-textPrimary"
       >
         <Icon
           name="chevronAbajo"
@@ -19,7 +19,7 @@ export function Methodology({ children }) {
         </span>
       </button>
       {open && (
-        <div className="mt-2.5 rounded-none bg-muted border border-border px-4 py-3 text-[13px] text-textSecondary leading-relaxed">
+        <div className="mt-2.5 rounded-none bg-muted border border-border px-4 py-3 text-cuerpo text-textSecondary leading-relaxed">
           {children}
         </div>
       )}

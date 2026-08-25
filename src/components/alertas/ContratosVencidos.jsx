@@ -47,7 +47,7 @@ export function ContratosVencidos() {
       render: (r) => (
         <div className="max-w-[200px]">
           <div><EnlaceEntidad nombre={r.entityName} /></div>
-          <div className="text-xs text-textSecondary truncate">{r.description}</div>
+          <div className="text-nota text-textSecondary truncate">{r.description}</div>
         </div>
       ),
     },
@@ -94,7 +94,7 @@ export function ContratosVencidos() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em]">
+        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
           {query.data ? `${query.data.length} contratos mostrados` : 'Contratos vencidos'}
         </h2>
         <Segmented
@@ -108,7 +108,7 @@ export function ContratosVencidos() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2 mb-1">
-        <span className="text-xs text-textSecondary">Antigüedad del vencimiento:</span>
+        <span className="text-nota text-textSecondary">Antigüedad del vencimiento:</span>
         <Segmented
           value={rango}
           onChange={cambiarRango}
@@ -122,7 +122,7 @@ export function ContratosVencidos() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2 mb-1 mt-2">
-        <span className="text-xs text-textSecondary">Fuente:</span>
+        <span className="text-nota text-textSecondary">Fuente:</span>
         <Segmented
           value={fuente}
           onChange={setFuente}
@@ -135,10 +135,10 @@ export function ContratosVencidos() {
 
       {esSecop1 && (
         <div className="border-l-2 border-warning pl-4 py-1 mt-3 mb-1">
-          <p className="text-[13.5px] text-textPrimary font-semibold">
+          <p className="text-cuerpo text-textPrimary font-semibold">
             En SECOP I, "vencido" se mide distinto
           </p>
-          <p className="text-[13.5px] text-textSecondary font-light leading-relaxed mt-1 max-w-3xl">
+          <p className="text-cuerpo text-textSecondary font-light leading-relaxed mt-1 max-w-3xl">
             Aquí un contrato cuenta como vencido si está <strong className="font-semibold text-textPrimary">
             "Celebrado"</strong> —firmado y sin liquidar— con la fecha de fin pasada.
             SECOP I <strong className="font-semibold text-textPrimary">no reporta pagos</strong>,

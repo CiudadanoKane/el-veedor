@@ -59,7 +59,7 @@ export function StatCard({
         }`}
       >
         <span className="inline-flex items-baseline gap-2 min-w-0">
-          <span className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+          <span className="text-micro uppercase tracking-label text-textSecondary font-semibold">
             {label}
           </span>
           {desplegable && (
@@ -71,7 +71,7 @@ export function StatCard({
           )}
         </span>
         {fuente && (
-          <span className="ml-auto text-[9.5px] uppercase tracking-label text-textSecondary/70 font-medium whitespace-nowrap">
+          <span className="ml-auto text-micro uppercase tracking-label text-textSecondary/70 font-medium whitespace-nowrap">
             {fuente}
           </span>
         )}
@@ -110,7 +110,7 @@ export function StatCard({
         {pct && !error && (
           // Interlineado fijo: heredado daba 21px y la reserva de arriba 20,
           // dejando un descuadre de un píxel entre tarjetas con y sin porcentaje.
-          <div className={`text-[13px] leading-5 font-bold ${TONE[tone]}`}>{pct}</div>
+          <div className={`text-cuerpo leading-5 font-bold ${TONE[tone]}`}>{pct}</div>
         )}
       </div>
 
@@ -123,7 +123,7 @@ export function StatCard({
           hubiera medido. */}
       <div className="pt-1.5">
         {sub && !error && (
-          <div className="text-[13px] text-textSecondary leading-snug">{sub}</div>
+          <div className="text-cuerpo text-textSecondary leading-snug">{sub}</div>
         )}
       </div>
 
@@ -132,7 +132,7 @@ export function StatCard({
           es puede recibir un enlace a donde continúa esa cifra. */}
       <div className="flex items-end pt-3">
         {desplegable && (
-          <span className="text-[11px] font-semibold text-primary enlace-sutil">
+          <span className="text-micro font-semibold text-primary enlace-sutil">
             {abierta ? 'Ocultar detalle' : detalle || 'Ver detalle'}
           </span>
         )}

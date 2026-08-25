@@ -50,7 +50,7 @@ export function IndiceEjecucion() {
         <div className={destacada ? tonoRelativo(r[clave], refValor) : 'text-textSecondary'}>
           {formatPct(r[clave], 1)}
         </div>
-        <div className="text-[11px] text-textSecondary">
+        <div className="text-micro text-textSecondary">
           {r[conteo].toLocaleString('es-CO')} de {r.total.toLocaleString('es-CO')}
         </div>
       </div>
@@ -78,7 +78,7 @@ export function IndiceEjecucion() {
         >
           {formatPct(r.tasaCuantia, 1)}
         </div>
-        <div className="text-[11px] text-textSecondary">
+        <div className="text-micro text-textSecondary">
           {formatCOP(r.valorProrrogado)} de {formatCOP(r.valorTotal)}
         </div>
       </div>
@@ -99,7 +99,7 @@ export function IndiceEjecucion() {
           >
             {r.nombre || '(sin nombre)'}
           </Link>
-          <div className="text-xs text-textSecondary">
+          <div className="text-nota text-textSecondary">
             {etiquetaDocumento(r.tipoDocumento)}:{' '}
             {documentoVisible(r.documento, r.tipoDocumento)}
           </div>
@@ -148,7 +148,7 @@ export function IndiceEjecucion() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em]">
+        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
           {extremo === 'peor' ? 'Más prórrogas' : 'Cumplen el plazo pactado'}
         </h2>
         <Segmented
@@ -162,7 +162,7 @@ export function IndiceEjecucion() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
-        <span className="text-xs text-textSecondary">Ordenar por:</span>
+        <span className="text-nota text-textSecondary">Ordenar por:</span>
         <Segmented
           value={metrica}
           onChange={setMetrica}
@@ -172,7 +172,7 @@ export function IndiceEjecucion() {
 
       {referencia && (
         <div className="mb-5 max-w-3xl">
-          <p className="text-[14.5px] text-textSecondary font-light leading-relaxed">
+          <p className="text-lectura text-textSecondary font-light leading-relaxed">
             En el conjunto del país,{' '}
             <strong className="font-semibold text-textPrimary">
               {formatPct(referencia.tasaProrroga, 1)}
@@ -184,7 +184,7 @@ export function IndiceEjecucion() {
             se prorrogó por más tiempo del que se había pactado. Esas son las varas para
             leer la tabla.
           </p>
-          <p className="text-[13.5px] text-textPrimary mt-3 leading-relaxed">
+          <p className="text-cuerpo text-textPrimary mt-3 leading-relaxed">
             <strong>Mira siempre la última columna.</strong> Un patrón frente a decenas de
             entidades distintas dice algo del contratista; el mismo patrón frente a una o
             dos dice más de esa relación concreta que de él.
@@ -246,7 +246,7 @@ export function IndiceEjecucion() {
         <QueryState query={query} empty="Sin contratistas que superen el mínimo de contratos.">
           {(data) =>
             data.contratistas.length === 0 ? (
-              <p className="text-[15px] text-textSecondary py-8">
+              <p className="text-lectura text-textSecondary py-8">
                 Ningún contratista alcanza los {UMBRAL_CONTRATOS} contratos evaluables con
                 estos filtros. Prueba sin filtro geográfico.
               </p>

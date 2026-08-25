@@ -11,7 +11,7 @@ export function ModificationHistory({
 
   if (q.isLoading) {
     return (
-      <div className="text-sm text-textSecondary">
+      <div className="text-cuerpo text-textSecondary">
         Cargando historial de modificaciones…
       </div>
     )
@@ -21,7 +21,7 @@ export function ModificationHistory({
   const mods = q.data || []
   if (mods.length === 0) {
     return (
-      <div className="text-sm text-textSecondary">
+      <div className="text-cuerpo text-textSecondary">
         Sin modificaciones registradas para este contrato.
       </div>
     )
@@ -100,10 +100,10 @@ export function ModificationHistory({
   return (
     <div>
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-3">
-        <span className="text-xs uppercase tracking-wide text-warning">
+        <span className="text-nota uppercase tracking-wide text-warning">
           Historial de modificaciones ({mods.length})
         </span>
-        <span className="text-xs text-textSecondary">
+        <span className="text-nota text-textSecondary">
           {diasTotales > 0 && (
             <>
               {diasTotales.toLocaleString('es-CO')} días de prórroga
@@ -120,15 +120,15 @@ export function ModificationHistory({
         {conAdicion.map((m) => (
           <li key={m.id} className="relative">
             <span className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-warning" />
-            <div className="flex flex-wrap items-center gap-2 text-sm">
+            <div className="flex flex-wrap items-center gap-2 text-cuerpo">
               <span className="text-textPrimary font-medium">{formatDate(m.fecha)}</span>
               {m.efectiva === false ? (
-                <span className="rounded bg-muted text-textSecondary px-2 py-0.5 text-xs whitespace-nowrap">
+                <span className="rounded bg-muted text-textSecondary px-2 py-0.5 text-nota whitespace-nowrap">
                   declara +{m.dias.toLocaleString('es-CO')} días, pero no amplió el plazo
                 </span>
               ) : (
                 m.diasMostrar > 0 && (
-                  <span className="rounded bg-warning/15 text-warning px-2 py-0.5 text-xs whitespace-nowrap">
+                  <span className="rounded bg-warning/15 text-warning px-2 py-0.5 text-nota whitespace-nowrap">
                     +{m.diasMostrar.toLocaleString('es-CO')} días
                     {m.pctDias != null && <span className="opacity-80"> · +{m.pctDias}%</span>}
                     {m.efectiva === true && m.diasReales !== m.dias && (
@@ -138,17 +138,17 @@ export function ModificationHistory({
                 )
               )}
               {m.adicionValor > 0 && (
-                <span className="rounded bg-danger/15 text-danger px-2 py-0.5 text-xs whitespace-nowrap">
+                <span className="rounded bg-danger/15 text-danger px-2 py-0.5 text-nota whitespace-nowrap">
                   +{formatCOP(m.adicionValor)}
                   {m.pctValor != null && <span className="opacity-80"> · +{m.pctValor}%</span>}
                 </span>
               )}
-              <span className="rounded bg-muted text-textSecondary px-2 py-0.5 text-xs whitespace-nowrap">
+              <span className="rounded bg-muted text-textSecondary px-2 py-0.5 text-nota whitespace-nowrap">
                 Valor del contrato: {formatCOP(m.valorResultante)}
               </span>
             </div>
             {m.razon && (
-              <p className="mt-1 text-xs text-textSecondary leading-relaxed">
+              <p className="mt-1 text-nota text-textSecondary leading-relaxed">
                 {m.razon.length > 260 ? m.razon.slice(0, 260) + '…' : m.razon}
               </p>
             )}
@@ -156,7 +156,7 @@ export function ModificationHistory({
         ))}
       </ol>
 
-      <p className="mt-3 text-[11px] text-textSecondary/70 italic">
+      <p className="mt-3 text-micro text-textSecondary/70 italic">
         Fuente: SECOP II — Modificaciones a contratos. "Valor del contrato" es el valor
         total acumulado tras cada modificación, no el monto individual adicionado. Los
         porcentajes se calculan sobre bases distintas: el de dinero, sobre el valor que

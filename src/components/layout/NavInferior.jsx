@@ -58,7 +58,7 @@ export function NavInferior() {
             {({ isActive }) => (
               <>
                 <Icon name={item.icono} className="h-[18px] w-[18px]" />
-                <span className={`text-[10px] ${isActive ? 'font-bold' : 'font-medium'}`}>
+                <span className={`text-micro ${isActive ? 'font-bold' : 'font-medium'}`}>
                   {item.label}
                 </span>
               </>

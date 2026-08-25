@@ -25,32 +25,32 @@ export function Proceso({ etapas }) {
           <span
             aria-hidden
             className="absolute left-0 top-0 flex h-8 w-8 items-center justify-center
-                       bg-textPrimary text-bg font-display font-extrabold text-[13px]"
+                       bg-textPrimary text-bg font-display font-extrabold text-cuerpo"
           >
             {i + 1}
           </span>
 
-          <h3 className="font-display font-extrabold text-[1.15rem] tracking-[-0.02em] leading-tight pt-1">
+          <h3 className="font-display font-extrabold text-titulo-3 tracking-[-0.02em] leading-tight pt-1">
             {etapa.titulo}
           </h3>
-          <p className="text-[15px] leading-relaxed text-textPrimary mt-2 max-w-2xl">
+          <p className="text-lectura leading-relaxed text-textPrimary mt-2 max-w-2xl">
             {etapa.explicacion}
           </p>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2 max-w-3xl">
             <div className="border-l-2 border-success pl-3 py-0.5">
-              <p className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+              <p className="text-micro uppercase tracking-label text-textSecondary font-semibold">
                 Cuando va bien
               </p>
-              <p className="text-[13.5px] text-textPrimary leading-snug mt-1">
+              <p className="text-cuerpo text-textPrimary leading-snug mt-1">
                 {etapa.bien}
               </p>
             </div>
             <div className="border-l-2 border-warning pl-3 py-0.5">
-              <p className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+              <p className="text-micro uppercase tracking-label text-textSecondary font-semibold">
                 Qué puede fallar
               </p>
-              <p className="text-[13.5px] text-textPrimary leading-snug mt-1">
+              <p className="text-cuerpo text-textPrimary leading-snug mt-1">
                 {etapa.falla}
               </p>
             </div>
@@ -59,7 +59,7 @@ export function Proceso({ etapas }) {
           {etapa.enlace && (
             <Link
               to={etapa.enlace.to}
-              className="inline-block mt-3 text-[13px] font-semibold text-primary enlace-sutil"
+              className="inline-block mt-3 text-cuerpo font-semibold text-primary enlace-sutil"
             >
               {etapa.enlace.texto} →
             </Link>

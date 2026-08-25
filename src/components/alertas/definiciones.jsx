@@ -36,7 +36,7 @@ export function AlertaFechasInconsistentes() {
       render: (r) => (
         <div className="max-w-[220px]">
           <div><EnlaceEntidad nombre={r.entityName} /></div>
-          <div className="text-xs text-textSecondary truncate">{r.description}</div>
+          <div className="text-nota text-textSecondary truncate">{r.description}</div>
         </div>
       ),
     },
@@ -165,7 +165,7 @@ export function AlertaErrorDigitacion() {
             <EnlaceEntidad nombre={r.entityName} />
             <FuenteBadge source={r.source} />
           </div>
-          <div className="text-xs text-textSecondary truncate">{r.description}</div>
+          <div className="text-nota text-textSecondary truncate">{r.description}</div>
         </div>
       ),
     },
@@ -243,7 +243,7 @@ export function AlertaCerradoSinPago() {
       render: (r) => (
         <div className="max-w-[220px]">
           <div><EnlaceEntidad nombre={r.entityName} /></div>
-          <div className="text-xs text-textSecondary truncate">{r.description}</div>
+          <div className="text-nota text-textSecondary truncate">{r.description}</div>
         </div>
       ),
     },
@@ -324,7 +324,7 @@ export function AlertaContratosSinValor() {
       render: (r) => (
         <div className="max-w-[220px]">
           <div><EnlaceEntidad nombre={r.entityName} /></div>
-          <div className="text-xs text-textSecondary truncate">{r.description}</div>
+          <div className="text-nota text-textSecondary truncate">{r.description}</div>
         </div>
       ),
     },
@@ -403,7 +403,7 @@ export function AlertaSinContratista() {
             <EnlaceEntidad nombre={r.entityName} />
             <FuenteBadge source={r.source} />
           </div>
-          <div className="text-xs text-textSecondary truncate">{r.description}</div>
+          <div className="text-nota text-textSecondary truncate">{r.description}</div>
         </div>
       ),
     },
@@ -502,7 +502,7 @@ export function AlertaObraParalizada() {
       render: (r) => (
         <div className="max-w-[240px]">
           <div><EnlaceEntidad nombre={r.entityName} /></div>
-          <div className="text-xs text-textSecondary truncate">{r.description}</div>
+          <div className="text-nota text-textSecondary truncate">{r.description}</div>
         </div>
       ),
     },

@@ -18,7 +18,7 @@ export function BuscadorEntidad() {
     <div className="border-b border-border pb-7 mb-8">
       <label
         htmlFor="buscar-entidad"
-        className="text-[10px] uppercase tracking-label text-textSecondary font-semibold"
+        className="text-micro uppercase tracking-label text-textSecondary font-semibold"
       >
         Buscar una entidad
       </label>
@@ -43,12 +43,12 @@ export function BuscadorEntidad() {
           onChange={(e) => setTexto(e.target.value)}
           placeholder="Alcaldía, ministerio, hospital…"
           disabled={isLoading}
-          className="flex-1 min-w-0 bg-transparent border-0 p-0 text-[15px]
+          className="flex-1 min-w-0 bg-transparent border-0 p-0 text-lectura
                      text-textPrimary placeholder:text-textSecondary/60 focus:outline-none"
         />
       </div>
 
-      <p className="text-[12.5px] text-textSecondary mt-2">
+      <p className="text-nota text-textSecondary mt-2">
         {isLoading
           ? 'Cargando el directorio de entidades… se hace una sola vez, después la búsqueda es instantánea.'
           : isError
@@ -57,7 +57,7 @@ export function BuscadorEntidad() {
       </p>
 
       {escribio && !isLoading && resultados.length === 0 && (
-        <p className="text-[13px] text-textSecondary mt-4">
+        <p className="text-cuerpo text-textSecondary mt-4">
           Ninguna entidad coincide. Las palabras pueden ir en cualquier orden, pero todas
           deben aparecer en el nombre.
         </p>
@@ -71,10 +71,10 @@ export function BuscadorEntidad() {
                 to={`/entidad/${encodeURIComponent(e.nombre)}`}
                 className="group flex items-baseline justify-between gap-4 py-2.5 hover:bg-muted -mx-2 px-2"
               >
-                <span className="min-w-0 text-[14px] text-textPrimary group-hover:font-medium">
+                <span className="min-w-0 text-cuerpo text-textPrimary group-hover:font-medium">
                   {e.nombre}
                 </span>
-                <span className="shrink-0 text-[12px] tabular-nums text-textSecondary">
+                <span className="shrink-0 text-nota tabular-nums text-textSecondary">
                   {e.contratos.toLocaleString('es-CO')} contratos
                 </span>
               </Link>

@@ -28,7 +28,7 @@ export function BuscadorContratista() {
     <div className="border-b border-border pb-7 mb-8">
       <label
         htmlFor="buscar-contratista"
-        className="text-[10px] uppercase tracking-label text-textSecondary font-semibold"
+        className="text-micro uppercase tracking-label text-textSecondary font-semibold"
       >
         Buscar un contratista
       </label>
@@ -52,21 +52,21 @@ export function BuscadorContratista() {
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           placeholder="Nombre o número de documento…"
-          className="flex-1 min-w-0 bg-transparent border-0 p-0 text-[15px]
+          className="flex-1 min-w-0 bg-transparent border-0 p-0 text-lectura
                      text-textPrimary placeholder:text-textSecondary/60 focus:outline-none"
         />
       </div>
-      <p className="text-[12.5px] text-textSecondary mt-2">
+      <p className="text-nota text-textSecondary mt-2">
         Escribe para ver coincidencias y entrar a su perfil, sobre datos de SECOP II. El
         ranking solo muestra los 30 primeros del país.
       </p>
 
       {buscando && (
-        <p className="text-[13px] text-textSecondary mt-4">Buscando…</p>
+        <p className="text-cuerpo text-textSecondary mt-4">Buscando…</p>
       )}
 
       {!buscando && consulta && resultados.length === 0 && (
-        <p className="text-[13px] text-textSecondary mt-4">
+        <p className="text-cuerpo text-textSecondary mt-4">
           Ningún contratista coincide. Prueba con menos palabras: se buscan juntas y en
           ese orden.
         </p>
@@ -81,19 +81,19 @@ export function BuscadorContratista() {
                 className="group flex items-baseline justify-between gap-4 py-2.5 hover:bg-muted -mx-2 px-2"
               >
                 <span className="min-w-0">
-                  <span className="block text-[14px] text-textPrimary group-hover:font-medium">
+                  <span className="block text-cuerpo text-textPrimary group-hover:font-medium">
                     {c.nombre}
                   </span>
-                  <span className="block text-[11px] text-textSecondary">
+                  <span className="block text-micro text-textSecondary">
                     {etiquetaDocumento(c.tipoDocumento)}:{' '}
                     {documentoVisible(c.documento, c.tipoDocumento)}
                   </span>
                 </span>
                 <span className="shrink-0 text-right">
-                  <span className="block text-[13px] tabular-nums text-textPrimary">
+                  <span className="block text-cuerpo tabular-nums text-textPrimary">
                     {formatCOP(c.valor)}
                   </span>
-                  <span className="block text-[11px] tabular-nums text-textSecondary">
+                  <span className="block text-micro tabular-nums text-textSecondary">
                     {c.contratos.toLocaleString('es-CO')} contratos
                   </span>
                 </span>

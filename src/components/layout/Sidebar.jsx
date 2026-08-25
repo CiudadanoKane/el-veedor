@@ -60,11 +60,11 @@ export function Sidebar({ abierto, onCerrar }) {
                 alt=""
                 className="h-8 w-8 shrink-0"
               />
-              <span className="font-display text-[1.35rem] font-extrabold tracking-tight leading-none text-white">
+              <span className="font-display text-titulo-2 font-extrabold tracking-tight leading-none text-white">
                 El Veedor
               </span>
             </Link>
-            <div className="text-xs text-sideSoft mt-2.5 leading-snug">
+            <div className="text-nota text-sideSoft mt-2.5 leading-snug">
               Veeduría ciudadana de la
               <br />
               contratación pública
@@ -88,7 +88,7 @@ export function Sidebar({ abierto, onCerrar }) {
               onClick={onCerrar}
               data-tour={item.to === '/noticias' ? 'noticias' : undefined}
               className={({ isActive }) =>
-                `block -ml-7 pl-7 pr-3 py-2 text-[14px] border-l-2 ${
+                `block -ml-7 pl-7 pr-3 py-2 text-cuerpo border-l-2 ${
                   isActive
                     ? 'border-white text-white font-extrabold'
                     : 'border-transparent text-sideSoft font-normal hover:text-white hover:border-sideSoft hover:translate-x-1'
@@ -121,7 +121,7 @@ export function Sidebar({ abierto, onCerrar }) {
               to={rutaConAmbito(ruta)}
               onClick={onCerrar}
               className={({ isActive }) =>
-                `block -ml-7 pl-7 pr-3 py-2 text-[13px] border-l-2 ${
+                `block -ml-7 pl-7 pr-3 py-2 text-cuerpo border-l-2 ${
                   isActive
                     ? 'border-white text-white font-extrabold'
                     : 'border-transparent text-sideSoft hover:text-white hover:border-sideSoft hover:translate-x-1'
@@ -135,20 +135,20 @@ export function Sidebar({ abierto, onCerrar }) {
           <button
             data-tour="guia"
             onClick={() => { onCerrar(); iniciar() }}
-            className="flex items-center gap-2 -ml-7 pl-7 pr-3 py-2 mt-1 w-full text-left text-[13px]
+            className="flex items-center gap-2 -ml-7 pl-7 pr-3 py-2 mt-1 w-full text-left text-cuerpo
                        text-sideSoft hover:text-white border-l-2 border-transparent hover:border-sideSoft
                        hover:translate-x-1 transition-all"
           >
-            <span className="grid place-items-center h-4 w-4 rounded-full border border-current text-[10px] font-bold shrink-0">
+            <span className="grid place-items-center h-4 w-4 rounded-full border border-current text-micro font-bold shrink-0">
               ?
             </span>
             Guía rápida
           </button>
 
-          <p className="text-[11px] text-sideSoft leading-relaxed mt-4">
+          <p className="text-micro text-sideSoft leading-relaxed mt-4">
             Datos públicos de SECOP I y II
           </p>
-          <p className="text-[11px] text-sideSoft/60 leading-relaxed mt-1">
+          <p className="text-micro text-sideSoft/60 leading-relaxed mt-1">
             La plataforma señala patrones, no acusa.
           </p>
         </div>

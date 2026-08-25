@@ -35,7 +35,7 @@ const colEntidad = {
             fila de SECOP I se leería con las reglas del sistema que no es. */}
         <FuenteBadge source={r.source} />
       </div>
-      <div className="text-xs text-textSecondary truncate">{r.description}</div>
+      <div className="text-nota text-textSecondary truncate">{r.description}</div>
     </div>
   ),
 }
@@ -69,7 +69,7 @@ export function AdicionesTiempo() {
         <span>
           {formatCOP(r.contractValue)}
           {r.valorOriginal > 0 && r.adicionValor > 0 && (
-            <span className="block text-[11px] text-textSecondary font-normal">
+            <span className="block text-micro text-textSecondary font-normal">
               desde {formatCOP(r.valorOriginal)} · +{r.pctValor}%
             </span>
           )}
@@ -104,7 +104,7 @@ export function AdicionesTiempo() {
             +{r.diasAcumulados?.toLocaleString('es-CO')}
             {h && <span className="text-textSecondary font-normal"> ({h})</span>}
             {r.prorrogas > 1 && (
-              <span className="block text-[11px] text-textSecondary font-normal">
+              <span className="block text-micro text-textSecondary font-normal">
                 en {r.prorrogas} prórrogas
               </span>
             )}
@@ -123,7 +123,7 @@ export function AdicionesTiempo() {
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-textSecondary text-sm">
+        <h3 className="text-textSecondary text-cuerpo">
           {prevalencia.data
             ? `${nf(prevalencia.data.total)} contratos con adición de plazo en SECOP II`
             : 'Cargando…'}
@@ -138,7 +138,7 @@ export function AdicionesTiempo() {
         />
       </div>
       {prevalencia.data && (
-        <p className="mt-1 text-xs text-textSecondary">
+        <p className="mt-1 text-nota text-textSecondary">
           De esos, <strong>{nf(prevalencia.data.mas50)}</strong> superan el 50% de adición
           sobre su plazo pactado —<strong>{nf(prevalencia.data.mas100)}</strong> superan el
           100%, y <strong>{nf(prevalencia.data.mas200)}</strong>, el 200%—.
@@ -234,7 +234,7 @@ export function AdicionesCosto() {
               valor original es la cuantía pactada del propio contrato. Antes
               esto era un ternario y cualquier valor nuevo caía en "precio base",
               que habría etiquetado mal cada fila de SECOP I. */}
-          <div className="text-[10px] text-textSecondary">
+          <div className="text-micro text-textSecondary">
             {{ adjudicado: 'adjudicado', cuantia: 'cuantía pactada' }[r.referencia]
               ?? 'precio base'}
           </div>
@@ -266,7 +266,7 @@ export function AdicionesCosto() {
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-textSecondary text-sm">
+        <h3 className="text-textSecondary text-cuerpo">
           {query.data
             ? `${query.data.adiciones.length} contratos cuyo valor creció tras la firma`
             : 'Cargando…'}
@@ -353,7 +353,7 @@ export function AdicionesAmbas() {
       render: (r) => (
         <div>
           <div className="text-warning font-medium">+{nf(r.daysAdded)} días</div>
-          <div className="text-[10px] text-textSecondary">
+          <div className="text-micro text-textSecondary">
             {humanDuration(r.daysAdded)}
             {r.prorrogas > 1 && ` · en ${r.prorrogas} prórrogas`}
             {r.daysAddedCampo !== r.daysAdded && ` · SECOP declara +${nf(r.daysAddedCampo)}`}
@@ -368,7 +368,7 @@ export function AdicionesAmbas() {
       render: (r) => (
         <div>
           <div className="text-danger font-medium">+{formatCOP(r.adicion)}</div>
-          <div className="text-[10px] text-textSecondary">
+          <div className="text-micro text-textSecondary">
             sobre {formatCOP(r.valorOriginal)}
           </div>
         </div>
@@ -385,7 +385,7 @@ export function AdicionesAmbas() {
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-textSecondary text-sm">
+        <h3 className="text-textSecondary text-cuerpo">
           {query.data
             ? `${filas.length} contratos que crecieron en plazo y en presupuesto`
             : 'Cargando…'}
@@ -397,7 +397,7 @@ export function AdicionesAmbas() {
         />
       </div>
 
-      <p className="text-[14.5px] text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
+      <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
         Pedir más tiempo puede ser un imprevisto. Pedir más plata, también. Las dos
         cosas a la vez describen un contrato que se firmó con un alcance que no
         correspondía ni a su plazo ni a su presupuesto —y eso sí es una pregunta que
@@ -449,7 +449,7 @@ export function AdicionesAmbas() {
                 {/* Sin esta nota, una lista corta se leería como "aquí casi no
                     pasa", cuando puede ser que no se pudo establecer el valor
                     original de los demás. */}
-                <p className="mt-3 text-[12.5px] text-textSecondary">
+                <p className="mt-3 text-nota text-textSecondary">
                   De {nf(data.revisados)} contratos con adición de plazo revisados,{' '}
                   {nf(filas.length)} crecieron también en presupuesto.
                   {data.sinValorOriginal > 0 && (

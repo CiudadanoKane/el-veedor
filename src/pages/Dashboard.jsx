@@ -50,7 +50,7 @@ function SubVivo({ data, tipo, nota }) {
           </div>
         ))}
       </div>
-      {nota && <div className="mt-1.5 text-[11.5px]">{nota}</div>}
+      {nota && <div className="mt-1.5 text-nota">{nota}</div>}
     </div>
   )
 }
@@ -59,11 +59,11 @@ function SubVivo({ data, tipo, nota }) {
 function Detalle({ titulo, intro, metodologia, children }) {
   return (
     <section className="border-t-2 border-textPrimary pt-5 pb-2">
-      <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] leading-tight">
+      <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
         {titulo}
       </h2>
       {intro && (
-        <p className="text-[14.5px] text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
+        <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
           {intro}
         </p>
       )}
@@ -282,7 +282,7 @@ export function Dashboard() {
           accion={
             <Link
               to="/buscar?modo=contratistas"
-              className="text-[11px] font-semibold text-primary enlace-sutil"
+              className="text-micro font-semibold text-primary enlace-sutil"
             >
               Buscar un contratista
             </Link>
@@ -304,7 +304,7 @@ export function Dashboard() {
           accion={
             <Link
               to="/buscar?modo=entidades"
-              className="text-[11px] font-semibold text-primary enlace-sutil"
+              className="text-micro font-semibold text-primary enlace-sutil"
             >
               Buscar una entidad
             </Link>
@@ -686,7 +686,7 @@ export function Dashboard() {
           )}
         </QueryState>
 
-        <h3 className="font-display font-extrabold text-[1.05rem] tracking-[-0.02em] mt-8 mb-3">
+        <h3 className="font-display font-extrabold text-titulo-3 tracking-[-0.02em] mt-8 mb-3">
           Entidades con más contratos vencidos
         </h3>
         <QueryState query={entidadesMora} empty="Sin contratos vencidos.">
@@ -822,17 +822,17 @@ export function Dashboard() {
           de fuente (SECOP II + I / solo SECOP II) viaja rotulado en cada tarjeta,
           no en un banner arriba. */}
       <section className="border-t-2 border-textPrimary pt-5 pb-8">
-        <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] leading-tight">
+        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
           El tamaño de lo que se contrata
         </h2>
         <div className="mt-5">{bloqueCifras(tarjetasTamano, { 'data-tour': 'cifras' })}</div>
       </section>
 
       <section className="border-t-2 border-textPrimary pt-5 pb-8">
-        <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] leading-tight">
+        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
           Qué conviene mirar{hayLugar ? ' aquí' : ''}
         </h2>
-        <p className="text-[14.5px] text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
+        <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
           Cuatro lecturas que suelen decir algo. Ninguna es una acusación: son
           proporciones que, cuando se salen de lo corriente, merecen que alguien las revise.
         </p>

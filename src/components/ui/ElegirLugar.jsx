@@ -83,19 +83,19 @@ export function ElegirLugar() {
   return (
     <section className="border-2 border-textPrimary p-5 sm:p-6 mb-8">
       <div className="flex items-start justify-between gap-4">
-        <h2 className="font-display font-extrabold text-[1.35rem] sm:text-[1.5rem] tracking-[-0.03em] leading-tight">
+        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
           {faltaMunicipio
             ? `¿En qué municipio de ${filters.department}?`
             : '¿Qué se contrata donde tú vives?'}
         </h2>
         <button
           onClick={ocultar}
-          className="shrink-0 text-[12px] text-textSecondary hover:text-textPrimary transition-colors"
+          className="shrink-0 text-nota text-textSecondary hover:text-textPrimary transition-colors"
         >
           {faltaMunicipio ? 'Así está bien' : 'Ahora no'}
         </button>
       </div>
-      <p className="text-[14.5px] text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
+      <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
         {faltaMunicipio ? (
           <>
             Todo lo de abajo ya es de <strong className="text-textPrimary">{filters.department}</strong>.
@@ -116,7 +116,7 @@ export function ElegirLugar() {
         <button
           onClick={() => setAmbito(ultimo.departamento, ultimo.ciudad)}
           className="mt-4 inline-flex items-center border-2 border-textPrimary px-4 py-2
-                     text-[13.5px] font-bold hover:bg-textPrimary hover:text-bg transition-colors"
+                     text-cuerpo font-bold hover:bg-textPrimary hover:text-bg transition-colors"
         >
           Volver a {nombreUltimo} →
         </button>
@@ -124,7 +124,7 @@ export function ElegirLugar() {
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 max-w-xl">
         <label className="block">
-          <span className="block text-[10px] uppercase tracking-label text-textSecondary font-semibold mb-1">
+          <span className="block text-micro uppercase tracking-label text-textSecondary font-semibold mb-1">
             Departamento
           </span>
           <select
@@ -134,7 +134,7 @@ export function ElegirLugar() {
             // py-2.5 y no el py-0.5 de la barra de arriba: aquí el control es el
             // gesto principal y tiene que ser cómodo de tocar con el pulgar.
             className="w-full bg-bg border-0 border-b-2 border-border px-0 py-2.5
-                       text-[15px] font-semibold text-textPrimary cursor-pointer
+                       text-lectura font-semibold text-textPrimary cursor-pointer
                        hover:border-textPrimary focus:border-textPrimary focus:outline-none
                        disabled:opacity-40"
           >
@@ -155,7 +155,7 @@ export function ElegirLugar() {
         </label>
 
         <label className="block">
-          <span className="block text-[10px] uppercase tracking-label text-textSecondary font-semibold mb-1">
+          <span className="block text-micro uppercase tracking-label text-textSecondary font-semibold mb-1">
             Municipio
           </span>
           <select
@@ -163,7 +163,7 @@ export function ElegirLugar() {
             onChange={(e) => setFilter('city', e.target.value)}
             disabled={!filters.department || ciudades.isLoading}
             className="w-full bg-bg border-0 border-b-2 border-border px-0 py-2.5
-                       text-[15px] font-semibold text-textPrimary cursor-pointer
+                       text-lectura font-semibold text-textPrimary cursor-pointer
                        hover:border-textPrimary focus:border-textPrimary focus:outline-none
                        disabled:opacity-40 disabled:cursor-default"
           >
@@ -185,7 +185,7 @@ export function ElegirLugar() {
           vive en un municipio pequeño que no encuentre en la lista se queda sin
           saber que la vista departamental también lo cubre. */}
       {!faltaMunicipio && (
-        <p className="mt-3 text-[12px] text-textSecondary/80 leading-snug">
+        <p className="mt-3 text-nota text-textSecondary/80 leading-snug">
           Con el departamento basta; el municipio es opcional.
         </p>
       )}

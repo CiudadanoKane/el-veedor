@@ -9,7 +9,7 @@
 export function FuenteBadge({ source }) {
   if (source !== 'SECOP I') return null
   return (
-    <span className="ml-2 align-middle text-[10px] uppercase tracking-label
+    <span className="ml-2 align-middle text-micro uppercase tracking-label
                      text-textSecondary border border-border px-1.5 py-0.5">
       SECOP I
     </span>

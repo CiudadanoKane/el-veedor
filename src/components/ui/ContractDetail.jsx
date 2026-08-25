@@ -35,8 +35,8 @@ function diasAtraso(c) {
 function Fact({ label, value }) {
   return (
     <div>
-      <div className="text-xs text-textSecondary">{label}</div>
-      <div className="text-sm text-textPrimary break-words">{value ?? '—'}</div>
+      <div className="text-nota text-textSecondary">{label}</div>
+      <div className="text-cuerpo text-textPrimary break-words">{value ?? '—'}</div>
     </div>
   )
 }
@@ -94,10 +94,10 @@ export function ContractDetail({ contract: c }) {
     <div className="bg-muted rounded-none p-4 space-y-4">
       {/* Interpretación neutral generada a partir de los datos */}
       <div className="rounded-none bg-primary/5 border border-primary/20 p-4">
-        <div className="text-xs uppercase tracking-wide text-primary mb-2">
+        <div className="text-nota uppercase tracking-wide text-primary mb-2">
           En palabras simples
         </div>
-        <div className="space-y-1.5 text-sm text-textPrimary leading-relaxed">
+        <div className="space-y-1.5 text-cuerpo text-textPrimary leading-relaxed">
           {sentences.map((t, i) => (
             <p key={i}>{t}</p>
           ))}
@@ -106,7 +106,7 @@ export function ContractDetail({ contract: c }) {
 
       {/* Alerta: fecha de fin anterior a la de inicio (imposible lógicamente) */}
       {c.startDate && c.endDate && new Date(c.endDate) < new Date(c.startDate) && (
-        <div className="rounded-none bg-danger/10 border border-danger/30 p-4 text-sm">
+        <div className="rounded-none bg-danger/10 border border-danger/30 p-4 text-cuerpo">
           <span className="text-danger font-medium">Fechas inconsistentes</span>
           <p className="text-textSecondary mt-1 leading-relaxed">
             La fecha de fin (<strong className="text-textPrimary">{formatDate(c.endDate)}</strong>)
@@ -119,7 +119,7 @@ export function ContractDetail({ contract: c }) {
 
       {/* Explicación de contratos en $0 — duda frecuente de los usuarios */}
       {!c.contractValue && (
-        <div className="rounded-none bg-warning/10 border border-warning/30 p-4 text-sm">
+        <div className="rounded-none bg-warning/10 border border-warning/30 p-4 text-cuerpo">
           <span className="text-warning font-medium">¿Por qué aparece en $0?</span>
           <p className="text-textSecondary mt-1 leading-relaxed">
             SECOP registra este contrato sin cuantía. Suele ocurrir en contratos que por
@@ -155,7 +155,7 @@ export function ContractDetail({ contract: c }) {
             atraso != null ? (
               <span className="text-danger font-medium">
                 {formatDate(c.endDate)}
-                <span className="block text-xs font-normal">
+                <span className="block text-nota font-normal">
                   {humanDuration(atraso) || `${atraso.toLocaleString('es-CO')} días`} de atraso
                 </span>
               </span>
@@ -175,7 +175,7 @@ export function ContractDetail({ contract: c }) {
             hayHistorial ? (
               <span>
                 +{diasAcumulados.toLocaleString('es-CO')}
-                <span className="block text-[11px] text-textSecondary font-normal leading-snug mt-0.5">
+                <span className="block text-micro text-textSecondary font-normal leading-snug mt-0.5">
                   {prorrogas === 1
                     ? 'En una prórroga, según el historial.'
                     : `En ${prorrogas} prórrogas, según el historial.`}
@@ -206,14 +206,14 @@ export function ContractDetail({ contract: c }) {
             ) : adicionValor?.motivo ? (
               <span className="text-textSecondary">
                 No verificable
-                <span className="block text-[11px] font-normal leading-snug mt-0.5">
+                <span className="block text-micro font-normal leading-snug mt-0.5">
                   {adicionValor.motivo}
                 </span>
               </span>
             ) : adicionValor?.adicion > 0 ? (
               <span>
                 +{formatCOP(adicionValor.adicion)}
-                <span className="block text-[11px] text-textSecondary font-normal leading-snug mt-0.5">
+                <span className="block text-micro text-textSecondary font-normal leading-snug mt-0.5">
                   +{adicionValor.pctAdicion}% sobre los {formatCOP(valorOriginal.data.valor)}{' '}
                   {valorOriginal.data.referencia === 'adjudicado'
                     ? 'adjudicados'
@@ -223,7 +223,7 @@ export function ContractDetail({ contract: c }) {
             ) : (
               <span>
                 Sin adición
-                <span className="block text-[11px] text-textSecondary font-normal leading-snug mt-0.5">
+                <span className="block text-micro text-textSecondary font-normal leading-snug mt-0.5">
                   Sigue en el valor con que se adjudicó.
                 </span>
               </span>
@@ -257,7 +257,7 @@ export function ContractDetail({ contract: c }) {
           modificaciones", que implicaría que sí se buscó y no había. */}
       <div className="border-t border-border pt-4">
         {c.source === 'SECOP I' ? (
-          <div className="text-sm text-textSecondary">
+          <div className="text-cuerpo text-textSecondary">
             Historial de modificaciones no disponible para contratos de SECOP I.
           </div>
         ) : (

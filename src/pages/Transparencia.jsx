@@ -13,10 +13,10 @@ import { PageHeader } from '../components/layout/Layout'
 function Bloque({ id, titulo, children }) {
   return (
     <section id={id} className="border-t-2 border-textPrimary pt-5 pb-9 scroll-mt-8">
-      <h2 className="font-display font-extrabold text-[1.5rem] tracking-[-0.03em] leading-tight mb-4">
+      <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight mb-4">
         {titulo}
       </h2>
-      <div className="space-y-4 text-[15px] leading-relaxed text-textPrimary max-w-3xl">
+      <div className="space-y-4 text-lectura leading-relaxed text-textPrimary max-w-3xl">
         {children}
       </div>
     </section>
@@ -26,10 +26,10 @@ function Bloque({ id, titulo, children }) {
 function Regla({ titulo, children }) {
   return (
     <div className="border-l-2 border-border pl-4 py-1">
-      <h3 className="font-display font-extrabold text-[1.05rem] tracking-[-0.02em] mb-1.5">
+      <h3 className="font-display font-extrabold text-titulo-3 tracking-[-0.02em] mb-1.5">
         {titulo}
       </h3>
-      <div className="text-[14.5px] text-textSecondary font-light leading-relaxed space-y-2">
+      <div className="text-lectura text-textSecondary font-light leading-relaxed space-y-2">
         {children}
       </div>
     </div>
@@ -60,7 +60,7 @@ export function Transparencia() {
           <a
             key={id}
             href={`#${id}`}
-            className="text-[13px] font-semibold text-primary enlace-sutil"
+            className="text-cuerpo font-semibold text-primary enlace-sutil"
           >
             {label}
           </a>
@@ -134,13 +134,13 @@ export function Transparencia() {
         </p>
 
         <div className="overflow-x-auto mt-4">
-          <table className="w-full min-w-[560px] text-[13.5px]">
+          <table className="w-full min-w-[560px] text-cuerpo">
             <thead>
               <tr>
                 {['Conjunto de datos', 'Identificador', 'Para qué lo usamos'].map((h) => (
                   <th
                     key={h}
-                    className="text-left font-semibold text-[10px] uppercase tracking-label text-textSecondary pb-2.5 border-b border-textPrimary/80 px-3"
+                    className="text-left font-semibold text-micro uppercase tracking-label text-textSecondary pb-2.5 border-b border-textPrimary/80 px-3"
                   >
                     {h}
                   </th>
@@ -164,7 +164,7 @@ export function Transparencia() {
           </table>
         </div>
 
-        <p className="text-[14px] text-textSecondary font-light pt-2">
+        <p className="text-cuerpo text-textSecondary font-light pt-2">
           El mapa usa la división departamental del Geoportal del DANE, y la población
           municipal, el anexo de proyecciones del DANE (serie 2018-2042).
         </p>
@@ -176,7 +176,7 @@ export function Transparencia() {
             una página cuyo argumento entero es que aquí no se esconde nada, la
             desactualización de esa frase pesaba más que el dato en sí. */}
         <div className="pt-4 space-y-4">
-          <h3 className="font-display font-extrabold text-[1.05rem] tracking-[-0.02em]">
+          <h3 className="font-display font-extrabold text-titulo-3 tracking-[-0.02em]">
             Qué se consulta en vivo y qué viene precalculado
           </h3>
           <p>
@@ -185,7 +185,7 @@ export function Transparencia() {
             que se calculan <strong>una vez al día</strong> y se guardan. Esas las ves con
             hasta <strong>24 horas de antigüedad</strong>:
           </p>
-          <ul className="list-disc pl-5 space-y-1.5 text-[14.5px] text-textSecondary font-light">
+          <ul className="list-disc pl-5 space-y-1.5 text-lectura text-textSecondary font-light">
             <li>La agrupación por sector (clasificación UNSPSC) del Panorama.</li>
             <li>Las adiciones de valor, que exigen cruzar contrato a contrato dos conjuntos de datos.</li>
             <li>El ranking nacional de contratistas.</li>
@@ -194,12 +194,12 @@ export function Transparencia() {
               en la caché del servidor.
             </li>
           </ul>
-          <p className="text-[14.5px] text-textSecondary font-light">
+          <p className="text-lectura text-textSecondary font-light">
             El ranking de contratistas y las adiciones del mapa muestran su fecha de
             cálculo en pantalla. <strong>Los demás todavía no</strong>, y deberían: queda
             anotado aquí como lo que es, un pendiente.
           </p>
-          <p className="text-[14.5px] text-textSecondary font-light">
+          <p className="text-lectura text-textSecondary font-light">
             Guardar estas copias tiene además una ventaja que se vio el 5 de agosto de
             2026, cuando datos.gov.co estuvo caído: el Panorama nacional siguió en pie. Y
             cuando una cifra sí depende de la fuente y la fuente no responde, la
@@ -434,14 +434,14 @@ export function Transparencia() {
         <div className="pt-2">
           <Link
             to="/reportar"
-            className="inline-block border-2 border-textPrimary px-5 py-2.5 text-[14px] font-bold hover:bg-textPrimary hover:text-bg transition-colors"
+            className="inline-block border-2 border-textPrimary px-5 py-2.5 text-cuerpo font-bold hover:bg-textPrimary hover:text-bg transition-colors"
           >
             Enviarnos una corrección
           </Link>
         </div>
       </Bloque>
 
-      <p className="text-[13px] text-textSecondary pt-2">
+      <p className="text-cuerpo text-textSecondary pt-2">
         Última revisión de esta metodología: julio de 2026.
       </p>
     </div>

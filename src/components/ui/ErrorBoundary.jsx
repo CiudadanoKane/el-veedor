@@ -25,26 +25,26 @@ export class ErrorBoundary extends Component {
 
     return (
       <div className="rounded-none border border-danger/40 bg-danger/10 p-6">
-        <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] text-danger mb-2">
+        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] text-danger mb-2">
           Algo falló en esta sección
         </h2>
-        <p className="text-textSecondary text-sm leading-relaxed mb-4">
+        <p className="text-textSecondary text-cuerpo leading-relaxed mb-4">
           No pudimos mostrar esta vista. El resto de la plataforma sigue funcionando:
           puedes usar el menú para ir a otra sección. Si el problema persiste, es
           probable que la fuente de datos (SECOP, en datos.gov.co) esté respondiendo con
           lentitud o intermitencia.
         </p>
         <details className="mb-4">
-          <summary className="text-xs text-textSecondary cursor-pointer hover:text-textPrimary">
+          <summary className="text-nota text-textSecondary cursor-pointer hover:text-textPrimary">
             Detalle técnico
           </summary>
-          <pre className="mt-2 text-xs text-textSecondary whitespace-pre-wrap break-words">
+          <pre className="mt-2 text-nota text-textSecondary whitespace-pre-wrap break-words">
             {String(error?.message || error)}
           </pre>
         </details>
         <button
           onClick={this.reset}
-          className="rounded-none bg-primary/20 text-primary px-4 py-2 text-sm font-medium hover:bg-primary/30 transition-colors"
+          className="rounded-none bg-primary/20 text-primary px-4 py-2 text-cuerpo font-medium hover:bg-primary/30 transition-colors"
         >
           Reintentar
         </button>

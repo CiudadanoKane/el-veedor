@@ -19,16 +19,16 @@ export function NotaCard({ categoria, icon, tono = 'neutral', cargando, secundar
     <article className={`border-l-2 ${t.borde} pl-4 py-1`}>
       <div className={`flex items-center gap-1.5 ${t.texto}`}>
         {icon && <Icon name={icon} className="h-3.5 w-3.5" />}
-        <span className="text-[11px] uppercase tracking-label font-semibold">{categoria}</span>
+        <span className="text-micro uppercase tracking-label font-semibold">{categoria}</span>
       </div>
 
       {cargando ? (
-        <p className="text-textSecondary mt-2 text-[15px] animate-pulse">
+        <p className="text-textSecondary mt-2 text-lectura animate-pulse">
           Cargando datos de SECOP…
         </p>
       ) : (
         <>
-          <h3 className="font-display font-extrabold text-[1.15rem] tracking-[-0.02em] leading-snug text-textPrimary mt-1.5">
+          <h3 className="font-display font-extrabold text-titulo-3 tracking-[-0.02em] leading-snug text-textPrimary mt-1.5">
             {children}
           </h3>
 
@@ -37,12 +37,12 @@ export function NotaCard({ categoria, icon, tono = 'neutral', cargando, secundar
               atípico. */}
           {secundarios && secundarios.length > 0 && (
             <div className="mt-2.5">
-              <span className="text-[10.5px] uppercase tracking-label text-textSecondary font-semibold">
+              <span className="text-micro uppercase tracking-label text-textSecondary font-semibold">
                 También
               </span>
               <ul className="mt-1 space-y-1">
                 {secundarios.map((s, i) => (
-                  <li key={s.key ?? i} className="text-[13px] text-textSecondary leading-snug">
+                  <li key={s.key ?? i} className="text-cuerpo text-textSecondary leading-snug">
                     {s.node}
                   </li>
                 ))}
@@ -51,14 +51,14 @@ export function NotaCard({ categoria, icon, tono = 'neutral', cargando, secundar
           )}
 
           {contexto && (
-            <p className="text-[13.5px] text-textSecondary leading-relaxed mt-1.5 max-w-2xl">
+            <p className="text-cuerpo text-textSecondary leading-relaxed mt-1.5 max-w-2xl">
               {contexto}
             </p>
           )}
           {enlace && (
             <Link
               to={enlace.to}
-              className="inline-block mt-2.5 text-[13px] font-semibold text-primary enlace-sutil"
+              className="inline-block mt-2.5 text-cuerpo font-semibold text-primary enlace-sutil"
             >
               {enlace.texto} →
             </Link>

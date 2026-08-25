@@ -196,18 +196,18 @@ function Overlay({ paso, index, total, onAnterior, onSiguiente, onCerrar }) {
                    bg-bg border border-textPrimary p-5"
         style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999, visibility: pos ? 'visible' : 'hidden' }}
       >
-        <div className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+        <div className="text-micro uppercase tracking-label text-textSecondary font-semibold">
           {index + 1} / {total}
         </div>
-        <h3 className="font-display font-extrabold text-[1.15rem] tracking-[-0.02em] leading-snug mt-1.5">
+        <h3 className="font-display font-extrabold text-titulo-3 tracking-[-0.02em] leading-snug mt-1.5">
           {paso.titulo}
         </h3>
-        <div className="text-[14px] text-textPrimary leading-relaxed mt-2">{paso.cuerpo}</div>
+        <div className="text-cuerpo text-textPrimary leading-relaxed mt-2">{paso.cuerpo}</div>
 
         <div className="flex items-center justify-between mt-5">
           <button
             onClick={onCerrar}
-            className="text-[13px] text-textSecondary hover:text-textPrimary transition-colors"
+            className="text-cuerpo text-textSecondary hover:text-textPrimary transition-colors"
           >
             Saltar
           </button>
@@ -215,14 +215,14 @@ function Overlay({ paso, index, total, onAnterior, onSiguiente, onCerrar }) {
             {index > 0 && (
               <button
                 onClick={onAnterior}
-                className="text-[13px] font-semibold text-textPrimary px-3 py-1.5 hover:bg-muted transition-colors"
+                className="text-cuerpo font-semibold text-textPrimary px-3 py-1.5 hover:bg-muted transition-colors"
               >
                 Anterior
               </button>
             )}
             <button
               onClick={onSiguiente}
-              className="border-2 border-textPrimary px-4 py-1.5 text-[13px] font-bold
+              className="border-2 border-textPrimary px-4 py-1.5 text-cuerpo font-bold
                          hover:bg-textPrimary hover:text-bg transition-colors"
             >
               {ultimo ? 'Entendido' : 'Siguiente'}

@@ -24,12 +24,12 @@ export function FuenteCaida({ query, lugar, onQuitarFiltro }) {
 
   return (
     <div className="border-2 border-danger/50 bg-danger/10 p-5 mb-8">
-      <h2 className="font-display font-extrabold text-[1.2rem] tracking-[-0.03em] text-danger leading-tight">
+      <h2 className="font-display font-extrabold text-titulo-3 tracking-[-0.03em] text-danger leading-tight">
         {sinConexion
           ? 'Parece que no hay conexión'
           : `No pudimos leer los datos ${lugar ? `de ${lugar}` : 'ahora mismo'}`}
       </h2>
-      <p className="text-[14px] text-textSecondary leading-relaxed mt-2 max-w-2xl">
+      <p className="text-cuerpo text-textSecondary leading-relaxed mt-2 max-w-2xl">
         {sinConexion
           ? 'La consulta quedó en espera porque el dispositivo no tiene internet. Se reanudará sola en cuanto vuelva la conexión.'
           : 'La fuente oficial (SECOP, en datos.gov.co) no está respondiendo. Es una interrupción del origen, no un dato de la contratación. Suele resolverse en unos minutos.'}{' '}
@@ -41,7 +41,7 @@ export function FuenteCaida({ query, lugar, onQuitarFiltro }) {
       <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
         <button
           onClick={() => query.refetch()}
-          className="bg-danger/20 text-danger px-4 py-2 text-sm font-semibold hover:bg-danger/30 transition-colors"
+          className="bg-danger/20 text-danger px-4 py-2 text-cuerpo font-semibold hover:bg-danger/30 transition-colors"
         >
           Reintentar
         </button>
@@ -50,21 +50,21 @@ export function FuenteCaida({ query, lugar, onQuitarFiltro }) {
             promete: se ofrece. Sin conexión no se ofrece nada, porque el
             nacional tampoco va a cargar. */}
         {lugar && !sinConexion && (
-          <button onClick={onQuitarFiltro} className="text-sm font-semibold text-primary enlace-sutil">
+          <button onClick={onQuitarFiltro} className="text-cuerpo font-semibold text-primary enlace-sutil">
             Ver el panorama nacional
           </button>
         )}
-        <Link to="/transparencia" className="text-sm text-textSecondary enlace-sutil">
+        <Link to="/transparencia" className="text-cuerpo text-textSecondary enlace-sutil">
           De dónde salen estos datos
         </Link>
       </div>
 
       {query.error?.message && (
         <details className="mt-4">
-          <summary className="text-xs text-textSecondary cursor-pointer hover:text-textPrimary">
+          <summary className="text-nota text-textSecondary cursor-pointer hover:text-textPrimary">
             Detalle técnico
           </summary>
-          <pre className="mt-2 text-xs text-textSecondary whitespace-pre-wrap break-words">
+          <pre className="mt-2 text-nota text-textSecondary whitespace-pre-wrap break-words">
             {String(query.error.message)}
           </pre>
         </details>

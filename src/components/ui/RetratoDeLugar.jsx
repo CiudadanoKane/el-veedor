@@ -27,10 +27,10 @@ export function RetratoDeLugar({ lugar, generales }) {
     <>
       {/* Quién recibe el dinero: la pregunta más directa de la veeduría. */}
       <section className="border-t-2 border-textPrimary pt-5 pb-8">
-        <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] leading-tight">
+        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
           Quién recibe el dinero
         </h2>
-        <p className="text-[14.5px] text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
+        <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
           Los cinco contratistas con más valor contratado en {lugar}. Cada nombre lleva a su
           perfil, con todo lo que ha firmado.
         </p>
@@ -65,7 +65,7 @@ export function RetratoDeLugar({ lugar, generales }) {
                       secundario: `${N(r.contratos)} ${r.contratos === 1 ? 'contrato' : 'contratos'}`,
                     }))}
                   />
-                  <p className="mt-3 text-[11px] text-textSecondary/80 leading-snug">
+                  <p className="mt-3 text-micro text-textSecondary/80 leading-snug">
                     El porcentaje es sobre el valor total contratado en {lugar} según SECOP II
                     {generales.data?.valorSecop2 != null
                       ? ` (${formatCOPCorto(generales.data.valorSecop2)})`
@@ -74,7 +74,7 @@ export function RetratoDeLugar({ lugar, generales }) {
                   </p>
                   <Link
                     to={rutaConAmbito('/rankings')}
-                    className="mt-4 inline-block text-[12.5px] font-semibold text-primary enlace-sutil"
+                    className="mt-4 inline-block text-nota font-semibold text-primary enlace-sutil"
                   >
                     Ver el ranking completo →
                   </Link>
@@ -87,7 +87,7 @@ export function RetratoDeLugar({ lugar, generales }) {
 
       {/* Salidas: la página resume, no reemplaza. */}
       <section className="border-t-2 border-textPrimary pt-5 pb-4">
-        <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] leading-tight">
+        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
           Seguir revisando {lugar}
         </h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 max-w-3xl">
@@ -102,10 +102,10 @@ export function RetratoDeLugar({ lugar, generales }) {
               to={rutaConAmbito(ruta)}
               className="block border-t-2 border-transparent hover:border-textPrimary pt-3 group"
             >
-              <span className="text-[14px] font-bold text-textPrimary group-hover:text-primary">
+              <span className="text-cuerpo font-bold text-textPrimary group-hover:text-primary">
                 {titulo} →
               </span>
-              <p className="mt-1 text-[12.5px] text-textSecondary leading-snug">{texto}</p>
+              <p className="mt-1 text-nota text-textSecondary leading-snug">{texto}</p>
             </Link>
           ))}
         </div>

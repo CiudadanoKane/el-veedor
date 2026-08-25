@@ -18,10 +18,10 @@ function BarrasPareadas({ pctContratistas, etiquetaContratistas, pctValor, etiqu
   const fila = (titulo, pctReal, texto, tono) => (
     <div>
       <div className="flex items-baseline justify-between gap-3 mb-1">
-        <span className="text-[11px] uppercase tracking-label text-textSecondary font-semibold">
+        <span className="text-micro uppercase tracking-label text-textSecondary font-semibold">
           {titulo}
         </span>
-        <span className="text-[13px] font-bold tabular-nums text-textPrimary">{texto}</span>
+        <span className="text-cuerpo font-bold tabular-nums text-textPrimary">{texto}</span>
       </div>
       <div className="h-3 w-full bg-muted overflow-hidden">
         <div
@@ -53,16 +53,16 @@ export function Concentracion({ filters = {}, contratistas, tieneSecop1 }) {
     <section className="border-t-2 border-textPrimary pt-5 pb-8 mb-2">
       <div className="min-w-0">
         <div className="flex items-baseline gap-2 flex-wrap">
-          <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] leading-tight">
+          <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
             Concentración: en cuántas manos está el dinero
           </h2>
           {tieneSecop1 && (
-            <span className="text-[9.5px] uppercase tracking-label text-textSecondary/70 font-medium whitespace-nowrap">
+            <span className="text-micro uppercase tracking-label text-textSecondary/70 font-medium whitespace-nowrap">
               solo SECOP II
             </span>
           )}
         </div>
-        <p className="text-[14.5px] text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
+        <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
           Qué tan pocos contratistas acaparan el valor contratado. Cuanto más corta sea la barra de
           contratistas frente a la de valor, en menos manos está la plata.
         </p>
@@ -103,7 +103,7 @@ export function Concentracion({ filters = {}, contratistas, tieneSecop1 }) {
 
             return (
               <>
-                <p className="text-[15px] text-textPrimary leading-relaxed max-w-2xl mb-6">
+                <p className="text-lectura text-textPrimary leading-relaxed max-w-2xl mb-6">
                   {k50 ? (
                     // pctContr50 puede llegar ya calculado (caso cacheado) antes
                     // de que esta misma página termine de cargar `total` —la
@@ -144,7 +144,7 @@ export function Concentracion({ filters = {}, contratistas, tieneSecop1 }) {
                   />
                 )}
 
-                <p className="mt-5 text-[12.5px] text-textSecondary">
+                <p className="mt-5 text-nota text-textSecondary">
                   Valor total contratado {ambito}: {formatCOPCorto(d.total)} (solo SECOP II).
                   {tieneSecop1
                     ? ' Es menor que la tarjeta «Valor contratado» de arriba, que suma además SECOP I.'

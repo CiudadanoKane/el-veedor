@@ -109,13 +109,13 @@ const ESTADOS_FILTRO = [...ESTADOS_CONTRATO, ...ESTADOS_SOLO_SECOP1]
 function Campo({ label, value, onChange, options, placeholder }) {
   return (
     <div className="flex flex-col gap-1 w-full sm:w-auto">
-      <label className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+      <label className="text-micro uppercase tracking-label text-textSecondary font-semibold">
         {label}
       </label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-bg border-0 border-b border-border px-0 py-1.5 text-[15px] text-textPrimary
+        className="bg-bg border-0 border-b border-border px-0 py-1.5 text-lectura text-textPrimary
                    focus:border-textPrimary focus:outline-none
                    w-full sm:w-auto sm:min-w-[190px] max-w-full cursor-pointer"
       >
@@ -135,7 +135,7 @@ function Campo({ label, value, onChange, options, placeholder }) {
 function Chips({ label, seleccionados, onToggle, options }) {
   return (
     <div className="flex flex-col gap-1 w-full">
-      <span className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+      <span className="text-micro uppercase tracking-label text-textSecondary font-semibold">
         {label}
       </span>
       <div className="flex flex-wrap gap-1.5">
@@ -147,7 +147,7 @@ function Chips({ label, seleccionados, onToggle, options }) {
               type="button"
               onClick={() => onToggle(o)}
               aria-pressed={activo}
-              className={`px-2.5 py-1 text-[12.5px] border whitespace-nowrap transition-colors ${
+              className={`px-2.5 py-1 text-nota border whitespace-nowrap transition-colors ${
                 activo
                   ? 'bg-textPrimary text-bg border-textPrimary font-medium'
                   : 'border-border text-textSecondary hover:border-textPrimary hover:text-textPrimary'
@@ -176,12 +176,12 @@ function Rangos({ criterios, actualizar }) {
   }, [criterios.valorMin, criterios.valorMax])
 
   const claseInput =
-    'bg-bg border-0 border-b border-border px-0 py-1.5 text-[15px] text-textPrimary ' +
+    'bg-bg border-0 border-b border-border px-0 py-1.5 text-lectura text-textPrimary ' +
     'placeholder:text-textSecondary/60 focus:border-textPrimary focus:outline-none ' +
     'w-full sm:w-auto sm:min-w-[150px] cursor-text'
   const commit = (campo, valor) => actualizar({ [campo]: valor })
   const Etiqueta = ({ children }) => (
-    <label className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+    <label className="text-micro uppercase tracking-label text-textSecondary font-semibold">
       {children}
     </label>
   )
@@ -450,23 +450,23 @@ export function Buscar() {
             {/* SECOP II es la fuente por defecto y la gran mayoría de los
                 resultados; solo se anota lo distinto de lo esperado. */}
             {r.source === 'SECOP I' && (
-              <span className="ml-2 align-middle text-[10px] uppercase tracking-label
+              <span className="ml-2 align-middle text-micro uppercase tracking-label
                                  text-textSecondary border border-border px-1.5 py-0.5">
                 SECOP I
               </span>
             )}
           </div>
-          <div className="text-xs text-textSecondary line-clamp-2">{r.description}</div>
+          <div className="text-nota text-textSecondary line-clamp-2">{r.description}</div>
           {/* Misma etiqueta y color para toda pista de "por qué apareció esta
               fila", venga de un campo del registro o de un documento anexo: es
               la misma promesa —explicar la coincidencia— sin importar la fuente. */}
           {r.coincideEn && (
-            <div className="mt-1 text-[11px] text-primary">
+            <div className="mt-1 text-micro text-primary">
               Encontrado en: {r.coincideEn}
             </div>
           )}
           {r.documentos?.length > 0 && (
-            <div className="mt-1 text-[11px] text-primary">
+            <div className="mt-1 text-micro text-primary">
               Encontrado en: {r.documentos.join(' · ')}
             </div>
           )}
@@ -517,7 +517,7 @@ export function Buscar() {
               <div className="flex flex-col gap-1 flex-1 min-w-[260px]">
                 <label
                   htmlFor="busqueda"
-                  className="text-[10px] uppercase tracking-label text-textSecondary font-semibold"
+                  className="text-micro uppercase tracking-label text-textSecondary font-semibold"
                 >
                   Palabra o frase
                 </label>
@@ -549,12 +549,12 @@ export function Buscar() {
                     value={borrador}
                     onChange={(e) => setBorrador(e.target.value)}
                     placeholder="alimentación escolar, acueducto, o el número del proceso…"
-                    className="flex-1 min-w-0 bg-transparent border-0 p-0 text-[15px]
+                    className="flex-1 min-w-0 bg-transparent border-0 p-0 text-lectura
                                text-textPrimary placeholder:text-textSecondary/60
                                focus:outline-none"
                   />
                 </div>
-                <span className="text-[12px] text-textSecondary mt-1">
+                <span className="text-nota text-textSecondary mt-1">
                   Escribe en lenguaje natural: la IA convierte fecha, valor, lugar o modalidad
                   en filtros. ¿Número de proceso o código SECOP? Va directo al contrato.
                 </span>
@@ -562,7 +562,7 @@ export function Buscar() {
               <button
                 type="submit"
                 disabled={cargandoIA}
-                className="bg-textPrimary text-white px-6 py-2 text-[14px] font-semibold
+                className="bg-textPrimary text-white px-6 py-2 text-cuerpo font-semibold
                            hover:bg-primary transition-colors disabled:opacity-60
                            disabled:cursor-not-allowed"
               >
@@ -570,7 +570,7 @@ export function Buscar() {
               </button>
             </div>
             {errorIA && (
-              <p className="mt-2 text-[12.5px] text-textSecondary">{errorIA}</p>
+              <p className="mt-2 text-nota text-textSecondary">{errorIA}</p>
             )}
 
             {/* Ampliación semántica: la IA sumó términos relacionados para no
@@ -579,7 +579,7 @@ export function Buscar() {
                 como el resto de los filtros—. */}
             {criterios.terminos.length > 0 && (
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                <span className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+                <span className="text-micro uppercase tracking-label text-textSecondary font-semibold">
                   También busca
                 </span>
                 {criterios.terminos.map((t) => (
@@ -590,7 +590,7 @@ export function Buscar() {
                     aria-label={`Quitar "${t}" de la búsqueda`}
                     title="Quitar de la búsqueda"
                     className="inline-flex items-center gap-1.5 border border-border px-2.5 py-1
-                               text-[12.5px] text-textPrimary hover:border-textPrimary transition-colors"
+                               text-nota text-textPrimary hover:border-textPrimary transition-colors"
                   >
                     {t}
                     <span aria-hidden className="text-textSecondary leading-none">×</span>
@@ -606,7 +606,7 @@ export function Buscar() {
               <button
                 type="button"
                 onClick={() => setAvanzados((v) => !v)}
-                className="text-[11px] uppercase tracking-label font-semibold text-textSecondary
+                className="text-micro uppercase tracking-label font-semibold text-textSecondary
                            hover:text-textPrimary transition-colors"
               >
                 {avanzados ? '– Filtros avanzados' : '+ Filtros avanzados'}
@@ -644,7 +644,7 @@ export function Buscar() {
               <button
                 type="button"
                 onClick={limpiarBusqueda}
-                className="mt-4 text-sm text-textSecondary hover:text-textPrimary underline"
+                className="mt-4 text-cuerpo text-textSecondary hover:text-textPrimary underline"
               >
                 Limpiar búsqueda
               </button>
@@ -654,10 +654,10 @@ export function Buscar() {
           <div className="pb-8">
             {!activa ? (
               <div className="border-t-2 border-textPrimary pt-6">
-                <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em]">
+                <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
                   Por dónde empezar
                 </h2>
-                <p className="text-[14.5px] text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
+                <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
                   Escribe una palabra arriba, o prueba con una de estas búsquedas.
                 </p>
                 <div className="flex flex-wrap gap-2 mt-5">
@@ -665,7 +665,7 @@ export function Buscar() {
                     <button
                       key={t}
                       onClick={() => actualizar({ texto: t, terminos: [], modalidad: '', tipo: '', estados: [] })}
-                      className="border border-border px-4 py-2 text-[14px] text-textPrimary
+                      className="border border-border px-4 py-2 text-cuerpo text-textPrimary
                                  hover:border-textPrimary hover:bg-muted transition-colors"
                     >
                       {t}
@@ -676,7 +676,7 @@ export function Buscar() {
             ) : (
               <div className="border-t-2 border-textPrimary pt-5">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                  <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em]">
+                  <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
                     Resultados
                   </h2>
                   <Segmented
@@ -714,13 +714,13 @@ export function Buscar() {
                     {() =>
                       resultados.length === 0 ? (
                         buscandoDocs ? (
-                          <p className="py-6 text-[14px] text-textSecondary">
+                          <p className="py-6 text-cuerpo text-textSecondary">
                             Buscando también en los documentos anexos del proceso…
                           </p>
                         ) : (
                           <div className="py-6 max-w-2xl">
                             {porId ? (
-                              <p className="text-[15px] text-textPrimary leading-relaxed">
+                              <p className="text-lectura text-textPrimary leading-relaxed">
                                 Ningún contrato tiene ese identificador. Verifica el número, o busca
                                 a la empresa por su nombre en la pestaña{' '}
                                 <button
@@ -734,11 +734,11 @@ export function Buscar() {
                               </p>
                             ) : (
                               <>
-                                <p className="text-[15px] text-textPrimary leading-relaxed">
+                                <p className="text-lectura text-textPrimary leading-relaxed">
                                   Ningún contrato coincide con esa búsqueda —ni en su objeto ni en
                                   sus documentos anexos—. Antes de rendirte:
                                 </p>
-                                <ul className="mt-3 space-y-2 text-[14.5px] text-textPrimary leading-relaxed">
+                                <ul className="mt-3 space-y-2 text-lectura text-textPrimary leading-relaxed">
                                   <li>
                                     Si buscas a una empresa, usa la pestaña{' '}
                                     <button
@@ -768,12 +768,12 @@ export function Buscar() {
                             renderDetail={(row) => <ContractDetail contract={row} />}
                           />
                           {buscandoDocs && (
-                            <p className="mt-3 text-[12.5px] text-textSecondary">
+                            <p className="mt-3 text-nota text-textSecondary">
                               Revisando también los documentos anexos del proceso…
                             </p>
                           )}
                           {hayMas && (
-                            <p className="mt-3 text-[12.5px] text-textSecondary">
+                            <p className="mt-3 text-nota text-textSecondary">
                               Hay más contratos que coinciden. Estos son los primeros según el orden
                               elegido.
                             </p>

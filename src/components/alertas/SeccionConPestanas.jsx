@@ -32,7 +32,7 @@ export function SeccionConPestanas({ titulo, subtitulo, intro, items }) {
       <PageHeader title={titulo} subtitle={subtitulo} />
 
       {intro && (
-        <p className="text-[14.5px] text-textSecondary font-light -mt-1 max-w-3xl leading-relaxed">
+        <p className="text-lectura text-textSecondary font-light -mt-1 max-w-3xl leading-relaxed">
           {intro}
         </p>
       )}

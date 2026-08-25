@@ -282,10 +282,10 @@ export function MapaColombia() {
     <section className="border-t-2 border-textPrimary pt-5 pb-8 mb-2">
       <div className="flex items-start justify-between gap-6 flex-wrap">
         <div className="min-w-0">
-          <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] leading-tight">
+          <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
             {registro.label} por departamento
           </h2>
-          <p className="text-[14.5px] text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
+          <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
             {registro.descripcion}
           </p>
         </div>
@@ -302,7 +302,7 @@ export function MapaColombia() {
           ver "todas". No aplica a Adiciones (precálculo sin orden). */}
       {esSecop && (
         <div className="mt-2.5 flex items-center gap-2 flex-wrap">
-          <span className="text-[11px] uppercase tracking-label text-textSecondary font-semibold">
+          <span className="text-micro uppercase tracking-label text-textSecondary font-semibold">
             Entidades
           </span>
           <Segmented
@@ -333,7 +333,7 @@ export function MapaColombia() {
 
       {/* Advertencia de alcance según el toggle de orden. */}
       {esSecop && (
-        <p className="mt-3 text-[12.5px] text-textSecondary leading-snug max-w-2xl">
+        <p className="mt-3 text-nota text-textSecondary leading-snug max-w-2xl">
           {territorial ? (
             <>
               Solo <strong>gobiernos locales</strong> (alcaldías y gobernaciones). Excluye toda la
@@ -373,7 +373,7 @@ export function MapaColombia() {
       </Methodology>
 
       {query.isError && (
-        <p className="mt-5 text-sm text-danger">
+        <p className="mt-5 text-cuerpo text-danger">
           No se pudo cargar el mapa. {query.error?.message}
         </p>
       )}
@@ -393,7 +393,7 @@ export function MapaColombia() {
               cargando, no que no hay nada que mostrar. */}
           {query.isLoading && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-bg/80">
-              <div className="flex items-center text-textSecondary text-[13px]">
+              <div className="flex items-center text-textSecondary text-cuerpo">
                 <div className="h-4 w-4 mr-2.5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
                 Cargando el mapa…
               </div>
@@ -487,7 +487,7 @@ export function MapaColombia() {
                 const d = porDepto.get(activo.clave)
                 return (
                   <>
-                    <div className="text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+                    <div className="text-micro uppercase tracking-label text-textSecondary font-semibold">
                       {activo.nombre}
                     </div>
                     {d ? (
@@ -497,12 +497,12 @@ export function MapaColombia() {
                         >
                           {registro.formato(d.v, perCapita)}
                         </div>
-                        <p className="text-[12.5px] text-textSecondary mt-2 leading-snug">
+                        <p className="text-nota text-textSecondary mt-2 leading-snug">
                           {registro.detalle(d.fila, perCapita, d.pob)}
                         </p>
                       </>
                     ) : (
-                      <p className="text-[12.5px] text-textSecondary mt-2">Sin datos suficientes</p>
+                      <p className="text-nota text-textSecondary mt-2">Sin datos suficientes</p>
                     )}
 
                     {/* La salida que el mapa no tenía: se veía que un
@@ -513,7 +513,7 @@ export function MapaColombia() {
                       if (!enSecop) return null
                       if (ambitoActivo === activo.clave) {
                         return (
-                          <p className="mt-3 text-[12px] text-textSecondary">
+                          <p className="mt-3 text-nota text-textSecondary">
                             Es el ámbito que estás viendo.
                           </p>
                         )
@@ -521,7 +521,7 @@ export function MapaColombia() {
                       return (
                         <button
                           onClick={() => setFilter('department', enSecop)}
-                          className="mt-3 text-[12.5px] font-semibold text-primary hover:underline text-left"
+                          className="mt-3 text-nota font-semibold text-primary hover:underline text-left"
                         >
                           Ver toda la plataforma en {activo.nombre} →
                         </button>
@@ -531,7 +531,7 @@ export function MapaColombia() {
                 )
               })()
             ) : (
-              <p className="text-[13px] text-textSecondary">
+              <p className="text-cuerpo text-textSecondary">
                 Toca un departamento para ver su cifra.
               </p>
             )}
@@ -540,7 +540,7 @@ export function MapaColombia() {
           {/* Escala de color */}
           {porDepto.size > 0 && (
             <div className="mt-4">
-              <div className="text-[10px] uppercase tracking-label text-textSecondary font-semibold mb-2">
+              <div className="text-micro uppercase tracking-label text-textSecondary font-semibold mb-2">
                 {registro.leyenda(perCapita)}
               </div>
               <div className="flex h-2.5 w-full">
@@ -548,12 +548,12 @@ export function MapaColombia() {
                   <div key={c} className="flex-1" style={{ background: c }} />
                 ))}
               </div>
-              <div className="flex justify-between mt-1.5 text-[11px] text-textSecondary tabular-nums">
+              <div className="flex justify-between mt-1.5 text-micro text-textSecondary tabular-nums">
                 <span>{registro.formato(min, perCapita)}</span>
                 <span>{registro.formato(max, perCapita)}{atipicos.length ? '+' : ''}</span>
               </div>
               {atipicos.length > 0 && (
-                <p className="mt-3 text-[11px] text-textSecondary/80 leading-snug">
+                <p className="mt-3 text-micro text-textSecondary/80 leading-snug">
                   {atipicos.map((a, i) => (
                     <span key={a.clave}>
                       {i > 0 ? ' y ' : ''}
@@ -567,7 +567,7 @@ export function MapaColombia() {
                 </p>
               )}
               {registro.fuente === 'adiciones' && queryAdic.data?.generadoEn && (
-                <p className="mt-3 text-[11px] text-textSecondary/80 leading-snug">
+                <p className="mt-3 text-micro text-textSecondary/80 leading-snug">
                   Calculado el {formatDate(queryAdic.data.generadoEn)}. Incluye todas las
                   entidades (el precálculo aún no separa nacionales de territoriales).
                 </p>

@@ -157,10 +157,10 @@ export function LineaTiempo() {
       {CASOS.map((c) => (
         <figure key={c.titulo} className={`border-l-2 ${c.tono} pl-4`}>
           <figcaption>
-            <h3 className="font-display font-extrabold text-[1.05rem] tracking-[-0.02em]">
+            <h3 className="font-display font-extrabold text-titulo-3 tracking-[-0.02em]">
               {c.titulo}
             </h3>
-            <p className="text-[14px] text-textSecondary leading-relaxed mt-1.5 mb-2">
+            <p className="text-cuerpo text-textSecondary leading-relaxed mt-1.5 mb-2">
               {c.resumen}
             </p>
           </figcaption>

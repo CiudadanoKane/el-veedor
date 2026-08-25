@@ -15,11 +15,11 @@ import { EnlaceEntidad } from '../components/ui/EnlacePerfil'
 function Seccion({ titulo, descripcion, children }) {
   return (
     <section className="border-t-2 border-textPrimary pt-5 pb-8">
-      <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] leading-tight">
+      <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
         {titulo}
       </h2>
       {descripcion && (
-        <p className="text-[14.5px] text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
+        <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
           {descripcion}
         </p>
       )}
@@ -33,10 +33,10 @@ function Seccion({ titulo, descripcion, children }) {
 function AvisoDocumentoCompartido({ perfil }) {
   return (
     <div className="border-l-2 border-warning pl-4 py-1 mb-8">
-      <p className="text-[14px] text-textPrimary font-semibold">
+      <p className="text-cuerpo text-textPrimary font-semibold">
         Este documento agrupa varias organizaciones
       </p>
-      <p className="text-[14px] text-textSecondary font-light leading-relaxed mt-1 max-w-3xl">
+      <p className="text-cuerpo text-textSecondary font-light leading-relaxed mt-1 max-w-3xl">
         En SECOP, {perfil.nombres.length} nombres distintos comparten este número, y
         ninguno concentra la mayoría de los contratos (el más frecuente tiene el{' '}
         {formatPct(perfil.proporcionDominante * 100, 0)}). Pasa sobre todo con los NIT de
@@ -48,13 +48,13 @@ function AvisoDocumentoCompartido({ perfil }) {
       </p>
       <ul className="mt-3 space-y-1">
         {perfil.nombres.slice(0, 8).map((n) => (
-          <li key={n.nombre} className="text-[13px] text-textSecondary">
+          <li key={n.nombre} className="text-cuerpo text-textSecondary">
             <span className="tabular-nums font-medium text-textPrimary">{n.n}</span>{' '}
             {n.nombre}
           </li>
         ))}
         {perfil.nombres.length > 8 && (
-          <li className="text-[13px] text-textSecondary">
+          <li className="text-cuerpo text-textSecondary">
             y {perfil.nombres.length - 8} nombres más
           </li>
         )}
@@ -85,13 +85,13 @@ function Perfil({ perfil }) {
             {/* SECOP II es la fuente por defecto y la gran mayoría de los
                 contratos; solo se anota lo distinto de lo esperado. */}
             {r.source === 'SECOP I' && (
-              <span className="ml-2 align-middle text-[10px] uppercase tracking-label
+              <span className="ml-2 align-middle text-micro uppercase tracking-label
                                  text-textSecondary border border-border px-1.5 py-0.5">
                 SECOP I
               </span>
             )}
           </div>
-          <div className="text-xs text-textSecondary line-clamp-2">{r.description}</div>
+          <div className="text-nota text-textSecondary line-clamp-2">{r.description}</div>
         </div>
       ),
     },
@@ -258,7 +258,7 @@ export function Contratista() {
       <QueryState query={query} empty="No encontramos contratos con este documento.">
         {(perfil) =>
           perfil.totalContratos === 0 ? (
-            <p className="text-[15px] text-textSecondary py-8">
+            <p className="text-lectura text-textSecondary py-8">
               No encontramos contratos con este documento.
             </p>
           ) : (

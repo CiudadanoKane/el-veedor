@@ -31,12 +31,12 @@ export function AlertCard({
                   <Icon name={icon} className="h-4 w-4" />
                 </span>
               )}
-              <h2 className="font-display font-extrabold text-[1.5rem] tracking-[-0.03em] text-textPrimary">
+              <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] text-textPrimary">
                 {title}
               </h2>
             </div>
             {question && (
-              <p className="text-textSecondary mt-2 text-sm">{question}</p>
+              <p className="text-textSecondary mt-2 text-cuerpo">{question}</p>
             )}
           </div>
 
@@ -45,11 +45,11 @@ export function AlertCard({
               <div className={`font-display font-bold text-3xl leading-none ${t.texto}`}>
                 {count.toLocaleString('es-CO')}
               </div>
-              <div className="text-[11px] uppercase tracking-label text-textSecondary mt-1.5">
+              <div className="text-micro uppercase tracking-label text-textSecondary mt-1.5">
                 {count === 1 ? 'caso' : 'casos'}
               </div>
               {valueAtRisk && (
-                <div className="text-xs text-textSecondary mt-1">{valueAtRisk}</div>
+                <div className="text-nota text-textSecondary mt-1">{valueAtRisk}</div>
               )}
             </div>
           )}

@@ -28,13 +28,13 @@ export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', rend
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-[13px]">
+        <table className="w-full min-w-[760px] text-cuerpo">
           <thead>
             <tr>
               {cols.map((c) => (
                 <th
                   key={c.key}
-                  className={`px-3 pb-2.5 font-semibold text-[10px] uppercase tracking-label
+                  className={`px-3 pb-2.5 font-semibold text-micro uppercase tracking-label
                               text-textSecondary text-left whitespace-nowrap
                               border-b border-textPrimary/80 ${c.className || ''}`}
                 >
@@ -98,7 +98,7 @@ export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', rend
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-xs text-textSecondary sm:hidden">
+      <p className="mt-2 text-nota text-textSecondary sm:hidden">
         Desliza la tabla para ver todas las columnas
         {expandable && ' · toca una fila para el detalle'}
       </p>

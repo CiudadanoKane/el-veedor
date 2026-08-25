@@ -77,14 +77,14 @@ function FilaCiudad({ posicion, nombre, valorTexto, detalle, ancho, color, onQui
   return (
     <li className="py-1">
       <div className="flex items-center gap-3">
-        <span className="w-6 shrink-0 text-[11px] tabular-nums text-textSecondary text-right leading-tight">
+        <span className="w-6 shrink-0 text-micro tabular-nums text-textSecondary text-right leading-tight">
           {posicion}
         </span>
         {/* El nombre es la salida del gráfico: lleva la plataforma entera a ese
             municipio. Antes el ranking terminaba aquí —se veía qué ciudad
             destaca y no había cómo ir a mirarla—. Solo es enlace si sabemos a
             qué departamento pertenece (ver mapaCiudadDepto). */}
-        <span className="w-28 shrink-0 text-[13.5px] leading-tight min-w-0">
+        <span className="w-28 shrink-0 text-cuerpo leading-tight min-w-0">
           {onIr ? (
             <button
               onClick={onIr}
@@ -97,7 +97,7 @@ function FilaCiudad({ posicion, nombre, valorTexto, detalle, ancho, color, onQui
             <span className="text-textPrimary">{nombre}</span>
           )}
           {esAmbito && (
-            <span className="block text-[10px] uppercase tracking-label text-textSecondary font-semibold">
+            <span className="block text-micro uppercase tracking-label text-textSecondary font-semibold">
               viendo
             </span>
           )}
@@ -108,7 +108,7 @@ function FilaCiudad({ posicion, nombre, valorTexto, detalle, ancho, color, onQui
             style={{ width: `${ancho}%`, background: color }}
           />
         </span>
-        <span className="shrink-0 whitespace-nowrap text-[13px] font-bold tabular-nums text-textPrimary leading-tight">
+        <span className="shrink-0 whitespace-nowrap text-cuerpo font-bold tabular-nums text-textPrimary leading-tight">
           {valorTexto}
         </span>
         <span className="w-4 shrink-0">
@@ -123,7 +123,7 @@ function FilaCiudad({ posicion, nombre, valorTexto, detalle, ancho, color, onQui
           )}
         </span>
       </div>
-      {detalle && <p className="mt-0.5 ml-9 text-[11.5px] text-textSecondary leading-tight">{detalle}</p>}
+      {detalle && <p className="mt-0.5 ml-9 text-nota text-textSecondary leading-tight">{detalle}</p>}
     </li>
   )
 }
@@ -195,10 +195,10 @@ export function ComparacionCiudades() {
   return (
     <section className="border-t-2 border-textPrimary pt-5 pb-8 mb-2">
       <div className="min-w-0">
-        <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em] leading-tight">
+        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
           Comparación de ciudades
         </h2>
-        <p className="text-[14.5px] text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
+        <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
           Las ciudades más pobladas del país, comparadas por una misma métrica. En{' '}
           <strong>per cápita</strong> —por habitante— aparece lo que el total esconde: una
           capital pequeña puede gastar por persona mucho más que Bogotá.
@@ -210,7 +210,7 @@ export function ComparacionCiudades() {
       </div>
 
       <div className="mt-2.5 flex items-center gap-2 flex-wrap">
-        <span className="text-[11px] uppercase tracking-label text-textSecondary font-semibold">
+        <span className="text-micro uppercase tracking-label text-textSecondary font-semibold">
           Entidades
         </span>
         <Segmented
@@ -236,7 +236,7 @@ export function ComparacionCiudades() {
         </div>
       )}
 
-      <p className="mt-3 text-[12.5px] text-textSecondary leading-snug max-w-2xl">
+      <p className="mt-3 text-nota text-textSecondary leading-snug max-w-2xl">
         {territorial ? (
           <>
             Solo <strong>gobiernos locales</strong> (alcaldías y gobernaciones), donde la ciudad
@@ -424,7 +424,7 @@ export function ComparacionCiudades() {
 
                 {(anadidasConDatos.length > 0 || anadidasSinDatos.length > 0) && (
                   <div className="mt-1">
-                    <p className="pt-2 pb-0.5 text-[11px] uppercase tracking-label text-textSecondary font-semibold border-t border-dashed border-border">
+                    <p className="pt-2 pb-0.5 text-micro uppercase tracking-label text-textSecondary font-semibold border-t border-dashed border-border">
                       Añadidas para comparar
                     </p>
                     <ul>
@@ -445,7 +445,7 @@ export function ComparacionCiudades() {
                       {anadidasSinDatos.map((c) => (
                         <li key={c.clave} className="py-1 flex items-center gap-3">
                           <span className="w-6 shrink-0" />
-                          <span className="flex-1 text-[13.5px] text-textPrimary leading-snug">
+                          <span className="flex-1 text-cuerpo text-textPrimary leading-snug">
                             {c.nombre}{' '}
                             <span className="text-textSecondary font-normal">
                               — sin muestra suficiente para esta métrica
@@ -470,7 +470,7 @@ export function ComparacionCiudades() {
                   <div className="mt-4 flex items-center gap-3 flex-wrap">
                     <label
                       htmlFor="comparacion-ciudades-selector"
-                      className="text-[11px] uppercase tracking-label text-textSecondary font-semibold"
+                      className="text-micro uppercase tracking-label text-textSecondary font-semibold"
                     >
                       Comparar con otra ciudad
                     </label>
@@ -481,7 +481,7 @@ export function ComparacionCiudades() {
                         const clave = e.target.value
                         if (clave) agregar(clave)
                       }}
-                      className="bg-bg border-0 border-b border-border px-0 py-1.5 text-[14px] text-textPrimary
+                      className="bg-bg border-0 border-b border-border px-0 py-1.5 text-cuerpo text-textPrimary
                                  focus:border-textPrimary focus:outline-none cursor-pointer min-w-[190px]"
                     >
                       <option value="">Elegir ciudad…</option>
@@ -495,13 +495,13 @@ export function ComparacionCiudades() {
                 )}
 
                 {fueraDeEscala && (
-                  <p className="mt-3 text-[11px] text-textSecondary/80 leading-snug">
+                  <p className="mt-3 text-micro text-textSecondary/80 leading-snug">
                     <span className="font-semibold text-textSecondary">{top[0].nombre}</span> se sale
                     de la escala de las barras para que el resto sea comparable; su barra llega al
                     tope y su cifra real está a la derecha.
                   </p>
                 )}
-                <p className="mt-3 text-[11px] text-textSecondary/80 leading-snug">
+                <p className="mt-3 text-micro text-textSecondary/80 leading-snug">
                   Entre las {NUM_CIUDADES} principales ciudades del país, las {top.length} primeras
                   por esta métrica{perCapita ? ` (población DANE ${POBLACION_CIUDADES_ANIO})` : ''}
                   {anadidasConDatos.length + anadidasSinDatos.length > 0

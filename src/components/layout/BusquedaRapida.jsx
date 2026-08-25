@@ -58,7 +58,7 @@ export function BusquedaRapida() {
         <span
           aria-hidden
           className="hidden sm:inline-flex shrink-0 items-center rounded-sm border
-                     border-primary/40 px-1 py-0.5 text-[9px] font-bold uppercase
+                     border-primary/40 px-1 py-0.5 text-micro font-bold uppercase
                      tracking-wide text-primary"
         >
           IA
@@ -74,13 +74,13 @@ export function BusquedaRapida() {
           // "con IA" al frente: sin esa palabra el campo se lee como un buscador
           // común, y por eso pasa desapercibido que entiende lenguaje natural.
           placeholder="Busca con IA: acueducto, Soledad, más de 500 millones…"
-          className="flex-1 min-w-0 bg-transparent border-0 p-0 text-[13.5px] text-textPrimary
+          className="flex-1 min-w-0 bg-transparent border-0 p-0 text-cuerpo text-textPrimary
                      placeholder:text-textSecondary focus:outline-none"
         />
         {texto.trim() && (
           <button
             type="submit"
-            className="shrink-0 text-[12px] font-semibold text-primary hover:underline"
+            className="shrink-0 text-nota font-semibold text-primary hover:underline"
           >
             Buscar
           </button>

@@ -18,11 +18,11 @@ import { ListaBarra } from '../components/ui/ListaBarra'
 function Bloque({ id, titulo, intro, children }) {
   return (
     <section id={id} className="border-t-2 border-textPrimary pt-5 pb-10 scroll-mt-8">
-      <h2 className="font-display font-extrabold text-[1.5rem] tracking-[-0.03em] leading-tight">
+      <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
         {titulo}
       </h2>
       {intro && (
-        <p className="text-[15.5px] text-textSecondary font-light mt-3 max-w-2xl leading-relaxed">
+        <p className="text-lectura text-textSecondary font-light mt-3 max-w-2xl leading-relaxed">
           {intro}
         </p>
       )}
@@ -161,7 +161,7 @@ export function Aprender() {
           <a
             key={id}
             href={`#${id}`}
-            className="text-[13px] font-semibold text-primary enlace-sutil"
+            className="text-cuerpo font-semibold text-primary enlace-sutil"
           >
             {label}
           </a>
@@ -175,7 +175,7 @@ export function Aprender() {
       >
         <DiagramaProceso />
 
-        <p className="text-[14px] text-textSecondary leading-relaxed mt-6 mb-8 max-w-2xl">
+        <p className="text-cuerpo text-textSecondary leading-relaxed mt-6 mb-8 max-w-2xl">
           Toca cualquier etapa del diagrama para ir a su explicación. Abajo, qué debería
           pasar en cada una y qué puede fallar: casi todas las señales de esta plataforma
           nacen de una de ellas, y cada etapa enlaza con la parte del sitio que la mide.
@@ -191,7 +191,7 @@ export function Aprender() {
       >
         <LineaTiempo />
 
-        <p className="text-[14.5px] leading-relaxed text-textPrimary mt-8 max-w-2xl border-l-2 border-textPrimary pl-4">
+        <p className="text-lectura leading-relaxed text-textPrimary mt-8 max-w-2xl border-l-2 border-textPrimary pl-4">
           El tercer caso es el más común del país, y es el que hay que leer con más
           cuidado: <strong>que la línea se corte no significa que la obra se abandonó</strong>.
           Significa que dejó de haber información. La mayoría de las veces el trabajo se
@@ -239,7 +239,7 @@ export function Aprender() {
           ]}
         />
 
-        <p className="text-[12.5px] text-textSecondary mt-4 max-w-2xl leading-relaxed">
+        <p className="text-nota text-textSecondary mt-4 max-w-2xl leading-relaxed">
           Cifras aproximadas sobre el total de contratos vigentes. Se redondean porque
           esta página explica proporciones, no lleva la cuenta:{' '}
           <Link to="/" className="text-primary enlace-sutil font-semibold">
@@ -249,7 +249,7 @@ export function Aprender() {
         </p>
 
         <div className="mt-8 border-l-2 border-textPrimary pl-4 py-1 max-w-3xl">
-          <p className="text-[15px] leading-relaxed text-textPrimary">
+          <p className="text-lectura leading-relaxed text-textPrimary">
             <strong>
               Solo 8 de cada 100 contratos se adjudican en un concurso abierto.
             </strong>{' '}
@@ -258,7 +258,7 @@ export function Aprender() {
             que el Estado vincula a buena parte de quienes trabajan para él, y la ley lo
             permite expresamente.
           </p>
-          <p className="text-[15px] leading-relaxed text-textPrimary mt-3">
+          <p className="text-lectura leading-relaxed text-textPrimary mt-3">
             Lo que sí vale la pena preguntarse es por el <em>peso relativo</em>. Cuando
             una entidad adjudica de forma directa una obra o una compra que sí podían
             competir, la excepción dejó de ser excepción — y sin concurso no hay nada que
@@ -314,10 +314,10 @@ export function Aprender() {
       >
         <div className="grid gap-6 md:grid-cols-2 max-w-4xl">
           <div className="border-t-2 border-danger pt-4">
-            <h3 className="font-display font-extrabold text-[1.05rem] tracking-[-0.02em]">
+            <h3 className="font-display font-extrabold text-titulo-3 tracking-[-0.02em]">
               Lo que una cifra no dice
             </h3>
-            <ul className="mt-3 space-y-2.5 text-[14.5px] leading-relaxed text-textPrimary">
+            <ul className="mt-3 space-y-2.5 text-lectura leading-relaxed text-textPrimary">
               <li>
                 Que un contrato esté vencido <strong>no significa</strong> que la obra
                 esté abandonada: casi siempre significa que nadie cerró el registro.
@@ -335,10 +335,10 @@ export function Aprender() {
           </div>
 
           <div className="border-t-2 border-success pt-4">
-            <h3 className="font-display font-extrabold text-[1.05rem] tracking-[-0.02em]">
+            <h3 className="font-display font-extrabold text-titulo-3 tracking-[-0.02em]">
               Qué preguntarse en cambio
             </h3>
-            <ul className="mt-3 space-y-2.5 text-[14.5px] leading-relaxed text-textPrimary">
+            <ul className="mt-3 space-y-2.5 text-lectura leading-relaxed text-textPrimary">
               <li>
                 ¿El patrón se repite, o es un caso aislado? Un contrato prorrogado no dice
                 nada; cien contratos prorrogados dicen algo.
@@ -368,10 +368,10 @@ export function Aprender() {
       >
         <div className="grid gap-6 md:grid-cols-2 max-w-4xl">
           <div>
-            <h3 className="font-display font-extrabold text-[1.05rem] tracking-[-0.02em] mb-3">
+            <h3 className="font-display font-extrabold text-titulo-3 tracking-[-0.02em] mb-3">
               Sí hace
             </h3>
-            <ul className="space-y-2.5 text-[14.5px] leading-relaxed text-textPrimary">
+            <ul className="space-y-2.5 text-lectura leading-relaxed text-textPrimary">
               <li>Ordenar datos que el Estado ya publica, para que se puedan leer.</li>
               <li>Mostrar patrones y compararlos con la media del país.</li>
               <li>Señalar contradicciones objetivas en los datos, como una fecha de fin anterior al inicio.</li>
@@ -379,10 +379,10 @@ export function Aprender() {
             </ul>
           </div>
           <div>
-            <h3 className="font-display font-extrabold text-[1.05rem] tracking-[-0.02em] mb-3">
+            <h3 className="font-display font-extrabold text-titulo-3 tracking-[-0.02em] mb-3">
               No hace
             </h3>
-            <ul className="space-y-2.5 text-[14.5px] leading-relaxed text-textPrimary">
+            <ul className="space-y-2.5 text-lectura leading-relaxed text-textPrimary">
               <li>Acusar a nadie. Ninguna cifra de este sitio es prueba de corrupción.</li>
               <li>Investigar casos ni verificar qué pasó en la realidad.</li>
               <li>Generar información nueva: todo sale de SECOP tal como está.</li>
@@ -394,14 +394,14 @@ export function Aprender() {
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             to="/transparencia"
-            className="inline-block border-2 border-textPrimary px-5 py-2.5 text-[14px] font-bold
+            className="inline-block border-2 border-textPrimary px-5 py-2.5 text-cuerpo font-bold
                        hover:bg-textPrimary hover:text-bg transition-colors"
           >
             Ver la metodología completa
           </Link>
           <Link
             to="/buscar"
-            className="inline-block border-2 border-border px-5 py-2.5 text-[14px] font-bold
+            className="inline-block border-2 border-border px-5 py-2.5 text-cuerpo font-bold
                        text-textPrimary hover:border-textPrimary transition-colors"
           >
             Empezar a buscar contratos

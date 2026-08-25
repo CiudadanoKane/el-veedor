@@ -17,20 +17,20 @@ export function Glosario({ terminos }) {
               aria-expanded={activo}
               className="group flex w-full items-baseline justify-between gap-4 py-3.5 text-left"
             >
-              <span className="font-display font-extrabold text-[1.05rem] tracking-[-0.02em] text-textPrimary">
+              <span className="font-display font-extrabold text-titulo-3 tracking-[-0.02em] text-textPrimary">
                 {t.termino}
               </span>
-              <span className="shrink-0 text-[13px] text-textSecondary group-hover:text-textPrimary">
+              <span className="shrink-0 text-cuerpo text-textSecondary group-hover:text-textPrimary">
                 {activo ? '−' : '+'}
               </span>
             </button>
             {activo && (
               <div className="pb-5 pr-8 space-y-3">
-                <p className="text-[15px] leading-relaxed text-textPrimary max-w-2xl">
+                <p className="text-lectura leading-relaxed text-textPrimary max-w-2xl">
                   {t.definicion}
                 </p>
                 {t.ojo && (
-                  <p className="text-[13.5px] leading-relaxed text-textSecondary border-l-2 border-border pl-3 max-w-2xl">
+                  <p className="text-cuerpo leading-relaxed text-textSecondary border-l-2 border-border pl-3 max-w-2xl">
                     <strong className="text-textPrimary font-semibold">A qué poner ojo: </strong>
                     {t.ojo}
                   </p>

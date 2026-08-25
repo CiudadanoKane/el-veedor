@@ -29,7 +29,7 @@ function Select({ etiqueta, value, onChange, options, loading, placeholder, disa
       className="flex-1 min-w-0 lg:flex-none max-w-[9.5rem] sm:max-w-[14rem]
                  overflow-hidden text-ellipsis
                  bg-side border-0 border-b border-sideSoft/50 px-0 py-0.5
-                 text-[13.5px] font-semibold text-sideActive cursor-pointer
+                 text-cuerpo font-semibold text-sideActive cursor-pointer
                  hover:border-sideActive focus:border-sideActive focus:outline-none
                  disabled:opacity-40 disabled:cursor-default"
     >
@@ -63,7 +63,7 @@ export function BarraFiltro() {
   // debajo, que es donde cabe.
   return (
     <div className="flex items-center gap-x-3 gap-y-1 flex-wrap pb-2.5 lg:py-2.5 lg:shrink-0 lg:order-1">
-      <span className="hidden sm:inline text-[10px] uppercase tracking-label text-sideSoft font-semibold">
+      <span className="hidden sm:inline text-micro uppercase tracking-label text-sideSoft font-semibold">
         Viendo
       </span>
 
@@ -90,11 +90,11 @@ export function BarraFiltro() {
           millones. Se activa al hacer clic en una entidad del índice de calidad,
           y aquí solo se muestra para poder quitarlo. */}
       {filters.entity && (
-        <span className="inline-flex items-center gap-1.5 min-w-0 border border-sideSoft/50 px-2 py-0.5 text-[12.5px]">
+        <span className="inline-flex items-center gap-1.5 min-w-0 border border-sideSoft/50 px-2 py-0.5 text-nota">
           <span className="truncate max-w-[11rem] text-sideActive">{filters.entity}</span>
           <button
             onClick={() => setFilter('entity', '')}
-            className="shrink-0 text-sideSoft hover:text-sideActive text-sm leading-none"
+            className="shrink-0 text-sideSoft hover:text-sideActive text-cuerpo leading-none"
             aria-label="Quitar filtro de entidad"
           >
             ×
@@ -105,7 +105,7 @@ export function BarraFiltro() {
       {hayFiltros && (
         <button
           onClick={clearFilters}
-          className="shrink-0 text-[12.5px] text-sideSoft hover:text-sideActive underline"
+          className="shrink-0 text-nota text-sideSoft hover:text-sideActive underline"
         >
           Limpiar
         </button>

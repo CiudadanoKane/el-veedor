@@ -71,7 +71,7 @@ export function BotonCompartir() {
       }`}
     >
       <Icon name={ICONO[estado]} className="h-[18px] w-[18px]" />
-      <span className="hidden sm:inline text-[13px] font-semibold whitespace-nowrap">
+      <span className="hidden sm:inline text-cuerpo font-semibold whitespace-nowrap">
         {TEXTO[estado]}
       </span>
     </button>

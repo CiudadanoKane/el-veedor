@@ -83,7 +83,7 @@ function columnaTasa({ clave, conteo, encabezado, refValor, destacada }) {
         >
           {formatPct(fila[clave], 2)}
         </div>
-        <div className="text-[11px] text-textSecondary">
+        <div className="text-micro text-textSecondary">
           {fila[conteo].toLocaleString('es-CO')} de {fila.total.toLocaleString('es-CO')}
         </div>
       </div>
@@ -139,7 +139,7 @@ export function IndiceCalidad() {
           >
             {r.entidad}
           </Link>
-          <div className="text-xs text-textSecondary">NIT: {r.nit}</div>
+          <div className="text-nota text-textSecondary">NIT: {r.nit}</div>
         </div>
       ),
     },
@@ -153,7 +153,7 @@ export function IndiceCalidad() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <h2 className="font-display font-extrabold text-[1.35rem] tracking-[-0.03em]">
+        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
           {extremo === 'peor' ? 'Registro más deficiente' : 'Registro más cuidadoso'}
         </h2>
         <Segmented
@@ -167,7 +167,7 @@ export function IndiceCalidad() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
-        <span className="text-xs text-textSecondary">Ordenar por:</span>
+        <span className="text-nota text-textSecondary">Ordenar por:</span>
         <Segmented
           value={metrica}
           onChange={setMetrica}
@@ -177,27 +177,27 @@ export function IndiceCalidad() {
 
       {referencia && (
         <div className="mb-5 max-w-3xl">
-          <p className="text-[14.5px] text-textSecondary font-light leading-relaxed">
+          <p className="text-lectura text-textSecondary font-light leading-relaxed">
             Son dos problemas distintos y se miden aparte, porque juntos el primero
             desaparecería bajo el segundo. En el conjunto del país:
           </p>
           <ul className="mt-3 space-y-2">
-            <li className="text-[14.5px] text-textPrimary">
+            <li className="text-lectura text-textPrimary">
               <strong className="font-bold">{formatPct(referencia.tasaErrores, 2)}</strong>{' '}
               tiene <strong>errores</strong> — el dato se contradice a sí mismo (
               {referencia.errores.toLocaleString('es-CO')} contratos)
             </li>
-            <li className="text-[14.5px] text-textPrimary">
+            <li className="text-lectura text-textPrimary">
               <strong className="font-bold">{formatPct(referencia.tasaIncompletos, 1)}</strong>{' '}
               tiene <strong>información incompleta</strong> — el registro nunca se terminó
               ({referencia.incompletos.toLocaleString('es-CO')} contratos)
             </li>
           </ul>
-          <p className="text-[13px] text-textSecondary mt-3 leading-relaxed">
+          <p className="text-cuerpo text-textSecondary mt-3 leading-relaxed">
             Esas son las varas para leer la tabla: lo que llama la atención no es tener
             defectos, sino estar muy por encima del resto.
           </p>
-          <p className="text-[13.5px] text-textPrimary mt-3 leading-relaxed">
+          <p className="text-cuerpo text-textPrimary mt-3 leading-relaxed">
             <strong>Todo lo subrayado lleva a más información.</strong> Haz clic en el
             nombre de una entidad para ver su perfil completo, o en un conteo para ir
             directo a esos contratos.
@@ -251,7 +251,7 @@ export function IndiceCalidad() {
         <QueryState query={query} empty="Sin entidades que superen el mínimo de contratos.">
           {(data) =>
             data.entidades.length === 0 ? (
-              <p className="text-[15px] text-textSecondary py-8">
+              <p className="text-lectura text-textSecondary py-8">
                 Ninguna entidad alcanza los {UMBRAL_CONTRATOS} contratos con estos filtros.
                 Prueba sin filtro geográfico o con un departamento más grande.
               </p>
