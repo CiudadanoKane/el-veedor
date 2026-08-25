@@ -778,8 +778,19 @@ export function Dashboard() {
 
   return (
     <div>
+      {/* "nacional" explícito en el título y no solo en el subtítulo: con un
+          ámbito activo esta misma página se convierte en el retrato de un
+          lugar —cambia el título, desaparecen el mapa y la comparación de
+          ciudades, que son siempre nacionales—, así que son dos vistas
+          distintas y conviene que se llamen distinto de un golpe de vista.
+
+          Sin ámbito lleva el nombre completo; con ámbito, el nombre del lugar
+          a secas. No se antepone "Panorama de": el lugar ES el sujeto de esa
+          vista, y el subtítulo ya dice de qué va. Es el criterio de un
+          periódico: la edición nacional se rotula "Nacional", la local lleva
+          el nombre de la ciudad. */}
       <PageHeader
-        title={hayLugar ? lugar : 'Panorama de la contratación'}
+        title={hayLugar ? lugar : 'Panorama nacional de la contratación'}
         subtitle={
           hayLugar
             ? `Todo lo que la plataforma sabe de la contratación en ${lugar}, en una sola lectura.`

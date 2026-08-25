@@ -279,9 +279,20 @@ export function MapaColombia() {
     .map((clave) => ({ clave, ...porDepto.get(clave) }))
     .sort((a, b) => b.v - a.v)
 
+  // Título FIJO. Antes era `${registro.label} por departamento`, así que
+  // cambiaba con la métrica: "Plazo vencido por departamento", "Valor
+  // contratado por departamento"… La sección parecía otra en cada clic, cuando
+  // lo que cambia es el dato que pinta, no lo que la sección ES. Y además
+  // repetía lo que ya dicen el selector de justo debajo y la leyenda del mapa:
+  // tres veces el mismo rótulo.
+  //
+  // El título nombra la vista; la entrada, que sí sigue el registro de la
+  // métrica, explica lo que estás mirando ahora mismo. Esa es la división que
+  // usan también "Comparación de ciudades" y "Evolución de la contratación",
+  // las otras dos secciones con selector.
   return (
     <Seccion
-      titulo={`${registro.label} por departamento`}
+      titulo="Distribución por departamento"
       intro={registro.descripcion}
     >
       <div>
