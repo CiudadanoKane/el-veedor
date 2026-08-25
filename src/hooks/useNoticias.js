@@ -4,10 +4,11 @@ import { DATASETS } from '../lib/constants'
 import { soqlGenerales } from '../lib/dashboardQueries'
 import { adaptList } from '../adapters/secop2Adapter'
 import {
-  adicionTiempoListaQueryOptions, obraParalizadaListaQueryOptions,
+  obraParalizadaListaQueryOptions,
   cerradoSinPagoConteoQueryOptions, sinContratistaConteoQueryOptions,
-  fechasInconsistentesConteoQueryOptions, conPlazoYPorcentaje,
+  fechasInconsistentesConteoQueryOptions,
 } from './useAlertas'
+import { useAdicionesTiempo } from './useAdiciones'
 import { ejecucionContratistasQueryOptions } from './useEjecucionContratistas'
 import { concentracionEntidadQueryOptions, directaGranCuantiaQueryOptions } from './useRankings'
 
@@ -54,7 +55,23 @@ async function fetchApi(ruta, filters) {
 export function useNoticiasData(filters = {}) {
   const dev = import.meta.env.DEV
 
-  const adicionDev = useQuery({ ...adicionTiempoListaQueryOptions(filters, 'alta'), enabled: dev })
+  // La nota de adición de plazo lee EXACTAMENTE la lista de su destino: el
+  // mismo hook, la misma query key y el mismo orden por defecto que la pestaña
+  // "Adiciones de plazo" de Alertas, en dev y en producción por igual.
+  //
+  // Antes salía de una consulta propia (adicionTiempoListaQueryOptions, ya
+  // borrada) que calculaba con el campo crudo dias_adicionados, mientras el
+  // destino cruzaba el historial de modificaciones. Las dos cifras no
+  // coincidían —para el contrato de Ibagué, "de 91 a 3.739 días (4.009%)" en la
+  // noticia contra "92 d, +3.647, +3964%" en la tabla— así que quien seguía el
+  // enlace para corroborar encontraba otro número. Leer la misma lista lo
+  // vuelve imposible por construcción, y de paso comparte caché con Alertas al
+  // navegar entre las dos secciones.
+  //
+  // El precio es que esta nota ya no viaja en el /api/noticias cacheado y tarda
+  // lo que tarda la pestaña. No bloquea al resto: cada nota trae su propio
+  // estado de carga y las demás salen enseguida.
+  const adicion = useAdicionesTiempo(filters, 50, 'dias')
   const obraDev = useQuery({ ...obraParalizadaListaQueryOptions(filters), enabled: dev })
   const cerradoDev = useQuery({ ...cerradoSinPagoConteoQueryOptions(filters), enabled: dev })
   const sinContratistaDev = useQuery({ ...sinContratistaConteoQueryOptions(filters), enabled: dev })
@@ -109,7 +126,7 @@ export function useNoticiasData(filters = {}) {
 
   if (dev) {
     return {
-      adicion: { lista: adicionDev },
+      adicion: { lista: adicion },
       obra: { lista: obraDev },
       cerrado: { conteo: cerradoDev },
       sinContratista: { conteo: sinContratistaDev },
@@ -122,7 +139,7 @@ export function useNoticiasData(filters = {}) {
   }
 
   return {
-    adicion: { lista: pick('adicion', conPlazoYPorcentaje) },
+    adicion: { lista: adicion },
     obra: { lista: pick('obra', adaptList) },
     cerrado: { conteo: pick('cerrado', selectConteoValor) },
     sinContratista: { conteo: pick('sinContratista', selectConteoValor) },

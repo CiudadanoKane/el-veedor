@@ -45,18 +45,19 @@ export function Noticias() {
 
   const ambito = filters.city || filters.department || 'Colombia'
   const num = (n) => n.toLocaleString('es-CO')
-  const finDiasPlazo = (c) => c.plazoOriginal + (c.daysAdded || 0)
+  const finDiasPlazo = (c) => c.plazoOriginal + (c.diasAcumulados || 0)
 
   // --- Caso específico: adición de tiempo (la nota insignia del roadmap) ---
   const notaAdicion = (() => {
     const base = { key: 'adicion', categoria: 'Adición de tiempo', icon: 'reloj', tono: 'warning' }
     if (adicion.lista.isLoading) return { ...base, cargando: true }
-    // Piso de plausibilidad: un plazo original de pocos días dispara porcentajes
-    // absurdos (+40.000%) que restan credibilidad. Se descartan y se toman los de
-    // plazo pactado de al menos un mes.
-    const casos = (adicion.lista.data || []).filter(
-      (x) => x.plazoOriginal >= 30 && x.pctAdicion != null,
-    )
+    // Las tres primeras filas de la pestaña a la que enlaza, tal cual y en su
+    // orden. NO se filtra ni se reordena aquí: cualquier criterio propio haría
+    // que "el caso del que habla la noticia" y "lo primero que se ve al seguir
+    // el enlace" volvieran a ser cosas distintas, que es el bug que esto
+    // arregla. Si el destino cambia de orden o de guardas, la noticia le sigue
+    // sola.
+    const casos = adicion.lista.data || []
     const a = casos[0]
     if (!a) return null
     return {
@@ -65,15 +66,23 @@ export function Noticias() {
       enlace: { to: conFiltros('/alertas', PESTANAS_ALERTAS.adiciones, filters), texto: 'Ver todas las adiciones de tiempo' },
       titular: (
         <>
-          Un contrato de <strong>{a.entityName}</strong> amplió su plazo en un{' '}
-          <strong>{num(a.pctAdicion)}%</strong> — de {num(a.plazoOriginal)} a {num(finDiasPlazo(a))} días.
+          Un contrato de <strong>{a.entityName}</strong> amplió su plazo
+          {/* El porcentaje puede faltar si el plazo original no se pudo
+              reconstruir; la tabla lo muestra como "—" y aquí se calla, en vez
+              de escribir "un null%". Los días añadidos, que son el dato de la
+              nota, salen igual. */}
+          {a.pctAdicion != null ? (
+            <> en un <strong>{num(a.pctAdicion)}%</strong></>
+          ) : null}{' '}
+          — de {num(a.plazoOriginal)} a {num(finDiasPlazo(a))} días.
         </>
       ),
       secundarios: casos.slice(1, 3).map((c) => ({
         key: c.id,
         node: (
           <>
-            <span className="text-textPrimary font-semibold">{c.entityName}</span>: +{num(c.pctAdicion)}%
+            <span className="text-textPrimary font-semibold">{c.entityName}</span>
+            {c.pctAdicion != null ? `: +${num(c.pctAdicion)}%` : ':'}{' '}
             (de {num(c.plazoOriginal)} a {num(finDiasPlazo(c))} días)
           </>
         ),

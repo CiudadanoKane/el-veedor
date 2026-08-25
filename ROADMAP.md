@@ -327,6 +327,59 @@ salen idénticas a las medidas por API antes de tocar el código. 12 pruebas
 de `adiciones.js` siguen en verde (no se tocó ese archivo, solo quién lo
 consume).
 
+### CORREGIDO UNA SEXTA VEZ — la noticia no coincidía con la tabla que la corrobora (sep 2026)
+
+El usuario siguió el enlace de la primera noticia a nivel Colombia —sobre una
+entidad de Ibagué— y no encontró allí el caso. **Dos bugs, uno dentro del otro.**
+
+**El de fuera:** Noticias enlazaba a `/alertas?t=adiciontiempo`, y ese id no
+existe (el real es `adiciones`). `SeccionConPestanas` valida el parámetro contra
+su lista y cae a la primera pestaña **sin decir nada**, así que un enlace que
+decía "Ver todas las adiciones de tiempo" abría "Contratos vencidos". Ese
+silencio es correcto para una URL escrita a mano, pero convierte un error de
+tipeo nuestro en un enlace que aparenta funcionar. Auditados los otros nueve
+enlaces a pestañas del sitio: los nueve eran válidos, el roto era solo ese.
+Ahora los ids viven en `src/lib/pestanas.js`, y `pestanas.test.js` recorre todo
+el código comprobando cada enlace y exige que la lista siga coincidiendo con lo
+declarado en las páginas.
+
+**El de dentro, que apareció al verificar el arreglo:** con la pestaña correcta
+el caso sí estaba, pero **las cifras no coincidían**. La noticia decía "de 91 a
+3.739 días (4.009%)" y la tabla "92 d, +3.647, +3964%".
+
+Conviene ser honesto sobre el proceso: la primera hipótesis fue el bug de zona
+horaria de `enMs()`. Se comprobó contra la API y **era falsa** —los dos métodos
+de fecha dan 91—. La causa real era otra: Noticias tenía su propia consulta
+(`adicionTiempoListaQueryOptions`) que calculaba el plazo restando el campo
+crudo `dias_adicionados`, mientras su destino cruzaba el historial con
+`plazoDelContrato`. **Un sexto lugar con el bug de esta cadena**, que no salió
+en las cinco rondas de agosto porque esa función solo la consumía Noticias.
+
+**Arreglo, distinto de los cinco anteriores:** no se corrigió el segundo
+cálculo, se **borró**. La nota lee ahora la lista de su destino con
+`useAdicionesTiempo` —el mismo hook, la misma query key, el mismo orden— y toma
+sus tres primeras filas sin filtrar ni reordenar. Que las dos cifras se separen
+pasa a ser imposible por construcción, no algo que haya que acordarse de
+mantener sincronizado. Se borraron `adicionTiempoListaQueryOptions`,
+`conPlazoYPorcentaje` y `condicionesAdicionExcesiva` (sin más consumidores), y
+`adicion` salió de `/api/noticias`: precalcularlo exigiría duplicar la lógica
+del hook en el servidor, que es justo la duplicación que causó todo esto.
+
+El precio, dicho claro: esa nota ya no viaja en el endpoint cacheado y tarda lo
+que tarda la pestaña. No bloquea al resto del feed —cada nota tiene su propio
+estado de carga— y comparte caché con Alertas al navegar entre las dos.
+
+Verificado en el navegador comparando fila por fila, a nivel nacional y con el
+ámbito de Atlántico: las tres primeras notas dan las mismas tres entidades, en
+el mismo orden, con plazo original, días añadidos y porcentaje **idénticos** a
+la tabla.
+
+**El patrón, otra vez:** cinco de las seis rondas fueron el mismo error —dos
+caminos calculando lo mismo— y cinco veces se arregló sincronizándolos. Esta vez
+se eliminó uno. Si dos vistas tienen que mostrar el mismo número, que lean la
+misma función; sincronizar dos cálculos es una deuda que se paga cada vez que
+alguien toca uno de los dos.
+
 **PENDIENTE Y SERIO — SECOP I desaparece en silencio en Bogotá y Norte de
 Santander.** Encontrado por el usuario el 6/8/2026: la gráfica de evolución de
 Bogotá solo pintaba SECOP II, sin aviso. No es un fallo de la consulta: **los dos

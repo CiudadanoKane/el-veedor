@@ -311,7 +311,8 @@ export function useObraParalizada(filters = {}) {
   }
 }
 
-// ALERTA: adición de tiempo excesiva.
+// Umbrales de "adición de tiempo excesiva", que usa usePrevalenciaAdicionTiempo
+// (useAdiciones.js) para contar qué tan extendido está el problema.
 //
 // El umbral se despeja algebraicamente para poder filtrar en el servidor:
 //   pct = días / plazo_original,  con plazo_original = (fin − inicio) − días
@@ -324,55 +325,21 @@ export const NIVELES_ADICION = {
   critica: { label: 'Más del 200%', factor: 1.5 },
 }
 
-function condicionesAdicionExcesiva(nivel) {
-  const { factor } = NIVELES_ADICION[nivel] || NIVELES_ADICION.alta
-  return [
-    soloContratosValidos(),
-    'dias_adicionados > 0',
-    'dias_adicionados <= 3650',
-    'fecha_de_fin_del_contrato > fecha_de_inicio_del_contrato',
-    `dias_adicionados * ${factor} > date_diff_d(fecha_de_fin_del_contrato, fecha_de_inicio_del_contrato)`,
-  ]
-}
-
-// El plazo original y el % de adición se calculan en cliente para mostrarlos,
-// a partir de fechas y días ya adaptados — se reutiliza en ambos consumidores
-// (hook y /api/noticias) para no repetir la cuenta.
-export function conPlazoYPorcentaje(rows) {
-  return adaptList(rows).map((c) => {
-    let plazoOriginal = null
-    let pctAdicion = null
-    if (c.startDate && c.endDate) {
-      const dur = Math.round(
-        (new Date(c.endDate).getTime() - new Date(c.startDate).getTime()) / 86_400_000,
-      )
-      const original = dur - (c.daysAdded || 0)
-      if (original > 0) {
-        plazoOriginal = original
-        pctAdicion = Math.round(((c.daysAdded || 0) / original) * 100)
-      }
-    }
-    return { ...c, plazoOriginal, pctAdicion }
-  })
-}
-
-// Usada por Noticias (nivel 'alta' = más del 100%) para su nota de adición de
-// plazo. La pestaña "Adición de tiempo excesiva" que consumía esto en Alertas
-// se unificó con "Adiciones de plazo" (ago 2026): ver usePrevalenciaAdicionTiempo
-// en useAdiciones.js.
-export function adicionTiempoListaQueryOptions(filters = {}, nivel = 'alta') {
-  return {
-    queryKey: ['alerta', 'adiciontiempo', 'lista', filters, nivel],
-    queryFn: () => {
-      const where = buildWhere(whereFromFilters(filters, condicionesAdicionExcesiva(nivel)))
-      return socrataQuery(
-        DS,
-        `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY dias_adicionados DESC LIMIT 100`,
-      )
-    },
-    select: conPlazoYPorcentaje,
-  }
-}
+// Aquí vivían adicionTiempoListaQueryOptions y conPlazoYPorcentaje, la consulta
+// y el cálculo propios con los que Noticias armaba su nota de adición de plazo.
+// Se borraron en sep 2026 (no quedaba ningún otro consumidor).
+//
+// El motivo importa: calculaban el plazo original restando el campo crudo
+// dias_adicionados, que declara UNA sola prórroga y no la suma —el bug que se
+// corrigió en cinco rondas durante agosto sobre el historial de
+// modificaciones—. Como la nota enlazaba a "Adiciones de plazo", que sí cruza
+// el historial, las dos cifras del mismo contrato no coincidían: "de 91 a 3.739
+// días (4.009%)" en la noticia contra "92 d, +3.647, +3964%" en la tabla.
+//
+// Ahora la nota lee la lista de su destino con useAdicionesTiempo, así que no
+// hay dos cálculos que puedan separarse. Si alguien necesita otra vez una
+// consulta de adiciones para una vista nueva, que reutilice ese hook en vez de
+// reintroducir un segundo camino.
 
 export function fechasInconsistentesConteoQueryOptions(filters = {}) {
   return {

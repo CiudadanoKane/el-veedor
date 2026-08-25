@@ -2,7 +2,6 @@ import { DATASETS } from '../src/lib/constants.js'
 import { socrataQuery } from '../src/lib/socrataClient.js'
 import { soqlGenerales } from '../src/lib/dashboardQueries.js'
 import {
-  adicionTiempoListaQueryOptions,
   obraParalizadaListaQueryOptions,
   cerradoSinPagoConteoQueryOptions,
   sinContratistaConteoQueryOptions,
@@ -12,10 +11,18 @@ import { refrescoBloqueado } from '../src/lib/limiteTasa.js'
 
 const CLAVE = 'noticias'
 
-// Las notas de Noticias que describen CONTRATOS (adiciones de tiempo, obra
-// paralizada, cerrados sin pago, sin contratista identificado). Las de actores
-// —quién prorroga, concentración, directa de gran cuantía— viven en
-// /api/noticias-actores, y las fechas imposibles en /api/noticias-fechas.
+// Las notas de Noticias que describen CONTRATOS (obra paralizada, cerrados sin
+// pago, sin contratista identificado). Las de actores —quién prorroga,
+// concentración, directa de gran cuantía— viven en /api/noticias-actores, y las
+// fechas imposibles en /api/noticias-fechas.
+//
+// La de adiciones de tiempo ya NO se calcula aquí: la lee el navegador con el
+// mismo hook que pinta la pestaña "Adiciones de plazo" de Alertas, que es a
+// donde enlaza. Tenía su propia consulta y su propio cálculo —con el campo
+// crudo dias_adicionados en vez del historial de modificaciones—, así que la
+// cifra de la noticia no coincidía con la de la tabla que la debía corroborar.
+// Precalcularla aquí exigiría duplicar en el servidor la lógica del hook, que
+// es justo la duplicación que causó la divergencia. Ver useNoticias.js.
 //
 // Antes las ocho iban juntas aquí y el endpoint devolvía 504: medido, HTTP 504
 // a los 60,9 s, justo el techo del plan. No era la suma de tiempos sino la
@@ -54,8 +61,7 @@ export default async function handler(req, res) {
       }
     }
 
-    const [adicion, obra, cerrado, sinContratista] = await Promise.all([
-      adicionTiempoListaQueryOptions(filters, 'alta').queryFn(),
+    const [obra, cerrado, sinContratista] = await Promise.all([
       obraParalizadaListaQueryOptions(filters).queryFn(),
       cerradoSinPagoConteoQueryOptions(filters).queryFn(),
       sinContratistaConteoQueryOptions(filters).queryFn(),
@@ -70,7 +76,7 @@ export default async function handler(req, res) {
       ? (await leerEdgeConfig('panorama'))?.generales ?? null
       : await socrataQuery(DATASETS.CONTRATOS, soqlGenerales(filters))
 
-    const payload = { adicion, obra, cerrado, sinContratista, generales }
+    const payload = { obra, cerrado, sinContratista, generales }
 
     let escrito = 'skip'
     if (sinFiltros) escrito = await escribirEdgeConfig(CLAVE, payload)
