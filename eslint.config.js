@@ -70,4 +70,13 @@ export default [
       globals: { ...globals.node },
     },
   },
+  {
+    // Pruebas: corren en Node bajo vitest. pestanas.test.js además lee el
+    // código fuente del proyecto (node:fs, process.cwd) para comprobar que
+    // ningún enlace apunte a una pestaña inexistente.
+    files: ['**/*.test.js'],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+  },
 ]

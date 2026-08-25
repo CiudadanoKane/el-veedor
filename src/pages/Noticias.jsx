@@ -4,6 +4,7 @@ import { useFilters } from '../context/FiltersContext'
 import { useNoticiasData } from '../hooks/useNoticias'
 import { formatCOP, daysSince, humanDuration, formatPct } from '../lib/formatters'
 import { esPersonaJuridica } from '../lib/identidad'
+import { PESTANAS_ALERTAS, PESTANAS_ERRORES } from '../lib/pestanas'
 
 /* ---------------------------------------------------------------------------
    Noticias basadas en datos.
@@ -61,7 +62,7 @@ export function Noticias() {
     return {
       ...base,
       contexto: 'Que un contrato se prorrogue no es irregular por sí solo; lo llamativo es la magnitud. Mostramos varias por si la primera es un error de registro.',
-      enlace: { to: conFiltros('/alertas', 'adiciontiempo', filters), texto: 'Ver todas las adiciones de tiempo' },
+      enlace: { to: conFiltros('/alertas', PESTANAS_ALERTAS.adiciones, filters), texto: 'Ver todas las adiciones de tiempo' },
       titular: (
         <>
           Un contrato de <strong>{a.entityName}</strong> amplió su plazo en un{' '}
@@ -91,7 +92,7 @@ export function Noticias() {
     return {
       ...base,
       contexto: 'El dinero pendiente es evidencia de que la obra no terminó; su plazo venció hace más de seis meses. Mostramos varias por si la primera es un dato atípico.',
-      enlace: { to: conFiltros('/alertas', 'obra', filters), texto: 'Ver las obras paralizadas' },
+      enlace: { to: conFiltros('/alertas', PESTANAS_ALERTAS.obra, filters), texto: 'Ver las obras paralizadas' },
       titular: (
         <>
           Una obra contratada por <strong>{o.entityName}</strong> sigue vencida
@@ -234,7 +235,7 @@ export function Noticias() {
     return {
       ...base,
       contexto: 'Casi siempre falta el dato, no el pago: SECOP deja el campo vacío en un tercio de los contratos cerrados.',
-      enlace: { to: conFiltros('/errores', 'cerradosinpago', filters), texto: 'Ver los contratos' },
+      enlace: { to: conFiltros('/errores', PESTANAS_ERRORES.cerradosinpago, filters), texto: 'Ver los contratos' },
       titular: (
         <>
           En {ambito}, <strong>{num(d.total)}</strong> contratos se dieron por cerrados sin
@@ -254,7 +255,7 @@ export function Noticias() {
     return {
       ...base,
       contexto: 'Sin el NIT o la cédula del contratista, ese pago público no se puede rastrear.',
-      enlace: { to: conFiltros('/errores', 'sincontratista', filters), texto: 'Ver los contratos' },
+      enlace: { to: conFiltros('/errores', PESTANAS_ERRORES.sincontratista, filters), texto: 'Ver los contratos' },
       titular: (
         <>
           En {ambito}, en <strong>{num(d.total)}</strong> contratos no quedó registrado a quién se
@@ -274,7 +275,7 @@ export function Noticias() {
     return {
       ...base,
       contexto: 'Un contrato no puede terminar antes de empezar: casi siempre es un error de digitación de la entidad.',
-      enlace: { to: conFiltros('/errores', 'fechas', filters), texto: 'Ver los contratos' },
+      enlace: { to: conFiltros('/errores', PESTANAS_ERRORES.fechas, filters), texto: 'Ver los contratos' },
       titular: (
         <>
           En {ambito}, <strong>{num(d.total)}</strong> contratos registran una fecha de fin
