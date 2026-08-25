@@ -10,6 +10,7 @@ import {
 } from '../../hooks/useEjecucionContratistas'
 import { documentoVisible, etiquetaDocumento } from '../../lib/identidad'
 import { formatCOP, formatPct } from '../../lib/formatters'
+import { PESTANAS_ALERTAS } from '../../lib/pestanas'
 
 // Índice de ejecución de contratistas.
 //
@@ -241,6 +242,21 @@ export function IndiceEjecucion() {
         se hizo como registros que la entidad no actualizó, y no distinguimos entre los
         dos. Se muestra como contexto, no como cargo.
       </Methodology>
+
+      {/* Pareja de esta vista en la otra sección: aquí "qué contratista
+          prorroga más seguido", allá "qué contratos se alargaron más". Mismo
+          fenómeno, unidad distinta. */}
+      <p className="mt-3 text-nota text-textSecondary max-w-2xl">
+        Esto compara <strong>actores</strong>. Para ver los contratos concretos que más se
+        alargaron, uno por uno,{' '}
+        <Link
+          to={`/alertas?t=${PESTANAS_ALERTAS.adiciones}`}
+          className="text-primary font-semibold enlace-sutil"
+        >
+          abre Adiciones de plazo en Alertas
+        </Link>
+        .
+      </p>
 
       <div className="mt-4">
         <QueryState query={query} empty="Sin contratistas que superen el mínimo de contratos.">

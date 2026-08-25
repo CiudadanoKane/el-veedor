@@ -14,6 +14,8 @@ import {
 import { formatCOP, humanDuration } from '../../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../ui/EnlacePerfil'
 import { FuenteBadge } from '../ui/FuenteBadge'
+import { Link } from 'react-router-dom'
+import { PESTANAS_RANKINGS } from '../../lib/pestanas'
 
 function PctBadge({ pct }) {
   if (pct == null) return <span className="text-textSecondary">—</span>
@@ -184,6 +186,17 @@ export function AdicionesTiempo() {
         umbrales acumulativos, el tope de cada una eran los mismos casos extremos—; se
         unificó aquí, dejando la lista completa siempre visible.
       </Methodology>
+      {/* Pareja de esta pestaña en Rankings: aquí cada fila es UN contrato;
+          allá se compara a los actores entre sí. Sin el enlace, dar con la
+          otra mitad dependía de acordarse de que existe. */}
+      <p className="mt-3 text-nota text-textSecondary max-w-2xl">
+        Cada fila es <strong>un contrato</strong>. Para ver qué contratista prorroga más seguido,{' '}
+        <Link to={`/rankings?t=${PESTANAS_RANKINGS.ejecucion}`} className="text-primary font-semibold enlace-sutil">
+          abre Quién más prorroga en Rankings
+        </Link>
+        .
+      </p>
+
       <div className="mt-4">
         <QueryState query={query} empty="No hay contratos con adición de tiempo con estos filtros.">
           {(rows) => (
@@ -294,6 +307,17 @@ export function AdicionesCosto() {
         (×100, ×1.000, ×10.000): no son adiciones sino errores de digitación, y los
         mostramos aparte en <strong>Errores en SECOP</strong>.
       </Methodology>
+      {/* Pareja de esta pestaña en Rankings: aquí cada fila es UN contrato;
+          allá se compara a los actores entre sí. Sin el enlace, dar con la
+          otra mitad dependía de acordarse de que existe. */}
+      <p className="mt-3 text-nota text-textSecondary max-w-2xl">
+        Cada fila es <strong>un contrato</strong>. Para ver qué entidad adiciona más presupuesto,{' '}
+        <Link to={`/rankings?t=${PESTANAS_RANKINGS.adiciones}`} className="text-primary font-semibold enlace-sutil">
+          abre Quién más adiciona en Rankings
+        </Link>
+        .
+      </p>
+
       <div className="mt-4">
         <QueryState query={query} empty="Sin adiciones de costo detectables con estos filtros.">
           {(data) =>

@@ -24,6 +24,19 @@ export const PESTANAS_ALERTAS = Object.freeze({
   ambas: 'ambas',
 })
 
+// Rankings guardaba su pestaña en useState, así que no se podía enlazar a una
+// concreta ni compartir lo que estabas viendo: cualquier enlace caía en la
+// primera. Se descubrió al añadir los enlaces cruzados con Alertas —"abre Quién
+// más prorroga" abría "Quién recibe más"—, que es la misma promesa incumplida
+// que el bug de `adiciontiempo`. Ahora vive en la URL como en las otras dos.
+export const PESTANAS_RANKINGS = Object.freeze({
+  contratistas: 'contratistas',
+  ejecucion: 'ejecucion',
+  entidades: 'entidades',
+  adiciones: 'adiciones',
+  categorias: 'categorias',
+})
+
 export const PESTANAS_ERRORES = Object.freeze({
   indice: 'indice',
   sincontratista: 'sincontratista',

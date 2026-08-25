@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
 } from 'recharts'
@@ -18,6 +18,7 @@ import { useCategorias } from '../hooks/useCategorias'
 import { formatCOP, formatCOPFull, formatDate, formatPct, pct } from '../lib/formatters'
 import { CHART, tooltipProps } from '../lib/chartTheme'
 import { documentoVisible, etiquetaDocumento, esPersonaJuridica } from '../lib/identidad'
+import { PESTANAS_ALERTAS, PESTANAS_RANKINGS } from '../lib/pestanas'
 
 // Encabezado de sección con su control (orden, o el toggle entidad/contratista)
 // justo al lado del título, a la izquierda. Antes iba alineado a la derecha con
@@ -403,6 +404,21 @@ function RankingAdiciones({ filters }) {
         <strong>enmascara</strong>, igual que en el resto de la plataforma.
       </Methodology>
 
+      {/* El paso natural desde un ranking es "¿y cuáles son esos contratos?".
+          Sin este enlace había que adivinar que la respuesta vive en otra
+          sección con la misma pinta de tabla. */}
+      <p className="mt-3 text-nota text-textSecondary max-w-2xl">
+        Esto compara <strong>actores</strong>. Para ver los contratos concretos que más
+        crecieron, uno por uno,{' '}
+        <Link
+          to={`/alertas?t=${PESTANAS_ALERTAS.adicionescosto}`}
+          className="text-primary font-semibold enlace-sutil"
+        >
+          abre Adiciones de presupuesto en Alertas
+        </Link>
+        .
+      </p>
+
       <div className="mt-4">
         <QueryState query={query} empty="Aún no hay adiciones calculadas.">
           {(d) => {
@@ -562,35 +578,60 @@ function RankingCategorias({ filters }) {
 
 export function Rankings() {
   const { filters } = useFilters()
-  const [tab, setTab] = useState('contratistas')
+  // La pestaña vive en la URL, igual que en Alertas y Errores: así se puede
+  // enlazar a una concreta —lo necesitan los enlaces cruzados desde Alertas— y
+  // compartir por enlace lo que se está mirando. Se valida contra el catálogo y
+  // cae a la primera si el valor no existe, mismo patrón defensivo que
+  // SeccionConPestanas, para que un enlace viejo no rompa la página.
+  const [params, setParams] = useSearchParams()
+  const pedida = params.get('t')
+  const tab = PESTANAS_RANKINGS[pedida] ? pedida : 'contratistas'
+  const setTab = (id) => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (id === 'contratistas') next.delete('t')
+      else next.set('t', id)
+      return next
+    }, { replace: true })
+  }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Rankings"
-        subtitle="Quién recibe más recursos públicos, quién los entrega, en qué se contrata y cómo se ejecuta lo contratado."
+        title="Rankings (actores)"
+        subtitle="Quién recibe más recursos públicos, quién más prorroga, quién los entrega, quién más adiciona y en qué se contrata. Aquí se comparan actores; los contratos concretos detrás de estas cifras están en Alertas."
       />
 
+      {/* Orden por SUJETO, no por tema. Antes iba contratista, entidad, sector,
+          entidad, contratista: el sujeto cambiaba cuatro veces en cinco
+          pestañas, así que al recorrerlas de izquierda a derecha se volvía
+          atrás sin querer. Ahora van juntas las dos de contratista, luego las
+          dos de entidad, y de última la única que no mira a un actor sino a
+          una cosa (el sector).
+
+          "Cómo ejecutan" pasó a "Quién más prorroga": es lo que de verdad
+          muestra —su propio titular ya decía "Más prórrogas"— y deja las
+          cinco etiquetas en paralelo, cuatro «quién» y un «qué». */}
       <div>
         <Segmented
           value={tab}
           onChange={setTab}
           options={[
             { value: 'contratistas', label: 'Quién recibe más' },
+            { value: 'ejecucion', label: 'Quién más prorroga' },
             { value: 'entidades', label: 'Quién entrega más' },
-            { value: 'categorias', label: 'Qué se contrata' },
             { value: 'adiciones', label: 'Quién más adiciona' },
-            { value: 'ejecucion', label: 'Cómo ejecutan' },
+            { value: 'categorias', label: 'Qué se contrata' },
           ]}
         />
       </div>
 
       <div className="border-b border-border pb-8">
         {tab === 'contratistas' && <RankingContratistas filters={filters} />}
-        {tab === 'entidades' && <RankingEntidades filters={filters} />}
-        {tab === 'categorias' && <RankingCategorias filters={filters} />}
-        {tab === 'adiciones' && <RankingAdiciones filters={filters} />}
         {tab === 'ejecucion' && <IndiceEjecucion />}
+        {tab === 'entidades' && <RankingEntidades filters={filters} />}
+        {tab === 'adiciones' && <RankingAdiciones filters={filters} />}
+        {tab === 'categorias' && <RankingCategorias filters={filters} />}
       </div>
     </div>
   )

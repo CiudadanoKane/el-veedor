@@ -38,9 +38,14 @@ const ALERTAS = [
 export function Alertas() {
   return (
     <SeccionConPestanas
-      titulo="Alertas"
+      titulo="Alertas (contratos)"
       subtitulo="Patrones que merecen la atención del ciudadano. La plataforma señala, no acusa."
-      intro="Estas señales dicen algo sobre cómo se está ejecutando la contratación. Si lo que buscas son errores en el registro de los datos —fechas imposibles, contratos sin identificar— están en Errores en SECOP."
+      // Dos deslindes, no uno. El de Errores ya estaba: separa "se ejecutó
+      // mal" de "se registró mal". Faltaba el de Rankings, que es el que de
+      // verdad confunde, porque las dos secciones usan la misma tabla y varios
+      // temas —prórrogas, adiciones— aparecen en ambas. La diferencia no es de
+      // tema sino de unidad: aquí cada fila es UN contrato; allá, un actor.
+      intro="Cada fila es un contrato concreto que puedes abrir y revisar. Si lo que quieres es ver quién destaca en el conjunto —qué contratista prorroga más, qué entidad adiciona más— eso está en Rankings (actores). Y si buscas errores en el registro de los datos —fechas imposibles, contratos sin identificar— están en Errores en SECOP."
       items={ALERTAS}
     />
   )

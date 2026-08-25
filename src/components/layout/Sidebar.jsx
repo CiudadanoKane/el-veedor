@@ -17,8 +17,15 @@ const NAV = [
   { to: '/', label: 'Panorama', end: true },
   { to: '/noticias', label: 'Noticias' },
   { to: '/buscar', label: 'Buscador inteligente' },
-  { to: '/alertas', label: 'Alertas' },
-  { to: '/rankings', label: 'Rankings' },
+  // El calificativo dice de qué está hecha cada lista: Alertas son contratos
+  // uno por uno, Rankings compara actores (entidades y contratistas). Las dos
+  // usan la misma tabla, así que sin esta pista no hay forma de saber dónde
+  // buscar qué — y algunos temas, como las prórrogas, viven en las dos con
+  // lentes distintos. "Actores" está definido en el glosario de Aprender.
+  // En la barra inferior del móvil se quedan cortas: ahí caben 4 ítems en
+  // 375px con ícono encima, y no entra ningún calificativo.
+  { to: '/alertas', label: 'Alertas (contratos)' },
+  { to: '/rankings', label: 'Rankings (actores)' },
   { to: '/constructor', label: 'Graficar' },
 ]
 

@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
-import { PESTANAS_ALERTAS, PESTANAS_ERRORES } from './pestanas'
+import { PESTANAS_ALERTAS, PESTANAS_ERRORES, PESTANAS_RANKINGS } from './pestanas'
 
 const SRC = join(process.cwd(), 'src')
 
@@ -33,13 +33,23 @@ describe('ids de pestañas', () => {
     expect(idsDeclarados('Errores.jsx').sort()).toEqual(Object.keys(PESTANAS_ERRORES).sort())
   })
 
+  // Rankings no declara sus pestañas con `{ id: … }` sino como opciones de un
+  // Segmented (`{ value: … }`), y solo las cinco de la sección llevan `label`
+  // con "Quién"/"Qué" — los otros Segmented de la página son ordenaciones.
+  it('PESTANAS_RANKINGS coincide con las pestañas de Rankings', () => {
+    const src = readFileSync(join(SRC, 'pages', 'Rankings.jsx'), 'utf8')
+    const ids = [...src.matchAll(/\{\s*value:\s*'([^']+)',\s*label:\s*'(?:Quién|Qué)[^']*'\s*\}/g)]
+      .map((m) => m[1])
+    expect(ids.sort()).toEqual(Object.keys(PESTANAS_RANKINGS).sort())
+  })
+
   // La prueba que habría cazado el bug original: Noticias enlazaba a
   // `t=adiciontiempo`, que no existe, y el enlace abría "Contratos vencidos"
   // —la primera pestaña— sin ningún aviso. Recorre TODO el código en busca de
   // enlaces a una pestaña, venga de donde venga, y comprueba el id contra la
   // lista real de su ruta.
   it('todo enlace a una pestaña usa un id que existe', () => {
-    const validos = { alertas: PESTANAS_ALERTAS, errores: PESTANAS_ERRORES }
+    const validos = { alertas: PESTANAS_ALERTAS, errores: PESTANAS_ERRORES, rankings: PESTANAS_RANKINGS }
     const malos = []
 
     for (const ruta of archivosJsx(SRC)) {
@@ -47,8 +57,8 @@ describe('ids de pestañas', () => {
       // Dos formas de enlazar en el código: la URL literal (`/alertas?t=obra`)
       // y el ayudante de Noticias (`conFiltros('/alertas', 'obra', …)`).
       const patrones = [
-        /\/(alertas|errores)\?t=([a-z]+)/g,
-        /conFiltros\(\s*'\/(alertas|errores)'\s*,\s*'([a-z]+)'/g,
+        /\/(alertas|errores|rankings)\?t=([a-z]+)/g,
+        /conFiltros\(\s*'\/(alertas|errores|rankings)'\s*,\s*'([a-z]+)'/g,
       ]
       for (const patron of patrones) {
         for (const [todo, seccion, id] of src.matchAll(patron)) {

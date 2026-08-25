@@ -139,6 +139,15 @@ const TERMINOS = [
       'El Sistema Electrónico de Contratación Pública: la plataforma donde las entidades del Estado deben publicar sus contratos. Todos los datos de este sitio salen de ahí.',
     ojo: 'quien registra es la entidad contratante, no el contratista. Por eso los errores de registro se le atribuyen a ella, y no a quien recibió el contrato.',
   },
+  // Vocabulario de esta plataforma, no de SECOP: define cómo se reparten sus
+  // dos secciones de listas. Se añade porque la palabra "actores" quedó en el
+  // nombre de Rankings, y fuera del mundo del dato no es de uso corriente.
+  {
+    termino: 'Actores',
+    definicion:
+      'Las dos partes que firman un contrato: la entidad que contrata y el contratista que recibe. En esta plataforma la palabra separa dos formas de mirar lo mismo: Rankings (actores) compara a quienes contratan y reciben, mientras Alertas (contratos) lista contratos concretos, uno por uno.',
+    ojo: 'un mismo hecho aparece en las dos, con lentes distintos. Las prórrogas, por ejemplo: en Rankings ves qué contratista prorroga más seguido; en Alertas, cuáles son los contratos que más se alargaron. Ninguna repite a la otra.',
+  },
 ]
 
 export function Aprender() {
