@@ -7,6 +7,7 @@ import { Glosario } from '../components/ui/Glosario'
 import { MODALIDADES_GLOSARIO, TIPOS_GLOSARIO } from '../lib/glosario'
 import { ListaBarra } from '../components/ui/ListaBarra'
 import { Seccion } from '../components/ui/Seccion'
+import { PESTANAS_RANKINGS } from '../lib/pestanas'
 
 /* ---------------------------------------------------------------------------
    Sección educativa.
@@ -41,7 +42,7 @@ const ETAPAS = [
     bien: 'El plazo y el valor se calculan sobre estudios previos reales, y aguantan hasta el final sin cambios grandes.',
     falla:
       'Un plazo irreal o un presupuesto corto obligan a prorrogar y a adicionar después, cuando ya no hay competencia que discipline el precio.',
-    enlace: { to: '/rankings', texto: 'Ver quién prorroga más sus contratos' },
+    enlace: { to: `/rankings?t=${PESTANAS_RANKINGS.ejecucion}`, texto: 'Ver quién prorroga más sus contratos' },
   },
   {
     titulo: 'Reserva del presupuesto',

@@ -32,8 +32,12 @@ const PASOS = [
       <ul className="space-y-1.5">
         <li><strong className="text-textPrimary">Panorama</strong>: el resumen del país —y de tu municipio, si eliges uno arriba.</li>
         <li><strong className="text-textPrimary">Noticias</strong>: las señales del día, ya explicadas.</li>
-        <li><strong className="text-textPrimary">Alertas</strong>: patrones de ejecución, como mora, prórrogas y obras paradas.</li>
-        <li><strong className="text-textPrimary">Rankings</strong>: quién recibe y quién entrega más recursos, en qué se contrata y cómo se ejecuta.</li>
+        {/* Las dos van seguidas y con el mismo aspecto de tabla, así que la
+            guía dice de qué está hecha cada una: en Alertas cada fila es un
+            contrato, en Rankings cada fila es un actor. Un mismo tema
+            —prórrogas— vive en las dos con lentes distintos. */}
+        <li><strong className="text-textPrimary">Alertas (contratos)</strong>: contratos concretos que merecen revisión, uno por uno: vencidos, obras paradas, prórrogas y adiciones.</li>
+        <li><strong className="text-textPrimary">Rankings (actores)</strong>: quién destaca en el conjunto: quién recibe más, quién más prorroga, quién entrega, quién más adiciona y en qué se contrata.</li>
       </ul>
     ),
   },

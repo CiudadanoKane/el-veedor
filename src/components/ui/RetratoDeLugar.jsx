@@ -91,8 +91,10 @@ export function RetratoDeLugar({ lugar, generales }) {
         <div className="grid gap-3 sm:grid-cols-2 max-w-3xl">
           {[
             ['/noticias', 'Noticias', 'Lo que la plataforma observó hoy en este ámbito.'],
-            ['/alertas', 'Alertas', 'Contratos vencidos, obras paralizadas y adiciones.'],
-            ['/rankings', 'Rankings', 'Quién recibe, quién entrega y qué se contrata.'],
+            // El texto de cada una dice su unidad, no solo su tema: son las dos
+            // que se confunden entre sí, y aquí van pegadas una debajo de otra.
+            ['/alertas', 'Alertas (contratos)', 'Contratos concretos que revisar: vencidos, obras paradas y adiciones.'],
+            ['/rankings', 'Rankings (actores)', 'Quién destaca: quién recibe, quién más prorroga, quién entrega y quién más adiciona.'],
             ['/errores', 'Errores en SECOP', 'Qué tan bien registran los datos las entidades de aquí.'],
           ].map(([ruta, titulo, texto]) => (
             <Link

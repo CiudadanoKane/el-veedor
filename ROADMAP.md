@@ -609,7 +609,9 @@ SoQL devuelve el valor alfabéticamente último, no el más frecuente. La Previs
 (6 contratos) y como persona natural, porque 4 registros dicen `Otro` y eso gana
 sobre `NIT` al ordenar. Ver `valorMasFrecuente` en `src/lib/identidad.js`.
 
-**Índice de ejecución del contratista** ✅ — pestaña "Cómo ejecutan" en Rankings.
+**Índice de ejecución del contratista** ✅ — pestaña "Quién más prorroga" en
+Rankings (se llamó "Cómo ejecutan" hasta sep 2026; se renombró a lo que su
+propio titular ya decía, ver el deslinde Alertas/Rankings más abajo).
 
 Mide **prórrogas de plazo**, y esa elección salió de comparar las dos
 alternativas con datos antes de construir:
