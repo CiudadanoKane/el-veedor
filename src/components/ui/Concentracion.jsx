@@ -1,5 +1,5 @@
 import { QueryState } from './QueryState'
-import { Methodology } from './Methodology'
+import { Seccion } from './Seccion'
 import { useConcentracion } from '../../hooks/useConcentracion'
 import { formatPct, formatCOPCorto } from '../../lib/formatters'
 
@@ -50,25 +50,17 @@ export function Concentracion({ filters = {}, contratistas, tieneSecop1 }) {
   const ambito = ambitoDe(filters)
 
   return (
-    <section className="border-t-2 border-textPrimary pt-5 pb-8 mb-2">
-      <div className="min-w-0">
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
-            Concentración: en cuántas manos está el dinero
-          </h2>
-          {tieneSecop1 && (
-            <span className="text-micro uppercase tracking-label text-textSecondary/70 font-medium whitespace-nowrap">
-              solo SECOP II
-            </span>
-          )}
-        </div>
-        <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
+    <Seccion
+      titulo="Concentración: en cuántas manos está el dinero"
+      etiqueta={tieneSecop1 ? 'solo SECOP II' : null}
+      intro={
+        <>
           Qué tan pocos contratistas acaparan el valor contratado. Cuanto más corta sea la barra de
           contratistas frente a la de valor, en menos manos está la plata.
-        </p>
-      </div>
-
-      <Methodology>
+        </>
+      }
+      metodologia={
+        <>
         Ordena a los contratistas por el <strong>valor total que se les ha contratado</strong> y
         cuenta cuántos de los más grandes hacen falta para acumular la mitad del valor; ese grupo,
         sobre el total de contratistas del ámbito, es el porcentaje que se muestra. El total de
@@ -86,9 +78,10 @@ export function Concentracion({ filters = {}, contratistas, tieneSecop1 }) {
         país la contratación se ve <strong>difusa</strong> (más de un millón de contratistas,
         muchos personas naturales que prestan servicios); dentro de un departamento o una ciudad la
         concentración es mucho mayor.
-      </Methodology>
-
-      <div className="mt-6">
+        </>
+      }
+    >
+      <div>
         <QueryState query={query} empty="Sin datos para este ámbito.">
           {(d) => {
             if (!d.total || !d.topFetched) {
@@ -144,7 +137,11 @@ export function Concentracion({ filters = {}, contratistas, tieneSecop1 }) {
                   />
                 )}
 
-                <p className="mt-5 text-nota text-textSecondary">
+                {/* max-w-2xl: sin tope esta nota corría a todo el ancho de la
+                    página —170 caracteres por línea, más del doble de los 60-75
+                    que se leen cómodo—. Es el mismo tope que ya usa la entrada
+                    de cada sección. */}
+                <p className="mt-5 text-nota text-textSecondary max-w-2xl">
                   Valor total contratado {ambito}: {formatCOPCorto(d.total)} (solo SECOP II).
                   {tieneSecop1
                     ? ' Es menor que la tarjeta «Valor contratado» de arriba, que suma además SECOP I.'
@@ -155,6 +152,6 @@ export function Concentracion({ filters = {}, contratistas, tieneSecop1 }) {
           }}
         </QueryState>
       </div>
-    </section>
+    </Seccion>
   )
 }

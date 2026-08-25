@@ -8,6 +8,7 @@ import { Methodology } from './Methodology'
 import { useEvolucion, PERIODOS, METRICAS } from '../../hooks/useEvolucion'
 import { formatCOP, formatCOPFull, formatPct } from '../../lib/formatters'
 import { CHART, tooltipProps } from '../../lib/chartTheme'
+import { Seccion } from './Seccion'
 
 // Formatea según el tipo de métrica: conteo, dinero o porcentaje.
 function formatear(valor, tipo, completo = false) {
@@ -49,26 +50,24 @@ export function EvolucionMensual({ filters }) {
   const tipo = METRICAS[metrica].tipo
 
   return (
-    <section className="border-t-2 border-textPrimary pt-5 pb-8 mb-2">
-      <div className="flex items-start justify-between gap-6 flex-wrap">
-        <div className="min-w-0">
-          <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
-            Evolución de la contratación
-          </h2>
-          <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
-            Cómo cambia lo que contrata el Estado a lo largo del tiempo. Cada punto es
-            lo firmado en ese {porAnio ? 'año' : 'mes'}, no un acumulado. Se muestran las
-            dos fuentes por separado: <strong>SECOP II</strong> y <strong>SECOP I</strong>.
-          </p>
-        </div>
+    <Seccion
+      titulo="Evolución de la contratación"
+      intro={
+        <>
+          Cómo cambia lo que contrata el Estado a lo largo del tiempo. Cada punto es
+          lo firmado en ese {porAnio ? 'año' : 'mes'}, no un acumulado. Se muestran las
+          dos fuentes por separado: <strong>SECOP II</strong> y <strong>SECOP I</strong>.
+        </>
+      }
+      control={
         <Segmented
           value={periodo}
           onChange={setPeriodo}
           options={Object.entries(PERIODOS).map(([v, p]) => ({ value: v, label: p.label }))}
         />
-      </div>
-
-      <div className="mt-4">
+      }
+    >
+      <div>
         <Segmented
           value={metrica}
           onChange={setMetrica}
@@ -187,6 +186,6 @@ export function EvolucionMensual({ filters }) {
                   : 'Los últimos meses pueden estar incompletos: las entidades tardan en registrar.'}
         </p>
       </div>
-    </section>
+    </Seccion>
   )
 }

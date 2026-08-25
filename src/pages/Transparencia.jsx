@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { PageHeader } from '../components/layout/Layout'
+import { Seccion } from '../components/ui/Seccion'
 
 /* ---------------------------------------------------------------------------
    Sección de transparencia metodológica.
@@ -12,14 +13,11 @@ import { PageHeader } from '../components/layout/Layout'
 
 function Bloque({ id, titulo, children }) {
   return (
-    <section id={id} className="border-t-2 border-textPrimary pt-5 pb-9 scroll-mt-8">
-      <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight mb-4">
-        {titulo}
-      </h2>
+    <Seccion id={id} titulo={titulo}>
       <div className="space-y-4 text-lectura leading-relaxed text-textPrimary max-w-3xl">
         {children}
       </div>
-    </section>
+    </Seccion>
   )
 }
 

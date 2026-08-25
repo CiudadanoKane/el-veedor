@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { PageHeader } from '../components/layout/Layout'
 import { StatCard } from '../components/ui/StatCard'
 import { QueryState } from '../components/ui/QueryState'
-import { Methodology } from '../components/ui/Methodology'
 import { ListaBarra } from '../components/ui/ListaBarra'
 import { Segmented } from '../components/ui/Segmented'
 import { EvolucionMensual } from '../components/ui/EvolucionMensual'
@@ -19,6 +18,7 @@ import { useDashboardStats } from '../hooks/useDashboard'
 import { useColumnas } from '../hooks/useColumnas'
 import { formatCOP, formatCOPCorto, formatCOPFull, pct, formatPct } from '../lib/formatters'
 import { SECTOR_COLORS } from '../lib/chartTheme'
+import { Seccion, Subseccion } from '../components/ui/Seccion'
 
 // Bajo el total histórico, cuánto está realmente vivo. Dos cortes: "En
 // ejecución" (el estado activo, aunque muchos ya tengan el plazo vencido) y su
@@ -56,22 +56,14 @@ function SubVivo({ data, tipo, nota }) {
 }
 
 // Panel que se despliega bajo la fila de la cifra que lo originó.
-function Detalle({ titulo, intro, metodologia, children }) {
-  return (
-    <section className="border-t-2 border-textPrimary pt-5 pb-2">
-      <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
-        {titulo}
-      </h2>
-      {intro && (
-        <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
-          {intro}
-        </p>
-      )}
-      {metodologia && <Methodology>{metodologia}</Methodology>}
-      <div className="mt-5">{children}</div>
-    </section>
-  )
-}
+//
+// Es un SEGUNDO nivel, no un hermano de las secciones de la página: se abre
+// desde una tarjeta y habla de esa tarjeta. Con el tratamiento de sección
+// —regla gruesa y titular grande— competía de igual a igual con "Qué conviene
+// mirar", que es quien lo contiene. Subseccion le da regla fina, titular un
+// escalón abajo y un h3 real (que además arregla el esquema del documento:
+// antes anidaba un h2 dentro de otro h2).
+const Detalle = Subseccion
 
 // Desglose que se puede leer por cantidad de contratos o por cuantía. Cada
 // item trae { clave, label, n, valor, nota? }. Reordena en el cliente según la
@@ -821,23 +813,16 @@ export function Dashboard() {
       {/* Cifras clave: cada una es la puerta de entrada a su detalle. El alcance
           de fuente (SECOP II + I / solo SECOP II) viaja rotulado en cada tarjeta,
           no en un banner arriba. */}
-      <section className="border-t-2 border-textPrimary pt-5 pb-8">
-        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
-          El tamaño de lo que se contrata
-        </h2>
-        <div className="mt-5">{bloqueCifras(tarjetasTamano, { 'data-tour': 'cifras' })}</div>
-      </section>
+      <Seccion titulo="El tamaño de lo que se contrata">
+        {bloqueCifras(tarjetasTamano, { 'data-tour': 'cifras' })}
+      </Seccion>
 
-      <section className="border-t-2 border-textPrimary pt-5 pb-8">
-        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
-          Qué conviene mirar{hayLugar ? ' aquí' : ''}
-        </h2>
-        <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
-          Cuatro lecturas que suelen decir algo. Ninguna es una acusación: son
-          proporciones que, cuando se salen de lo corriente, merecen que alguien las revise.
-        </p>
-        <div className="mt-5">{bloqueCifras(tarjetasSenales)}</div>
-      </section>
+      <Seccion
+        titulo={`Qué conviene mirar${hayLugar ? ' aquí' : ''}`}
+        intro="Cuatro lecturas que suelen decir algo. Ninguna es una acusación: son proporciones que, cuando se salen de lo corriente, merecen que alguien las revise."
+      >
+        {bloqueCifras(tarjetasSenales)}
+      </Seccion>
 
       {/* Los gráficos que aportan lo que una lista no puede: concentración,
           geografía y tiempo */}

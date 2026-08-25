@@ -6,6 +6,7 @@ import { LineaTiempo } from '../components/ui/LineaTiempo'
 import { Glosario } from '../components/ui/Glosario'
 import { MODALIDADES_GLOSARIO, TIPOS_GLOSARIO } from '../lib/glosario'
 import { ListaBarra } from '../components/ui/ListaBarra'
+import { Seccion } from '../components/ui/Seccion'
 
 /* ---------------------------------------------------------------------------
    Sección educativa.
@@ -17,17 +18,9 @@ import { ListaBarra } from '../components/ui/ListaBarra'
 
 function Bloque({ id, titulo, intro, children }) {
   return (
-    <section id={id} className="border-t-2 border-textPrimary pt-5 pb-10 scroll-mt-8">
-      <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
-        {titulo}
-      </h2>
-      {intro && (
-        <p className="text-lectura text-textSecondary font-light mt-3 max-w-2xl leading-relaxed">
-          {intro}
-        </p>
-      )}
-      <div className="mt-7">{children}</div>
-    </section>
+    <Seccion id={id} titulo={titulo} intro={intro}>
+      {children}
+    </Seccion>
   )
 }
 

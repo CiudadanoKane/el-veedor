@@ -12,6 +12,7 @@ import {
   claveCiudad,
 } from '../../lib/poblacionCiudades'
 import { formatPct, formatCOP, formatCOPCorto } from '../../lib/formatters'
+import { Seccion } from './Seccion'
 
 const N = (x) => (x ?? 0).toLocaleString('es-CO')
 // Una tasa sobre una muestra menor a esto no es representativa; la ciudad no
@@ -193,19 +194,17 @@ export function ComparacionCiudades() {
   })
 
   return (
-    <section className="border-t-2 border-textPrimary pt-5 pb-8 mb-2">
-      <div className="min-w-0">
-        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
-          Comparación de ciudades
-        </h2>
-        <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
+    <Seccion
+      titulo="Comparación de ciudades"
+      intro={
+        <>
           Las ciudades más pobladas del país, comparadas por una misma métrica. En{' '}
           <strong>per cápita</strong> —por habitante— aparece lo que el total esconde: una
           capital pequeña puede gastar por persona mucho más que Bogotá.
-        </p>
-      </div>
-
-      <div className="mt-4">
+        </>
+      }
+    >
+      <div>
         <Segmented value={metrica} onChange={setMetrica} options={OPCIONES} />
       </div>
 
@@ -516,6 +515,6 @@ export function ComparacionCiudades() {
           }}
         </QueryState>
       </div>
-    </section>
+    </Seccion>
   )
 }

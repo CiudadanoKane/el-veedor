@@ -11,6 +11,7 @@ import { normalizarDepto } from '../../lib/departamentos'
 import { poblacionDe, POBLACION_ANIO } from '../../lib/poblacion'
 import { CHART, SCALE_SENAL, SCALE_NEUTRO, colorEnEscala } from '../../lib/chartTheme'
 import { formatPct, formatCOP, formatCOPCorto, formatDate } from '../../lib/formatters'
+import { Seccion } from './Seccion'
 
 const GEO = '/departamentos-colombia.geojson'
 const N = (x) => (x ?? 0).toLocaleString('es-CO')
@@ -279,19 +280,11 @@ export function MapaColombia() {
     .sort((a, b) => b.v - a.v)
 
   return (
-    <section className="border-t-2 border-textPrimary pt-5 pb-8 mb-2">
-      <div className="flex items-start justify-between gap-6 flex-wrap">
-        <div className="min-w-0">
-          <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
-            {registro.label} por departamento
-          </h2>
-          <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
-            {registro.descripcion}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4">
+    <Seccion
+      titulo={`${registro.label} por departamento`}
+      intro={registro.descripcion}
+    >
+      <div>
         <Segmented value={metrica} onChange={setMetrica} options={OPCIONES} />
       </div>
 
@@ -576,6 +569,6 @@ export function MapaColombia() {
           )}
         </div>
       </div>
-    </section>
+    </Seccion>
   )
 }

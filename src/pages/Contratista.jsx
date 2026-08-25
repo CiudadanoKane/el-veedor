@@ -11,22 +11,8 @@ import { usePerfilContratista } from '../hooks/usePerfilContratista'
 import { documentoVisible, etiquetaDocumento, esPersonaJuridica } from '../lib/identidad'
 import { formatCOP, formatDate, pct, formatPct } from '../lib/formatters'
 import { EnlaceEntidad } from '../components/ui/EnlacePerfil'
+import { Seccion } from '../components/ui/Seccion'
 
-function Seccion({ titulo, descripcion, children }) {
-  return (
-    <section className="border-t-2 border-textPrimary pt-5 pb-8">
-      <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
-        {titulo}
-      </h2>
-      {descripcion && (
-        <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
-          {descripcion}
-        </p>
-      )}
-      <div className="mt-5">{children}</div>
-    </section>
-  )
-}
 
 // Cuando el documento agrupa organizaciones distintas, decirlo antes que
 // cualquier cifra: todo lo que sigue está sumando cosas que no van juntas.
@@ -173,7 +159,7 @@ function Perfil({ perfil }) {
 
       <Seccion
         titulo="Con quién contrata"
-        descripcion={
+        intro={
           empresa && concentracion != null
             ? `Su principal contratante concentra el ${formatPct(concentracion)} del valor recibido.`
             : 'Entidades que le han contratado, por valor.'
@@ -204,7 +190,7 @@ function Perfil({ perfil }) {
 
       <Seccion
         titulo="Cómo se le adjudica"
-        descripcion="Modalidades por las que ha obtenido sus contratos, por cantidad."
+        intro="Modalidades por las que ha obtenido sus contratos, por cantidad."
       >
         <ListaBarra
           total={perfil.totalContratos}
@@ -220,7 +206,7 @@ function Perfil({ perfil }) {
       {perfil.porAnio.length > 1 && (
         <Seccion
           titulo="Evolución por año"
-          descripcion="Contratos firmados en cada año. No es un acumulado."
+          intro="Contratos firmados en cada año. No es un acumulado."
         >
           <ListaBarra
             items={perfil.porAnio.map((a) => ({
@@ -235,7 +221,7 @@ function Perfil({ perfil }) {
 
       <Seccion
         titulo="Contratos de mayor cuantía"
-        descripcion="Hasta 50 contratos, del más alto al más bajo."
+        intro="Hasta 50 contratos, del más alto al más bajo."
       >
         <DataTable
           columns={columns}

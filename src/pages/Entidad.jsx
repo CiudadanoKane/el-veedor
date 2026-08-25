@@ -11,22 +11,8 @@ import { usePerfilEntidad } from '../hooks/usePerfilEntidad'
 import { ERRORES, INCOMPLETOS } from '../hooks/useCalidadDatos'
 import { formatCOP, formatDate, pct, formatPct } from '../lib/formatters'
 import { EnlaceContratista } from '../components/ui/EnlacePerfil'
+import { Seccion } from '../components/ui/Seccion'
 
-function Seccion({ titulo, descripcion, children }) {
-  return (
-    <section className="border-t-2 border-textPrimary pt-5 pb-8">
-      <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
-        {titulo}
-      </h2>
-      {descripcion && (
-        <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
-          {descripcion}
-        </p>
-      )}
-      <div className="mt-5">{children}</div>
-    </section>
-  )
-}
 
 // Una tasa solo significa algo junto a la referencia nacional: 6% parece poco
 // hasta saber que la media del país es 0,36%.
@@ -163,7 +149,7 @@ function Perfil({ perfil }) {
 
       <Seccion
         titulo="Cómo registra su información"
-        descripcion="Qué tan completo y consistente queda el rastro público de lo que contrata."
+        intro="Qué tan completo y consistente queda el rastro público de lo que contrata."
       >
         <Methodology>
           <strong>Errores</strong> son contradicciones del propio dato: contratista sin
@@ -225,7 +211,7 @@ function Perfil({ perfil }) {
 
       <Seccion
         titulo="A quién contrata"
-        descripcion={
+        intro={
           concentracion != null
             ? `Su principal contratista concentra el ${formatPct(concentracion)} del valor comprometido.`
             : 'Contratistas por valor recibido.'
@@ -254,7 +240,7 @@ function Perfil({ perfil }) {
 
       <Seccion
         titulo="Cómo adjudica"
-        descripcion="Modalidades por las que entrega sus contratos, por cantidad."
+        intro="Modalidades por las que entrega sus contratos, por cantidad."
       >
         <ListaBarra
           total={perfil.totalContratos}
@@ -276,7 +262,7 @@ function Perfil({ perfil }) {
       {perfil.porAnio.length > 1 && (
         <Seccion
           titulo="Evolución por año"
-          descripcion="Contratos firmados en cada año. No es un acumulado."
+          intro="Contratos firmados en cada año. No es un acumulado."
         >
           <ListaBarra
             items={perfil.porAnio.map((a) => ({
@@ -291,7 +277,7 @@ function Perfil({ perfil }) {
 
       <Seccion
         titulo="Contratos de mayor cuantía"
-        descripcion="Hasta 50 contratos, del más alto al más bajo."
+        intro="Hasta 50 contratos, del más alto al más bajo."
       >
         <DataTable
           columns={columns}

@@ -5,6 +5,7 @@ import { EnlaceContratista } from './EnlacePerfil'
 import { useFilters } from '../../context/FiltersContext'
 import { useRankingContratistas } from '../../hooks/useRankings'
 import { formatCOP, formatCOPCorto } from '../../lib/formatters'
+import { Seccion } from './Seccion'
 
 // Lo que el Panorama añade cuando hay un departamento o municipio activo:
 // quién recibe el dinero ahí, y por dónde seguir revisando ese lugar.
@@ -26,16 +27,16 @@ export function RetratoDeLugar({ lugar, generales }) {
   return (
     <>
       {/* Quién recibe el dinero: la pregunta más directa de la veeduría. */}
-      <section className="border-t-2 border-textPrimary pt-5 pb-8">
-        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
-          Quién recibe el dinero
-        </h2>
-        <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
-          Los cinco contratistas con más valor contratado en {lugar}. Cada nombre lleva a su
-          perfil, con todo lo que ha firmado.
-        </p>
-
-        <div className="mt-5">
+      <Seccion
+        titulo="Quién recibe el dinero"
+        intro={
+          <>
+            Los cinco contratistas con más valor contratado en {lugar}. Cada nombre lleva a su
+            perfil, con todo lo que ha firmado.
+          </>
+        }
+      >
+        <div>
           <QueryState query={ranking} empty="Sin contratistas con datos en este ámbito.">
             {(filas) => {
               const top = filas.slice(0, 5)
@@ -83,14 +84,11 @@ export function RetratoDeLugar({ lugar, generales }) {
             }}
           </QueryState>
         </div>
-      </section>
+      </Seccion>
 
       {/* Salidas: la página resume, no reemplaza. */}
-      <section className="border-t-2 border-textPrimary pt-5 pb-4">
-        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
-          Seguir revisando {lugar}
-        </h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 max-w-3xl">
+      <Seccion titulo={`Seguir revisando ${lugar}`}>
+        <div className="grid gap-3 sm:grid-cols-2 max-w-3xl">
           {[
             ['/noticias', 'Noticias', 'Lo que la plataforma observó hoy en este ámbito.'],
             ['/alertas', 'Alertas', 'Contratos vencidos, obras paralizadas y adiciones.'],
@@ -109,7 +107,7 @@ export function RetratoDeLugar({ lugar, generales }) {
             </Link>
           ))}
         </div>
-      </section>
+      </Seccion>
     </>
   )
 }
