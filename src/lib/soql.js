@@ -154,8 +154,24 @@ const ESTADOS_NO_VIGENTES = [
 // → Valores implausibles", que los busca con `cuantiaImposibleSecop2()` y no
 // pasa por esta función.
 export function soloContratosValidos() {
+  return `${soloEstadosVigentes()} AND ${cuantiaPosibleSecop2()}`
+}
+
+// Solo la mitad de estados del filtro anterior, SIN el tope de cuantía.
+//
+// La usa el Índice por entidad de "Errores en SECOP", y es el único sitio donde
+// tiene sentido. Ese índice mide quién registra mal, así que descartar las
+// cuantías imposibles antes de contar lo dejaba ciego justo ante el peor
+// registro posible: la entidad que anotó un contrato de 31,6 billones cuando
+// pagó 31,6 millones no recibía ninguna penalización, porque su contrato
+// desaparecía del numerador Y del denominador. Medía la calidad de lo que ya
+// había pasado el filtro de calidad.
+//
+// Los estados sí se siguen excluyendo: un borrador no es un error de registro,
+// es un registro que todavía no ha terminado de escribirse.
+export function soloEstadosVigentes() {
   const lista = ESTADOS_NO_VIGENTES.map((e) => `'${esc(e)}'`).join(', ')
-  return `estado_contrato NOT IN (${lista}) AND ${cuantiaPosibleSecop2()}`
+  return `estado_contrato NOT IN (${lista})`
 }
 
 // Cláusula de estado para el buscador, donde el ciudadano puede elegir uno o

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient.js'
-import { DATASETS, ESTADO_ACTIVO } from '../lib/constants.js'
-import { whereFromFilters, buildWhere, soloContratosValidos, haceDias } from '../lib/soql.js'
+import { DATASETS, ESTADO_ACTIVO, CUANTIA_IMPOSIBLE } from '../lib/constants.js'
+import { whereFromFilters, buildWhere, soloEstadosVigentes, haceDias } from '../lib/soql.js'
 import { documentoIdentifica } from '../lib/identidad.js'
 import { fetchOwnApi } from '../lib/apiClient.js'
 
@@ -44,6 +44,52 @@ export const ERRORES = {
     campo: 'sobrepago',
     pestana: null,
     condicion: `(valor_del_contrato > 0 AND valor_pagado - valor_del_contrato > 1000000)`,
+  },
+  // --- Las cuatro de abajo se añadieron en sep 2026 -------------------------
+  //
+  // Salieron de una pregunta del usuario: por qué hay contratos que reportan
+  // $0 pagado y $0 pendiente a la vez. Al medirlo aparecieron cuatro clases de
+  // defecto que la plataforma YA sabía detectar en otras partes pero que este
+  // índice no contaba, así que una entidad podía cometerlas sin coste alguno
+  // en su tasa. Cuentan 1.339 casos frente a los ~19.500 que ya medía: el
+  // índice crece ~7%, y el 92% de ese crecimiento es la primera.
+
+  // El contrato arrancó y tiene presupuesto, pero no reporta ni un peso pagado
+  // ni un peso pendiente de ejecutar. Se exige que la ejecución haya empezado:
+  // en un contrato aprobado y aún sin iniciar, que no haya nada pendiente de
+  // ejecutar no es una contradicción sino lo normal. Medido: 1.234 casos.
+  sinPagoNiPendiente: {
+    label: 'Arrancó pero no reporta ni pago ni pendiente',
+    campo: 'sin_pago_ni_pendiente',
+    pestana: null,
+    condicion: `(estado_contrato IN ('En ejecución', 'Modificado', 'terminado', 'Cerrado')
+      AND valor_del_contrato > 0
+      AND (valor_pagado IS NULL OR valor_pagado = 0)
+      AND (valor_pendiente_de_ejecucion IS NULL OR valor_pendiente_de_ejecucion = 0))`,
+  },
+  // La cuantía que el resto de la plataforma descarta por imposible. Aquí SÍ se
+  // cuenta —ver soloEstadosVigentes en soql.js—: es el peor error de registro
+  // que existe y era justamente el único invisible para este índice.
+  cuantiaImposible: {
+    label: 'Cuantía imposible para un solo contrato',
+    campo: 'cuantia_imposible',
+    pestana: 'digitacion',
+    condicion: `valor_del_contrato >= ${CUANTIA_IMPOSIBLE}`,
+  },
+  // Diez años añadidos a un plazo. La cota ya se usaba para sanear las listas
+  // de adiciones (ver useAdiciones.js); aquí se le cobra a quien lo escribió.
+  plazoImposible: {
+    label: 'Más de 10 años añadidos al plazo',
+    campo: 'plazo_imposible',
+    pestana: null,
+    condicion: `dias_adicionados > 3650`,
+  },
+  // El reverso del sobrepago: no hay contrato que pagar, pero hay pago.
+  pagoSinContrato: {
+    label: 'Registra pagos con el contrato en $0',
+    campo: 'pago_sin_contrato',
+    pestana: null,
+    condicion: `(valor_del_contrato <= 0 AND valor_pagado > 0)`,
   },
 }
 
@@ -101,7 +147,7 @@ const tasa = (parte, total) => (total ? (parte / total) * 100 : 0)
 // combinaciones no cacheadas) como por /api/errores-indice.js en producción.
 export async function calidadDatosQuery(filters = {}, extremo = 'peor', metrica = 'errores') {
   const activa = METRICAS[metrica] || METRICAS.errores
-  const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
+  const where = buildWhere(whereFromFilters(filters, [soloEstadosVigentes()]))
 
   const columnas = [...Object.values(ERRORES), ...Object.values(INCOMPLETOS)]
     .map((d) => `sum(case(${d.condicion}, 1, true, 0)) as ${d.campo}`)

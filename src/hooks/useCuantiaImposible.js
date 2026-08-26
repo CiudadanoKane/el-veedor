@@ -19,9 +19,14 @@ const DS1 = DATASETS.PROCESOS_SECOP1
 //
 // Es la contraparte del saneamiento de los rankings: lo que allá se excluye,
 // acá se muestra, porque la basura misma es evidencia de cómo está el registro.
-// Se buscan en las dos fuentes; en la práctica hoy solo SECOP I trae casos
-// (verificado jul 2026: SECOP I 2, SECOP II 0), pero la regla es la misma para
-// ambas y así queda cubierto si aparece uno nuevo.
+// Se buscan en las dos fuentes.
+//
+// Ojo con dar por buena una medición vieja: hasta sep 2026 este comentario
+// decía "en la práctica hoy solo SECOP I trae casos (verificado jul 2026:
+// SECOP I 2, SECOP II 0)". Al volver a medirlo, SECOP II tenía 33. El dato no
+// era falso cuando se escribió; envejeció, que en una fuente que crece a
+// diario es lo normal. Las afirmaciones sobre cuántos casos hay se vuelven a
+// comprobar, no se heredan.
 export function useCuantiaImposible(filters = {}) {
   return useQuery({
     queryKey: ['errores', 'cuantia-imposible', filters],
