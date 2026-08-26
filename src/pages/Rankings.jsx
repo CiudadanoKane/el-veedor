@@ -15,10 +15,11 @@ import {
   useAdicionesPrecalculadas, useAdicionesPorAmbito, claveAmbitoAdiciones,
 } from '../hooks/useAdicionesPrecalculadas'
 import { useCategorias } from '../hooks/useCategorias'
+import { useCalidadDeEntidades, UMBRAL_CONTRATOS } from '../hooks/useCalidadDatos'
 import { formatCOP, formatCOPFull, formatDate, formatPct, pct } from '../lib/formatters'
 import { CHART, tooltipProps } from '../lib/chartTheme'
 import { documentoVisible, etiquetaDocumento, esPersonaJuridica } from '../lib/identidad'
-import { PESTANAS_ALERTAS, PESTANAS_RANKINGS } from '../lib/pestanas'
+import { PESTANAS_ALERTAS, PESTANAS_RANKINGS, PESTANAS_ERRORES } from '../lib/pestanas'
 
 // Encabezado de sección con su control (orden, o el toggle entidad/contratista)
 // justo al lado del título, a la izquierda. Antes iba alineado a la derecha con
@@ -207,6 +208,22 @@ function RankingEntidades({ filters }) {
   const esSecop1 = fuente === 'secop1'
   const query = useRankingEntidades(filters, fuente)
 
+  // Calidad del registro de las entidades que esta tabla ya está mostrando.
+  //
+  // Existe porque quien registra mal vivía escondido: el índice que lo mide es
+  // la primera pestaña de "Errores en SECOP", una sección a la que se llega
+  // mucho menos que a Rankings, y el usuario que la pidió no sabía que ya
+  // estaba. En vez de mover la sección, la señal viene a donde la gente ya
+  // mira —y de paso responde en el mismo renglón la pregunta de si esa cifra
+  // de la izquierda es fiable—.
+  //
+  // Solo SECOP II: las condiciones de error están escritas contra sus campos.
+  const nombres = useMemo(
+    () => (esSecop1 ? [] : (query.data ?? []).map((r) => r.entidad)),
+    [esSecop1, query.data],
+  )
+  const calidad = useCalidadDeEntidades(nombres)
+
   const columns = [
     { key: 'rank', header: '#', className: 'text-textSecondary tabular-nums', render: (r) => r._rank },
     {
@@ -242,6 +259,41 @@ function RankingEntidades({ filters }) {
     ...(esSecop1
       ? []
       : [{ key: 'proveedores', header: 'Proveedores', className: 'text-right tabular-nums' }]),
+    ...(esSecop1
+      ? []
+      : [{
+          key: 'calidad',
+          header: 'Errores de registro',
+          className: 'text-right tabular-nums',
+          render: (r) => {
+            const c = calidad.data?.get(r.entidad)
+            if (!c) {
+              return <span className="text-textSecondary">{calidad.isLoading ? '…' : '—'}</span>
+            }
+            // Con poco volumen no se publica la tasa: "1 de 3" da 33% y no
+            // significa nada. Mismo umbral que el índice (UMBRAL_CONTRATOS).
+            if (!c.suficiente) {
+              return (
+                <span className="text-textSecondary" title="Muy pocos contratos para una tasa fiable">
+                  —
+                </span>
+              )
+            }
+            // El ámbar marca el doble de la tasa nacional (0,38%) hacia
+            // arriba. No es una nota ni un veredicto: solo dice dónde conviene
+            // leer la cifra de al lado con más cuidado.
+            const alto = c.tasa >= 0.76
+            return (
+              <Link
+                to={`/errores?t=${PESTANAS_ERRORES.indice}`}
+                title={`${c.errores.toLocaleString('es-CO')} de ${c.total.toLocaleString('es-CO')} contratos con algún error de registro`}
+                className={alto ? 'text-warning font-medium enlace-sutil' : 'text-textSecondary enlace-sutil'}
+              >
+                {formatPct(c.tasa, 2)}
+              </Link>
+            )
+          },
+        }]),
   ]
 
   return (
@@ -257,6 +309,35 @@ function RankingEntidades({ filters }) {
         contratación. Top 30 por valor comprometido. A diferencia de los contratistas,
         aquí el NIT se muestra completo siempre: son entidades públicas manejando
         recursos públicos.
+        <br />
+        <br />
+        <strong>Errores de registro</strong> es la proporción de los contratos de esa
+        entidad —en todo el país, no solo los del top— en los que el dato se contradice a
+        sí mismo: sin contratista identificado, fecha de fin anterior al inicio, en $0 con
+        presupuesto comprometido, pagado por encima de lo contratado, cuantía imposible,
+        más de diez años añadidos al plazo, o arrancado sin reportar ni pago ni pendiente.
+        Es la misma medida del <strong>Índice por entidad</strong> de Errores en SECOP, y
+        el porcentaje enlaza allá. Se marca en ámbar por encima del doble de la tasa
+        nacional (0,38%), y se omite en entidades con menos de {UMBRAL_CONTRATOS} contratos,
+        donde una tasa no significa nada.
+        <br />
+        <br />
+        Va aquí y no solo en su sección porque <strong>una cifra de la izquierda vale lo
+        que valga el registro que la produjo</strong>: una entidad puede encabezar por
+        valor contratado justamente porque escribió mal un número. La columna no acusa de
+        nada —registrar mal no es contratar mal— pero dice dónde conviene abrir el detalle
+        antes de sacar conclusiones.
+        <br />
+        <br />
+        <strong>Lo que esta columna todavía NO detecta.</strong> Un contrato con ceros de
+        más pero por debajo del tope de cuantía imposible no cuenta como error, así que
+        una entidad puede encabezar este ranking <em>por culpa</em> de un dato malo y aun
+        así aparecer con una tasa baja. Pasa hoy con la primera fila: su contrato mayor
+        registra un valor un millón de veces superior a lo que efectivamente pagó, y esa
+        contradicción no está entre las categorías que se cuentan. Detectarla exige
+        comparar lo registrado contra lo pagado, que es un cambio aparte y pendiente. Se
+        dice aquí en vez de callarlo porque la alternativa —una tasa baja que parece un
+        certificado de limpieza— es peor que no tener columna.
       </Methodology>
 
       <div className="mt-4">

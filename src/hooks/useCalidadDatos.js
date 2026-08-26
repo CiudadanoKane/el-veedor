@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient.js'
 import { DATASETS, ESTADO_ACTIVO, CUANTIA_IMPOSIBLE } from '../lib/constants.js'
-import { whereFromFilters, buildWhere, soloEstadosVigentes, haceDias } from '../lib/soql.js'
+import { whereFromFilters, buildWhere, soloEstadosVigentes, haceDias, esc } from '../lib/soql.js'
 import { documentoIdentifica } from '../lib/identidad.js'
 import { fetchOwnApi } from '../lib/apiClient.js'
 
@@ -252,4 +252,50 @@ export function useCalidadDatos(filters = {}, extremo = 'peor', metrica = 'error
   })
 
   return usarCache ? cache : directo
+}
+
+// Tasa de error de UN CONJUNTO CONCRETO de entidades, para poder mostrarla al
+// lado de ellas fuera de esta sección.
+//
+// El índice de arriba devuelve las 25 PEORES, que casi nunca son las que
+// aparecen en un ranking por valor —justo el problema: quien registra mal vive
+// en una pestaña que nadie visita, mientras el ranking que todos miran no dice
+// nada de la fiabilidad de sus cifras—. Esta consulta va al revés: recibe los
+// nombres que ya está mostrando otra tabla y trae su calidad.
+//
+// Medido: 4,1 s para 30 entidades. Va aparte de la consulta del ranking a
+// propósito, para que la tabla salga enseguida y la columna se rellene después
+// en vez de retrasarlo todo.
+export function useCalidadDeEntidades(nombres = []) {
+  // Ordenados: la query key no debe cambiar porque el ranking venga en otro
+  // orden, si el conjunto de entidades es el mismo.
+  const clave = [...new Set(nombres.filter(Boolean))].sort()
+  return useQuery({
+    queryKey: ['calidad', 'de-entidades', clave],
+    enabled: clave.length > 0,
+    staleTime: 30 * 60 * 1000,
+    queryFn: async () => {
+      const lista = clave.map((n) => `'${esc(n)}'`).join(', ')
+      const rows = await socrataQuery(
+        DS,
+        `SELECT nombre_entidad, count(id_contrato) as n, ${SUMA_ERRORES} as errores
+         WHERE ${soloEstadosVigentes()} AND nombre_entidad IN (${lista})
+         GROUP BY nombre_entidad LIMIT ${clave.length + 10}`,
+      )
+      const porEntidad = new Map()
+      for (const r of rows) {
+        const total = entero(r.n)
+        porEntidad.set(r.nombre_entidad, {
+          total,
+          errores: entero(r.errores),
+          tasa: tasa(entero(r.errores), total),
+          // Mismo umbral que el índice: una tasa sobre tres contratos no
+          // significa nada, y publicarla como si significara es peor que
+          // callarla. Ver UMBRAL_CONTRATOS.
+          suficiente: total >= UMBRAL_CONTRATOS,
+        })
+      }
+      return porEntidad
+    },
+  })
 }
