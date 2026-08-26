@@ -327,6 +327,64 @@ salen idénticas a las medidas por API antes de tocar el código. 12 pruebas
 de `adiciones.js` siguen en verde (no se tocó ese archivo, solo quién lo
 consume).
 
+### La cifra principal estaba inflada en 72 billones (sep 2026)
+
+Salió de una pregunta del usuario sobre por qué unos contratos reportan $0
+pagado y $0 pendiente a la vez, y de su sospecha de que los rankings tenían
+ruido de registros malos. La sospecha era correcta y el alcance, mayor de lo
+que parecía: **37 contratos concentraban el 19,6% del valor contratado del
+país**, y los mayores eran errores probados.
+
+**La prueba.** ICANH —un instituto de antropología— aparecía **primero del país
+con $63,4 billones**. Su contrato mayor: *"prestar sus servicios profesionales
+para registrar las operaciones derivadas de las actividades de la tesorería"*,
+registrado en **31.624.999.997.700** pesos, con **31.625.000** efectivamente
+pagados. La mediana de ICANH son 28,6 millones. Los mismos dígitos con la coma
+corrida seis lugares.
+
+**El método, sin umbrales arbitrarios.** El tope de cuantía imposible (50
+billones) es un cortafuegos, no un detector: deja pasar todo lo que quede
+debajo. En vez de bajarlo —y arriesgarse a excluir megaproyectos reales— se
+compara lo registrado contra **lo pagado**: si la razón es una potencia exacta
+de diez, es digitación. No pregunta "¿es demasiado grande?" sino "¿coincide con
+lo que se pagó?".
+
+La tolerancia es lo delicado. Un contrato pagado al 1% da razón 100 sin que
+nada esté mal, así que el 0,1% que usa `detectarErrorDigitacion` habría dado
+miles de falsos positivos. A **una millonésima** la razón solo acierta si los
+dígitos coinciden. Medido: entre la tolerancia laxa y la estricta hay 9
+contratos de diferencia, o sea que la estrechez no cuesta cobertura.
+
+**Resultado:** 65 contratos que declaraban **72,0 billones** habiendo pagado
+**8,8 mil millones**. El valor contratado del país pasa de 1.046 a **974
+billones** (solo SECOP II) y la tarjeta combinada del Panorama, de $1.778,9 B a
+**$1.708,8 B**. ICANH desaparece del top; ahora encabeza INVIAS con 40,4
+billones, cifra plausible para la agencia nacional de vías.
+
+**PROBADO Y DESCARTADO — contarlo también en el Índice por entidad.** La idea
+era cobrarle el error a quien lo escribió. Medido: +64 errores sobre 21.056
+(un 0,3% más) a cambio de subir la consulta nacional de 28,5 s a **45,3 s**,
+con el `maxDuration` de `/api/errores-indice` en 60 s y ese endpoint con un
+`FUNCTION_INVOCATION_TIMEOUT` en su historial. Quedarse a quince segundos del
+techo por un 0,3% es cambiar robustez por nada. La condición divide y hay que
+evaluarla fila a fila dentro de un `GROUP BY`; en un `WHERE` plano cuesta
++0,7 s.
+
+Y sobre todo: **una tasa no era la herramienta**. Tres contratos malos entre
+3.416 dan 0,35%, correctamente bajo. Lo que distorsionaba no era la proporción
+sino el total, y eso lo arregla la exclusión.
+
+**PENDIENTE, y es una deuda con el principio de la casa.** "No ocultamos,
+señalamos": las cuantías imposibles se excluyen de los agregados pero se
+listan en *Errores → Valores implausibles*. Estos 65 hoy se excluyen y **no se
+listan en ninguna parte**. Hasta que aparezcan ahí, la plataforma está
+descartando registros sin mostrarlos, que es justo lo que le reprocha a las
+cifras oficiales.
+
+**Límite declarado:** el método necesita un pago con el que comparar, y la
+mitad de los contratos no lo tiene. Un valor inflado que nunca reportó pagos
+pasa igual — sigue en el top el Centro de Salud de Sampués con 19,9 billones.
+
 ### CORREGIDO UNA SEXTA VEZ — la noticia no coincidía con la tabla que la corrobora (sep 2026)
 
 El usuario siguió el enlace de la primera noticia a nivel Colombia —sobre una

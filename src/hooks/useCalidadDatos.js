@@ -93,6 +93,27 @@ export const ERRORES = {
   },
 }
 
+// PROBADO Y DESCARTADO: contar aquí también los valores con ceros de más
+// frente a lo pagado (valorIncoherenteConElPago, soql.js).
+//
+// La idea era cobrarle a la entidad el peor error posible. Medido, la cuenta no
+// sale: añadía 64 errores sobre 21.056 —un 0,3% más de cobertura— y subía la
+// consulta nacional de 28,5 s a 45,3 s. El maxDuration de /api/errores-indice
+// es 60 s y este endpoint YA devolvió FUNCTION_INVOCATION_TIMEOUT una vez (ver
+// el comentario del ORDER BY más abajo); dejarlo a quince segundos del techo
+// por un 0,3% es cambiar robustez por nada.
+//
+// El motivo del coste: la condición divide valor entre pago y hay que
+// evaluarla fila a fila sobre los 5,5 millones dentro de un GROUP BY, mientras
+// que en un WHERE plano —como en soloContratosValidos— sale casi gratis
+// (+0,7 s medidos).
+//
+// Y sobre todo: la penalización que importaba ya ocurre sin esto. Al excluir
+// esos contratos del agregado, ICANH dejó de encabezar el ranking de valor del
+// país con 63,4 billones inventados. Una TASA no era la herramienta adecuada
+// —3 contratos malos entre 3.416 dan 0,35%, correctamente bajo—: lo que
+// distorsionaba no era la proporción, era el total.
+
 export const INCOMPLETOS = {
   cerradoSinPago: {
     label: 'Cerrado sin registrar ningún pago',

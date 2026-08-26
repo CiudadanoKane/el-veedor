@@ -154,7 +154,64 @@ const ESTADOS_NO_VIGENTES = [
 // → Valores implausibles", que los busca con `cuantiaImposibleSecop2()` y no
 // pasa por esta función.
 export function soloContratosValidos() {
-  return `${soloEstadosVigentes()} AND ${cuantiaPosibleSecop2()}`
+  return `${soloEstadosVigentes()} AND ${cuantiaPosibleSecop2()} AND ${valorCoherenteConElPago()}`
+}
+
+// Multiplicadores de un error de digitación: alguien tecleó el valor en
+// unidades equivocadas y le sobran ceros. Mismos que detectarErrorDigitacion
+// (adiciones.js), ampliados a 10^5 y 10^6 porque contra el pago aparecen casos
+// de esa magnitud.
+const MULTIPLICADORES_DIGITACION = [100, 1000, 10000, 100000, 1000000]
+
+// Tolerancia MUY estrecha, y esa estrechez es el corazón del filtro.
+//
+// Un contrato pagado al 1% da razón 100 sin que nada esté mal, así que la
+// tolerancia del 0,1% que usa detectarErrorDigitacion aquí produciría miles de
+// falsos positivos. A una millonésima, en cambio, la razón solo cae en el
+// blanco si los DÍGITOS coinciden y lo único que se movió fue la coma:
+// 4.085.800.000.000 contra 4.085.800.000. Medido: entre la tolerancia laxa y
+// esta solo hay 9 contratos de diferencia, así que la estrechez no cuesta
+// cobertura.
+const TOLERANCIA_DIGITACION = 1e-6
+
+// Contratos cuyo valor registrado es una potencia exacta de diez veces lo que
+// de verdad se pagó. No es un contrato grande: es el mismo número con ceros de
+// más.
+//
+// Se añadió en sep 2026, tras una pregunta del usuario sobre el ruido en los
+// rankings. El tope de cuantía (50 billones) es un cortafuegos, no un
+// detector: deja pasar todo lo que quede por debajo. Medido entonces: 37
+// contratos por encima de 1 billón concentraban el 19,6% del valor contratado
+// del país, y los mayores eran errores probados —ICANH registró 31,6 billones
+// en un contrato de servicios profesionales de tesorería del que pagó 31,6
+// millones—.
+//
+// Este filtro los caza sin necesidad de un umbral arbitrario, porque no
+// pregunta "¿es demasiado grande?" sino "¿coincide con lo que se pagó?". Saca
+// 65 contratos que registran 72 billones habiendo pagado 8,8 mil millones: el
+// valor contratado del país pasa de 1.046 a 974 billones.
+//
+// Coste medido: 1,3-1,7 s sin la guarda contra 2,0-2,3 s con ella, sobre el
+// agregado nacional. Va aquí, en el filtro compartido, por lo mismo que la
+// cuantía imposible: cada agregado nuevo lo hereda y ninguno puede olvidarlo.
+//
+// NO se aplica en soloEstadosVigentes(), que es el universo del Índice por
+// entidad: allá estos contratos tienen que verse para poder cobrárselos a
+// quien los escribió.
+export function valorCoherenteConElPago() {
+  const ors = MULTIPLICADORES_DIGITACION
+    .map((m) => `abs(valor_del_contrato / valor_pagado - ${m}) < ${m * TOLERANCIA_DIGITACION}`)
+    .join(' OR ')
+  return `NOT (valor_pagado > 0 AND valor_del_contrato > 0 AND (${ors}))`
+}
+
+// La contraria, para listarlos en "Errores en SECOP" y para cobrárselos a la
+// entidad en el índice de calidad. Lo que aquí se excluye, allá se muestra.
+export function valorIncoherenteConElPago() {
+  const ors = MULTIPLICADORES_DIGITACION
+    .map((m) => `abs(valor_del_contrato / valor_pagado - ${m}) < ${m * TOLERANCIA_DIGITACION}`)
+    .join(' OR ')
+  return `(valor_pagado > 0 AND valor_del_contrato > 0 AND (${ors}))`
 }
 
 // Solo la mitad de estados del filtro anterior, SIN el tope de cuantía.

@@ -329,15 +329,19 @@ function RankingEntidades({ filters }) {
         antes de sacar conclusiones.
         <br />
         <br />
-        <strong>Lo que esta columna todavía NO detecta.</strong> Un contrato con ceros de
-        más pero por debajo del tope de cuantía imposible no cuenta como error, así que
-        una entidad puede encabezar este ranking <em>por culpa</em> de un dato malo y aun
-        así aparecer con una tasa baja. Pasa hoy con la primera fila: su contrato mayor
-        registra un valor un millón de veces superior a lo que efectivamente pagó, y esa
-        contradicción no está entre las categorías que se cuentan. Detectarla exige
-        comparar lo registrado contra lo pagado, que es un cambio aparte y pendiente. Se
-        dice aquí en vez de callarlo porque la alternativa —una tasa baja que parece un
-        certificado de limpieza— es peor que no tener columna.
+        <strong>Los contratos con ceros de más ya no llegan a este ranking.</strong> Un
+        valor registrado que es una potencia exacta de diez veces lo que se pagó —los
+        mismos dígitos con la coma corrida— se excluye de todas las cifras de la
+        plataforma. Son 65 contratos que declaraban 72 billones habiendo pagado 8,8 mil
+        millones. Hasta sep 2026 encabezaba esta tabla un instituto de antropología con
+        63,4 billones, por un contrato de servicios de tesorería que registró un millón de
+        veces lo que pagó.
+        <br />
+        <br />
+        <strong>Lo que sigue sin detectarse:</strong> el método necesita que haya un pago
+        registrado con el que comparar, y la mitad de los contratos no lo tiene. Un valor
+        inflado en un contrato que nunca reportó pagos pasa igual. Por eso esta columna
+        acompaña a la cifra pero no la certifica.
       </Methodology>
 
       <div className="mt-4">
