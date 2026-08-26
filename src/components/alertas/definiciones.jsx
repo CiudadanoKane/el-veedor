@@ -13,7 +13,7 @@ import {
   useObraParalizada, useCerradoSinPago,
 } from '../../hooks/useAlertas'
 import { useAdicionesCosto } from '../../hooks/useAdiciones'
-import { useCuantiaImposible } from '../../hooks/useCuantiaImposible'
+import { useCuantiaImposible, useDigitacionFrenteAlPago } from '../../hooks/useCuantiaImposible'
 import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../ui/EnlacePerfil'
 import { FuenteBadge } from '../ui/FuenteBadge'
@@ -125,33 +125,43 @@ export function AlertaErrorDigitacion() {
   const { filters } = useFilters()
   const digitacionQuery = useAdicionesCosto(filters)
   const imposiblesQuery = useCuantiaImposible(filters)
+  const pagoQuery = useDigitacionFrenteAlPago(filters)
 
-  // Dos detecciones del mismo problema —el valor registrado no es real— que se
+  // TRES detecciones del mismo problema —el valor registrado no es real— que se
   // muestran juntas y se distinguen en la columna "Motivo":
   //   · Digitación (SECOP II): el valor es ×100/×1.000 el original, o creció
   //     >500%. Sale de cruzar contra el valor del proceso; trae "Valor original".
   //   · Cuantía imposible (ambas fuentes, hoy solo SECOP I): valor absoluto por
   //     encima de lo que un contrato real podría valer (ver useCuantiaImposible).
   //     No tiene "valor original" con qué comparar: es basura pura.
+  //   · Ceros de más frente al pago (SECOP II): el valor registrado es una
+  //     potencia exacta de diez veces lo PAGADO. Aquí el "valor original" es lo
+  //     que de verdad se pagó, que es la comparación que prueba el error.
   const digitacion = digitacionQuery.data?.anomalias ?? []
   const imposibles = (imposiblesQuery.data ?? []).map((c) => ({
     ...c,
     valorOriginal: null,
     motivo: 'Cuantía imposible',
   }))
+  const frenteAlPago = (pagoQuery.data ?? []).map((c) => ({
+    ...c,
+    valorOriginal: c.valuePaid,
+    motivo: 'Ceros de más frente al pago',
+  }))
   // Las imposibles primero: son el error más extremo (y las únicas de SECOP I).
-  const filas = [...imposibles, ...digitacion]
+  const filas = [...imposibles, ...frenteAlPago, ...digitacion]
 
-  // QueryState acepta cualquier objeto con esta forma; se combinan las dos
+  // QueryState acepta cualquier objeto con esta forma; se combinan las tres
   // consultas en una sola para manejar carga/error/vacío de forma unificada.
   const combinada = {
-    isLoading: digitacionQuery.isLoading || imposiblesQuery.isLoading,
-    isError: digitacionQuery.isError || imposiblesQuery.isError,
-    error: digitacionQuery.error || imposiblesQuery.error,
+    isLoading: digitacionQuery.isLoading || imposiblesQuery.isLoading || pagoQuery.isLoading,
+    isError: digitacionQuery.isError || imposiblesQuery.isError || pagoQuery.isError,
+    error: digitacionQuery.error || imposiblesQuery.error || pagoQuery.error,
     data: filas,
     refetch: () => {
       digitacionQuery.refetch()
       imposiblesQuery.refetch()
+      pagoQuery.refetch()
     },
   }
 
@@ -202,17 +212,31 @@ export function AlertaErrorDigitacion() {
       count={combinada.isLoading ? null : filas.length}
       methodology={
         <>
-          Tres patrones de valor que no puede ser real: (1) el valor es{' '}
+          Cuatro patrones de valor que no puede ser real: (1) el valor es{' '}
           <strong>exactamente ×100, ×1.000 o ×10.000</strong> el original del proceso — se
           digitó en unidades equivocadas (ej. un proceso de $450 millones registrado como
           $450.000 millones); (2) el valor creció <strong>más de 500%</strong>, cuando la
           Ley 80 limita las adiciones al 50% del valor inicial; (3){' '}
           <strong>cuantía imposible</strong>: por encima de <strong>$50 billones</strong>,
           diez veces el contrato real más grande del país — un valor centinela
-          (<code>999.999.999.999.999</code>) o ceros de más. Los dos primeros salen de
-          cruzar contra el valor del proceso (SECOP II) y traen "valor original"; el
-          tercero es un umbral absoluto y aparece sobre todo en{' '}
-          <strong>SECOP I</strong>, cuyo campo de valor no tiene los controles de SECOP II.
+          (<code>999.999.999.999.999</code>) o ceros de más; (4){' '}
+          <strong>ceros de más frente al pago</strong>: el valor registrado es una potencia
+          exacta de diez veces lo que la entidad reporta haber pagado — los mismos dígitos
+          con la coma corrida. Los dos primeros salen de cruzar contra el valor del proceso
+          (SECOP II) y traen "valor original"; el tercero es un umbral absoluto y aparece
+          sobre todo en <strong>SECOP I</strong>, cuyo campo de valor no tiene los
+          controles de SECOP II; en el cuarto, "valor original" es lo efectivamente pagado.
+          <br />
+          <br />
+          El cuarto se añadió en sep 2026 y es el que más pesa: <strong>65 contratos que
+          declaraban 72 billones habiendo pagado 8,8 mil millones</strong>. Entre ellos, un
+          instituto de antropología que registró $31,6 billones en un contrato de servicios
+          de tesorería del que pagó $31,6 millones — y que por eso encabezaba el ranking de
+          entidades del país. Excluirlos bajó el valor contratado nacional de 1.046 a{' '}
+          <strong>974 billones</strong>. La tolerancia es de una millonésima a propósito:
+          un contrato pagado al 1% da razón 100 sin que nada esté mal, así que solo se
+          marca cuando los dígitos coinciden. <strong>Su límite:</strong> hace falta un pago
+          con el que comparar, y la mitad de los contratos no lo reporta.
           Todos inflan las estadísticas públicas y se excluyen de los rankings por valor.{' '}
           <strong>Haz clic en una fila</strong> para ver el detalle.
         </>

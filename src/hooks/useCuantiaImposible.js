@@ -5,6 +5,7 @@ import {
   buildWhere, whereFromFilters, whereFromFiltrosSecop1,
   soloContratosValidosSecop1,
   cuantiaImposibleSecop2, cuantiaImposibleSecop1, VALOR_SECOP1_SOQL,
+  valorIncoherenteConElPago, soloEstadosVigentes,
 } from '../lib/soql.js'
 import { adaptList as adaptListSecop2 } from '../adapters/secop2Adapter.js'
 import { adaptList as adaptListSecop1 } from '../adapters/secop1Adapter.js'
@@ -45,6 +46,36 @@ export function useCuantiaImposible(filters = {}) {
       return [...adaptListSecop2(filas2), ...adaptListSecop1(filas1)].sort(
         (a, b) => (b.contractValue || 0) - (a.contractValue || 0),
       )
+    },
+  })
+}
+
+// Contratos cuyo valor registrado es una potencia exacta de diez veces lo que
+// se pagó: los mismos dígitos con la coma corrida (ver valorIncoherenteConElPago
+// en soql.js). Son los que soloContratosValidos() saca de TODAS las cifras de
+// la plataforma desde sep 2026 —65 contratos que declaraban 72 billones
+// habiendo pagado 8,8 mil millones—.
+//
+// Este hook existe para saldar una deuda con el principio de la casa. Durante
+// unas horas esos contratos se excluyeron sin listarse en ningún sitio, y
+// descartar registros sin mostrarlos es exactamente lo que esta plataforma le
+// reprocha a las cifras oficiales. Lo que se excluye allá, se muestra aquí.
+//
+// Solo SECOP II: valor_pagado no existe en SECOP I, así que allá no hay contra
+// qué comparar. El universo es soloEstadosVigentes y no soloContratosValidos,
+// porque este último es justamente el que los filtra.
+export function useDigitacionFrenteAlPago(filters = {}) {
+  return useQuery({
+    queryKey: ['errores', 'digitacion-pago', filters],
+    queryFn: async () => {
+      const where = buildWhere(
+        whereFromFilters(filters, [soloEstadosVigentes(), valorIncoherenteConElPago()]),
+      )
+      const filas = await socrataQuery(
+        DS,
+        `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT 100`,
+      )
+      return adaptListSecop2(filas)
     },
   })
 }

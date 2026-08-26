@@ -374,12 +374,13 @@ Y sobre todo: **una tasa no era la herramienta**. Tres contratos malos entre
 3.416 dan 0,35%, correctamente bajo. Lo que distorsionaba no era la proporción
 sino el total, y eso lo arregla la exclusión.
 
-**PENDIENTE, y es una deuda con el principio de la casa.** "No ocultamos,
-señalamos": las cuantías imposibles se excluyen de los agregados pero se
-listan en *Errores → Valores implausibles*. Estos 65 hoy se excluyen y **no se
-listan en ninguna parte**. Hasta que aparezcan ahí, la plataforma está
-descartando registros sin mostrarlos, que es justo lo que le reprocha a las
-cifras oficiales.
+**SALDADO — ya se listan.** "No ocultamos, señalamos" exigía que lo excluido
+apareciera en alguna parte, así que *Errores → Valores implausibles* los
+muestra como su cuarto patrón (`useDigitacionFrenteAlPago`), con lo pagado en
+la columna "valor original". La comparación en columnas contiguas es la prueba
+del error, legible sin saber nada de SoQL: ICANH, pagado **$31,6 millones**,
+registrado **$31,6 billones**. Verificado en el navegador: 65 filas exactas
+bajo ese motivo.
 
 **Límite declarado:** el método necesita un pago con el que comparar, y la
 mitad de los contratos no lo tiene. Un valor inflado que nunca reportó pagos
