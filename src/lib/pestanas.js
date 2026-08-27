@@ -44,4 +44,5 @@ export const PESTANAS_ERRORES = Object.freeze({
   fechas: 'fechas',
   sinvalor: 'sinvalor',
   digitacion: 'digitacion',
+  desproporcion: 'desproporcion',
 })

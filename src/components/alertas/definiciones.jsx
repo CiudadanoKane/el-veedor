@@ -13,7 +13,9 @@ import {
   useObraParalizada, useCerradoSinPago,
 } from '../../hooks/useAlertas'
 import { useAdicionesCosto } from '../../hooks/useAdiciones'
-import { useCuantiaImposible, useDigitacionFrenteAlPago } from '../../hooks/useCuantiaImposible'
+import {
+  useCuantiaImposible, useDigitacionFrenteAlPago, useValorDesproporcionado,
+} from '../../hooks/useCuantiaImposible'
 import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../ui/EnlacePerfil'
 import { FuenteBadge } from '../ui/FuenteBadge'
@@ -607,3 +609,104 @@ export function AlertaObraParalizada() {
   )
 }
 
+
+// Valor desproporcionado para el tipo de contrato.
+//
+// La única lista de "Errores en SECOP" que NO corresponde a algo excluido de
+// las cifras, y por eso lleva su propia pestaña en vez de sumarse a "Valores
+// implausibles": mezclarlas dejaría al lector sin saber cuáles están fuera de
+// los totales y cuáles no.
+//
+// El objeto va COMPLETO y sin recortar, al revés que en el resto de tablas.
+// Aquí no es contexto, es la evidencia: "AUXILIAR DE ARCHIVO" por 13 billones
+// se juzga solo, y ninguna consulta puede hacer ese juicio por el lector.
+export function AlertaValorDesproporcionado() {
+  const { filters } = useFilters()
+  const query = useValorDesproporcionado(filters)
+
+  const columns = [
+    {
+      key: 'entityName',
+      header: 'Entidad',
+      render: (r) => (
+        <div className="max-w-[200px]">
+          <EnlaceEntidad nombre={r.entityName} />
+          <div className="text-nota text-textSecondary">{r.contractType}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'description',
+      header: 'Objeto del contrato',
+      render: (r) => (
+        <div className="max-w-[420px] text-cuerpo text-textPrimary leading-snug">
+          {r.description || '(sin objeto registrado)'}
+        </div>
+      ),
+    },
+    {
+      key: 'contractorName',
+      header: 'Contratista',
+      render: (r) => <EnlaceContratista nombre={r.contractorName} documento={r.contractorId} />,
+    },
+    {
+      key: 'valuePaid',
+      header: 'Pagado',
+      className: 'text-right tabular-nums',
+      render: (r) => (r.valuePaid ? formatCOP(r.valuePaid) : '—'),
+    },
+    {
+      key: 'contractValue',
+      header: 'Valor registrado',
+      className: 'text-right tabular-nums',
+      render: (r) => <span className="text-danger font-medium">{formatCOP(r.contractValue)}</span>,
+    },
+  ]
+
+  return (
+    <AlertCard
+      icon="digitos"
+      title="Valor desproporcionado para el tipo de contrato"
+      question="¿Qué contratos de servicios registran un valor que no cuadra con lo que contratan?"
+      count={query.isLoading ? null : (query.data?.length ?? 0)}
+      methodology={
+        <>
+          Contratos de <strong>prestación de servicios</strong> (y del Decreto 092 de 2017)
+          por encima de <strong>$500 mil millones</strong>. Las obras y las concesiones
+          quedan fuera a propósito: esas <em>sí</em> pueden valer cientos de miles de
+          millones sin que nada esté mal.
+          <br />
+          <br />
+          <strong>Esta lista NO se excluye de ninguna cifra de la plataforma</strong>, y es
+          la única de esta sección de la que eso es cierto. La razón: aquí no hay prueba,
+          solo sospecha. Se midieron los diez contratos de servicios más grandes del país y
+          la frontera no está en ninguna cifra — a $3,3 billones hay uno plausible
+          («solución integral logística y tecnológica») y a $2,7 billones uno que es
+          evidentemente basura («prestar servicios profesionales en la Secretaría
+          General»). Lo que los separa es el <strong>texto del objeto</strong>, que ninguna
+          consulta puede leer. Excluir sobre esa base sería publicar un agregado construido
+          sobre una corazonada; callarlo sería esconder que alguien registró un{' '}
+          <strong>«AUXILIAR DE ARCHIVO» por $13,0 billones</strong>.
+          <br />
+          <br />
+          Por eso el objeto se muestra completo y el juicio queda del lado de quien lee.
+          Compara el valor registrado con lo pagado: cuando lo pagado es una fracción
+          minúscula —o cero— y el objeto nombra un cargo de una sola persona, casi siempre
+          es un error de digitación que nadie corrigió.{' '}
+          <strong>Haz clic en una fila</strong> para ver el detalle del contrato.
+        </>
+      }
+    >
+      <QueryState query={query} empty="Ningún contrato de servicios supera esa cifra con estos filtros.">
+        {(rows) => (
+          <DataTable
+            columns={columns}
+            rows={rows}
+            keyField="id"
+            renderDetail={(row) => <ContractDetail contract={row} />}
+          />
+        )}
+      </QueryState>
+    </AlertCard>
+  )
+}

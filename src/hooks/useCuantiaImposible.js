@@ -5,7 +5,8 @@ import {
   buildWhere, whereFromFilters, whereFromFiltrosSecop1,
   soloContratosValidosSecop1,
   cuantiaImposibleSecop2, cuantiaImposibleSecop1, VALOR_SECOP1_SOQL,
-  valorIncoherenteConElPago, soloEstadosVigentes,
+  valorIncoherenteConElPago, soloEstadosVigentes, soloContratosValidos,
+  esc as escSoql,
 } from '../lib/soql.js'
 import { adaptList as adaptListSecop2 } from '../adapters/secop2Adapter.js'
 import { adaptList as adaptListSecop1 } from '../adapters/secop1Adapter.js'
@@ -70,6 +71,60 @@ export function useDigitacionFrenteAlPago(filters = {}) {
     queryFn: async () => {
       const where = buildWhere(
         whereFromFilters(filters, [soloEstadosVigentes(), valorIncoherenteConElPago()]),
+      )
+      const filas = await socrataQuery(
+        DS,
+        `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT 100`,
+      )
+      return adaptListSecop2(filas)
+    },
+  })
+}
+
+// Un contrato de servicios cuyo valor no cuadra con lo que es.
+//
+// A DIFERENCIA DE TODO LO DEMÁS EN ESTE ARCHIVO, esto NO se excluye de ninguna
+// cifra. Y esa diferencia es el punto.
+//
+// Las otras detecciones de aquí prueban el error: una cuantía por encima de 50
+// billones es imposible, y un valor que es una potencia exacta de diez veces lo
+// pagado son los mismos dígitos con la coma corrida. Esta solo sospecha. Se
+// midieron los diez contratos de servicios más grandes del país y la frontera
+// no está en ninguna cifra: a 3,3 billones hay uno plausible ("solución
+// integral logística y tecnológica") y a 2,7 billones uno que es evidentemente
+// basura ("prestar servicios profesionales en la Secretaría General"). Lo que
+// los separa es el TEXTO DEL OBJETO, que no se puede leer con una consulta.
+//
+// Excluir con esa base sería publicar un agregado construido sobre una
+// corazonada —lo que el ROADMAP prohíbe— y además caro: los contratos de
+// servicios sobre 10 mil millones suman 183,9 billones y la mayoría son
+// legítimos. Callarlo también estaría mal: un "AUXILIAR DE ARCHIVO" registrado
+// por 13,0 billones es información pública relevante.
+//
+// Así que se señala y se deja juzgar, con el objeto a la vista. La barra son
+// 500 mil millones: da 18 contratos, una lista que un humano revisa entera de
+// una sentada, y ningún contrato de servicios de una persona puede justificar
+// esa cifra. Si al revisarla aparece un patrón limpio —por ejemplo que el
+// objeto nombre un cargo individual— ahí sí habría base para excluir con
+// certeza, y esta lista es el catálogo de trabajo para encontrarlo.
+export const BARRA_DESPROPORCION = 500_000_000_000
+
+// Los dos tipos que designan trabajo de una persona o un servicio acotado. Una
+// obra o una concesión SÍ pueden valer cientos de miles de millones sin que
+// nada esté mal, así que quedan fuera de esta lista a propósito.
+const TIPOS_SERVICIO = ['Prestación de servicios', 'Decreto 092 de 2017']
+
+export function useValorDesproporcionado(filters = {}) {
+  return useQuery({
+    queryKey: ['errores', 'desproporcion', filters],
+    queryFn: async () => {
+      const tipos = TIPOS_SERVICIO.map((t) => `'${escSoql(t)}'`).join(', ')
+      const where = buildWhere(
+        whereFromFilters(filters, [
+          soloContratosValidos(),
+          `tipo_de_contrato IN (${tipos})`,
+          `valor_del_contrato >= ${BARRA_DESPROPORCION}`,
+        ]),
       )
       const filas = await socrataQuery(
         DS,

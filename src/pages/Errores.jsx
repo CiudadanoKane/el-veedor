@@ -5,7 +5,7 @@ import {
   AlertaCerradoSinPago,
   AlertaFechasInconsistentes,
   AlertaContratosSinValor,
-  AlertaErrorDigitacion,
+  AlertaErrorDigitacion, AlertaValorDesproporcionado,
 } from '../components/alertas/definiciones'
 
 // Calidad del registro: el dato está mal escrito.
@@ -24,6 +24,11 @@ const ERRORES = [
   { id: 'fechas', label: 'Fechas imposibles', Componente: AlertaFechasInconsistentes },
   { id: 'sinvalor', label: 'Contratos sin valor', Componente: AlertaContratosSinValor },
   { id: 'digitacion', label: 'Valores implausibles', Componente: AlertaErrorDigitacion },
+  // Va de última, y aparte de "Valores implausibles", porque es la ÚNICA de
+  // esta sección que no corresponde a algo excluido de las cifras: aquí no hay
+  // prueba del error, solo sospecha, y el juicio queda del lado del lector.
+  // Mezclarla con las otras dejaría sin saber cuáles están fuera de los totales.
+  { id: 'desproporcion', label: 'Valor desproporcionado', Componente: AlertaValorDesproporcionado },
 ]
 
 export function Errores() {

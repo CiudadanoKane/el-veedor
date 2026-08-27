@@ -383,7 +383,49 @@ registrado **$31,6 billones**. Verificado en el navegador: 65 filas exactas
 bajo ese motivo.
 
 **Límite declarado:** el método necesita un pago con el que comparar, y la
-mitad de los contratos no lo tiene. Un valor inflado que nunca reportó pagos
+mitad de los contratos no lo tiene. Sigue en el top el Centro de Salud de
+Sampués con 19,9 billones — y su caso llevó a la lista de abajo.
+
+### Señalar sin excluir: "Valor desproporcionado" (sep 2026)
+
+El usuario preguntó cómo detectar el caso de Sampués, que la regla de la
+potencia de diez no caza. Corrigiendo lo que le había dicho antes: **ese
+contrato SÍ reporta pago** (4,45 millones sobre 19,8 billones registrados); lo
+que falla es que la razón entre ambos, 4.451.269, no es una potencia de diez,
+así que los dígitos no coinciden y la prueba no aplica.
+
+**Se midió la vía que él propuso —valores y porcentajes— y no da un corte
+defendible.** El ratio contra la mediana de la propia entidad parecía
+prometedor porque se adapta a la escala de cada una, pero 380 de los 400
+contratos grandes superan 1.000× su mediana: casi toda entidad hace cientos de
+contratos pequeños de servicios, así que su mediana siempre es diminuta y el
+ratio no discrimina.
+
+Lo que sí discrimina, mirando los diez contratos de servicios más grandes del
+país, es **el tipo de contrato frente al objeto**: una obra o una concesión
+pueden valer cientos de miles de millones; un *"AUXILIAR DE ARCHIVO"* no.
+Pero tampoco hay umbral limpio: a **$3,3 billones** hay uno plausible
+("solución integral logística y tecnológica") y a **$2,7 billones** uno que es
+basura ("prestar servicios profesionales en la Secretaría General"). Los separa
+el TEXTO DEL OBJETO, que ninguna consulta puede leer.
+
+**Decisión: señalar sin excluir.** Nueva pestaña en Errores en SECOP, con
+contratos de servicios por encima de $500 mil millones — 18 casos, una lista
+que un humano revisa entera de una sentada. NO se descuenta de ninguna cifra,
+y es la única de esa sección de la que eso es cierto (por eso va aparte de
+"Valores implausibles": mezclarlas dejaría sin saber cuáles están fuera de los
+totales).
+
+El razonamiento: excluir sobre una sospecha sería el "agregado engañoso" que el
+principio 4 prohíbe, y además caro —los contratos de servicios sobre 10 mil
+millones suman 183,9 billones, la mayoría legítimos—. Callarlo también estaría
+mal. Así que el objeto se muestra COMPLETO y sin recortar, al revés que en el
+resto de tablas: aquí no es contexto, es la evidencia, y el juicio queda del
+lado de quien lee.
+
+Efecto colateral buscado: esa lista es un catálogo de trabajo. Si al revisarla
+aparece un patrón limpio —por ejemplo que el objeto nombre un cargo
+individual— ahí sí habría base para excluir con certeza. Un valor inflado que nunca reportó pagos
 pasa igual — sigue en el top el Centro de Salud de Sampués con 19,9 billones.
 
 ### CORREGIDO UNA SEXTA VEZ — la noticia no coincidía con la tabla que la corrobora (sep 2026)
