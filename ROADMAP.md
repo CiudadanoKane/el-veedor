@@ -425,7 +425,54 @@ lado de quien lee.
 
 Efecto colateral buscado: esa lista es un catálogo de trabajo. Si al revisarla
 aparece un patrón limpio —por ejemplo que el objeto nombre un cargo
-individual— ahí sí habría base para excluir con certeza. Un valor inflado que nunca reportó pagos
+individual— ahí sí habría base para excluir con certeza.
+
+### El catálogo dio su primer patrón: persona natural con valor imposible (sep 2026)
+
+A las pocas horas de crear la lista anterior, el usuario pidió revisarla en
+busca de patrones. Apareció uno, y limpio: de los 18 contratos de servicios más
+caros del país, **los 6 con contratista persona natural eran basura sin
+excepción**, mientras los de NIT eran en su mayoría legítimos.
+
+Ampliado a todos los tipos de contrato: **persona natural + valor ≥ $100 mil
+millones = 18 contratos, y se leyeron los 18**. Todos son un cargo individual o
+un alquiler pequeño — *"AUXILIAR DE ARCHIVO"* por $12,96 billones, *"MÉDICO
+ESPECIALISTA - ANESTESIÓLOGO"* por $300 mil millones, *"ARRENDAMIENTO DE
+VEHÍCULO"* por $239 mil millones. Cero falsos positivos **sobre la población
+completa**, no sobre una muestra. Donde hay pago, es microscópico: 4 millones
+contra 19,81 billones.
+
+Justificación categórica y no estadística, que es lo que permite excluir: una
+persona no ejecuta cien mil millones. La banda inmediatamente inferior confirma
+que la frontera no está forzada — entre $1.000 y $10.000 millones los objetos
+son plausibles (obras de mitigación, construcción de vías, suministro de
+medicamentos) y varios tienen lo pagado igual a lo registrado.
+
+**Efecto: −18 contratos y −89,6 billones.** El valor del país pasa de 974 a
+**884,4 billones**, y la tarjeta del Panorama de $1.708,8 B a **$1.619,4 B**.
+
+**Se usa el tipo de documento EXACTO, no `<> 'NIT'`**, aunque identidad.js trate
+como persona todo lo que no sea NIT. En esa banda hay además 88 contratos "No
+Definido" y 18 "Otro" (30,4 billones juntos) cuya naturaleza no se verificó;
+barrerlos con una negación cómoda sería excluir sin haber mirado.
+
+**NO se cuenta en el Índice por entidad.** Medido: la condición dentro de un
+`GROUP BY` sube la consulta de 18,1 s a **129,3 s**, con el endpoint en un techo
+de 60 s. Se predijo que sería barata por no llevar división y **la predicción
+fue falsa**: comparar una cadena sobre 5,5 millones de filas cuesta más que
+dividir. Tercera vez en la misma jornada que la medición contradice la
+intuición de rendimiento.
+
+**Dos sustos durante la verificación, ambos falsos:**
+1. La consulta del Panorama tardó **174,6 s** una vez. Repetida, 2,3 s. Era la
+   variabilidad de Socrata ya documentada en este ROADMAP, no las guardas.
+2. La lista nueva devolvía 44 filas en vez de 18: faltaba restarle las otras dos
+   guardas, así que 26 contratos que la cuantía imposible o la potencia de diez
+   ya excluían habrían salido **dos veces** en la misma tabla con motivos
+   distintos. Corregido antes de publicar.
+
+Efecto colateral buscado y cumplido: la pestaña "Valor desproporcionado" bajó de
+18 a **12 filas** y quedó siendo solo lista de sospecha, que es lo que debe ser. Un valor inflado que nunca reportó pagos
 pasa igual — sigue en el top el Centro de Salud de Sampués con 19,9 billones.
 
 ### CORREGIDO UNA SEXTA VEZ — la noticia no coincidía con la tabla que la corrobora (sep 2026)

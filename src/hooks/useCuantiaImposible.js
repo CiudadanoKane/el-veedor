@@ -6,6 +6,7 @@ import {
   soloContratosValidosSecop1,
   cuantiaImposibleSecop2, cuantiaImposibleSecop1, VALOR_SECOP1_SOQL,
   valorIncoherenteConElPago, soloEstadosVigentes, soloContratosValidos,
+  valorImposibleParaUnaPersona, cuantiaPosibleSecop2, valorCoherenteConElPago,
   esc as escSoql,
 } from '../lib/soql.js'
 import { adaptList as adaptListSecop2 } from '../adapters/secop2Adapter.js'
@@ -124,6 +125,41 @@ export function useValorDesproporcionado(filters = {}) {
           soloContratosValidos(),
           `tipo_de_contrato IN (${tipos})`,
           `valor_del_contrato >= ${BARRA_DESPROPORCION}`,
+        ]),
+      )
+      const filas = await socrataQuery(
+        DS,
+        `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT 100`,
+      )
+      return adaptListSecop2(filas)
+    },
+  })
+}
+
+// Contratos a nombre de una PERSONA NATURAL por cien mil millones o más (ver
+// valorPosibleParaUnaPersona en soql.js). Excluidos de todas las cifras desde
+// sep 2026 y listados aquí, como manda el principio: lo que se excluye allá se
+// muestra acá.
+//
+// Salieron de revisar a mano la pestaña "Valor desproporcionado", que se creó
+// como catálogo de trabajo precisamente para esto. Son 18, se leyeron los 18, y
+// los 18 son un cargo individual o un alquiler pequeño con un valor imposible.
+export function usePersonaConValorImposible(filters = {}) {
+  return useQuery({
+    queryKey: ['errores', 'persona-valor-imposible', filters],
+    queryFn: async () => {
+      // Se restan las OTRAS dos guardas a propósito. Sin eso salían 44 filas en
+      // vez de 18: las 26 de más son contratos que la cuantía imposible o la
+      // potencia de diez ya excluían, y habrían aparecido DOS VECES en la misma
+      // tabla, cada una con un motivo distinto. Aquí solo van los que esta regla
+      // saca por sí sola, así que cada contrato se lista una vez y con el motivo
+      // que de verdad lo explica.
+      const where = buildWhere(
+        whereFromFilters(filters, [
+          soloEstadosVigentes(),
+          valorImposibleParaUnaPersona(),
+          cuantiaPosibleSecop2(),
+          valorCoherenteConElPago(),
         ]),
       )
       const filas = await socrataQuery(

@@ -15,6 +15,7 @@ import {
 import { useAdicionesCosto } from '../../hooks/useAdiciones'
 import {
   useCuantiaImposible, useDigitacionFrenteAlPago, useValorDesproporcionado,
+  usePersonaConValorImposible,
 } from '../../hooks/useCuantiaImposible'
 import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../ui/EnlacePerfil'
@@ -128,8 +129,9 @@ export function AlertaErrorDigitacion() {
   const digitacionQuery = useAdicionesCosto(filters)
   const imposiblesQuery = useCuantiaImposible(filters)
   const pagoQuery = useDigitacionFrenteAlPago(filters)
+  const personaQuery = usePersonaConValorImposible(filters)
 
-  // TRES detecciones del mismo problema —el valor registrado no es real— que se
+  // CUATRO detecciones del mismo problema —el valor registrado no es real— que se
   // muestran juntas y se distinguen en la columna "Motivo":
   //   · Digitación (SECOP II): el valor es ×100/×1.000 el original, o creció
   //     >500%. Sale de cruzar contra el valor del proceso; trae "Valor original".
@@ -139,6 +141,8 @@ export function AlertaErrorDigitacion() {
   //   · Ceros de más frente al pago (SECOP II): el valor registrado es una
   //     potencia exacta de diez veces lo PAGADO. Aquí el "valor original" es lo
   //     que de verdad se pagó, que es la comparación que prueba el error.
+  //   · Persona natural con valor imposible (SECOP II): un contrato a nombre de
+  //     UNA persona por cien mil millones o más.
   const digitacion = digitacionQuery.data?.anomalias ?? []
   const imposibles = (imposiblesQuery.data ?? []).map((c) => ({
     ...c,
@@ -150,20 +154,31 @@ export function AlertaErrorDigitacion() {
     valorOriginal: c.valuePaid,
     motivo: 'Ceros de más frente al pago',
   }))
+  // Cuarta: una persona natural con un contrato de cien mil millones o más.
+  // "Valor original" vuelve a ser lo pagado, que cuando existe es microscópico
+  // —4 millones contra 19,81 billones— y remata la prueba.
+  const persona = (personaQuery.data ?? []).map((c) => ({
+    ...c,
+    valorOriginal: c.valuePaid || null,
+    motivo: 'Persona natural, valor imposible',
+  }))
   // Las imposibles primero: son el error más extremo (y las únicas de SECOP I).
-  const filas = [...imposibles, ...frenteAlPago, ...digitacion]
+  const filas = [...imposibles, ...persona, ...frenteAlPago, ...digitacion]
 
-  // QueryState acepta cualquier objeto con esta forma; se combinan las tres
+  // QueryState acepta cualquier objeto con esta forma; se combinan las cuatro
   // consultas en una sola para manejar carga/error/vacío de forma unificada.
   const combinada = {
-    isLoading: digitacionQuery.isLoading || imposiblesQuery.isLoading || pagoQuery.isLoading,
-    isError: digitacionQuery.isError || imposiblesQuery.isError || pagoQuery.isError,
-    error: digitacionQuery.error || imposiblesQuery.error || pagoQuery.error,
+    isLoading: digitacionQuery.isLoading || imposiblesQuery.isLoading || pagoQuery.isLoading
+      || personaQuery.isLoading,
+    isError: digitacionQuery.isError || imposiblesQuery.isError || pagoQuery.isError
+      || personaQuery.isError,
+    error: digitacionQuery.error || imposiblesQuery.error || pagoQuery.error || personaQuery.error,
     data: filas,
     refetch: () => {
       digitacionQuery.refetch()
       imposiblesQuery.refetch()
       pagoQuery.refetch()
+      personaQuery.refetch()
     },
   }
 
@@ -214,7 +229,7 @@ export function AlertaErrorDigitacion() {
       count={combinada.isLoading ? null : filas.length}
       methodology={
         <>
-          Cuatro patrones de valor que no puede ser real: (1) el valor es{' '}
+          Cinco patrones de valor que no puede ser real: (1) el valor es{' '}
           <strong>exactamente ×100, ×1.000 o ×10.000</strong> el original del proceso — se
           digitó en unidades equivocadas (ej. un proceso de $450 millones registrado como
           $450.000 millones); (2) el valor creció <strong>más de 500%</strong>, cuando la
@@ -228,6 +243,21 @@ export function AlertaErrorDigitacion() {
           (SECOP II) y traen "valor original"; el tercero es un umbral absoluto y aparece
           sobre todo en <strong>SECOP I</strong>, cuyo campo de valor no tiene los
           controles de SECOP II; en el cuarto, "valor original" es lo efectivamente pagado.
+          <br />
+          <br />
+          El <strong>quinto</strong> —añadido después, al revisar a mano la pestaña
+          «Valor desproporcionado»— es un contrato a nombre de <strong>una persona
+          natural por $100 mil millones o más</strong>. Son <strong>18 contratos que
+          suman $89,6 billones</strong>, y se leyeron los 18 uno por uno: todos son un
+          cargo individual o un alquiler pequeño —«AUXILIAR DE ARCHIVO» por $12,96
+          billones, «MÉDICO ESPECIALISTA - ANESTESIÓLOGO» por $300 mil millones,
+          «ARRENDAMIENTO DE VEHÍCULO» por $239 mil millones—. Cero falsos positivos sobre
+          la población completa. Excluirlos bajó el valor contratado nacional de 974 a{' '}
+          <strong>884,4 billones</strong>. La justificación es categórica, no estadística:
+          una persona no ejecuta cien mil millones. Y la banda inmediatamente inferior
+          confirma que la frontera es real — entre $1.000 y $10.000 millones los objetos
+          son plausibles (obras de mitigación, suministro de medicamentos) y varios tienen
+          lo pagado igual a lo registrado.
           <br />
           <br />
           El cuarto se añadió en sep 2026 y es el que más pesa: <strong>65 contratos que

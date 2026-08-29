@@ -154,7 +154,58 @@ const ESTADOS_NO_VIGENTES = [
 // → Valores implausibles", que los busca con `cuantiaImposibleSecop2()` y no
 // pasa por esta función.
 export function soloContratosValidos() {
-  return `${soloEstadosVigentes()} AND ${cuantiaPosibleSecop2()} AND ${valorCoherenteConElPago()}`
+  return `${soloEstadosVigentes()} AND ${cuantiaPosibleSecop2()} AND ${valorCoherenteConElPago()}
+          AND ${valorPosibleParaUnaPersona()}`
+}
+
+// Techo por encima del cual un contrato a nombre de UNA PERSONA no es creíble.
+export const TECHO_PERSONA_NATURAL = 100_000_000_000
+
+// Una persona natural no tiene un contrato de cien mil millones.
+//
+// Salió de revisar a mano la lista de "Valor desproporcionado" (sep 2026), que
+// se creó justamente como catálogo de trabajo para buscar patrones limpios.
+// Apareció uno: de los 18 contratos de servicios más caros del país, los 6 con
+// contratista persona natural eran basura sin excepción, y los de NIT eran en
+// su mayoría legítimos.
+//
+// Ampliado a todos los tipos de contrato, el conjunto son 18 contratos y se
+// revisaron los 18 uno por uno: TODOS son un cargo individual o un alquiler
+// pequeño —"AUXILIAR DE ARCHIVO" por 12,96 billones, "MÉDICO ESPECIALISTA -
+// ANESTESIÓLOGO" por 300 mil millones, "ARRENDAMIENTO DE VEHÍCULO" por 239 mil
+// millones—. Cero falsos positivos, sobre la población completa y no sobre una
+// muestra. Donde hay pago, es microscópico: 4 millones contra 19,81 billones.
+//
+// La justificación es categórica y no estadística, que es lo que permite
+// excluir: una persona no puede ejecutar cien mil millones. Y la banda
+// inmediatamente inferior confirma que la frontera es real y no está forzada —
+// entre 1.000 y 10.000 millones los objetos son plausibles (obras de
+// mitigación, construcción de vías, suministro de medicamentos) y varios tienen
+// lo pagado igual a lo registrado.
+//
+// Efecto medido: saca 18 contratos y 89,6 billones. El valor contratado del
+// país pasa de 974 a 884,4 billones. Coste: ninguno (14,1 s contra 13,1 s).
+//
+// SE USA EL TIPO EXACTO, no `<> 'NIT'`, aunque identidad.js trate como persona
+// todo lo que no sea NIT. En esta banda hay además 88 contratos "No Definido" y
+// 18 "Otro" (30,4 billones juntos) cuya naturaleza NO se verificó; barrerlos con
+// una negación cómoda sería excluir sin haber mirado, que es exactamente lo que
+// esta función pretende evitar.
+//
+// NO se cuenta en el Índice por entidad, y no por olvido: medido, la condición
+// dentro de un GROUP BY sube la consulta de 18,1 s a 129,3 s, con el endpoint
+// en un techo de 60 s. Comparar una cadena sobre 5,5 millones de filas cuesta
+// más que dividir. En un WHERE plano, en cambio, sale gratis.
+export function valorPosibleParaUnaPersona() {
+  return `NOT (tipodocproveedor = 'Cédula de Ciudadanía'
+          AND valor_del_contrato >= ${TECHO_PERSONA_NATURAL})`
+}
+
+// La contraria, para listarlos en "Errores en SECOP": lo que aquí se excluye,
+// allá se muestra.
+export function valorImposibleParaUnaPersona() {
+  return `(tipodocproveedor = 'Cédula de Ciudadanía'
+          AND valor_del_contrato >= ${TECHO_PERSONA_NATURAL})`
 }
 
 // Multiplicadores de un error de digitación: alguien tecleó el valor en
