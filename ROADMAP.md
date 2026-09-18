@@ -628,6 +628,57 @@ en vivo) y unificar `poblacion.js` (departamentos) con el anexo municipal del
 DANE —hoy son dos fuentes distintas—. Ver también `REVISION-2026-08.md`, con lo
 que queda de rendimiento y de cobertura de SECOP I.
 
+### HECHO ✅ — Pegar un número de proceso ya encuentra el contrato (sep 2026)
+
+Encontrado por el usuario al buscar el túnel peatonal de la Circunvalar en
+Caribe Verde (Barranquilla). No aparecía en El Veedor. En Google encontró el
+proceso, **LP-006-2025**, y solo con ese número llegó al contrato. Al probar
+ese mismo flujo —número hallado afuera, pegado aquí— resultó que **tampoco
+funcionaba**:
+
+- La búsqueda por identificador era de **coincidencia exacta**. Los contratos
+  del Distrito se llaman "LP-006-2025 GRUPO 1" y "GRUPO 2", así que no salían.
+- Lo que sí salía eran **cuatro contratos de otras entidades** (Rioblanco,
+  Cubará, Fundación, Gobernación de Sucre) que también se llaman "LP-006-2025".
+  Los números de proceso los pone cada entidad y se repiten: ese lo usan 67
+  entidades entre SECOP I y II.
+- El número del proceso de la entidad vive en **Procesos** (`p6dx-8zbt`,
+  `referencia_del_proceso`), no en Contratos. Un contrato cuya referencia no
+  empiece igual que su proceso era inencontrable por ese número.
+
+**El arreglo** (`src/lib/busquedaId.js`, con pruebas):
+
+- Los códigos del sistema (`CO1.PCCNTR…`, `CO1.BDOS…`) siguen por igualdad: un
+  prefijo sobre ellos arrastraría miles. Los números de la entidad pasan a
+  **prefijo** (`starts_with`), en mayúsculas y tal cual. Medido: ~160 ms,
+  igual o más rápido que la igualdad.
+- Primero se traduce el número de la entidad a códigos de proceso vía Procesos
+  (~200–570 ms, tope de 200 procesos), y los contratos de esos procesos entran
+  aunque se llamen distinto.
+- Con un lugar elegido arriba, una **segunda pasada acotada** a ese lugar
+  asegura que lo local entre aunque el número llene el tope con otras regiones,
+  y va **primero**. El lugar no excluye: el resto del país se sigue viendo.
+- Dentro de cada grupo, los **borradores y cancelados van al final**. El primer
+  resultado de LP-006-2025 era un borrador "sin descripción" por $78.355
+  millones, que no es más que la suma de los dos lotes reales.
+- Cada fila dice **qué número coincidió** ("el número del contrato:
+  LP-006-2025 GRUPO 1"), y un aviso dice cuántas entidades comparten el número.
+
+Verificado en el navegador: `lp-006-2025` en minúsculas y con Barranquilla
+elegida trae LOTE 1 y LOTE 2 arriba, luego el borrador, luego Ponedera
+(mismo departamento) y después el resto del país. Los códigos SECOP pegados
+tal cual y la búsqueda por texto siguen igual.
+
+**Por qué importa más allá de este caso:** es el último paso de cualquier
+búsqueda que empiece afuera de El Veedor —Google, una noticia, un oficio—. Se
+evaluó un "buscador general" asistido por IA con búsqueda web. En la prueba
+encontró el convenio Alcaldía–Marval del puente de Puerta Dorada (fuera de
+SECOP), y con la pista de vocabulario de la prensa ("túnel" → "deprimido")
+dio con este proceso. Cualquier herramienta de ese tipo termina en "pega el
+número aquí", y ese paso fallaba. Queda pendiente decidir la herramienta
+externa: botón "Buscar en Google" (costo cero), API de búsqueda, o la IA con
+búsqueda web (~US$0,50 y 60–80 s por consulta).
+
 ---
 
 ## Completado

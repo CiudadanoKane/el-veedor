@@ -128,7 +128,7 @@ export const RANGOS_VENCIMIENTO = {
 //   enviado Proveedor → enviado al proveedor, sin formalizar
 //   En aprobación     → en trámite, sin formalizar
 // Incluirlos infla las cifras públicas de forma severa.
-const ESTADOS_NO_VIGENTES = [
+export const ESTADOS_NO_VIGENTES = [
   'Borrador',
   'Cancelado',
   'enviado Proveedor',

@@ -287,7 +287,7 @@ export function Buscar() {
   // libre; abre "Filtros avanzados" para que quede visible y editable, nunca
   // oculto. La geografía va al filtro global (departamento/ciudad), validada
   // contra el catálogo real. Los identificadores (número de proceso, código
-  // SECOP) se saltan la IA: ya tienen una ruta exacta e instantánea. Si la
+  // SECOP) se saltan la IA: ya tienen una ruta propia e instantánea. Si la
   // llamada falla, se degrada a buscar la frase tal cual —nunca la bloquea—.
   const [cargandoIA, setCargandoIA] = useState(false)
   const [errorIA, setErrorIA] = useState('')
@@ -424,19 +424,30 @@ export function Buscar() {
   // nombre de un archivo del proceso—. Se ordenan juntos por el criterio elegido
   // y las filas halladas solo por sus documentos llevan la etiqueta "encontrado
   // en". El dedup es contra la lista del objeto con lo que haya de ella al momento.
+  // Por identificador, la fila dice qué número coincidió (coincideId, ver
+  // useBusqueda): el texto buscado casi nunca está a la vista en la fila, y
+  // "otro campo del registro" no distingue un LP-006-2025 de otro.
   const contratosMain = (queryContratos.data?.contratos ?? []).map((c) => ({
     ...c,
-    coincideEn: coincidenciaVisible(c, [criterios.texto, ...criterios.terminos]),
+    coincideEn: c.coincideId ?? coincidenciaVisible(c, [criterios.texto, ...criterios.terminos]),
   }))
   const idsMain = new Set(contratosMain.map((c) => c.id))
   const docUnicos = (queryDocumentos.data?.contratos ?? []).filter((c) => !idsMain.has(c.id))
+  // prioridadLugar y noVigente solo vienen en las búsquedas por identificador
+  // (ver useBusqueda): ahí lo del lugar filtrado va primero y los borradores al
+  // final de su grupo, y reordenar solo por valor lo deshacía.
   const resultados = [...contratosMain, ...docUnicos].sort((a, b) =>
-    criterios.orden === 'reciente'
+    (a.prioridadLugar ?? 0) - (b.prioridadLugar ?? 0) ||
+    Number(!!a.noVigente) - Number(!!b.noVigente) ||
+    (criterios.orden === 'reciente'
       ? new Date(b.signDate || 0) - new Date(a.signDate || 0)
-      : (b.contractValue ?? 0) - (a.contractValue ?? 0),
+      : (b.contractValue ?? 0) - (a.contractValue ?? 0)),
   )
   const buscandoDocs = queryDocumentos.isLoading
   const porId = queryContratos.data?.porId
+  const entidadesId = queryContratos.data?.entidades ?? 0
+  const lugarFiltro = filters.city || filters.department
+  const hayLocales = resultados.some((r) => (r.prioridadLugar ?? 2) < 2)
   const hayMas = queryContratos.data?.hayMas || queryDocumentos.data?.hayMas
 
   const columns = [
@@ -707,6 +718,15 @@ export function Buscar() {
                   («puente» además de «viaducto»), que aparecen como etiquetas quitables bajo la
                   caja. Se muestran hasta <strong>{LIMITE}</strong> resultados.{' '}
                   <strong>Haz clic en una fila</strong> para ver el detalle.
+                  <br />
+                  <br />
+                  Si pegas un <strong>número de proceso o de contrato</strong> —por ejemplo uno que
+                  encontraste en una noticia—, se busca en todo el país y en cualquier estado, y
+                  también en el registro de procesos, porque el contrato puede llamarse distinto
+                  que su proceso («LP-006-2025 GRUPO 1» para el proceso «LP-006-2025»). Ojo: esos
+                  números los pone cada entidad y <strong>se repiten</strong> —ese mismo lo usan
+                  decenas de entidades—, así que cada fila dice qué número coincidió, y los del
+                  lugar que tengas elegido arriba aparecen primero.
                 </Methodology>
 
                 <div className="mt-4">
@@ -761,6 +781,24 @@ export function Buscar() {
                         )
                       ) : (
                         <>
+                          {/* Un número de proceso lo pone cada entidad a su
+                              manera, y se repite: "LP-006-2025" lo tienen unas
+                              45 entidades del país. Sin este aviso, la primera
+                              fila se leería como "el" contrato buscado. */}
+                          {porId && entidadesId > 1 && (
+                            <p className="mb-3 text-nota text-textSecondary max-w-2xl leading-relaxed">
+                              <strong className="text-textPrimary">
+                                Este número lo usan {entidadesId} entidades distintas.
+                              </strong>{' '}
+                              Cada entidad numera sus procesos por su cuenta, así que revisa la
+                              entidad de cada fila.
+                              {!lugarFiltro
+                                ? ' Si eliges un departamento o ciudad arriba, los de ese lugar aparecen primero.'
+                                : hayLocales
+                                  ? ` Primero aparecen los de ${lugarFiltro}, el lugar que estás viendo.`
+                                  : ` Ninguno es de ${lugarFiltro}, el lugar que estás viendo.`}
+                            </p>
+                          )}
                           <DataTable
                             columns={columns}
                             rows={resultados}

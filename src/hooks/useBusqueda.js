@@ -10,9 +10,21 @@ import { variantesDeFrase, variantesReducidas, tieneTextoBuscable, palabrasDeFra
 import { adaptList as adaptListSecop2 } from '../adapters/secop2Adapter'
 import { adaptList as adaptListSecop1 } from '../adapters/secop1Adapter'
 import { MODALIDAD_A_SECOP1, TIPO_A_SECOP1, ESTADO_A_SECOP1 } from '../lib/catalogosSecop1'
+import {
+  condicionProcesosPorReferencia, condicionIdSecop2, condicionIdSecop1, prioridadLugar,
+  esNoVigente, coincidenciaId,
+} from '../lib/busquedaId'
 
 const DS = DATASETS.CONTRATOS
 const DS1 = DATASETS.PROCESOS_SECOP1
+// Procesos de SECOP II: donde vive el número que la entidad le pone a su
+// proceso (referencia_del_proceso). Ver lib/busquedaId.js.
+const DS_PROCESOS = 'p6dx-8zbt'
+
+// Tope de procesos que se cruzan por número. Un número común ("LP-001-2025")
+// lo usan ~180 entidades; 200 los cubre sin que la cláusula IN vuelva la URL
+// descomunal (mismo criterio que MAX_IDS en useBusquedaDocumentos).
+const MAX_PROCESOS = 200
 
 // Campos de texto visibles donde se exige la frase contigua en las búsquedas de
 // varias palabras. Son los que el ciudadano ve en la fila, así que si el término
@@ -53,15 +65,10 @@ const CAMPOS_LISTA = {
   tipo: 'tipo_de_contrato',
 }
 
-// Campos por los que se identifica un contrato o su proceso de forma exacta.
-// La búsqueda por texto no sirve para estos: son códigos, no palabras.
-const CAMPOS_ID = ['referencia_del_contrato', 'proceso_de_compra', 'id_contrato']
-const CAMPOS_ID_SECOP1 = ['numero_de_contrato', 'numero_de_proceso', 'uid', 'numero_de_constancia']
-
 // ¿El texto parece un identificador y no una frase? Un número de proceso como
 // "LP-024-2024" o un código SECOP como "CO1.PCCNTR.7491513": sin espacios, con
-// dígitos y con puntos, guiones o barras. Se buscan por coincidencia exacta
-// (0,5s), no con búsqueda de texto, que sobre estos campos no sirve.
+// dígitos y con puntos, guiones o barras. Se buscan por código (ver
+// lib/busquedaId.js), no con búsqueda de texto, que sobre estos campos no sirve.
 export function esIdentificador(texto) {
   const t = (texto || '').trim()
   return /^[A-Za-z0-9._\-/]+$/.test(t) && /\d/.test(t) && /[.\-/]/.test(t) && t.length >= 5
@@ -216,21 +223,50 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
     enabled: activa,
     queryKey: ['busqueda', criterios, filtrosGeo],
     queryFn: async () => {
-      // Identificador: coincidencia exacta contra los códigos, sin filtros de
-      // estado ni geográficos. Si alguien pega el número de un proceso quiere
-      // ese contrato exacto, aunque esté cerrado o en otra ciudad. Se busca en
-      // las dos fuentes porque el formato del código ya distingue de dónde es.
+      // Identificador: sin filtros de estado. Si alguien pega el número de un
+      // proceso quiere ese contrato, aunque esté cerrado o en otra ciudad. Se
+      // busca en las dos fuentes porque el formato del código ya distingue de
+      // dónde es. Por qué no es coincidencia exacta: lib/busquedaId.js.
       if (porId) {
-        const valor = esc(texto.trim())
-        const ors2 = CAMPOS_ID.map((c) => `${c} = '${valor}'`).join(' OR ')
-        const ors1 = CAMPOS_ID_SECOP1.map((c) => `${c} = '${valor}'`).join(' OR ')
-        const [filas2, filas1] = await Promise.all([
-          socrataQuery(DS, `SELECT ${CONTRACT_FIELDS} WHERE ${ors2} ORDER BY ${orderBy} LIMIT ${LIMITE + 1}`),
-          socrataQuery(DS1, `SELECT ${CONTRACT_FIELDS_SECOP1} WHERE ${ors1} ORDER BY ${orderBySecop1} LIMIT ${LIMITE + 1}`),
+        // 1. Número de la entidad → códigos de proceso del sistema. Si
+        //    Procesos falla, se sigue con lo demás: es una ampliación, no la
+        //    única vía.
+        const procesos = await socrataQuery(
+          DS_PROCESOS,
+          `SELECT id_del_portafolio WHERE ${condicionProcesosPorReferencia(texto)}
+           GROUP BY id_del_portafolio LIMIT ${MAX_PROCESOS}`,
+        )
+          .then((filas) => filas.map((f) => f.id_del_portafolio))
+          .catch(() => [])
+        const cond2 = condicionIdSecop2(texto, procesos)
+        const cond1 = condicionIdSecop1(texto)
+
+        // 2. Con filtro de lugar, una segunda pasada acotada a él: un número
+        //    que usan decenas de entidades puede llenar el tope con las de
+        //    otras regiones, y la de aquí quedaría fuera. El lugar no EXCLUYE
+        //    (se sigue viendo el resto del país), solo asegura que lo local
+        //    entre y quede primero.
+        const geo2 = whereFromFilters(filtrosGeo)
+        const geo1 = whereFromFiltrosSecop1(filtrosGeo)
+        const pedir2 = (w) =>
+          socrataQuery(DS, `SELECT ${CONTRACT_FIELDS} WHERE ${w} ORDER BY ${orderBy} LIMIT ${LIMITE + 1}`)
+        const pedir1 = (w) =>
+          socrataQuery(DS1, `SELECT ${CONTRACT_FIELDS_SECOP1} WHERE ${w} ORDER BY ${orderBySecop1} LIMIT ${LIMITE + 1}`)
+        const [pais2, pais1, local2, local1] = await Promise.all([
+          pedir2(cond2),
+          pedir1(cond1),
+          geo2.length ? pedir2([cond2, ...geo2].join(' AND ')) : Promise.resolve([]),
+          geo1.length ? pedir1([cond1, ...geo1].join(' AND ')) : Promise.resolve([]),
         ])
+        const unir = (locales, resto, campo) => {
+          const vistos = new Map()
+          for (const f of [...locales, ...resto]) if (!vistos.has(f[campo])) vistos.set(f[campo], f)
+          return [...vistos.values()]
+        }
         return {
-          filas2, filas1,
-          hayMas: filas2.length > LIMITE || filas1.length > LIMITE,
+          filas2: unir(local2, pais2, 'id_contrato'),
+          filas1: unir(local1, pais1, 'uid'),
+          hayMas: pais2.length > LIMITE || pais1.length > LIMITE,
           porId: true,
         }
       }
@@ -287,13 +323,34 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
       }
     },
     select: (r) => {
+      const comparar = compararAdaptados(orden)
       const contratos = [
         ...adaptListSecop2(r.filas2),
         ...adaptListSecop1(r.filas1),
       ]
-        .sort(compararAdaptados(orden))
+        // Por identificador: primero el lugar que la persona está mirando,
+        // dentro de él los contratos reales antes que borradores y cancelados,
+        // y después el orden elegido. Ver lib/busquedaId.js.
+        .map((c) =>
+          r.porId
+            ? {
+                ...c,
+                prioridadLugar: prioridadLugar(c, filtrosGeo),
+                noVigente: esNoVigente(c.status),
+                coincideId: coincidenciaId(c, texto),
+              }
+            : c,
+        )
+        .sort((a, b) =>
+          (a.prioridadLugar ?? 0) - (b.prioridadLugar ?? 0) ||
+          Number(!!a.noVigente) - Number(!!b.noVigente) ||
+          comparar(a, b),
+        )
         .slice(0, LIMITE)
-      return { contratos, hayMas: r.hayMas, porId: r.porId }
+      // Cuántas entidades distintas comparten el número: la UI lo dice, porque
+      // "LP-006-2025" a secas no identifica un contrato sino a decenas.
+      const entidades = r.porId ? new Set(contratos.map((c) => c.entityName)).size : 0
+      return { contratos, hayMas: r.hayMas, porId: r.porId, entidades }
     },
   })
 }
