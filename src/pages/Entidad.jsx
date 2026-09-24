@@ -8,7 +8,7 @@ import { StatCard } from '../components/ui/StatCard'
 import { ListaBarra } from '../components/ui/ListaBarra'
 import { Methodology } from '../components/ui/Methodology'
 import { usePerfilEntidad } from '../hooks/usePerfilEntidad'
-import { ERRORES, INCOMPLETOS } from '../hooks/useCalidadDatos'
+import { ERRORES, INCOMPLETOS, useCalidadDatos } from '../hooks/useCalidadDatos'
 import { formatCOP, formatDate, pct, formatPct } from '../lib/formatters'
 import { EnlaceContratista } from '../components/ui/EnlacePerfil'
 import { Seccion } from '../components/ui/Seccion'
@@ -38,13 +38,16 @@ function Tasa({ etiqueta, valor, referencia, casos, total, decimales = 2 }) {
       <p className="text-cuerpo text-textSecondary mt-2 leading-snug">
         {casos.toLocaleString('es-CO')} de {total.toLocaleString('es-CO')} contratos
         <br />
-        Media nacional: {formatPct(referencia, decimales)}
+        {/* La media llega aparte (ver RefNacional abajo) y puede tardar un
+            instante más que el perfil: mientras tanto se dice, en vez de pintar
+            un "0%" que se leería como dato. */}
+        Media nacional: {referencia != null ? formatPct(referencia, decimales) : 'cargando…'}
       </p>
     </div>
   )
 }
 
-function Perfil({ perfil }) {
+function Perfil({ perfil, refNacional }) {
   const periodo =
     perfil.desde && perfil.hasta
       ? `${formatDate(perfil.desde)} — ${formatDate(perfil.hasta)}`
@@ -170,14 +173,14 @@ function Perfil({ perfil }) {
           <Tasa
             etiqueta="Errores"
             valor={perfil.calidad.tasaErrores}
-            referencia={perfil.referencia.tasaErrores}
+            referencia={refNacional?.tasaErrores}
             casos={perfil.calidad.errores}
             total={perfil.totalContratosSecop2}
           />
           <Tasa
             etiqueta="Información incompleta"
             valor={perfil.calidad.tasaIncompletos}
-            referencia={perfil.referencia.tasaIncompletos}
+            referencia={refNacional?.tasaIncompletos}
             casos={perfil.calidad.incompletos}
             total={perfil.totalContratosSecop2}
             decimales={1}
@@ -293,6 +296,14 @@ function Perfil({ perfil }) {
 export function Entidad() {
   const { nombre } = useParams()
   const query = usePerfilEntidad(nombre)
+  // Media nacional de calidad, para leer las tasas de la entidad. Viene del
+  // Índice por entidad con su combinación por defecto, que en producción está
+  // precalculada en Edge Config y responde al instante. Antes el perfil la
+  // calculaba en vivo recorriendo el país entero, y como esperaba a todas sus
+  // consultas antes de pintar, esa sola consulta —80 s desde sep 2026— dejaba
+  // la ficha de cualquier entidad colgada. Al ser la misma cifra que publica
+  // "Errores en SECOP", además, las dos páginas ya no pueden discrepar.
+  const refNacional = useCalidadDatos({}, 'peor', 'errores').data?.referencia
 
   return (
     <div>
@@ -304,7 +315,7 @@ export function Entidad() {
               No encontramos contratos registrados con este nombre de entidad.
             </p>
           ) : (
-            <Perfil perfil={perfil} />
+            <Perfil perfil={perfil} refNacional={refNacional} />
           )
         }
       </QueryState>

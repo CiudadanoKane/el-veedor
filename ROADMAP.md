@@ -427,6 +427,41 @@ Efecto colateral buscado: esa lista es un catálogo de trabajo. Si al revisarla
 aparece un patrón limpio —por ejemplo que el objeto nombre un cargo
 individual— ahí sí habría base para excluir con certeza.
 
+### La ficha de entidad se colgaba esperando una cifra del país (sep 2026)
+
+Reportado por el usuario: el buscador de entidades encontraba la entidad, pero
+al elegirla la ficha se quedaba cargando sin mostrar nada.
+
+**Causa:** el perfil lanzaba siete consultas en un `Promise.all` y no pintaba
+hasta tenerlas todas. Seis estaban acotadas a la entidad y respondían en uno o
+dos segundos. La séptima era la **media nacional de calidad**, que recorría
+los 5,5 millones de contratos del país. Medida: **80 s**.
+
+**Una atribución equivocada, corregida antes de cerrar.** La primera medición
+comparó una corrida con el código de ese día (80 s) contra una con el del día
+anterior (7,8 s), y la conclusión fue "las guardas nuevas la hicieron diez
+veces más lenta". Era falsa. Repetida bien —intercalando las dos versiones,
+dos rondas—: ronda 1, ayer **49,5 s** y hoy 3,9 s; ronda 2, ayer 2,0 s y hoy
+3,3 s. En caliente las guardas añaden alrededor de un segundo. Lo que variaba
+no era el código sino Socrata: esa misma consulta osciló ese día entre 2 s y
+174 s según le tocara arrancar en frío. **Una sola corrida contra Socrata no
+permite atribuir nada.**
+
+**El defecto real era de diseño, y anterior:** poner una consulta nacional en
+vivo en el camino de pintado de una ficha. Cada visita era una lotería.
+
+**Arreglo:** la media nacional sale del `Promise.all` y la página la toma del
+Índice por entidad con su combinación por defecto, que en producción está
+precalculado en Edge Config y responde al instante. Mientras llega, la tarjeta
+dice "cargando…" en vez de pintar un 0% que se leería como dato. De paso, la
+ficha y la pestaña "Errores en SECOP" pasan a mostrar la MISMA media, cuando
+antes cada una calculaba la suya.
+
+Verificado en el navegador: la ficha de la Alcaldía de Cartagena se ve completa
+en **2,1 s**, con sus cinco secciones; la media llega después sin bloquear
+nada. Revisadas las dos fichas (entidad y contratista): no queda ninguna otra
+consulta sin acotar.
+
 ### El catálogo dio su primer patrón: persona natural con valor imposible (sep 2026)
 
 A las pocas horas de crear la lista anterior, el usuario pidió revisarla en

@@ -123,7 +123,7 @@ export function usePerfilEntidad(nombre) {
         .join(',\n                ')
 
       // Fase 1: SECOP II, acotado por nombre (la identidad del perfil).
-      const [resumen, nits, modalidades, contratistas, porAnio, contratos, nacional] =
+      const [resumen, nits, modalidades, contratistas, porAnio, contratos] =
         await Promise.all([
           socrataQuery(
             DS,
@@ -167,21 +167,18 @@ export function usePerfilEntidad(nombre) {
             `SELECT ${CONTRACT_FIELDS}
              WHERE ${F} ORDER BY valor_del_contrato DESC LIMIT 50`,
           ),
-          // Referencia nacional para poder leer las tasas de calidad: un 6% no
-          // dice nada sin saber que la media del país es 0,36%.
-          socrataQuery(
-            DS,
-            `SELECT count(id_contrato) as n,
-                    sum(case(${unir(ERRORES)}, 1, true, 0)) as errores,
-                    sum(case(${unir(INCOMPLETOS)}, 1, true, 0)) as incompletos
-             WHERE ${soloContratosValidos()}`,
-          ),
+          // Aquí iba la referencia nacional de calidad (media del país), como
+          // séptima consulta de este Promise.all. Se sacó en sep 2026: recorría
+          // los 5,5 millones de contratos evaluando todas las categorías de
+          // error, y al sumarse cuatro categorías y dos guardas nuevas ese día
+          // pasó de 7,8 s a 80 s. Como el perfil espera a TODAS antes de pintar,
+          // la ficha de cualquier entidad se quedaba cargando aunque sus propias
+          // consultas tardaran un segundo. Ahora la pone Entidad.jsx desde el
+          // Índice por entidad, que está precalculado en Edge Config.
         ])
 
       const g = resumen[0] || {}
       const totalSecop2 = entero(g.n)
-      const pais = nacional[0] || {}
-      const totalPais = entero(pais.n)
       const nitDominante = valorMasFrecuente(nits, 'nit_entidad')?.valor
 
       // ¿Se puede sumar SECOP I? Solo si el NIT identifica a UNA sola entidad en
@@ -283,10 +280,6 @@ export function usePerfilEntidad(nombre) {
           incompletos: entero(g.incompletos),
           tasaErrores: tasa(entero(g.errores), totalSecop2),
           tasaIncompletos: tasa(entero(g.incompletos), totalSecop2),
-        },
-        referencia: {
-          tasaErrores: tasa(entero(pais.errores), totalPais),
-          tasaIncompletos: tasa(entero(pais.incompletos), totalPais),
         },
 
         modalidades: combinarModalidades(
