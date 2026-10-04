@@ -427,6 +427,56 @@ Efecto colateral buscado: esa lista es un catálogo de trabajo. Si al revisarla
 aparece un patrón limpio —por ejemplo que el objeto nombre un cargo
 individual— ahí sí habría base para excluir con certeza.
 
+### Concentración ajustable por el ciudadano (oct 2026)
+
+Propuesta del usuario: que la sección de concentración del Panorama no esté
+fija en "cuántos concentran la mitad", sino que se pueda elegir el umbral.
+
+**Antes de construir se midió hasta dónde llegan los datos.** La consulta trae
+los 20.000 contratistas más grandes ordenados por valor, así que cualquier
+umbral sale de ahí sin consultas nuevas — pero solo hasta donde ese top
+alcance:
+
+| Ámbito | Contratistas | El top-20.000 cubre |
+|---|---|---|
+| Nacional | 1.224.979 | **79%** del valor |
+| Atlántico | 49.426 | 97,3% |
+| Barranquilla | 33.170 | 98,8% |
+
+**Chips 25 · 50 · 75 · 90 %, no deslizador.** A nivel país el techo
+calculable cae en ~79%; un deslizador con un tope raro se lee peor que un chip
+apagado con su explicación. Y un solo control, no dos: "% del valor" y "top %
+de contratistas" son la misma curva leída por sus dos ejes, y la lectura
+inversa ya está en la frase ("el 1% más grande concentra…").
+
+**Lo incalculable no se inventa.** A nivel país el 90% sale apagado y tachado,
+con una nota que dice por qué (los 20.000 consultados cubren el 79%) y que
+para verlo se elija un departamento, donde cubren casi todo. `Segmented`
+ganó opciones desactivadas para esto.
+
+**Producción.** Edge Config solo guarda lo ya derivado (el arreglo completo
+pesa ~250 KB y no cabe), así que `derivarConcentracion` calcula ahora los
+cuatro umbrales y la cobertura. Una caché escrita antes de este cambio no
+trae `umbrales`: `/api/concentracion` la ignora y recalcula una vez.
+
+De paso, una frase rota anterior: cuando el 1% aún no se había calculado salía
+"El 1% más grande; el contratista más grande…", sin verbo. Cada cláusula se
+muestra ahora solo si su cifra existe.
+
+Verificado en el navegador: a nivel país 25% → 132 contratistas y 90% apagado
+con su nota; en Atlántico con `?concUmbral=90` → "el 9,4% —4.663 de 49.426—
+concentra el 90%", idéntico a lo medido contra la API. Sin desborde a 375 px.
+
+**Hallazgo de rebote, ya en producción y digno de constar.** La limpieza de
+valores imposibles de septiembre cambió esta sección más que ninguna otra.
+Antes decía *"el 0,05% de los contratistas —569— concentra la mitad del
+valor"*; hoy, **0,12% —1.426—**. El contratista más grande pasó de concentrar
+por sí solo el **3,3%** del valor del país al **1,15%**. Los contratos con
+ceros de más, con ICANH y sus 63 billones a la cabeza, hacían que la
+concentración pareciera **2,5 veces más extrema** de lo que es. La basura no
+solo inflaba el total: distorsionaba justo la cifra que más se presta a
+titular.
+
 ### La ficha de entidad se colgaba esperando una cifra del país (sep 2026)
 
 Reportado por el usuario: el buscador de entidades encontraba la entidad, pero

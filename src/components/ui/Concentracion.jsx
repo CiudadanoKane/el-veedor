@@ -1,7 +1,13 @@
 import { QueryState } from './QueryState'
+import { useSearchParams } from 'react-router-dom'
 import { Seccion } from './Seccion'
+import { Segmented } from './Segmented'
+import { UMBRALES_CONCENTRACION } from '../../lib/concentracionQueries'
 import { useConcentracion } from '../../hooks/useConcentracion'
 import { formatPct, formatCOPCorto } from '../../lib/formatters'
+
+// Cómo se dice cada umbral en la frase: "la mitad" se lee mejor que "el 50%".
+const PARTE = { 25: 'la cuarta parte', 50: 'la mitad', 75: 'tres cuartas partes', 90: 'el 90%' }
 
 // Etiqueta del ámbito activo, para el titular en lenguaje llano.
 function ambitoDe({ city, department, entity } = {}) {
@@ -49,6 +55,18 @@ export function Concentracion({ filters = {}, contratistas, tieneSecop1 }) {
   const query = useConcentracion(filters, total)
   const ambito = ambitoDe(filters)
 
+  // El umbral vive en la URL —prefijo "conc", como "evol" y "ciudades" en los
+  // otros gráficos del Panorama— para que un enlace compartido muestre el
+  // mismo corte. 50% por defecto, que es lo que la sección decía siempre.
+  const [params, setParams] = useSearchParams()
+  const pedido = Number(params.get('concUmbral')) || 50
+  const setUmbral = (v) => setParams((prev) => {
+    const next = new URLSearchParams(prev)
+    if (v === 50) next.delete('concUmbral')
+    else next.set('concUmbral', String(v))
+    return next
+  }, { replace: true })
+
   return (
     <Seccion
       titulo="Concentración: en cuántas manos está el dinero"
@@ -88,52 +106,95 @@ export function Concentracion({ filters = {}, contratistas, tieneSecop1 }) {
               return <p className="py-8 text-center text-textSecondary">Sin datos suficientes.</p>
             }
             // Ya vienen derivados de derivarConcentracion (mismo cálculo en
-            // vivo o desde /api/concentracion): cuántos de los más grandes
-            // hacen la mitad del valor, y el share del contratista más grande
-            // y del 1% más grande.
-            const { k50, uno, share1pct, pctContr50 } = d
+            // vivo o desde /api/concentracion): para cada umbral elegible,
+            // cuántos de los más grandes lo acumulan; y el share del
+            // contratista más grande y del 1% más grande.
+            const { uno, share1pct } = d
             const nf = (x) => x.toLocaleString('es-CO')
+            // Una caché de antes de oct 2026 no trae `umbrales`: se rehace el
+            // 50% con los campos viejos y el resto queda apagado.
+            const umbrales = d.umbrales ?? {
+              50: d.k50 ? { k: d.k50, pctContr: d.pctContr50 } : null,
+            }
+            const disponible = (x) => umbrales[x] != null
+            const p = disponible(pedido) ? pedido : 50
+            const u = umbrales[p]
+            const apagados = UMBRALES_CONCENTRACION.filter((x) => !disponible(x))
 
             return (
               <>
-                <p className="text-lectura text-textPrimary leading-relaxed max-w-2xl mb-6">
-                  {k50 ? (
-                    // pctContr50 puede llegar ya calculado (caso cacheado) antes
-                    // de que esta misma página termine de cargar `total` —la
-                    // cuenta de contratistas viene de otra consulta aparte—, así
-                    // que se exige también total aquí para no llamar nf(null).
-                    pctContr50 != null && total != null ? (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-2">
+                  <span className="text-micro uppercase tracking-label text-textSecondary font-semibold">
+                    Parte del valor
+                  </span>
+                  <Segmented
+                    value={p}
+                    onChange={setUmbral}
+                    options={UMBRALES_CONCENTRACION.map((x) => ({
+                      value: x,
+                      label: `${x}%`,
+                      disabled: !disponible(x),
+                      title: disponible(x)
+                        ? undefined
+                        : 'No se puede calcular en este ámbito: ver la nota de abajo',
+                    }))}
+                  />
+                </div>
+                {apagados.length > 0 && (
+                  // Se dice por qué, en vez de solo apagar el chip: a nivel país
+                  // los contratistas consultados no alcanzan a cubrir todo el
+                  // valor, y la cifra que falta no se inventa.
+                  <p className="text-nota text-textSecondary max-w-2xl mb-4">
+                    {apagados.map((x) => `${x}%`).join(' y ')}: no se puede calcular {ambito}. Se
+                    consultan los {nf(d.topFetched)} contratistas más grandes, y entre todos
+                    cubren el {formatPct(d.cubre ?? 0, 0)} del valor; lo que queda por encima
+                    exigiría traer a muchos más.
+                    {ambito === 'en el país'
+                      ? ' Elige un departamento o municipio para verlo: ahí cubren casi todo.'
+                      : ''}
+                  </p>
+                )}
+
+                <p className="text-lectura text-textPrimary leading-relaxed max-w-2xl mb-6 mt-4">
+                  {u ? (
+                    // pctContr puede llegar ya calculado (caso cacheado) antes de
+                    // que esta misma página termine de cargar `total` —la cuenta
+                    // de contratistas viene de otra consulta aparte—, así que se
+                    // exige también total aquí para no llamar nf(null).
+                    u.pctContr != null && total != null ? (
                       <>
                         El <span className="font-display font-extrabold text-danger">
-                          {formatPct(pctContr50, pctContr50 < 1 ? 2 : 1)}
+                          {formatPct(u.pctContr, u.pctContr < 1 ? 2 : 1)}
                         </span>{' '}
-                        de los contratistas —<strong>{nf(k50)}</strong> de {nf(total)}— concentra{' '}
-                        <strong>la mitad</strong> del valor contratado {ambito}.
+                        de los contratistas —<strong>{nf(u.k)}</strong> de {nf(total)}— concentra{' '}
+                        <strong>{PARTE[p]}</strong> del valor contratado {ambito}.
                       </>
                     ) : (
                       <>
-                        Solo <strong>{nf(k50)} contratistas</strong> concentran{' '}
-                        <strong>la mitad</strong> del valor contratado {ambito}.
+                        Solo <strong>{nf(u.k)} contratistas</strong> concentran{' '}
+                        <strong>{PARTE[p]}</strong> del valor contratado {ambito}.
                       </>
                     )
                   ) : (
                     <>Ni los {nf(d.topFetched)} contratistas más grandes acumulan la mitad del valor {ambito}: está muy repartido.</>
                   )}
-                  {(share1pct != null || uno != null) && (
-                    <>
-                      {' '}El <strong>1% más grande</strong>
-                      {share1pct != null ? <> concentra <strong>{formatPct(share1pct)}</strong></> : null}
-                      ; el contratista más grande, por sí solo, {formatPct(uno)}.
-                    </>
+                  {/* Cada cláusula solo si su cifra existe. Antes, sin share1pct
+                      (llega cuando termina el conteo de contratistas), salía
+                      "El 1% más grande; el contratista más grande…", sin verbo. */}
+                  {share1pct != null && (
+                    <> El <strong>1% más grande</strong> concentra <strong>{formatPct(share1pct)}</strong>.</>
+                  )}
+                  {uno != null && (
+                    <> El contratista más grande, por sí solo, {formatPct(uno)}.</>
                   )}
                 </p>
 
-                {pctContr50 != null && k50 && (
+                {u && u.pctContr != null && (
                   <BarrasPareadas
-                    pctContratistas={pctContr50}
-                    etiquetaContratistas={`${formatPct(pctContr50, pctContr50 < 1 ? 2 : 1)} · ${nf(k50)}`}
-                    pctValor={50}
-                    etiquetaValor="50%"
+                    pctContratistas={u.pctContr}
+                    etiquetaContratistas={`${formatPct(u.pctContr, u.pctContr < 1 ? 2 : 1)} · ${nf(u.k)}`}
+                    pctValor={p}
+                    etiquetaValor={`${p}%`}
                   />
                 )}
 

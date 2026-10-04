@@ -1,4 +1,9 @@
-// Control segmentado (toggle) reutilizable. options: [{ value, label }]
+// Control segmentado (toggle) reutilizable. options: [{ value, label, disabled?, title? }]
+//
+// `disabled` apaga una opción sin quitarla: sirve cuando un valor existe pero
+// no se puede calcular en el ámbito actual (ej. el 90% de concentración a
+// nivel país). Quitarla escondería que existe; apagarla con un `title` dice por
+// qué no está.
 //
 // Se desplaza solo cuando no cabe. Antes esa responsabilidad era del que lo
 // usaba —había que envolverlo a mano en un `overflow-x-auto`— y varios sitios
@@ -22,11 +27,16 @@ export function Segmented({ options, value, onChange }) {
             <button
               key={o.value}
               type="button"
-              onClick={() => onChange(o.value)}
+              disabled={o.disabled}
+              title={o.title}
+              aria-pressed={activo}
+              onClick={() => !o.disabled && onChange(o.value)}
               className={`px-3.5 py-1.5 text-cuerpo whitespace-nowrap border-r border-border last:border-r-0 ${
                 activo
                   ? 'bg-textPrimary text-bg font-bold'
-                  : 'text-textSecondary font-normal hover:bg-muted hover:text-textPrimary'
+                  : o.disabled
+                    ? 'text-textSecondary/40 cursor-not-allowed line-through decoration-textSecondary/30'
+                    : 'text-textSecondary font-normal hover:bg-muted hover:text-textPrimary'
               }`}
             >
               {o.label}

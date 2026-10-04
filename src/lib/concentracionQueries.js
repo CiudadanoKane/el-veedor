@@ -63,5 +63,34 @@ export function derivarConcentracion(total, valores, contratistasTotal) {
 
   const pctContr50 = contratistasTotal && k50 ? (k50 / contratistasTotal) * 100 : null
 
-  return { total, topFetched, k50, uno, share1pct, pctContr50 }
+  // Qué parte del valor alcanzan a cubrir los contratistas traídos. Es el
+  // techo de lo que se puede calcular: a nivel país el top-20.000 cubre ~79%
+  // del valor, así que "cuántos concentran el 90%" no tiene respuesta con
+  // estos datos; en un departamento o municipio cubre 97-99% y casi todo sale.
+  const cubre = total > 0 && cum.length ? (cum[cum.length - 1] / total) * 100 : 0
+
+  // Los umbrales que el ciudadano puede elegir en el Panorama. Cada uno trae
+  // cuántos de los más grandes hacen falta para acumularlo y qué porcentaje de
+  // todos los contratistas son. null = no se alcanza con el top traído, y el
+  // chip correspondiente se muestra desactivado en vez de inventar una cifra.
+  //
+  // Se calculan aquí, y no en el componente, por la misma razón que el resto
+  // de esta función: el arreglo completo no cabe en Edge Config, así que la
+  // vista nacional solo puede mostrar lo que se haya derivado de antemano.
+  const umbrales = {}
+  for (const p of UMBRALES_CONCENTRACION) {
+    const i = cum.findIndex((c) => c >= (p / 100) * total)
+    const k = i === -1 ? null : i + 1
+    umbrales[p] = k
+      ? { k, pctContr: contratistasTotal ? (k / contratistasTotal) * 100 : null }
+      : null
+  }
+
+  return { total, topFetched, k50, uno, share1pct, pctContr50, cubre, umbrales }
 }
+
+// Porcentajes del valor contratado que se pueden elegir en la sección de
+// concentración. Chips y no deslizador a propósito: a nivel país el techo
+// calculable cae en ~79%, y un deslizador con un tope raro se lee peor que un
+// chip apagado con su explicación.
+export const UMBRALES_CONCENTRACION = [25, 50, 75, 90]

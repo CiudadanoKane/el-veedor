@@ -34,7 +34,10 @@ export default async function handler(req, res) {
   try {
     if (!forzar) {
       const cache = await leerEdgeConfig(CLAVE)
-      if (cache) {
+      // Sin `umbrales` es una caché escrita antes de que la sección fuera
+      // ajustable (oct 2026): se ignora y se recalcula una vez, en vez de
+      // servir un día entero con todos los chips menos el 50% apagados.
+      if (cache && cache.umbrales) {
         res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=86400')
         res.setHeader('X-Concentracion-Source', 'edge-config')
         return res.status(200).json(cache)
