@@ -34,7 +34,7 @@ export function BusquedaRapida() {
           cabecera, y deja claro dónde se escribe. */}
       <div
         className="flex items-center gap-2 bg-bg border border-transparent
-                   focus-within:border-sideActive transition-colors px-2.5 py-1.5"
+                   focus-within:border-sideActive transition-colors px-2.5 py-2 sm:py-1.5"
       >
         <svg
           width="15"

@@ -8,6 +8,8 @@ import { QueryState } from '../components/ui/QueryState'
 import { DataTable } from '../components/ui/DataTable'
 import { Methodology } from '../components/ui/Methodology'
 import { Segmented } from '../components/ui/Segmented'
+import { ListaBarra } from '../components/ui/ListaBarra'
+import { useEsMovil } from '../hooks/useEsMovil'
 import { IndiceEjecucion } from '../components/alertas/IndiceEjecucion'
 import { useFilters } from '../context/FiltersContext'
 import { useRankingContratistas, useRankingEntidades } from '../hooks/useRankings'
@@ -154,7 +156,7 @@ function RankingContratistas({ filters }) {
       {esSecop1 && <AvisoSecop1 />}
 
       <p className="text-lectura text-textSecondary font-light -mt-1 mb-4 max-w-2xl leading-relaxed">
-        Haz clic en el nombre de un contratista para ver su perfil: con qué entidades
+        Pulsa el nombre de un contratista para ver su perfil: con qué entidades
         contrata, cómo se le adjudica y su historial completo. Esta tabla solo muestra
         los 30 primeros —{' '}
         <Link to="/buscar?modo=contratistas" className="text-primary enlace-sutil font-semibold">
@@ -542,6 +544,8 @@ function RankingAdiciones({ filters }) {
 function RankingCategorias({ filters }) {
   const query = useCategorias(filters)
   const [metric, setMetric] = useState('valor') // 'valor' | 'contratos'
+  const [todas, setTodas] = useState(false)
+  const esMovil = useEsMovil()
   const data = query.data
 
   const sorted = useMemo(() => {
@@ -618,7 +622,39 @@ function RankingCategorias({ filters }) {
 
       <div className="mt-4">
         <QueryState query={query} empty="Sin datos de categorías.">
-          {() => (
+          {() => esMovil ? (
+            // En el teléfono, lista con barra en vez de gráfico más tabla. El
+            // eje de 230 px para los nombres dejaba a las barras 80 px —una
+            // rayita— y aun así truncaba "Servicios públicos, políticos y c…";
+            // debajo, la tabla repetía lo mismo en tarjetas. La lista dice
+            // ambas cosas a la vez: nombre completo, cifra, % y barra.
+            <>
+              <ListaBarra
+                total={total}
+                items={(todas ? sorted : sorted.slice(0, 15)).map((r) => ({
+                  clave: r.segmento,
+                  label: r.nombre,
+                  valor: r[metric],
+                  valorTexto:
+                    metric === 'valor' ? formatCOP(r.valor) : r.contratos.toLocaleString('es-CO'),
+                  secundario:
+                    metric === 'valor'
+                      ? `${r.contratos.toLocaleString('es-CO')} contratos`
+                      : formatCOP(r.valor),
+                  nota: r.segmento !== '—' ? `UNSPSC ${r.segmento}` : null,
+                }))}
+              />
+              {!todas && sorted.length > 15 && (
+                <button
+                  type="button"
+                  onClick={() => setTodas(true)}
+                  className="mt-4 w-full min-h-[44px] border border-textPrimary text-cuerpo font-semibold"
+                >
+                  Ver las {sorted.length - 15} categorías restantes
+                </button>
+              )}
+            </>
+          ) : (
             <>
               <ResponsiveContainer width="100%" height={Math.max(320, sorted.slice(0, 15).length * 34)}>
                 <BarChart

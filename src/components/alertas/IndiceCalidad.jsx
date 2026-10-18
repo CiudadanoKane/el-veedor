@@ -198,8 +198,8 @@ export function IndiceCalidad() {
             defectos, sino estar muy por encima del resto.
           </p>
           <p className="text-cuerpo text-textPrimary mt-3 leading-relaxed">
-            <strong>Todo lo subrayado lleva a más información.</strong> Haz clic en el
-            nombre de una entidad para ver su perfil completo, o en un conteo para ir
+            <strong>Todo lo subrayado lleva a más información.</strong> Pulsa el
+            nombre de una entidad para ver su perfil completo, o un conteo para ir
             directo a esos contratos.
           </p>
         </div>
@@ -218,7 +218,7 @@ export function IndiceCalidad() {
         inicio, valor en $0 pese a tener presupuesto comprometido, y pagos por encima del
         valor del contrato.{' '}
         <strong>
-          Haz clic en cualquier conteo para ver los contratos concretos de esa entidad.
+          Pulsa cualquier conteo para ver los contratos concretos de esa entidad.
         </strong>
         <br />
         <br />

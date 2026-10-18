@@ -171,7 +171,7 @@ export function ContratosVencidos() {
         viene en <strong>"Últimos 6 meses"</strong>, el tramo con más probabilidad de
         ser retraso real. El semáforo clasifica por días vencidos: verde &lt;30, ámbar
         30–180, rojo &gt;180. Se muestran hasta 100 casos.{' '}
-        <strong>Haz clic en cualquier fila para ver el detalle.</strong> Con el selector
+        <strong>Pulsa cualquier contrato para ver el detalle.</strong> Con el selector
         de <strong>fuente</strong> puedes ver los vencidos de SECOP I, que se miden por un
         criterio propio (ver el aviso al elegirla).
       </Methodology>

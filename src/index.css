@@ -166,3 +166,20 @@ body.menu-abierto {
     font-weight: 400;
   }
 }
+
+/* Área de toque ampliada sin cambiar el aspecto. Lo recomendado para un dedo
+   son ~44 px, y varios controles medían 16-26: el "?" del glosario, "¿Cómo se
+   calcula esto?", Compartir, cerrar el menú. Agrandarlos de verdad rompería
+   el renglón en que viven; en cambio se extiende la zona sensible con un
+   pseudo-elemento invisible —el toque sobre él cuenta como toque sobre el
+   botón—. Solo en el teléfono, donde no hay cursor que apunte fino. */
+@media (max-width: 639px) {
+  .toque {
+    position: relative;
+  }
+  .toque::after {
+    content: '';
+    position: absolute;
+    inset: -10px -8px;
+  }
+}

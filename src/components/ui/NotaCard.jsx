@@ -58,7 +58,7 @@ export function NotaCard({ categoria, icon, tono = 'neutral', cargando, secundar
           {enlace && (
             <Link
               to={enlace.to}
-              className="inline-block mt-2.5 text-cuerpo font-semibold text-primary enlace-sutil"
+              className="toque inline-block mt-2.5 text-cuerpo font-semibold text-primary enlace-sutil"
             >
               {enlace.texto} →
             </Link>

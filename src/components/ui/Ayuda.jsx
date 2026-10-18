@@ -77,7 +77,7 @@ export function Ayuda({ termino, definicion, className = '' }) {
         // 11px (el escalón `micro`) y su caja dejó de caber en el círculo.
         // Subirlo arregla el encaje y de paso agranda un objetivo táctil que
         // era demasiado pequeño para un control que se puede tocar.
-        className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full
+        className="toque ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full
                    border border-border text-micro font-bold leading-none align-super
                    text-textSecondary hover:border-textPrimary hover:text-textPrimary
                    focus:outline-none focus:ring-1 focus:ring-textPrimary transition-colors"

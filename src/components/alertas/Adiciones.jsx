@@ -175,7 +175,7 @@ export function AdicionesTiempo() {
         número inventado. El <strong>% de adición</strong> es días añadidos ÷ plazo
         original. Colores: ámbar &gt;50%, rojo &gt;100%, rojo intenso &gt;200%. Se excluyen
         valores mayores a 3.650 días (errores de digitación).{' '}
-        <strong>Haz clic en una fila para ver el detalle y el historial completo de
+        <strong>Pulsa un contrato para ver el detalle y el historial completo de
         modificaciones.</strong>
         <br />
         <br />

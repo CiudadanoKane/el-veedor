@@ -473,12 +473,24 @@ Segunda ronda, tras probarlo el usuario en su teléfono:
   borde más marcado, y el texto de peso fino (300) pasa a normal: gris y
   delgado se perdía en pantalla pequeña.
 
-Pendiente (fases 2 y 3): objetivos táctiles chicos (el "?" del glosario mide
-16 px), el gráfico de "Qué se contrata" con etiquetas truncadas, "Haz clic" en
-10 textos, la guía que dice "a la izquierda" donde en el teléfono es "arriba",
-introducciones que llenan la primera pantalla, la barra superior fija (18% de
-la pantalla entre las dos barras), carga por página (342 KB de JS de entrada)
-y el diagrama del proceso en vertical.
+Fase 2:
+
+- **Zonas de toque.** Clase `.toque` (index.css): un pseudo-elemento invisible
+  extiende la zona sensible sin mover el renglón. El "?" del glosario pasó de
+  16×16 a 32×36; Compartir y Graficar de 26 a 42×46; "¿Cómo se calcula esto?"
+  de 21 a 41 de alto; también cerrar el menú, "+ Filtros avanzados" y los
+  enlaces de Noticias. La búsqueda de arriba y los selectores de lugar crecen
+  de verdad en el teléfono (44 y ~34 px).
+- **"Qué se contrata" en lista con barra** en el teléfono: el gráfico dejaba
+  80 px a las barras y truncaba los nombres, y la tabla de debajo repetía lo
+  mismo. 15 categorías y "Ver las N restantes".
+- **"Haz clic" → "Pulsa"** en los 10 textos (vale para dedo y mouse), y "una
+  fila" → "un contrato", que también describe la tarjeta. La guía ya no dice
+  "a la izquierda… al lado": en el teléfono búsqueda y lugar van apilados.
+
+Pendiente (fase 3): introducciones que llenan la primera pantalla, la barra
+superior fija (18% de la pantalla entre las dos barras), carga por página (342
+KB de JS de entrada) y el diagrama del proceso en vertical.
 
 ### Concentración ajustable por el ciudadano (oct 2026)
 

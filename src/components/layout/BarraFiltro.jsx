@@ -28,7 +28,7 @@ function Select({ etiqueta, value, onChange, options, loading, placeholder, disa
       // a una tercera fila y la cabecera crecía 24 px.
       className="flex-1 min-w-0 lg:flex-none max-w-[9.5rem] sm:max-w-[14rem]
                  overflow-hidden text-ellipsis
-                 bg-side border-0 border-b border-sideSoft/50 px-0 py-0.5
+                 bg-side border-0 border-b border-sideSoft/50 px-0 py-1.5 sm:py-0.5
                  text-cuerpo font-semibold text-sideActive cursor-pointer
                  hover:border-sideActive focus:border-sideActive focus:outline-none
                  disabled:opacity-40 disabled:cursor-default"

@@ -91,7 +91,7 @@ export function AlertaFechasInconsistentes() {
           siempre es un <strong>error de registro</strong> de la entidad en SECOP, pero en
           contratos de alto valor merece revisión, pues refleja descuido en la información
           pública o inconsistencias en el expediente. Ordenados de mayor a menor cuantía.{' '}
-          <strong>Haz clic en una fila</strong> para ver el detalle.
+          <strong>Pulsa un contrato</strong> para ver el detalle.
           <br />
           <br />
           <strong>Esta alerta es solo de SECOP II, y no por falta de ganas.</strong> La
@@ -270,7 +270,7 @@ export function AlertaErrorDigitacion() {
           marca cuando los dígitos coinciden. <strong>Su límite:</strong> hace falta un pago
           con el que comparar, y la mitad de los contratos no lo reporta.
           Todos inflan las estadísticas públicas y se excluyen de los rankings por valor.{' '}
-          <strong>Haz clic en una fila</strong> para ver el detalle.
+          <strong>Pulsa un contrato</strong> para ver el detalle.
         </>
       }
     >
@@ -723,7 +723,7 @@ export function AlertaValorDesproporcionado() {
           Compara el valor registrado con lo pagado: cuando lo pagado es una fracción
           minúscula —o cero— y el objeto nombra un cargo de una sola persona, casi siempre
           es un error de digitación que nadie corrigió.{' '}
-          <strong>Haz clic en una fila</strong> para ver el detalle del contrato.
+          <strong>Pulsa un contrato</strong> para ver el detalle del contrato.
         </>
       }
     >

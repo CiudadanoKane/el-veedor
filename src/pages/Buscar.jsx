@@ -617,7 +617,7 @@ export function Buscar() {
               <button
                 type="button"
                 onClick={() => setAvanzados((v) => !v)}
-                className="text-micro uppercase tracking-label font-semibold text-textSecondary
+                className="toque text-micro uppercase tracking-label font-semibold text-textSecondary
                            hover:text-textPrimary transition-colors"
               >
                 {avanzados ? '– Filtros avanzados' : '+ Filtros avanzados'}
@@ -717,7 +717,7 @@ export function Buscar() {
                   buscado es un concepto, la IA también <strong>amplía a términos relacionados</strong>{' '}
                   («puente» además de «viaducto»), que aparecen como etiquetas quitables bajo la
                   caja. Se muestran hasta <strong>{LIMITE}</strong> resultados.{' '}
-                  <strong>Haz clic en una fila</strong> para ver el detalle.
+                  <strong>Pulsa un contrato</strong> para ver el detalle.
                   <br />
                   <br />
                   Si pegas un <strong>número de proceso o de contrato</strong> —por ejemplo uno que

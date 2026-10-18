@@ -79,7 +79,7 @@ export function Sidebar({ abierto, onCerrar }) {
           </div>
           <button
             onClick={onCerrar}
-            className="lg:hidden text-sideSoft hover:text-white text-2xl leading-none -mt-1"
+            className="toque lg:hidden text-sideSoft hover:text-white text-2xl leading-none -mt-1"
             aria-label="Cerrar menú"
           >
             ×

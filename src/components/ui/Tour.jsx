@@ -48,10 +48,12 @@ const PASOS = [
       'Noticias reúne las señales más llamativas del momento, ya masticadas y con enlace a la evidencia. Es la puerta de entrada más rápida.',
   },
   {
+    // Sin "a la izquierda / al lado": eso describía el escritorio, donde
+    // búsqueda y lugar comparten fila. En el teléfono van una encima de otra.
     target: '[data-tour="barra"]',
     titulo: 'La barra de arriba',
     cuerpo:
-      'Siempre a mano, en cualquier página. A la izquierda buscas contratos por lo que sea —una obra, tu municipio, un monto—. Al lado eliges el territorio: casi todo el sitio se recalcula para tu zona y el filtro te sigue de sección en sección.',
+      'Siempre a mano, en cualquier página. En la caja buscas contratos por lo que sea —una obra, tu municipio, un monto—. Con los selectores eliges el territorio: casi todo el sitio se recalcula para tu zona y el filtro te sigue de sección en sección.',
   },
   {
     target: '[data-tour="cifras"]',

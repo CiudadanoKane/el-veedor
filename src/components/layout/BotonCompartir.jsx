@@ -108,7 +108,7 @@ export function BotonCompartir() {
       // No hay una variante para banda oscura en la paleta, así que el error se
       // marca con el mismo blanco de "activo" (ya usado en esta barra) más el
       // ícono de alerta: la forma comunica el estado, no el color.
-      className={`shrink-0 flex items-center gap-1.5 p-1 ${
+      className={`toque shrink-0 flex items-center gap-1.5 p-1 ${
         estado === 'error' ? 'text-sideActive' : 'text-sideSoft hover:text-sideActive'
       }`}
     >

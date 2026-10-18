@@ -8,7 +8,7 @@ export function Methodology({ children }) {
     <div className="mt-3">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="group inline-flex items-center gap-1.5 text-nota font-semibold text-primary hover:text-textPrimary"
+        className="toque group inline-flex items-center gap-1.5 text-nota font-semibold text-primary hover:text-textPrimary"
       >
         <Icon
           name="chevronAbajo"

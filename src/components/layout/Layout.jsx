@@ -119,7 +119,7 @@ export function Layout() {
                    pantallas pequeñas hay que señalar la puerta, no lo que hay
                    detrás (ver Tour.jsx). */
                 data-tour="menu"
-                className="lg:hidden shrink-0 text-sideActive p-1 -ml-1"
+                className="toque lg:hidden shrink-0 text-sideActive p-1 -ml-1"
                 aria-label="Abrir menú"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -156,7 +156,7 @@ export function Layout() {
                 to={rutaConAmbito('/constructor')}
                 aria-label="Graficar"
                 title="Graficar"
-                className="shrink-0 flex items-center gap-1.5 text-sideSoft hover:text-sideActive p-1"
+                className="toque shrink-0 flex items-center gap-1.5 text-sideSoft hover:text-sideActive p-1"
               >
                 <Icon name="constructor" className="h-[18px] w-[18px]" />
                 <span className="hidden sm:inline text-cuerpo font-semibold whitespace-nowrap">
