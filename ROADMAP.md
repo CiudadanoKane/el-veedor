@@ -456,6 +456,23 @@ tamaño de letra. Las pestañas eran lo menos grave:
   Facebook la ignoran— y un logo negro transparente que desaparecía sobre
   fondo oscuro. Ahora `og-el-veedor.png`, 1200×630, con dirección completa.
 
+Segunda ronda, tras probarlo el usuario en su teléfono:
+
+- **El mensaje dice qué se envía.** Compartir manda, además del enlace, una
+  frase armada con lo que hay en pantalla: el titular, la pestaña activa
+  (`data-pestanas`) y el lugar. Ej.: "Rankings (actores): Quién más adiciona,
+  en Atlántico. Míralo en El Veedor:". La vista previa sigue siendo la
+  genérica; una por enlace exige una función en el servidor (para después).
+- **Cada página abre arriba.** Rankings abría a mitad de lista: en un SPA el
+  documento es el mismo y conservaba el scroll de la página anterior. Ahora
+  se va arriba al cambiar de ruta (no de pestaña ni de filtro), y al volver
+  atrás se recupera la posición donde se iba.
+- **Contraste en el teléfono.** Las tarjetas son cajas con borde y aire entre
+  ellas —una línea fina sola no separaba un contrato del siguiente—, con el
+  puesto en una casilla negra y las cifras en seminegrita. Los chips tienen
+  borde más marcado, y el texto de peso fino (300) pasa a normal: gris y
+  delgado se perdía en pantalla pequeña.
+
 Pendiente (fases 2 y 3): objetivos táctiles chicos (el "?" del glosario mide
 16 px), el gráfico de "Qué se contrata" con etiquetas truncadas, "Haz clic" en
 10 textos, la guía que dice "a la izquierda" donde en el teléfono es "arriba",
