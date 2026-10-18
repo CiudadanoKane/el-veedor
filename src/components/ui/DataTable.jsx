@@ -148,33 +148,45 @@ function Tarjetas({ columns, rows, keyField, renderDetail, openKey, toggle }) {
 
   return (
     <>
-    <ul className="border-t border-textPrimary/80">
+    {/* Cada tarjeta es una caja con borde propio y aire entre una y otra.
+        Con solo una línea fina entre filas —el tratamiento de la tabla— en el
+        teléfono no se distinguía dónde terminaba un contrato y empezaba el
+        siguiente: sin columnas alineadas, la línea sola no arma lectura. */}
+    <ul className="space-y-3">
       {rows.slice(0, visibles).map((row, i) => {
         const key = `${row[keyField] ?? 'row'}-${i}`
         const isOpen = openKey === key
         return (
-          <li key={key} className={`border-b border-border ${isOpen ? 'bg-muted' : ''}`}>
+          <li
+            key={key}
+            className={`border ${isOpen ? 'border-textPrimary bg-muted' : 'border-textPrimary/25 bg-bg'}`}
+          >
             <div
               onClick={renderDetail ? () => toggle(key) : undefined}
-              className={`py-4 px-1 ${renderDetail ? 'cursor-pointer' : ''}`}
+              className={`p-4 ${renderDetail ? 'cursor-pointer active:bg-muted' : ''}`}
             >
               {/* Los render de escritorio acotan el ancho (max-w-[200px]) y
                   truncan el objeto a una línea para que la tabla no crezca.
                   En la tarjeta sobra el ancho y lo que se corta es lectura
-                  perdida: se anulan ambos. */}
-              <div className="flex items-start gap-3 [&_*]:max-w-none [&_.truncate]:whitespace-normal">
+                  perdida: se anulan ambos, con un tope de tres líneas para que
+                  un objeto larguísimo no se coma la tarjeta (completo, en el
+                  detalle). */}
+              <div className="flex items-start gap-3 [&_*]:max-w-none [&_.truncate]:whitespace-normal [&_.truncate]:line-clamp-3">
                 {rango && (
-                  <span className="min-w-[1.25rem] text-nota tabular-nums text-textSecondary pt-0.5 shrink-0">
+                  // El puesto en una casilla negra: es lo primero que se busca
+                  // al bajar por un ranking.
+                  <span className="min-w-[1.75rem] h-7 px-1 inline-flex items-center justify-center
+                                   bg-textPrimary text-bg text-nota font-bold tabular-nums shrink-0">
                     {celda(rango, row)}
                   </span>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="text-cuerpo font-semibold leading-snug break-words">
+                  <div className={`text-cuerpo font-semibold leading-snug break-words ${rango ? 'pt-[3px]' : ''}`}>
                     {celda(titulo, row)}
                   </div>
 
                   {resto.length > 0 && (
-                    <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5">
+                    <dl className="mt-3 pt-3 border-t border-border grid grid-cols-2 gap-x-4 gap-y-3">
                       {resto.map((c) => (
                         <div key={c.key} className="min-w-0">
                           {c.header && (
@@ -208,7 +220,7 @@ function Tarjetas({ columns, rows, keyField, renderDetail, openKey, toggle }) {
                 </div>
               </div>
             </div>
-            {renderDetail && isOpen && <div className="px-1 pb-6">{renderDetail(row)}</div>}
+            {renderDetail && isOpen && <div className="px-4 pb-6">{renderDetail(row)}</div>}
           </li>
         )
       })}

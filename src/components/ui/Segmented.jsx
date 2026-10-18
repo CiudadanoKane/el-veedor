@@ -40,12 +40,12 @@ export function Segmented({ options, value, onChange }) {
               aria-pressed={activo}
               onClick={() => !o.disabled && onChange(o.value)}
               className={`px-3.5 py-2 min-h-[40px] sm:py-1.5 sm:min-h-0 text-cuerpo whitespace-nowrap
-                          border border-border sm:border-0 sm:border-r sm:last:border-r-0 ${
+                          border border-textPrimary/30 sm:border-0 sm:border-r sm:border-border sm:last:border-r-0 ${
                 activo
                   ? 'bg-textPrimary text-bg font-bold'
                   : o.disabled
                     ? 'text-textSecondary/40 cursor-not-allowed line-through decoration-textSecondary/30'
-                    : 'text-textSecondary font-normal hover:bg-muted hover:text-textPrimary'
+                    : 'text-textPrimary/80 sm:text-textSecondary font-normal hover:bg-muted hover:text-textPrimary'
               }`}
             >
               {o.label}

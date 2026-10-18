@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Outlet, useLocation, Link } from 'react-router-dom'
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
+import { Outlet, useLocation, useNavigationType, Link } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { BarraFiltro } from './BarraFiltro'
 import { BusquedaRapida } from './BusquedaRapida'
@@ -28,6 +28,59 @@ export function Layout() {
 
   // Cierra el menú al cambiar de sección y evita el scroll de fondo
   useEffect(() => setMenuAbierto(false), [pathname])
+
+  // Cada página nueva empieza arriba. Un SPA no lo hace solo: el documento es
+  // el mismo, así que al tocar "Rankings" en la barra de abajo desde la mitad
+  // del Panorama, Rankings abría con ese mismo scroll, a mitad de su lista.
+  // Solo al cambiar de RUTA: cambiar de pestaña o de filtro (la query) no
+  // debe mandar arriba a quien está leyendo. Al volver atrás (POP) se
+  // recupera la posición que tenía esa entrada del historial.
+  const { key } = useLocation()
+  const tipo = useNavigationType()
+  const posiciones = useRef(new Map())
+  useEffect(() => {
+    const y = tipo === 'POP' ? posiciones.current.get(key) ?? 0 : 0
+    // 'instant': el html lleva scroll-behavior: smooth, y un desplazamiento
+    // animado desde la mitad de la página se ve como un salto raro.
+    window.scrollTo({ top: y, behavior: 'instant' })
+    if (!y) return
+    // Al volver, la página puede estar aún creciendo (gráficos, consultas que
+    // llegan): mientras no mida lo suficiente, el navegador recorta el
+    // destino. Se reintenta un par de segundos y se cede apenas la persona
+    // mueva la pantalla por su cuenta.
+    let intentos = 0
+    const t = setInterval(() => {
+      if (++intentos > 20 || Math.abs(window.scrollY - y) < 2) return clearInterval(t)
+      window.scrollTo({ top: y, behavior: 'instant' })
+    }, 100)
+    const ceder = () => clearInterval(t)
+    window.addEventListener('touchstart', ceder, { once: true, passive: true })
+    window.addEventListener('wheel', ceder, { once: true, passive: true })
+    return () => {
+      clearInterval(t)
+      window.removeEventListener('touchstart', ceder)
+      window.removeEventListener('wheel', ceder)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
+  // La posición se guarda mientras se lee, no al salir: al salir el contenido
+  // ya es el de la página nueva y el navegador pudo haber recortado el scroll.
+  // De layout, no de efecto normal: así el oyente de la entrada vieja se
+  // retira ANTES de que el navegador recorte el scroll por el cambio de
+  // contenido, y ese recorte no se guarda como si fuera la posición leída.
+  useLayoutEffect(() => {
+    const mapa = posiciones.current
+    const guardar = () => mapa.set(key, window.scrollY)
+    // También al tocar, en captura: el toque que navega llega antes que el
+    // cambio de página, así que guarda la posición exacta de ese momento
+    // aunque el último evento de scroll se haya quedado atrás.
+    window.addEventListener('scroll', guardar, { passive: true })
+    document.addEventListener('click', guardar, true)
+    return () => {
+      window.removeEventListener('scroll', guardar)
+      document.removeEventListener('click', guardar, true)
+    }
+  }, [key])
 
   // Aquí se precargaban tres consultas de contratista para el feed de Noticias
   // (~30 s cada una, agrupando por NIT sobre millones de registros). Se quitó:

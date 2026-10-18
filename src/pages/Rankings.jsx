@@ -697,7 +697,7 @@ export function Rankings() {
           "Cómo ejecutan" pasó a "Quién más prorroga": es lo que de verdad
           muestra —su propio titular ya decía "Más prórrogas"— y deja las
           cinco etiquetas en paralelo, cuatro «quién» y un «qué». */}
-      <div>
+      <div data-pestanas>
         <Segmented
           value={tab}
           onChange={setTab}

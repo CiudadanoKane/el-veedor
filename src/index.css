@@ -156,3 +156,13 @@ body.menu-abierto {
     font-size: 16px !important;
   }
 }
+
+/* En el teléfono el peso fino (300) se pierde: gris, delgado, en una
+   pantalla pequeña y muchas veces al sol. Las entradas de página y de
+   sección pasan a peso normal. En escritorio se conserva el contraste
+   fino/grueso que da el tono editorial. */
+@media (max-width: 639px) {
+  .font-light {
+    font-weight: 400;
+  }
+}

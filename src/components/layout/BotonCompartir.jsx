@@ -31,6 +31,32 @@ async function copiarAlPortapapeles(texto) {
   if (!ok) throw new Error('execCommand copy devolvió false')
 }
 
+// Lo que acompaña al enlace en el mensaje. Sin esto, quien lo recibe veía la
+// misma vista previa genérica para un perfil, una búsqueda o una pestaña de
+// Rankings: "un enlace a El Veedor", sin saber a qué. Se arma con lo que ya
+// está en pantalla —el titular de la página, la pestaña activa (marcada con
+// data-pestanas) y el lugar elegido— para que no haya que mantener un texto
+// por ruta. Ej.: "Rankings (actores): Quién recibe más, en Atlántico."
+function describirVista() {
+  const limpio = (t) => (t || '').replace(/\s+/g, ' ').trim()
+  const { pathname, search } = window.location
+  const params = new URLSearchParams(search)
+  const titular = limpio(document.querySelector('main h1')?.innerText)
+
+  let que = titular
+  if (pathname.startsWith('/entidad/')) que = `Perfil de la entidad ${titular}`
+  else if (pathname.startsWith('/contratista/')) que = `Perfil del contratista ${titular}`
+  else if (pathname === '/buscar' && params.get('q')) que = `Búsqueda de contratos: «${params.get('q')}»`
+
+  const pestana = limpio(document.querySelector('[data-pestanas] [aria-pressed="true"]')?.innerText)
+  if (pestana) que += `: ${pestana}`
+
+  const lugar = params.get('ciudad') || params.get('departamento')
+  if (lugar && !que.toLowerCase().includes(lugar.toLowerCase())) que += `, en ${lugar}`
+
+  return que ? `${que}. Míralo en El Veedor:` : 'Míralo en El Veedor:'
+}
+
 // idle | copiado | error. Un fallo silencioso —clic, nada visible— es peor que
 // mostrar el error: el permiso de portapapeles puede estar bloqueado por el
 // navegador, una extensión o una política corporativa, y sin aviso el usuario
@@ -49,7 +75,7 @@ export function BotonCompartir() {
     // un fallo, y no se dice nada.
     if (navigator.share && window.matchMedia('(pointer: coarse)').matches) {
       try {
-        await navigator.share({ title: document.title, url: window.location.href })
+        await navigator.share({ title: document.title, text: describirVista(), url: window.location.href })
         return
       } catch (e) {
         if (e?.name === 'AbortError') return

@@ -37,7 +37,9 @@ export function SeccionConPestanas({ titulo, subtitulo, intro, items }) {
         </p>
       )}
 
-      <div>
+      {/* data-pestanas: Compartir lee de aquí la pestaña activa para decir
+          en el mensaje qué se está enviando. */}
+      <div data-pestanas>
         <Segmented
           value={tab}
           onChange={cambiar}
