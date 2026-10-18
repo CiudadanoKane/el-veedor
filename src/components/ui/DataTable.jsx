@@ -1,11 +1,13 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Icon } from './Icon'
+import { useEsMovil } from '../../hooks/useEsMovil'
 
 // Tabla genérica. columns: [{ key, header, render?, className? }]
 // renderDetail?(row): si se pasa, cada fila es clicable y despliega un panel debajo.
 //
-// En móvil la tabla NO se comprime: conserva un ancho mínimo legible y se
-// desplaza en horizontal, que se lee mucho mejor que columnas apiladas.
+// En el teléfono no hay tabla: cada fila se vuelve una tarjeta (ver Tarjetas,
+// abajo). En pantallas medianas la tabla conserva un ancho mínimo legible y se
+// desplaza en horizontal.
 // Las columnas numéricas nunca parten en dos líneas: si una cifra se corta y
 // la de al lado no, la fila se ve desalineada. Se aplica aquí y no en cada
 // página para que valga en toda la plataforma.
@@ -17,6 +19,7 @@ function normalizarColumna(c) {
 
 export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', renderDetail }) {
   const [openKey, setOpenKey] = useState(null)
+  const esMovil = useEsMovil()
   const columns = columnasCrudas.map(normalizarColumna)
   const expandable = typeof renderDetail === 'function'
   const cols = expandable
@@ -24,6 +27,19 @@ export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', rend
     : columns
 
   const toggle = (key) => setOpenKey((cur) => (cur === key ? null : key))
+
+  if (esMovil) {
+    return (
+      <Tarjetas
+        columns={columns}
+        rows={rows}
+        keyField={keyField}
+        renderDetail={expandable ? renderDetail : null}
+        openKey={openKey}
+        toggle={toggle}
+      />
+    )
+  }
 
   return (
     <div>
@@ -98,10 +114,117 @@ export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', rend
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-nota text-textSecondary sm:hidden">
-        Desliza la tabla para ver todas las columnas
-        {expandable && ' · toca una fila para el detalle'}
-      </p>
     </div>
   )
 }
+
+// En el teléfono cada fila es una tarjeta. La tabla de 760-980 px se
+// desplazaba en horizontal dentro de 335: solo se veía la primera columna, y
+// la cifra que daba sentido a la fila —el valor en Rankings, los días vencidos
+// en Alertas— quedaba fuera de la pantalla. El aviso "Desliza la tabla" vivía
+// debajo de la última fila, donde nadie llegaba a leerlo. Y el detalle
+// desplegado heredaba el ancho de la tabla: "En palabras simples" se cortaba a
+// mitad de renglón.
+//
+// Sin configuración por página: la columna "#" va de prefijo, la primera
+// columna de datos es el título y el resto se lee como "etiqueta: valor".
+// Las columnas sin encabezado (un semáforo, un enlace) van sin etiqueta.
+function Tarjetas({ columns, rows, keyField, renderDetail, openKey, toggle }) {
+  const rango = columns.find((c) => c.header === '#')
+  const datos = columns.filter((c) => c !== rango)
+  const [titulo, ...resto] = datos
+  const celda = (c, row) => (c.render ? c.render(row) : row[c.key] ?? '—')
+
+  // De a TANDA tarjetas. Una tarjeta ocupa lo que tres filas de tabla: los 140
+  // resultados de una búsqueda medían 38.000 px, unas 45 pantallas de
+  // pulgar. Una lista nueva (otra búsqueda, otra pestaña) vuelve a empezar.
+  // Se compara por firma y no por referencia: varias páginas rearman `rows`
+  // en cada render, y con [rows] cualquier re-render del padre devolvería la
+  // lista a 20 justo después de pedir más.
+  const [visibles, setVisibles] = useState(TANDA)
+  const firma = `${rows.length}|${rows[0]?.[keyField] ?? ''}`
+  useEffect(() => setVisibles(TANDA), [firma])
+  const quedan = rows.length - visibles
+
+  return (
+    <>
+    <ul className="border-t border-textPrimary/80">
+      {rows.slice(0, visibles).map((row, i) => {
+        const key = `${row[keyField] ?? 'row'}-${i}`
+        const isOpen = openKey === key
+        return (
+          <li key={key} className={`border-b border-border ${isOpen ? 'bg-muted' : ''}`}>
+            <div
+              onClick={renderDetail ? () => toggle(key) : undefined}
+              className={`py-4 px-1 ${renderDetail ? 'cursor-pointer' : ''}`}
+            >
+              {/* Los render de escritorio acotan el ancho (max-w-[200px]) y
+                  truncan el objeto a una línea para que la tabla no crezca.
+                  En la tarjeta sobra el ancho y lo que se corta es lectura
+                  perdida: se anulan ambos. */}
+              <div className="flex items-start gap-3 [&_*]:max-w-none [&_.truncate]:whitespace-normal">
+                {rango && (
+                  <span className="min-w-[1.25rem] text-nota tabular-nums text-textSecondary pt-0.5 shrink-0">
+                    {celda(rango, row)}
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="text-cuerpo font-semibold leading-snug break-words">
+                    {celda(titulo, row)}
+                  </div>
+
+                  {resto.length > 0 && (
+                    <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5">
+                      {resto.map((c) => (
+                        <div key={c.key} className="min-w-0">
+                          {c.header && (
+                            <dt className="text-micro uppercase tracking-label text-textSecondary font-semibold">
+                              {c.header}
+                            </dt>
+                          )}
+                          {/* Las cifras en seminegrita: son lo que se compara
+                              de una tarjeta a la siguiente. */}
+                          <dd
+                            className={`m-0 text-cuerpo leading-snug break-words ${
+                              (c.className || '').includes('tabular-nums') ? 'font-semibold tabular-nums' : ''
+                            }`}
+                          >
+                            {celda(c, row)}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  )}
+
+                  {renderDetail && (
+                    <div className="mt-3 flex items-center gap-1 text-nota font-semibold text-primary">
+                      {isOpen ? 'Ocultar detalle' : 'Ver detalle'}
+                      <Icon
+                        name="chevron"
+                        className={`h-3.5 w-3.5 transition-transform duration-200 ${isOpen ? '-rotate-90' : 'rotate-90'}`}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            {renderDetail && isOpen && <div className="px-1 pb-6">{renderDetail(row)}</div>}
+          </li>
+        )
+      })}
+    </ul>
+    {quedan > 0 && (
+      <button
+        type="button"
+        onClick={() => setVisibles((v) => v + TANDA)}
+        className="mt-4 w-full min-h-[44px] border border-textPrimary text-cuerpo font-semibold
+                   hover:bg-textPrimary hover:text-bg transition-colors"
+      >
+        Ver {Math.min(TANDA, quedan)} más · quedan {quedan.toLocaleString('es-CO')}
+      </button>
+    )}
+    </>
+  )
+}
+
+const TANDA = 20

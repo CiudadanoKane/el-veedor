@@ -40,6 +40,22 @@ export function BotonCompartir() {
   const timeoutRef = useRef(null)
 
   const onClick = async () => {
+    // En el teléfono, el menú nativo de compartir: WhatsApp, Telegram, un
+    // chat. Es por ahí que la plataforma se va a mover, y copiar al
+    // portapapeles obligaba a salir, abrir la app y pegar. Solo con pantalla
+    // táctil: en escritorio navigator.share también existe (Windows, macOS)
+    // pero abre un panel del sistema que nadie espera ahí; copiar sigue siendo
+    // lo natural. Si la persona cierra el menú sin elegir (AbortError) no es
+    // un fallo, y no se dice nada.
+    if (navigator.share && window.matchMedia('(pointer: coarse)').matches) {
+      try {
+        await navigator.share({ title: document.title, url: window.location.href })
+        return
+      } catch (e) {
+        if (e?.name === 'AbortError') return
+        // Cualquier otro fallo cae al portapapeles.
+      }
+    }
     try {
       await copiarAlPortapapeles(window.location.href)
       setEstado('copiado')

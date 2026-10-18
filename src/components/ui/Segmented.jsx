@@ -17,10 +17,18 @@
 // El scroll vive aquí para que ningún uso nuevo pueda reintroducirlo. Los
 // márgenes negativos dejan que el primer y último botón lleguen al borde del
 // texto sin que el foco se recorte.
+//
+// En el teléfono, en cambio, NO se desplaza: las opciones se acomodan en
+// varias filas, cada una como un chip suelto. Desplazar escondía justo lo que
+// el control existe para mostrar: en Rankings se veían 2 de 5 pestañas, en
+// Errores 2 de 7, y deslizar de lado una fila de botones no se le ocurre a
+// quien entra por primera vez. Peor: si un enlace llevaba a la última
+// pestaña, la activa quedaba fuera de la pantalla y no se sabía dónde estaba.
+// Desde `sm` vuelve a ser un grupo unido, que en ancho de escritorio cabe.
 export function Segmented({ options, value, onChange }) {
   return (
-    <div className="overflow-x-auto -mx-1 px-1 min-w-0 max-w-full">
-      <div className="inline-flex border border-border">
+    <div className="sm:overflow-x-auto sm:-mx-1 sm:px-1 min-w-0 max-w-full">
+      <div className="flex flex-wrap gap-1.5 sm:inline-flex sm:flex-nowrap sm:gap-0 sm:border sm:border-border">
         {options.map((o) => {
           const activo = value === o.value
           return (
@@ -31,7 +39,8 @@ export function Segmented({ options, value, onChange }) {
               title={o.title}
               aria-pressed={activo}
               onClick={() => !o.disabled && onChange(o.value)}
-              className={`px-3.5 py-1.5 text-cuerpo whitespace-nowrap border-r border-border last:border-r-0 ${
+              className={`px-3.5 py-2 min-h-[40px] sm:py-1.5 sm:min-h-0 text-cuerpo whitespace-nowrap
+                          border border-border sm:border-0 sm:border-r sm:last:border-r-0 ${
                 activo
                   ? 'bg-textPrimary text-bg font-bold'
                   : o.disabled

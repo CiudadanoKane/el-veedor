@@ -427,6 +427,42 @@ Efecto colateral buscado: esa lista es un catálogo de trabajo. Si al revisarla
 aparece un patrón limpio —por ejemplo que el objeto nombre un cargo
 individual— ahí sí habría base para excluir con certeza.
 
+### El teléfono, fase 1: que se vea lo que importa (oct 2026)
+
+Un amigo del usuario notó que las pestañas de Rankings había que deslizarlas de
+lado para descubrirlas. La plataforma se va a conocer por el teléfono —redes,
+chats, voz a voz—, así que se revisó todo a 375 px con un script que mide en
+cada página lo que queda escondido a los lados, los objetivos táctiles y el
+tamaño de letra. Las pestañas eran lo menos grave:
+
+- **Las tablas escondían la cifra.** Medían 760-984 px dentro de 335: en
+  Rankings se veía el nombre y el valor quedaba cortado; en Alertas, la
+  entidad sin los días vencidos; en Errores, 1,5 de 8 columnas. El aviso
+  "Desliza la tabla" estaba debajo de la última fila. Y el detalle de un
+  contrato heredaba ese ancho: "En palabras simples" salía cortado a mitad de
+  renglón. Ahora, en el teléfono, `DataTable` pinta **tarjetas** —"#" de
+  prefijo, la primera columna de título, el resto como etiqueta: valor— sin
+  tocar ninguna página, de a 20 con "Ver más" (las tarjetas son más altas: la
+  búsqueda "hospital" habría pasado de 16.800 a 38.000 px).
+- **Pestañas y controles de gráficos se acomodan en filas** en vez de
+  desplazarse. Rankings mostraba 2 de 5 pestañas, Errores 2 de 7, el mapa 2 de
+  6 métricas; y al llegar por un enlace a la última pestaña, la activa quedaba
+  fuera de la pantalla. Arreglado en `Segmented`, así que vale para todos.
+- **Zoom de iPhone:** los campos de 14-15 px hacían que Safari ampliara la
+  página al tocarlos. En el teléfono van a 16 px.
+- **Compartir abre el menú del teléfono** (WhatsApp, Telegram…) en pantallas
+  táctiles; en escritorio sigue copiando el enlace.
+- **Vista previa del enlace:** la imagen era una ruta relativa —WhatsApp y
+  Facebook la ignoran— y un logo negro transparente que desaparecía sobre
+  fondo oscuro. Ahora `og-el-veedor.png`, 1200×630, con dirección completa.
+
+Pendiente (fases 2 y 3): objetivos táctiles chicos (el "?" del glosario mide
+16 px), el gráfico de "Qué se contrata" con etiquetas truncadas, "Haz clic" en
+10 textos, la guía que dice "a la izquierda" donde en el teléfono es "arriba",
+introducciones que llenan la primera pantalla, la barra superior fija (18% de
+la pantalla entre las dos barras), carga por página (342 KB de JS de entrada)
+y el diagrama del proceso en vertical.
+
 ### Concentración ajustable por el ciudadano (oct 2026)
 
 Propuesta del usuario: que la sección de concentración del Panorama no esté

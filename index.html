@@ -19,12 +19,24 @@
          lejos. -->
     <meta name="description" content="Plataforma de veeduría ciudadana de la contratación pública colombiana. Datos abiertos de SECOP I y II convertidos en señales que cualquier persona puede entender." />
 
-    <!-- Vista previa al compartir el enlace -->
+    <!-- Vista previa al compartir el enlace: es lo primero que ve quien recibe
+         la plataforma por un chat. Dirección COMPLETA en la imagen —WhatsApp y
+         Facebook ignoran una ruta relativa como "/logo.png"— y una imagen
+         apaisada (1200x630) con fondo propio: el logo negro transparente que
+         había antes desaparecía sobre el fondo oscuro de WhatsApp. Sin og:url:
+         es la misma página para todas las rutas, y una og:url fija haría que
+         Facebook tratara un enlace a un perfil como si fuera la portada. -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="El Veedor" />
+    <meta property="og:locale" content="es_CO" />
     <meta property="og:title" content="El Veedor: Veeduría Fácil" />
     <meta property="og:description" content="Datos abiertos de SECOP I y II convertidos en señales que cualquier persona puede entender. La plataforma señala patrones, no acusa." />
-    <meta property="og:image" content="/logo-el-veedor-transparente.png" />
+    <meta property="og:image" content="https://el-veedor.vercel.app/og-el-veedor.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="El Veedor, veeduría fácil: la contratación pública de Colombia en señales que cualquiera puede leer." />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://el-veedor.vercel.app/og-el-veedor.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

@@ -145,3 +145,14 @@ body.menu-abierto {
 .etapa-objetivo:target > span {
   animation: resaltar-etapa 1.6s ease-out;
 }
+
+/* iPhone hace zoom al tocar un campo con letra de menos de 16 px, y no lo
+   deshace al salir: la página queda ampliada y la barra de abajo, desplazada.
+   Todos los campos de la plataforma estaban en 14-15 px (la búsqueda de
+   arriba, el lugar, el buscador, Escríbenos). En el teléfono se suben a 16;
+   en escritorio conservan su escala. */
+@media (max-width: 639px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
