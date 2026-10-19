@@ -2,18 +2,25 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { FiltersProvider } from './context/FiltersContext'
 import { TourProvider } from './components/ui/Tour'
 import { Layout } from './components/layout/Layout'
-import { Dashboard } from './pages/Dashboard'
-import { Noticias } from './pages/Noticias'
-import { Buscar } from './pages/Buscar'
-import { Alertas } from './pages/Alertas'
-import { Errores } from './pages/Errores'
-import { Rankings } from './pages/Rankings'
-import { ConstructorGraficos } from './pages/ConstructorGraficos'
-import { Contratista } from './pages/Contratista'
-import { Entidad } from './pages/Entidad'
-import { Aprender } from './pages/Aprender'
-import { Transparencia } from './pages/Transparencia'
-import { Reportar } from './pages/Reportar'
+import { lazy } from 'react'
+
+// Cada página es su propio archivo de código, que se baja al entrar a ella.
+// Antes iba todo en uno: 342 KB comprimidos de JS de entrada, gráficos
+// incluidos, aunque solo se abriera Noticias. Quien llega por un enlace
+// compartido en un chat —con datos móviles— es justo quien más lo pagaba.
+const pagina = (cargar, nombre) => lazy(() => cargar().then((m) => ({ default: m[nombre] })))
+const Dashboard = pagina(() => import('./pages/Dashboard'), 'Dashboard')
+const Noticias = pagina(() => import('./pages/Noticias'), 'Noticias')
+const Buscar = pagina(() => import('./pages/Buscar'), 'Buscar')
+const Alertas = pagina(() => import('./pages/Alertas'), 'Alertas')
+const Errores = pagina(() => import('./pages/Errores'), 'Errores')
+const Rankings = pagina(() => import('./pages/Rankings'), 'Rankings')
+const ConstructorGraficos = pagina(() => import('./pages/ConstructorGraficos'), 'ConstructorGraficos')
+const Contratista = pagina(() => import('./pages/Contratista'), 'Contratista')
+const Entidad = pagina(() => import('./pages/Entidad'), 'Entidad')
+const Aprender = pagina(() => import('./pages/Aprender'), 'Aprender')
+const Transparencia = pagina(() => import('./pages/Transparencia'), 'Transparencia')
+const Reportar = pagina(() => import('./pages/Reportar'), 'Reportar')
 import { PESTANAS_ALERTAS, PESTANAS_RANKINGS } from './lib/pestanas'
 
 // Redirección que CONSERVA la query. `<Navigate to="/alertas">` la descarta, y

@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, Suspense } from 'react'
 import { Outlet, useLocation, useNavigationType, Link } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { BarraFiltro } from './BarraFiltro'
@@ -7,6 +7,7 @@ import { BotonCompartir } from './BotonCompartir'
 import { NavInferior } from './NavInferior'
 import { ErrorBoundary } from '../ui/ErrorBoundary'
 import { Icon } from '../ui/Icon'
+import { TextoPlegable } from '../ui/TextoPlegable'
 import { useFilters } from '../../context/FiltersContext'
 
 // Secciones donde el ámbito geográfico significa algo. Se deja fuera el manual
@@ -28,6 +29,31 @@ export function Layout() {
 
   // Cierra el menú al cambiar de sección y evita el scroll de fondo
   useEffect(() => setMenuAbierto(false), [pathname])
+
+  // La cabecera se aparta al bajar y vuelve al subir, solo debajo de `lg`
+  // (donde va apilada en dos filas). Entre ella y la barra de secciones se
+  // comían el 18% de la pantalla del teléfono de forma permanente; al leer
+  // una lista larga ese alto vuelve al contenido, y basta un gesto hacia
+  // arriba para recuperar búsqueda y lugar. No se esconde con el menú abierto
+  // ni mientras se escribe en la búsqueda.
+  const cabeceraRef = useRef(null)
+  const [cabeceraOculta, setCabeceraOculta] = useState(false)
+  useEffect(() => {
+    let previo = window.scrollY
+    const alMover = () => {
+      const y = window.scrollY
+      const delta = y - previo
+      if (Math.abs(delta) < 8) return
+      previo = y
+      const angosta = window.matchMedia('(max-width: 1023px)').matches
+      const escribiendo = cabeceraRef.current?.contains(document.activeElement) &&
+        document.activeElement?.tagName === 'INPUT'
+      setCabeceraOculta(angosta && !escribiendo && delta > 0 && y > 160)
+    }
+    window.addEventListener('scroll', alMover, { passive: true })
+    return () => window.removeEventListener('scroll', alMover)
+  }, [])
+  useEffect(() => setCabeceraOculta(false), [pathname, menuAbierto])
 
   // Cada página nueva empieza arriba. Un SPA no lo hace solo: el documento es
   // el mismo, así que al tocar "Rankings" en la barra de abajo desde la mitad
@@ -109,7 +135,13 @@ export function Layout() {
             cabecera se perdía —había que buscarla— y es donde viven las dos
             herramientas que se usan todo el tiempo. Así el "cromo" de la
             plataforma queda en un solo tono y el contenido, en el blanco. */}
-        <div data-tour="barra" className="sticky top-0 z-20 bg-side">
+        <div
+          ref={cabeceraRef}
+          data-tour="barra"
+          className={`sticky top-0 z-20 bg-side transition-transform duration-200 ease-out ${
+            cabeceraOculta && !menuAbierto ? '-translate-y-full' : ''
+          }`}
+        >
           <div className="px-4 sm:px-8 lg:px-14 lg:flex lg:items-center lg:gap-8">
             <div className="flex items-center gap-3 py-2.5 lg:flex-1 lg:min-w-0 lg:max-w-2xl lg:order-2">
               <button
@@ -177,7 +209,18 @@ export function Layout() {
           <div className="max-w-6xl">
             {/* key por ruta: al navegar se limpia un error previo */}
             <ErrorBoundary key={pathname}>
-              <Outlet />
+              {/* Las páginas llegan en su propio archivo (ver App.jsx): mientras
+                  baja, el mismo aviso que usan las consultas. */}
+              <Suspense
+                fallback={
+                  <div className="flex items-center text-textSecondary text-cuerpo py-12">
+                    <div className="h-4 w-4 mr-2.5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                    Cargando…
+                  </div>
+                }
+              >
+                <Outlet />
+              </Suspense>
             </ErrorBoundary>
           </div>
         </main>
@@ -196,9 +239,9 @@ export function PageHeader({ title, subtitle }) {
         {title}
       </h1>
       {subtitle && (
-        <p className="text-textSecondary mt-4 text-intro max-w-2xl leading-[1.55] font-light">
+        <TextoPlegable className="text-textSecondary mt-4 text-intro max-w-2xl leading-[1.55] font-light">
           {subtitle}
-        </p>
+        </TextoPlegable>
       )}
     </header>
   )

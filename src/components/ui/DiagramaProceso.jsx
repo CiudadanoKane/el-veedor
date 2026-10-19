@@ -1,3 +1,5 @@
+import { useEsMovil } from '../../hooks/useEsMovil'
+
 // Diagrama del recorrido de un contrato, con la bifurcación en el centro.
 //
 // La bifurcación es el punto del diagrama: todo lo demás es una secuencia, pero
@@ -65,7 +67,73 @@ function Flecha({ x, y }) {
   )
 }
 
+// En el teléfono, el mismo recorrido de arriba abajo. El SVG horizontal mide
+// 950 px: dentro de 335 se veían dos etapas y media, y la bifurcación —que es
+// el punto del diagrama— quedaba fuera de la pantalla, detrás de un
+// desplazamiento lateral que casi nadie hace. En vertical cabe entero y la
+// bifurcación se ve como dos cajas lado a lado entre Selección y Firma.
+function Bajada() {
+  return (
+    <div aria-hidden className="flex justify-center py-1 text-textSecondary leading-none">
+      ↓
+    </div>
+  )
+}
+
+function Rama({ titulo, detalle, tono }) {
+  return (
+    <div
+      className="border-[1.5px] px-3 py-2"
+      style={{ borderColor: `rgb(var(${tono}))`, background: `rgb(var(${tono}) / 0.12)` }}
+    >
+      <div className="text-cuerpo font-bold text-textPrimary leading-snug">{titulo}</div>
+      <div className="text-nota text-textSecondary leading-snug mt-0.5">{detalle}</div>
+    </div>
+  )
+}
+
+function DiagramaVertical() {
+  return (
+    <figure
+      role="img"
+      aria-label="Las seis etapas de un contrato público: planeación, presupuesto, selección, firma, ejecución y cierre. En la selección el proceso se bifurca entre concurso abierto, que es el 8% de los contratos, y adjudicación directa o de régimen especial, que es el 92%."
+      className="max-w-sm"
+    >
+      {ETAPAS.map((t, i) => (
+        <div key={t}>
+          <a
+            href={`#etapa-${i + 1}`}
+            aria-label={`Ir a la explicación de ${t}`}
+            className="flex items-center border-[1.5px] border-textPrimary bg-bg active:bg-muted"
+          >
+            <span className="h-11 w-11 shrink-0 inline-flex items-center justify-center bg-textPrimary text-bg font-extrabold">
+              {i + 1}
+            </span>
+            <span className="px-4 text-lectura font-bold text-textPrimary">{t}</span>
+          </a>
+          {i === 2 && (
+            <>
+              <Bajada />
+              <div className="grid grid-cols-2 gap-2">
+                <Rama titulo="Concurso abierto" detalle="varios compiten · 8 de cada 100" tono="--c-success" />
+                <Rama titulo="Sin concurso" detalle="la entidad escoge · 92 de cada 100" tono="--c-warning" />
+              </div>
+            </>
+          )}
+          {i < ETAPAS.length - 1 && <Bajada />}
+        </div>
+      ))}
+    </figure>
+  )
+}
+
 export function DiagramaProceso() {
+  const esMovil = useEsMovil()
+  if (esMovil) return <DiagramaVertical />
+  return <DiagramaHorizontal />
+}
+
+function DiagramaHorizontal() {
   const y = 20
   const xs = ETAPAS.map((_, i) => 10 + i * PASO)
   const ancho = xs[xs.length - 1] + W + 10

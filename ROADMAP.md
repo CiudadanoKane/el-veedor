@@ -488,9 +488,19 @@ Fase 2:
   fila" → "un contrato", que también describe la tarjeta. La guía ya no dice
   "a la izquierda… al lado": en el teléfono búsqueda y lugar van apilados.
 
-Pendiente (fase 3): introducciones que llenan la primera pantalla, la barra
-superior fija (18% de la pantalla entre las dos barras), carga por página (342
-KB de JS de entrada) y el diagrama del proceso en vertical.
+Fase 3:
+
+- **Entradas plegables** (`TextoPlegable`): en el teléfono el subtítulo de
+  página y la entrada de las secciones con pestañas muestran 3 líneas y
+  "Leer más", solo si de verdad se cortan. En Rankings las pestañas subieron
+  de ~470 a 350 px desde el borde.
+- **La cabecera se aparta al bajar** y vuelve al subir (debajo de `lg`). No se
+  esconde con el menú abierto ni mientras se escribe en la búsqueda.
+- **Carga por página** (`React.lazy` en App.jsx): el JS de entrada pasó de 342
+  a ~84 KB comprimidos. Los gráficos (118 KB) solo bajan en las páginas que
+  los usan; Noticias ya no los descarga.
+- **Diagrama del proceso en vertical** en el teléfono: el SVG de 950 px dejaba
+  la bifurcación —el punto del diagrama— fuera de la pantalla.
 
 ### Concentración ajustable por el ciudadano (oct 2026)
 

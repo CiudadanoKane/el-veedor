@@ -1,6 +1,7 @@
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../layout/Layout'
 import { Segmented } from '../ui/Segmented'
+import { TextoPlegable } from '../ui/TextoPlegable'
 
 // Sección de alertas en pestañas. La comparten Alertas y Errores en SECOP:
 // misma mecánica, distinto contenido. Las pestañas evitan tener que bajar por
@@ -32,9 +33,9 @@ export function SeccionConPestanas({ titulo, subtitulo, intro, items }) {
       <PageHeader title={titulo} subtitle={subtitulo} />
 
       {intro && (
-        <p className="text-lectura text-textSecondary font-light -mt-1 max-w-3xl leading-relaxed">
+        <TextoPlegable className="text-lectura text-textSecondary font-light -mt-1 max-w-3xl leading-relaxed">
           {intro}
-        </p>
+        </TextoPlegable>
       )}
 
       {/* data-pestanas: Compartir lee de aquí la pestaña activa para decir
