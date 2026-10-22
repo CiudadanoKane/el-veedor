@@ -274,7 +274,7 @@ export function Dashboard() {
           accion={
             <Link
               to="/buscar?modo=contratistas"
-              className="text-micro font-semibold text-primary enlace-sutil"
+              className="toque text-micro font-semibold text-primary enlace-sutil"
             >
               Buscar un contratista
             </Link>
@@ -296,7 +296,7 @@ export function Dashboard() {
           accion={
             <Link
               to="/buscar?modo=entidades"
-              className="text-micro font-semibold text-primary enlace-sutil"
+              className="toque text-micro font-semibold text-primary enlace-sutil"
             >
               Buscar una entidad
             </Link>

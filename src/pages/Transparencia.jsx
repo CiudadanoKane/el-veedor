@@ -44,6 +44,14 @@ const INDICE = [
   ['correcciones', 'Cómo corregirnos'],
 ]
 
+// Los conjuntos de datos de datos.gov.co que usa la plataforma.
+const FUENTES = [
+  ['Contratos Electrónicos (SECOP II)', 'jbjy-vk9h', 'Fuente principal de todos los módulos'],
+  ['Contratos (SECOP I)', 'f789-7hwg', 'Contratación anterior a SECOP II: cifras del Panorama, buscador, evolución, vencidos, rankings y perfiles'],
+  ['Modificaciones a contratos', 'u8cx-r425', 'Historial de adiciones y prórrogas de cada contrato. Solo cubre SECOP II'],
+  ['Procesos de Contratación', 'p6dx-8zbt', 'Valor original, para calcular adiciones de costo'],
+]
+
 export function Transparencia() {
   return (
     <div>
@@ -53,12 +61,16 @@ export function Transparencia() {
       />
 
       {/* Índice */}
-      <nav className="mb-10 flex flex-wrap gap-x-5 gap-y-2">
+      <nav className="mb-10 flex flex-wrap gap-x-5 gap-y-2 max-sm:gap-1.5">
         {INDICE.map(([id, label]) => (
           <a
             key={id}
             href={`#${id}`}
-            className="text-cuerpo font-semibold text-primary enlace-sutil"
+            // En el teléfono, chips: como enlaces de 23 px apilados con 8 de
+            // separación, un dedo caía fácil en el de al lado.
+            className="text-cuerpo font-semibold text-primary enlace-sutil
+                       max-sm:inline-flex max-sm:items-center max-sm:min-h-[40px]
+                       max-sm:px-3 max-sm:border max-sm:border-primary/30"
           >
             {label}
           </a>
@@ -131,7 +143,20 @@ export function Transparencia() {
           separadas en vez de una suma.
         </p>
 
-        <div className="overflow-x-auto mt-4">
+        {/* En el teléfono, una ficha por conjunto de datos; desde `sm`, la
+            tabla. Era la última tabla de la plataforma que había que deslizar
+            de lado (560 px en 320-375): no usa DataTable, así que no heredó las
+            tarjetas. */}
+        <ul className="sm:hidden mt-4 space-y-3">
+          {FUENTES.map(([nombre, id, uso]) => (
+            <li key={id} className="border border-textPrimary/25 p-4">
+              <div className="text-cuerpo font-semibold text-textPrimary">{nombre}</div>
+              <code className="text-nota">{id}</code>
+              <p className="mt-2 text-cuerpo text-textSecondary">{uso}</p>
+            </li>
+          ))}
+        </ul>
+        <div className="hidden sm:block overflow-x-auto mt-4">
           <table className="w-full min-w-[560px] text-cuerpo">
             <thead>
               <tr>
@@ -146,12 +171,7 @@ export function Transparencia() {
               </tr>
             </thead>
             <tbody>
-              {[
-                ['Contratos Electrónicos (SECOP II)', 'jbjy-vk9h', 'Fuente principal de todos los módulos'],
-                ['Contratos (SECOP I)', 'f789-7hwg', 'Contratación anterior a SECOP II: cifras del Panorama, buscador, evolución, vencidos, rankings y perfiles'],
-                ['Modificaciones a contratos', 'u8cx-r425', 'Historial de adiciones y prórrogas de cada contrato. Solo cubre SECOP II'],
-                ['Procesos de Contratación', 'p6dx-8zbt', 'Valor original, para calcular adiciones de costo'],
-              ].map(([nombre, id, uso]) => (
+              {FUENTES.map(([nombre, id, uso]) => (
                 <tr key={id} className="border-b border-border/60">
                   <td className="px-3 py-3 align-top">{nombre}</td>
                   <td className="px-3 py-3 align-top"><code>{id}</code></td>

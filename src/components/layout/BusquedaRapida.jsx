@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useFilters } from '../../context/FiltersContext'
 
@@ -13,8 +13,11 @@ import { useFilters } from '../../context/FiltersContext'
 // registros, así que viaja al enviar (Enter o la lupa), igual que en el buscador
 // grande. Y arrastra el ámbito activo: si el ciudadano está viendo Soledad, la
 // búsqueda sale filtrada por Soledad.
-export function BusquedaRapida() {
+// `onEnfoque(true|false)` avisa a la cabecera cuándo se está escribiendo, para
+// que en el teléfono le ceda la fila entera a la caja (ver Layout).
+export function BusquedaRapida({ onEnfoque }) {
   const [texto, setTexto] = useState('')
+  const soltar = useRef(null)
   const navigate = useNavigate()
   const { rutaConAmbito } = useFilters()
 
@@ -26,10 +29,33 @@ export function BusquedaRapida() {
     // filtros), igual que si se hubiera escrito en la caja del buscador.
     navigate(rutaConAmbito('/buscar', { q: limpio, ia: '1' }))
     setTexto('')
+    // Suelta el foco: cierra el teclado del teléfono y devuelve la cabecera a
+    // su forma normal sobre la página de resultados.
+    document.activeElement?.blur()
+  }
+
+  // Al perder el foco se espera un instante antes de avisar. En iPhone tocar
+  // "Buscar" no le da el foco al botón: la caja lo pierde ANTES del clic, la
+  // cabecera recuperaría sus íconos, el botón se movería bajo el dedo y el
+  // toque caería en el vacío.
+  const alEnfocar = () => {
+    clearTimeout(soltar.current)
+    onEnfoque?.(true)
+  }
+  const alDesenfocar = (e) => {
+    if (e.currentTarget.contains(e.relatedTarget)) return
+    clearTimeout(soltar.current)
+    soltar.current = setTimeout(() => onEnfoque?.(false), 200)
   }
 
   return (
-    <form onSubmit={enviar} className="flex-1 min-w-0" role="search">
+    <form
+      onSubmit={enviar}
+      onFocus={alEnfocar}
+      onBlur={alDesenfocar}
+      className="flex-1 min-w-0"
+      role="search"
+    >
       {/* Campo claro sobre la banda oscura: es el contraste más alto de la
           cabecera, y deja claro dónde se escribe. */}
       <div

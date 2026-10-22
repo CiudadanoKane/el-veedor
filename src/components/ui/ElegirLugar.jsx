@@ -90,7 +90,7 @@ export function ElegirLugar() {
         </h2>
         <button
           onClick={ocultar}
-          className="shrink-0 text-nota text-textSecondary hover:text-textPrimary transition-colors"
+          className="toque shrink-0 text-nota text-textSecondary hover:text-textPrimary transition-colors"
         >
           {faltaMunicipio ? 'Así está bien' : 'Ahora no'}
         </button>

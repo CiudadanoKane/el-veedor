@@ -159,12 +159,16 @@ export function Aprender() {
         subtitle="Una guía para entenderla sin ser experto. No se puede reconocer algo raro sin tener idea de cómo se ve lo normal — y con eso claro, cualquiera puede hacer veeduría."
       />
 
-      <nav className="mb-12 flex flex-wrap gap-x-5 gap-y-2">
+      <nav className="mb-12 flex flex-wrap gap-x-5 gap-y-2 max-sm:gap-1.5">
         {INDICE.map(([id, label]) => (
           <a
             key={id}
             href={`#${id}`}
-            className="text-cuerpo font-semibold text-primary enlace-sutil"
+            // En el teléfono, chips: como enlaces de 23 px apilados con 8 de
+            // separación, un dedo caía fácil en el de al lado.
+            className="text-cuerpo font-semibold text-primary enlace-sutil
+                       max-sm:inline-flex max-sm:items-center max-sm:min-h-[40px]
+                       max-sm:px-3 max-sm:border max-sm:border-primary/30"
           >
             {label}
           </a>

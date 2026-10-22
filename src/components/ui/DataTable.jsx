@@ -190,7 +190,11 @@ function Tarjetas({ columns, rows, keyField, renderDetail, openKey, toggle }) {
                       {resto.map((c) => (
                         <div key={c.key} className="min-w-0">
                           {c.header && (
-                            <dt className="text-micro uppercase tracking-label text-textSecondary font-semibold">
+                            // Minúscula normal y no las versalitas espaciadas de
+                            // la tabla: en media tarjeta "INFO. INCOMPLETA" o
+                            // "CERRADO SIN PAGO" partían en dos renglones y las
+                            // cifras de las dos columnas quedaban a distinta altura.
+                            <dt className="text-nota text-textSecondary leading-snug">
                               {c.header}
                             </dt>
                           )}
@@ -239,4 +243,6 @@ function Tarjetas({ columns, rows, keyField, renderDetail, openKey, toggle }) {
   )
 }
 
-const TANDA = 20
+// 10 y no 20: una tarjeta mide 280-320 px, así que 20 eran unas 8 pantallas
+// antes de llegar al botón.
+const TANDA = 10

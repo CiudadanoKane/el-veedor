@@ -11,6 +11,7 @@ import { usePerfilContratista } from '../hooks/usePerfilContratista'
 import { documentoVisible, etiquetaDocumento, esPersonaJuridica } from '../lib/identidad'
 import { formatCOP, formatDate, pct, formatPct } from '../lib/formatters'
 import { EnlaceEntidad } from '../components/ui/EnlacePerfil'
+import { IndiceSecciones } from '../components/ui/IndiceSecciones'
 import { Seccion } from '../components/ui/Seccion'
 
 
@@ -157,7 +158,17 @@ function Perfil({ perfil }) {
         )}
       </div>
 
+      <IndiceSecciones
+        secciones={[
+          { id: 'con-quien', titulo: 'Con quién contrata' },
+          { id: 'adjudica', titulo: 'Cómo se le adjudica' },
+          ...(perfil.porAnio.length > 1 ? [{ id: 'evolucion', titulo: 'Por año' }] : []),
+          { id: 'contratos', titulo: 'Contratos más grandes' },
+        ]}
+      />
+
       <Seccion
+        id="con-quien"
         titulo="Con quién contrata"
         intro={
           empresa && concentracion != null
@@ -189,6 +200,7 @@ function Perfil({ perfil }) {
       </Seccion>
 
       <Seccion
+        id="adjudica"
         titulo="Cómo se le adjudica"
         intro="Modalidades por las que ha obtenido sus contratos, por cantidad."
       >
@@ -205,6 +217,7 @@ function Perfil({ perfil }) {
 
       {perfil.porAnio.length > 1 && (
         <Seccion
+          id="evolucion"
           titulo="Evolución por año"
           intro="Contratos firmados en cada año. No es un acumulado."
         >
@@ -220,6 +233,7 @@ function Perfil({ perfil }) {
       )}
 
       <Seccion
+        id="contratos"
         titulo="Contratos de mayor cuantía"
         intro="Hasta 50 contratos, del más alto al más bajo."
       >

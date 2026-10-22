@@ -11,6 +11,7 @@ import { usePerfilEntidad } from '../hooks/usePerfilEntidad'
 import { ERRORES, INCOMPLETOS, useCalidadDatos } from '../hooks/useCalidadDatos'
 import { formatCOP, formatDate, pct, formatPct } from '../lib/formatters'
 import { EnlaceContratista } from '../components/ui/EnlacePerfil'
+import { IndiceSecciones } from '../components/ui/IndiceSecciones'
 import { Seccion } from '../components/ui/Seccion'
 
 
@@ -150,7 +151,18 @@ function Perfil({ perfil, refNacional }) {
         />
       </div>
 
+      <IndiceSecciones
+        secciones={[
+          { id: 'registro', titulo: 'Cómo registra' },
+          { id: 'a-quien', titulo: 'A quién contrata' },
+          { id: 'adjudica', titulo: 'Cómo adjudica' },
+          ...(perfil.porAnio.length > 1 ? [{ id: 'evolucion', titulo: 'Por año' }] : []),
+          { id: 'contratos', titulo: 'Contratos más grandes' },
+        ]}
+      />
+
       <Seccion
+        id="registro"
         titulo="Cómo registra su información"
         intro="Qué tan completo y consistente queda el rastro público de lo que contrata."
       >
@@ -213,6 +225,7 @@ function Perfil({ perfil, refNacional }) {
       </Seccion>
 
       <Seccion
+        id="a-quien"
         titulo="A quién contrata"
         intro={
           concentracion != null
@@ -242,6 +255,7 @@ function Perfil({ perfil, refNacional }) {
       </Seccion>
 
       <Seccion
+        id="adjudica"
         titulo="Cómo adjudica"
         intro="Modalidades por las que entrega sus contratos, por cantidad."
       >
@@ -264,6 +278,7 @@ function Perfil({ perfil, refNacional }) {
 
       {perfil.porAnio.length > 1 && (
         <Seccion
+          id="evolucion"
           titulo="Evolución por año"
           intro="Contratos firmados en cada año. No es un acumulado."
         >
@@ -279,6 +294,7 @@ function Perfil({ perfil, refNacional }) {
       )}
 
       <Seccion
+        id="contratos"
         titulo="Contratos de mayor cuantía"
         intro="Hasta 50 contratos, del más alto al más bajo."
       >

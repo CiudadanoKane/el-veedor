@@ -26,6 +26,12 @@ export function Layout() {
   // avanzados y búsqueda con IA. Dos campos compitiendo confundirían cuál es
   // el que vale.
   const conBusqueda = pathname !== '/buscar'
+  // Mientras se escribe en la búsqueda, en el teléfono la caja se queda con la
+  // fila: logo, Graficar y Compartir se apartan. Compartiendo fila, a 360 px
+  // se veían unos 10 caracteres de lo escrito —"alcaldía d"— y a 320 px aún
+  // menos en cuanto aparecía el botón "Buscar".
+  const [buscando, setBuscando] = useState(false)
+  const apartar = buscando ? 'max-lg:hidden' : ''
 
   // Cierra el menú al cambiar de sección y evita el scroll de fondo
   useEffect(() => setMenuAbierto(false), [pathname])
@@ -151,7 +157,7 @@ export function Layout() {
                    pantallas pequeñas hay que señalar la puerta, no lo que hay
                    detrás (ver Tour.jsx). */
                 data-tour="menu"
-                className="toque lg:hidden shrink-0 text-sideActive p-1 -ml-1"
+                className={`toque lg:hidden shrink-0 text-sideActive p-1 -ml-1 ${apartar}`}
                 aria-label="Abrir menú"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -163,7 +169,7 @@ export function Layout() {
               <Link
                 to={rutaConAmbito('/')}
                 aria-label="El Veedor — ir al Panorama"
-                className="lg:hidden shrink-0 flex items-center gap-2.5"
+                className={`lg:hidden shrink-0 flex items-center gap-2.5 ${apartar}`}
               >
                 <img src="/icono-el-veedor-blanco.png" alt="" className="h-6 w-6" />
                 {/* El nombre cede su sitio a la búsqueda cuando esta está
@@ -176,7 +182,7 @@ export function Layout() {
                 )}
               </Link>
 
-              {conBusqueda && <BusquedaRapida />}
+              {conBusqueda && <BusquedaRapida onEnfoque={setBuscando} />}
 
               {/* Atajo a "Graficar", con su nombre al lado: solo el ícono no
                   se leía como una acción, sino como un adorno de la cabecera.
@@ -188,7 +194,7 @@ export function Layout() {
                 to={rutaConAmbito('/constructor')}
                 aria-label="Graficar"
                 title="Graficar"
-                className="toque shrink-0 flex items-center gap-1.5 text-sideSoft hover:text-sideActive p-1"
+                className={`toque shrink-0 flex items-center gap-1.5 text-sideSoft hover:text-sideActive p-1 ${apartar}`}
               >
                 <Icon name="constructor" className="h-[18px] w-[18px]" />
                 <span className="hidden sm:inline text-cuerpo font-semibold whitespace-nowrap">
@@ -196,7 +202,9 @@ export function Layout() {
                 </span>
               </Link>
 
-              <BotonCompartir />
+              <div className={`shrink-0 flex ${apartar}`}>
+                <BotonCompartir />
+              </div>
             </div>
 
             {conFiltro && <BarraFiltro />}

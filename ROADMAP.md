@@ -502,6 +502,27 @@ Fase 3:
 - **Diagrama del proceso en vertical** en el teléfono: el SVG de 950 px dejaba
   la bifurcación —el punto del diagrama— fuera de la pantalla.
 
+Segunda revisión (a 360 y 320 px, contra producción):
+
+- **La búsqueda se queda con la fila mientras se escribe**: logo, menú,
+  Graficar y Compartir se apartan. Compartiendo fila se veían ~10 caracteres
+  de lo escrito a 360 px. Al perder el foco se espera 200 ms antes de
+  devolver los íconos: en iPhone tocar "Buscar" no enfoca el botón, y sin la
+  espera el botón se movía bajo el dedo antes del clic.
+- **Etiquetas de tarjeta en minúscula normal**: las versalitas espaciadas
+  partían "INFO. INCOMPLETA" en dos renglones y desalineaban las cifras.
+- **Tarjetas de a 10** (eran 20, unas 8 pantallas) y **"Ir a"** al inicio de
+  los perfiles de entidad y contratista (`IndiceSecciones`): el de una
+  entidad medía 11.800 px y "Contratos de mayor cuantía" empezaba pasada la
+  mitad.
+- **Graficar en lista con la cifra escrita**: el gráfico de barras no mostraba
+  ningún valor sin tocar barra por barra. La barra va contra el máximo, no la
+  suma, porque promedios y porcentajes no se suman.
+- **Últimos enlaces chicos** con `.toque` ("Ahora no", "Buscar un contratista",
+  "← Volver"), y los índices de Aprende y Metodología como chips de 40 px.
+- **La tabla de fuentes de Metodología**, la última que se deslizaba de lado,
+  en fichas en el teléfono.
+
 ### Concentración ajustable por el ciudadano (oct 2026)
 
 Propuesta del usuario: que la sección de concentración del Panorama no esté

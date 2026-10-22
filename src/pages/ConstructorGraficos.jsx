@@ -8,6 +8,7 @@ import { PageHeader } from '../components/layout/Layout'
 import { QueryState } from '../components/ui/QueryState'
 import { Segmented } from '../components/ui/Segmented'
 import { DataTable } from '../components/ui/DataTable'
+import { useEsMovil } from '../hooks/useEsMovil'
 import { Methodology } from '../components/ui/Methodology'
 import { useFilters } from '../context/FiltersContext'
 import { useConstructorGraficos } from '../hooks/useConstructorGraficos'
@@ -54,7 +55,41 @@ function ordenarPorMetrica(filas) {
   })
 }
 
+// En el teléfono, lista con la cifra escrita al lado de cada barra. El gráfico
+// no mostraba ningún valor: había que tocar barra por barra para leerlo en el
+// globo, y con 20 barras eso es adivinar. La barra va contra el MÁXIMO, no
+// contra la suma, porque varias métricas (promedios, porcentajes) no se suman:
+// un "% del total" ahí sería un número sin sentido.
+function BarrasLista({ data, tipo }) {
+  const max = Math.max(0, ...data.map((f) => f.valorMetrica ?? 0))
+  return (
+    <ul className="divide-y divide-border">
+      {data.map((f) => (
+        <li key={f.clave ?? f.etiqueta} className="py-2.5">
+          <div className="flex items-baseline gap-3">
+            <span className="flex-1 min-w-0 text-cuerpo text-textPrimary leading-snug">{f.etiqueta}</span>
+            <span className="shrink-0 text-cuerpo font-bold tabular-nums text-textPrimary">
+              {formatear(f.valorMetrica, tipo)}
+            </span>
+          </div>
+          <div className="mt-1.5 h-1.5 w-full bg-muted overflow-hidden">
+            <div
+              className="h-full"
+              style={{
+                width: `${max ? Math.max(0, (f.valorMetrica ?? 0) / max) * 100 : 0}%`,
+                background: CHART.primary,
+              }}
+            />
+          </div>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 function BarrasConstructor({ data, tipo, etiquetaDim }) {
+  const esMovil = useEsMovil()
+  if (esMovil) return <BarrasLista data={data} tipo={tipo} />
   return (
     <ResponsiveContainer width="100%" height={Math.max(280, data.length * 30)}>
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
