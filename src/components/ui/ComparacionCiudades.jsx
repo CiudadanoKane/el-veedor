@@ -90,7 +90,7 @@ function FilaCiudad({ posicion, nombre, valorTexto, detalle, ancho, color, onQui
             <button
               onClick={onIr}
               title={`Ver la contratación de ${nombre}`}
-              className="text-left text-textPrimary hover:text-primary hover:underline"
+              className="toque text-left enlace-perfil enlace-visible"
             >
               {nombre}
             </button>

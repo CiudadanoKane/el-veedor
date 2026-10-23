@@ -89,7 +89,7 @@ export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', rend
                       </td>
                     ))}
                     {expandable && (
-                      <td className="px-3 py-3.5 align-top text-center text-textSecondary">
+                      <td className="px-3 py-3.5 align-top text-center text-primary/70">
                         <Icon
                           name="chevron"
                           className={`h-4 w-4 inline-block transition-transform duration-200 ${

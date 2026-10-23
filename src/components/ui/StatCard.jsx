@@ -131,9 +131,16 @@ export function StatCard({
           Una tarjeta desplegable la usa para su propio detalle; una que no lo
           es puede recibir un enlace a donde continúa esa cifra. */}
       <div className="flex items-end pt-3">
+        {/* La invitación a abrir la cifra: con flecha y al tamaño de las
+            notas, no en los 11 px de una etiqueta. Era lo único que decía que
+            la tarjeta entera se puede tocar, y pasaba por un pie de página. */}
         {desplegable && (
-          <span className="text-micro font-semibold text-primary enlace-sutil">
+          <span className="inline-flex items-center gap-1 text-nota font-semibold text-primary enlace-visible">
             {abierta ? 'Ocultar detalle' : detalle || 'Ver detalle'}
+            <Icon
+              name="chevronAbajo"
+              className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${abierta ? 'rotate-180' : ''}`}
+            />
           </span>
         )}
         {!desplegable && accion}

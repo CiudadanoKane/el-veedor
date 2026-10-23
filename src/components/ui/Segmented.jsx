@@ -25,10 +25,22 @@
 // quien entra por primera vez. Peor: si un enlace llevaba a la última
 // pestaña, la activa quedaba fuera de la pantalla y no se sabía dónde estaba.
 // Desde `sm` vuelve a ser un grupo unido, que en ancho de escritorio cabe.
-export function Segmented({ options, value, onChange }) {
+//
+// `envolver`: chips en varias filas en CUALQUIER ancho. Para las pestañas de
+// página, que no siempre caben ni en escritorio: las 7 de Errores miden 1.220
+// px y a 1366 de pantalla quedaban 988 —"Valores implausibles" y "Valor
+// desproporcionado", justo donde se muestra lo que las reglas excluyen,
+// escondidas detrás de un desplazamiento lateral—.
+export function Segmented({ options, value, onChange, envolver = false }) {
+  const grupo = envolver
+    ? 'flex flex-wrap gap-1.5'
+    : 'flex flex-wrap gap-1.5 sm:inline-flex sm:flex-nowrap sm:gap-0 sm:border sm:border-border'
+  const borde = envolver
+    ? 'border border-textPrimary/30'
+    : 'border border-textPrimary/30 sm:border-0 sm:border-r sm:border-border sm:last:border-r-0'
   return (
-    <div className="sm:overflow-x-auto sm:-mx-1 sm:px-1 min-w-0 max-w-full">
-      <div className="flex flex-wrap gap-1.5 sm:inline-flex sm:flex-nowrap sm:gap-0 sm:border sm:border-border">
+    <div className={`${envolver ? '' : 'sm:overflow-x-auto sm:-mx-1 sm:px-1'} min-w-0 max-w-full`}>
+      <div className={grupo}>
         {options.map((o) => {
           const activo = value === o.value
           return (
@@ -39,8 +51,7 @@ export function Segmented({ options, value, onChange }) {
               title={o.title}
               aria-pressed={activo}
               onClick={() => !o.disabled && onChange(o.value)}
-              className={`px-3.5 py-2 min-h-[40px] sm:py-1.5 sm:min-h-0 text-cuerpo whitespace-nowrap
-                          border border-textPrimary/30 sm:border-0 sm:border-r sm:border-border sm:last:border-r-0 ${
+              className={`px-3.5 py-2 min-h-[40px] sm:py-1.5 sm:min-h-0 text-cuerpo whitespace-nowrap ${borde} ${
                 activo
                   ? 'bg-textPrimary text-bg font-bold'
                   : o.disabled

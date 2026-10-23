@@ -134,8 +134,7 @@ export function IndiceCalidad() {
               el perfil presenta lo mismo con su contexto. */}
           <Link
             to={`/entidad/${encodeURIComponent(r.entidad)}`}
-            className="text-primary font-semibold underline underline-offset-2
-                       decoration-primary/40 hover:decoration-primary"
+            className="font-semibold enlace-perfil enlace-visible"
           >
             {r.entidad}
           </Link>

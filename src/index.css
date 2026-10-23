@@ -183,3 +183,28 @@ body.menu-abierto {
     inset: -10px -8px;
   }
 }
+
+/* Enlaces que se ven como enlaces sin pasar el cursor.
+   `.enlace-sutil` subraya solo al pasar el cursor: sirve para las acciones en
+   azul ("Ver todas las adiciones →"), que ya se leen por su color. Pero los
+   nombres de entidad y contratista que abren un perfil iban en el negro del
+   texto, y en el teléfono —sin cursor— nada los distinguía de un nombre
+   cualquiera: quien no sabía que se podía tocar, no lo tocaba, y se perdía
+   la mitad de la plataforma.
+   - `.enlace-visible`: subrayado fino y permanente, en el color que tenga el
+     texto (sirve también para una cifra en ámbar que lleva a algún lado).
+   - `.enlace-perfil`: además, el azul de acción del sitio. Es la marca única
+     de "esto abre un perfil", en todas las tablas, tarjetas y listas. */
+.enlace-visible {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  transition: text-decoration-color 160ms ease;
+}
+.enlace-visible:hover {
+  text-decoration-color: currentColor;
+}
+.enlace-perfil {
+  color: rgb(var(--c-primary));
+}

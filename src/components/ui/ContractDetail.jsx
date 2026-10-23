@@ -2,7 +2,9 @@ import { interpretContract } from '../../lib/interpret'
 import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/formatters'
 import { plazoDelContrato, clasificarAdicion } from '../../lib/adiciones'
 import { useModificaciones, useValorOriginalProceso } from '../../hooks/useModificaciones'
+import { Link } from 'react-router-dom'
 import { SecopLink } from './SecopLink'
+import { DOCUMENTOS_SIN_IDENTIDAD } from '../../lib/identidad'
 import { ModificationHistory } from './ModificationHistory'
 import { TerminoConAyuda } from './Ayuda'
 
@@ -278,7 +280,29 @@ export function ContractDetail({ contract: c }) {
         )}
       </div>
 
-      <div className="pt-1">
+      {/* A dónde seguir desde un contrato: el perfil de quien lo firmó y el de
+          quien lo recibe, además de la fuente. El detalle terminaba en "Ver en
+          SECOP" y la entidad y el contratista quedaban como dos datos sueltos
+          en la ficha, sin camino para mirar el resto de su historia. */}
+      <div className="pt-1 flex flex-wrap gap-x-6 gap-y-2.5">
+        {c.entityName && (
+          <Link
+            to={`/entidad/${encodeURIComponent(c.entityName)}`}
+            onClick={(e) => e.stopPropagation()}
+            className="toque text-cuerpo font-semibold text-primary enlace-visible"
+          >
+            Perfil de la entidad →
+          </Link>
+        )}
+        {c.contractorId && !DOCUMENTOS_SIN_IDENTIDAD.includes(c.contractorId) && (
+          <Link
+            to={`/contratista/${encodeURIComponent(c.contractorId)}`}
+            onClick={(e) => e.stopPropagation()}
+            className="toque text-cuerpo font-semibold text-primary enlace-visible"
+          >
+            Perfil del contratista →
+          </Link>
+        )}
         <SecopLink url={c.processUrl} />
       </div>
     </div>

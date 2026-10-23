@@ -198,6 +198,8 @@ function Perfil({ perfil }) {
             items={perfil.entidades_lista.map((e) => ({
               clave: e.entidad,
               label: e.entidad,
+              // Cada entidad lleva a su perfil (ver Entidad.jsx, la lista gemela).
+              etiqueta: <EnlaceEntidad nombre={e.entidad} />,
               valor: e.valor,
               valorTexto: copActores(e.valor),
               secundario: `${e.n.toLocaleString('es-CO')} contratos`,

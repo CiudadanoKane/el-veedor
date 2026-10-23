@@ -95,7 +95,7 @@ function RankingContratistas({ filters }) {
         <div>
           <Link
             to={`/contratista/${encodeURIComponent(r.documento)}`}
-            className="text-textPrimary enlace-sutil font-medium"
+            className="enlace-perfil enlace-visible font-medium"
           >
             {r.nombre || '(sin nombre)'}
           </Link>
@@ -243,7 +243,7 @@ function RankingEntidades({ filters }) {
           ) : (
             <Link
               to={`/entidad/${encodeURIComponent(r.entidad)}`}
-              className="text-textPrimary enlace-sutil"
+              className="enlace-perfil enlace-visible"
             >
               {r.entidad}
             </Link>
@@ -292,7 +292,7 @@ function RankingEntidades({ filters }) {
               <Link
                 to={`/errores?t=${PESTANAS_ERRORES.indice}`}
                 title={`${c.errores.toLocaleString('es-CO')} de ${c.total.toLocaleString('es-CO')} contratos con algún error de registro`}
-                className={alto ? 'text-warning font-medium enlace-sutil' : 'text-textSecondary enlace-sutil'}
+                className={alto ? 'text-warning font-medium enlace-visible' : 'text-textSecondary enlace-visible'}
               >
                 {formatPct(c.tasa, 2)}
               </Link>
@@ -394,7 +394,7 @@ function RankingAdiciones({ filters }) {
           <div className="max-w-[380px]">
             <Link
               to={`/entidad/${encodeURIComponent(r.etiqueta)}`}
-              className="text-textPrimary enlace-sutil"
+              className="enlace-perfil enlace-visible"
             >
               {r.etiqueta}
             </Link>
@@ -403,7 +403,7 @@ function RankingAdiciones({ filters }) {
           <div className="max-w-[380px]">
             <Link
               to={`/contratista/${encodeURIComponent(r.id)}`}
-              className="text-textPrimary enlace-sutil"
+              className="enlace-perfil enlace-visible"
             >
               {r.etiqueta || '(sin nombre)'}
             </Link>
@@ -739,6 +739,7 @@ export function Rankings() {
           cinco etiquetas en paralelo, cuatro «quién» y un «qué». */}
       <div data-pestanas>
         <Segmented
+          envolver
           value={tab}
           onChange={setTab}
           options={[

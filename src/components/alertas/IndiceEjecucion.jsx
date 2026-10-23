@@ -95,8 +95,7 @@ export function IndiceEjecucion() {
         <div className="max-w-[280px]">
           <Link
             to={`/contratista/${encodeURIComponent(r.documento)}`}
-            className="text-primary font-semibold underline underline-offset-2
-                       decoration-primary/40 hover:decoration-primary"
+            className="font-semibold enlace-perfil enlace-visible"
           >
             {r.nombre || '(sin nombre)'}
           </Link>

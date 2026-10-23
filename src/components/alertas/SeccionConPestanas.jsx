@@ -42,6 +42,7 @@ export function SeccionConPestanas({ titulo, subtitulo, intro, items }) {
           en el mensaje qué se está enviando. */}
       <div data-pestanas>
         <Segmented
+          envolver
           value={tab}
           onChange={cambiar}
           options={items.map(({ id, label }) => ({ value: id, label }))}

@@ -268,6 +268,9 @@ function Perfil({ perfil, refNacional }) {
             items={perfil.contratistas_lista.map((c) => ({
               clave: c.documento,
               label: c.nombre,
+              // Cada contratista lleva a su perfil: la lista mostraba a quién
+              // contrata la entidad y no dejaba ir a mirar a ninguno.
+              etiqueta: <EnlaceContratista nombre={c.nombre} documento={c.documento} />,
               valor: c.valor,
               valorTexto: copActores(c.valor),
               secundario: `${c.n.toLocaleString('es-CO')} contratos`,

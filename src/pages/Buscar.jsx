@@ -655,7 +655,7 @@ export function Buscar() {
               <button
                 type="button"
                 onClick={limpiarBusqueda}
-                className="mt-4 text-cuerpo text-textSecondary hover:text-textPrimary underline"
+                className="toque mt-4 text-cuerpo text-textSecondary hover:text-textPrimary underline"
               >
                 Limpiar búsqueda
               </button>

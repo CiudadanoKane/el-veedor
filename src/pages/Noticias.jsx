@@ -1,5 +1,6 @@
 import { PageHeader } from '../components/layout/Layout'
 import { NotaCard } from '../components/ui/NotaCard'
+import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
 import { useFilters } from '../context/FiltersContext'
 import { useNoticiasData } from '../hooks/useNoticias'
 import { formatCOP, daysSince, humanDuration, formatPct } from '../lib/formatters'
@@ -66,7 +67,7 @@ export function Noticias() {
       enlace: { to: conFiltros('/alertas', PESTANAS_ALERTAS.adiciones, filters), texto: 'Ver todas las adiciones de tiempo' },
       titular: (
         <>
-          Un contrato de <strong>{a.entityName}</strong> amplió su plazo
+          Un contrato de <strong><EnlaceEntidad nombre={a.entityName} /></strong> amplió su plazo
           {/* El porcentaje puede faltar si el plazo original no se pudo
               reconstruir; la tabla lo muestra como "—" y aquí se calla, en vez
               de escribir "un null%". Los días añadidos, que son el dato de la
@@ -81,7 +82,7 @@ export function Noticias() {
         key: c.id,
         node: (
           <>
-            <span className="text-textPrimary font-semibold">{c.entityName}</span>
+            <EnlaceEntidad nombre={c.entityName} className="font-semibold" />
             {c.pctAdicion != null ? `: +${num(c.pctAdicion)}%` : ':'}{' '}
             (de {num(c.plazoOriginal)} a {num(finDiasPlazo(c))} días)
           </>
@@ -89,6 +90,11 @@ export function Noticias() {
       })),
     }
   })()
+
+  // Los nombres de estas notas —en el titular y en "También"— llevan a su
+  // perfil, con la misma marca visible que en el resto del sitio. Antes eran
+  // texto: la nota contaba que una empresa prorrogó el 59% de sus contratos y
+  // para mirarla había que ir a buscarla.
 
   // --- Caso específico: obra paralizada ---
   const notaObra = (() => {
@@ -104,7 +110,7 @@ export function Noticias() {
       enlace: { to: conFiltros('/alertas', PESTANAS_ALERTAS.obra, filters), texto: 'Ver las obras paralizadas' },
       titular: (
         <>
-          Una obra contratada por <strong>{o.entityName}</strong> sigue vencida
+          Una obra contratada por <strong><EnlaceEntidad nombre={o.entityName} /></strong> sigue vencida
           {venc ? ` hace ${venc}` : ''} con <strong>{formatCOP(o.valuePending)}</strong> sin ejecutar.
         </>
       ),
@@ -112,7 +118,7 @@ export function Noticias() {
         key: c.id,
         node: (
           <>
-            <span className="text-textPrimary font-semibold">{c.entityName}</span>:{' '}
+            <EnlaceEntidad nombre={c.entityName} className="font-semibold" />:{' '}
             {formatCOP(c.valuePending)} sin ejecutar
           </>
         ),
@@ -139,7 +145,7 @@ export function Noticias() {
       enlace: { to: `/contratista/${encodeURIComponent(c0.documento)}`, texto: 'Ver el perfil de la empresa' },
       titular: (
         <>
-          <strong>{c0.nombre}</strong> prorrogó el <strong>{Math.round(c0.tasaProrroga)}%</strong> de
+          <strong><EnlaceContratista nombre={c0.nombre} documento={c0.documento} /></strong> prorrogó el <strong>{Math.round(c0.tasaProrroga)}%</strong> de
           sus {num(c0.total)} contratos, repartidos en <strong>{num(c0.entidades)} entidades distintas</strong>.
         </>
       ),
@@ -147,7 +153,7 @@ export function Noticias() {
         key: c.documento,
         node: (
           <>
-            <span className="text-textPrimary font-semibold">{c.nombre}</span>: {Math.round(c.tasaProrroga)}%
+            <EnlaceContratista nombre={c.nombre} documento={c.documento} className="font-semibold" />: {Math.round(c.tasaProrroga)}%
             en {num(c.entidades)} entidades
           </>
         ),
@@ -171,16 +177,16 @@ export function Noticias() {
       enlace: { to: `/contratista/${encodeURIComponent(c0.documento)}`, texto: 'Ver el perfil de la empresa' },
       titular: (
         <>
-          <strong>{c0.nombre}</strong> recibió <strong>{formatCOP(c0.valor)}</strong> en {num(c0.contratos)}{' '}
-          contratos, todos con una sola entidad: {c0.entidad}.
+          <strong><EnlaceContratista nombre={c0.nombre} documento={c0.documento} /></strong> recibió <strong>{formatCOP(c0.valor)}</strong> en {num(c0.contratos)}{' '}
+          contratos, todos con una sola entidad: <EnlaceEntidad nombre={c0.entidad} />.
         </>
       ),
       secundarios: casos.slice(1, 3).map((c) => ({
         key: c.documento,
         node: (
           <>
-            <span className="text-textPrimary font-semibold">{c.nombre}</span>: {formatCOP(c.valor)} en{' '}
-            {num(c.contratos)} contratos con {c.entidad}
+            <EnlaceContratista nombre={c.nombre} documento={c.documento} className="font-semibold" />: {formatCOP(c.valor)} en{' '}
+            {num(c.contratos)} contratos con <EnlaceEntidad nombre={c.entidad} />
           </>
         ),
       })),
@@ -200,7 +206,7 @@ export function Noticias() {
       enlace: { to: `/contratista/${encodeURIComponent(c0.documento)}`, texto: 'Ver el perfil de la empresa' },
       titular: (
         <>
-          En {ambito}, <strong>{c0.nombre}</strong> recibió <strong>{formatCOP(c0.valor)}</strong> en{' '}
+          En {ambito}, <strong><EnlaceContratista nombre={c0.nombre} documento={c0.documento} /></strong> recibió <strong>{formatCOP(c0.valor)}</strong> en{' '}
           {num(c0.contratos)} contratos adjudicados sin concurso.
         </>
       ),
@@ -208,7 +214,7 @@ export function Noticias() {
         key: c.documento,
         node: (
           <>
-            <span className="text-textPrimary font-semibold">{c.nombre}</span>: {formatCOP(c.valor)} en{' '}
+            <EnlaceContratista nombre={c.nombre} documento={c.documento} className="font-semibold" />: {formatCOP(c.valor)} en{' '}
             {num(c.contratos)} contratos
           </>
         ),

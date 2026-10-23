@@ -20,23 +20,25 @@ import { DOCUMENTOS_SIN_IDENTIDAD } from '../../lib/identidad'
 //     llevaría a un perfil que agrupa miles de contratos ajenos entre sí, así
 //     que se muestran como texto plano. Ver identidad.js.
 
-// `className` se acepta para que cada tabla conserve su color y tamaño; lo único
-// que este componente impone es el subrayado sutil de enlace del sitio.
-export function EnlaceEntidad({ nombre, className = 'text-textPrimary' }) {
+// `className` se acepta para tamaño y peso. El color y el subrayado los pone el
+// componente (`enlace-perfil enlace-visible`, ver index.css): antes iban en el
+// negro del texto y con subrayado solo al pasar el cursor, así que en el
+// teléfono un nombre que abría un perfil no se distinguía de uno que no.
+export function EnlaceEntidad({ nombre, className = '' }) {
   if (!nombre) return '—'
   return (
     <Link
       to={`/entidad/${encodeURIComponent(nombre)}`}
       onClick={(e) => e.stopPropagation()}
       title={`Ver el perfil de ${nombre}`}
-      className={`${className} enlace-sutil`}
+      className={`${className} enlace-perfil enlace-visible`}
     >
       {nombre}
     </Link>
   )
 }
 
-export function EnlaceContratista({ nombre, documento, className = 'text-textPrimary' }) {
+export function EnlaceContratista({ nombre, documento, className = '' }) {
   const identifica = documento && !DOCUMENTOS_SIN_IDENTIDAD.includes(documento)
   if (!nombre && !identifica) return '—'
   // Con documento utilizable pero sin nombre, el perfil sigue siendo útil: es un
@@ -47,7 +49,7 @@ export function EnlaceContratista({ nombre, documento, className = 'text-textPri
       to={`/contratista/${encodeURIComponent(documento)}`}
       onClick={(e) => e.stopPropagation()}
       title={`Ver el perfil de ${nombre || documento}`}
-      className={`${className} enlace-sutil`}
+      className={`${className} enlace-perfil enlace-visible`}
     >
       {nombre || documento}
     </Link>

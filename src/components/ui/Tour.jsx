@@ -58,8 +58,11 @@ const PASOS = [
   {
     target: '[data-tour="cifras"]',
     titulo: 'Cada cifra se abre',
+    // Los nombres en azul van aquí porque son la otra mitad de "todo se
+    // abre": cada entidad y cada contratista llevan a su perfil, y sin
+    // decirlo mucha gente no los toca (ver .enlace-perfil en index.css).
     cuerpo:
-      'Ninguna cifra es una caja negra. Despliega cualquiera para ver de dónde sale y cómo se calcula.',
+      'Ninguna cifra es una caja negra: despliega cualquiera para ver de dónde sale. Y cada nombre en azul —una entidad, un contratista— abre su perfil completo.',
   },
   {
     // En escritorio señala el botón de la barra lateral; en móvil ese botón vive
