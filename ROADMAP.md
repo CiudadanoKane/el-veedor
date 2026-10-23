@@ -446,7 +446,8 @@ individual— ahí sí habría base para excluir con certeza.
   439 a 246 px (texto corto, selectores lado a lado). Sigue siendo lo primero,
   a propósito, pero la sección de cifras ya asoma en la primera pantalla. Las
   cifras en sí quedan a un gesto (px 746 a 360×780); verlas sin bajar exigiría
-  poner la caja debajo de las tarjetas, decisión pendiente.
+  poner la caja debajo de las tarjetas. Decidido (oct 2026): se deja así —
+  elegir el lugar sigue siendo el primer gesto, y las cifras están a un gesto—.
 
 ### La persona que contrata con su cédula como NIT (oct 2026)
 
