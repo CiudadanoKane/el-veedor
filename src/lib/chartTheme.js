@@ -1,35 +1,30 @@
-// Recharts y el mapa no leen clases de Tailwind: los colores viven aquí,
-// alineados con el tema definido en index.css.
+// Recharts y el mapa no leen clases de Tailwind. Sus colores son referencias a
+// las variables de index.css —var() funciona dentro de los atributos del SVG—,
+// así que el modo oscuro automático los cambia solo, sin JavaScript. Los
+// valores claros de siempre viven allá; aquí ya no hay ningún hex.
+const v = (nombre) => `var(${nombre})`
+const rgb = (nombre) => `rgb(var(${nombre}))`
 
 export const CHART = {
-  text: '#111111',
-  axis: '#6A6A64',
-  primary: '#113D7A',
-  danger: '#B22020',
-  warning: '#A6550A',
-  success: '#156849',
-  grid: '#E0E0DC',
+  text: v('--chart-text'),
+  axis: v('--chart-axis'),
+  primary: rgb('--c-primary'),
+  danger: rgb('--c-danger'),
+  warning: rgb('--c-warning'),
+  success: rgb('--c-success'),
+  grid: v('--chart-grid'),
+  fondo: rgb('--c-bg'),
+  sinDato: v('--chart-sin-dato'),
 }
 
 // Paleta categórica sobria: azules tinta que van oscureciéndose, con
 // acentos cálidos al final para que la cola de la lista se distinga.
-export const SECTOR_COLORS = [
-  '#113D7A',
-  '#2C5A94',
-  '#4A78A8',
-  '#6B95B4',
-  '#8A9E9C',
-  '#A69277',
-  '#A6550A',
-  '#8C3B26',
-  '#6B2A2A',
-  '#4A2438',
-]
+export const SECTOR_COLORS = Array.from({ length: 10 }, (_, i) => v(`--cat-${i}`))
 
 // Escala de SEÑAL para el mapa: de neutro a rojo, de menos a más. Se usa en las
 // métricas donde "más" es algo que vale la pena mirar (plazo vencido, sin
 // competencia, prórrogas, adiciones). Seis tonos para un gradiente más fino.
-export const SCALE_SENAL = ['#F2EDE8', '#E7D3C4', '#D9AE97', '#C9836A', '#BC5340', '#B22020']
+export const SCALE_SENAL = Array.from({ length: 6 }, (_, i) => v(`--esc-s-${i}`))
 
 // Alias histórico; SCALE_SENAL es el nombre neutro. (Se conserva por si algún
 // import viejo lo usa.)
@@ -38,7 +33,7 @@ export const SCALE_MORA = SCALE_SENAL
 // Escala NEUTRA (tinta azul, de claro a oscuro) para las métricas de volumen
 // —número de contratos, valor contratado—, donde "más" no es bueno ni malo:
 // pintarlas de rojo insinuaría que contratar mucho es un problema.
-export const SCALE_NEUTRO = ['#EAEFF5', '#CBD9E9', '#9DB6D2', '#6E92B8', '#40699B', '#113D7A']
+export const SCALE_NEUTRO = Array.from({ length: 6 }, (_, i) => v(`--esc-n-${i}`))
 
 // Color de la escala que corresponde a un valor dentro de un rango
 export function colorEnEscala(valor, min, max, escala = SCALE_MORA) {
@@ -51,13 +46,13 @@ export function colorEnEscala(valor, min, max, escala = SCALE_MORA) {
 // Estilo compartido de tooltip
 export const tooltipProps = {
   contentStyle: {
-    background: '#FFFFFF',
-    border: '1px solid #E0E0DC',
+    background: CHART.fondo,
+    border: `1px solid ${CHART.grid}`,
     borderRadius: 0,
-    boxShadow: '0 8px 24px rgb(17 17 17 / 0.10)',
+    boxShadow: '0 8px 24px rgb(0 0 0 / 0.18)',
     padding: '10px 12px',
   },
   labelStyle: { color: CHART.text, fontWeight: 600, marginBottom: 2 },
   itemStyle: { color: CHART.text },
-  cursor: { fill: 'rgb(17 17 17 / 0.04)' },
+  cursor: { fill: 'rgb(var(--c-text) / 0.05)' },
 }

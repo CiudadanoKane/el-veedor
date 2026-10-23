@@ -19,7 +19,7 @@ const N = (x) => (x ?? 0).toLocaleString('es-CO')
 // entra en gris en las métricas de tasa (no en las de volumen, que son totales).
 const MIN_MUESTRA = 100
 // Gris de "sin dato" para departamentos sin cifra en la métrica activa.
-const GRIS_SIN_DATO = '#F2F2F0'
+const GRIS_SIN_DATO = CHART.sinDato
 // San Andrés es un archipiélago diminuto en el Caribe: su polígono queda como
 // una mota en la esquina superior izquierda y no se distingue. Se le dibuja
 // además un marcador con su color, para que sea visible y consultable en todas
@@ -421,7 +421,7 @@ export function MapaColombia() {
                       key={geo.rsmKey}
                       geography={geo}
                       fill={relleno}
-                      stroke="#FFFFFF"
+                      stroke={CHART.fondo}
                       strokeWidth={0.6}
                       onMouseEnter={() =>
                         setActivo({ clave, nombre: d?.nombre ?? geo.properties.DPTO_CNMBR })
@@ -438,7 +438,7 @@ export function MapaColombia() {
                       }
                       style={{
                         default: { outline: 'none', transition: 'fill 160ms ease' },
-                        hover: { outline: 'none', fill: '#111111', cursor: 'pointer' },
+                        hover: { outline: 'none', fill: CHART.text, cursor: 'pointer' },
                         pressed: { outline: 'none' },
                       }}
                       aria-label={geo.properties.DPTO_CNMBR}
@@ -466,7 +466,7 @@ export function MapaColombia() {
                   }
                   style={{ default: { cursor: 'pointer' }, hover: { cursor: 'pointer' } }}
                 >
-                  <circle r={5} fill={relleno} stroke="#111111" strokeWidth={0.9} />
+                  <circle r={5} fill={relleno} stroke={CHART.text} strokeWidth={0.9} />
                   <text
                     x={9}
                     y={3.5}

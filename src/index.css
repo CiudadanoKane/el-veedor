@@ -23,9 +23,70 @@
   --c-side-hover:  38  38  35;
   --c-side-active: 255 255 255;
 
-  /* Gráficas (Recharts no lee clases de Tailwind) */
+  /* Gráficas y mapa (Recharts no lee clases de Tailwind: chartTheme.js usa
+     estas variables directamente en los atributos del SVG). */
   --chart-text: #111111;
   --chart-axis: #6A6A64;
+  --chart-grid: #E0E0DC;
+  --chart-sin-dato: #F2F2F0;
+  /* Escala de señal (neutro → rojo) y neutra (tinta azul), de menos a más. */
+  --esc-s-0: #F2EDE8; --esc-s-1: #E7D3C4; --esc-s-2: #D9AE97;
+  --esc-s-3: #C9836A; --esc-s-4: #BC5340; --esc-s-5: #B22020;
+  --esc-n-0: #EAEFF5; --esc-n-1: #CBD9E9; --esc-n-2: #9DB6D2;
+  --esc-n-3: #6E92B8; --esc-n-4: #40699B; --esc-n-5: #113D7A;
+  /* Paleta categórica (sectores, dona de Graficar). */
+  --cat-0: #113D7A; --cat-1: #2C5A94; --cat-2: #4A78A8; --cat-3: #6B95B4; --cat-4: #8A9E9C;
+  --cat-5: #A69277; --cat-6: #A6550A; --cat-7: #8C3B26; --cat-8: #6B2A2A; --cat-9: #4A2438;
+
+  color-scheme: light;
+}
+
+/* Modo oscuro AUTOMÁTICO: se activa solo si el sistema de la persona lo está
+   (el teléfono de noche, sobre todo). No es el tema principal a propósito: la
+   plataforma es lectura —metodologías, "En palabras simples"— y para leer
+   largo la mayoría lee mejor oscuro sobre claro. Pero quien tiene el teléfono
+   en oscuro espera que la página lo respete, y un blanco pleno a medianoche
+   espanta.
+   Cómo está armado:
+   - El contenido va en un gris casi negro (#161614) y la banda de navegación
+     en uno aún más oscuro (#0C0C0B): así se conserva la jerarquía de siempre,
+     cromo oscuro y contenido aparte.
+   - Los colores de señal se recalibraron para fondo oscuro, no se invirtieron:
+     el rojo (#B22020) daba 2,6:1 sobre negro; #F26D63 da ~6:1. Ámbar, verde y
+     el azul de enlace, igual (#7DA8E6, ~7,5:1).
+   - Las escalas del mapa van de un tono apenas distinto del fondo al color
+     pleno: "más" sigue siendo lo que más resalta. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg:          22  22  20;
+    --c-surface:     22  22  20;
+    --c-muted:       34  34  31;
+    --c-border:      58  58  53;
+    --c-primary:    125 168 230;
+    --c-danger:     242 109  99;
+    --c-warning:    232 163  77;
+    --c-success:     88 196 148;
+    --c-text:       236 235 230;
+    --c-text-soft:  168 168 160;
+
+    --c-side:        12  12  11;
+    --c-side-soft:  158 158 150;
+    --c-side-hover:  30  30  28;
+    --c-side-active: 255 255 255;
+
+    --chart-text: #ECEBE6;
+    --chart-axis: #9A9A92;
+    --chart-grid: #33332F;
+    --chart-sin-dato: #2A2A27;
+    --esc-s-0: #2B2723; --esc-s-1: #4A3329; --esc-s-2: #6E3F30;
+    --esc-s-3: #9A4A36; --esc-s-4: #C8553F; --esc-s-5: #F26D63;
+    --esc-n-0: #1F2833; --esc-n-1: #24364D; --esc-n-2: #2E4C70;
+    --esc-n-3: #3F6896; --esc-n-4: #5786C0; --esc-n-5: #7DA8E6;
+    --cat-0: #7DA8E6; --cat-1: #6A95D4; --cat-2: #5A82BE; --cat-3: #5A7FA0; --cat-4: #8A9E9C;
+    --cat-5: #B8A07E; --cat-6: #E8A34D; --cat-7: #D9774F; --cat-8: #C25A5A; --cat-9: #A0577E;
+
+    color-scheme: dark;
+  }
 }
 
 * {

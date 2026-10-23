@@ -144,8 +144,8 @@ function LineaConstructor({ data, tipo }) {
           stroke={CHART.text}
           strokeWidth={1.75}
           connectNulls={false}
-          dot={{ r: 3.5, fill: '#FFFFFF', stroke: CHART.text, strokeWidth: 1.75 }}
-          activeDot={{ r: 6, fill: CHART.text, stroke: '#FFFFFF', strokeWidth: 2 }}
+          dot={{ r: 3.5, fill: CHART.fondo, stroke: CHART.text, strokeWidth: 1.75 }}
+          activeDot={{ r: 6, fill: CHART.text, stroke: CHART.fondo, strokeWidth: 2 }}
           isAnimationActive={false}
         />
       </LineChart>

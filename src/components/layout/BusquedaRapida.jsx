@@ -59,7 +59,10 @@ export function BusquedaRapida({ onEnfoque }) {
       {/* Campo claro sobre la banda oscura: es el contraste más alto de la
           cabecera, y deja claro dónde se escribe. */}
       <div
-        className="flex items-center gap-2 bg-bg border border-transparent
+        // En oscuro, un gris un escalón más claro y un borde: el fondo del
+        // contenido casi no se distinguía de la banda y la caja se perdía, el
+        // mismo problema que tuvo en claro antes de ser blanca.
+        className="flex items-center gap-2 bg-bg dark:bg-muted border border-transparent dark:border-sideSoft/30
                    focus-within:border-sideActive transition-colors px-2.5 py-2 sm:py-1.5"
       >
         <svg

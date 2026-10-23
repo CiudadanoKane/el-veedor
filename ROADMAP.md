@@ -427,6 +427,31 @@ Efecto colateral buscado: esa lista es un catálogo de trabajo. Si al revisarla
 aparece un patrón limpio —por ejemplo que el objeto nombre un cargo
 individual— ahí sí habría base para excluir con certeza.
 
+### Modo oscuro automático (oct 2026)
+
+Decisión: el tema principal sigue siendo claro —la plataforma es lectura
+larga, y para eso la mayoría lee mejor oscuro sobre claro; además el tono
+editorial es parte de la seriedad—, pero se respeta el modo oscuro del sistema
+(`prefers-color-scheme`), que es lo que espera quien tiene el teléfono en
+oscuro de noche.
+
+- Las variables de `:root` (index.css) se redefinen en oscuro: contenido en
+  #161614 y banda de navegación en #0C0C0B, para conservar la jerarquía
+  cromo/contenido. Los colores de señal se **recalibraron**, no se
+  invirtieron: el rojo de siempre daba 2,6:1 sobre oscuro, el nuevo ~6:1.
+- Gráficos y mapa ya no tienen ningún hex: `chartTheme.js` referencia
+  variables (`var()` funciona dentro de los atributos del SVG), así que cambian
+  solos. Las escalas del mapa van de casi el fondo al color pleno.
+- `color-scheme` para que selectores y barras de desplazamiento nativos
+  acompañen; `theme-color` por modo para la barra del navegador.
+- Verificado que el claro quedó idéntico (mismos valores RGB en mapa y
+  gráficos).
+
+Caminos nuevos de la misma ronda: sectores de "Qué se contrata" → buscador
+filtrado por segmento UNSPSC (filtro `segmento`, nuevo); modalidades de "Cómo
+adjudica" → esos contratos de la entidad; sede de la entidad → Panorama de la
+ciudad o del departamento.
+
 ### Que la interfaz muestre a dónde se puede ir (oct 2026)
 
 Observación del usuario: no era obvio que el nombre de una entidad o un

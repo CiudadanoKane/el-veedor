@@ -151,8 +151,8 @@ export function EvolucionMensual({ filters }) {
                   stroke={CHART.text}
                   strokeWidth={1.75}
                   connectNulls={false}
-                  dot={{ r: 3.5, fill: '#FFFFFF', stroke: CHART.text, strokeWidth: 1.75 }}
-                  activeDot={{ r: 6, fill: CHART.text, stroke: '#FFFFFF', strokeWidth: 2 }}
+                  dot={{ r: 3.5, fill: CHART.fondo, stroke: CHART.text, strokeWidth: 1.75 }}
+                  activeDot={{ r: 6, fill: CHART.text, stroke: CHART.fondo, strokeWidth: 2 }}
                   isAnimationActive={false}
                 />
                 {secop1Viable && (
@@ -164,8 +164,8 @@ export function EvolucionMensual({ filters }) {
                     strokeWidth={1.75}
                     strokeDasharray="5 3"
                     connectNulls={false}
-                    dot={{ r: 3.5, fill: '#FFFFFF', stroke: CHART.primary, strokeWidth: 1.75 }}
-                    activeDot={{ r: 6, fill: CHART.primary, stroke: '#FFFFFF', strokeWidth: 2 }}
+                    dot={{ r: 3.5, fill: CHART.fondo, stroke: CHART.primary, strokeWidth: 1.75 }}
+                    activeDot={{ r: 6, fill: CHART.primary, stroke: CHART.fondo, strokeWidth: 2 }}
                     isAnimationActive={false}
                   />
                 )}

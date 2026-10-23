@@ -576,7 +576,7 @@ export function Buscar() {
               <button
                 type="submit"
                 disabled={cargandoIA}
-                className="bg-textPrimary text-white px-6 py-2 text-cuerpo font-semibold
+                className="bg-textPrimary text-bg px-6 py-2 text-cuerpo font-semibold
                            hover:bg-primary transition-colors disabled:opacity-60
                            disabled:cursor-not-allowed"
               >
