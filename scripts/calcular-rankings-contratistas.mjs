@@ -284,11 +284,19 @@ async function main() {
   // ¿Se parece a lo de ayer? El workflow commitea solo, así que si la fuente
   // devolvió a medias es preferible dejar el archivo anterior —correcto, solo
   // viejo— que pisarlo con uno sesgado. Ver scripts/guardas.mjs.
+  //
+  // El mínimo de filas del top es TOP, no un número suelto. Estuvo en 50 desde
+  // el 4 de agosto de 2026 con TOP = 30: la guarda no podía cumplirse NUNCA, el
+  // workflow fallaba todos los días y el ranking nacional "Quién recibe más"
+  // quedó congelado en el archivo del 2 de agosto —antes de las limpiezas de
+  // septiembre y octubre— sin que nada en la página lo delatara. Se notó en
+  // octubre porque una bacterióloga de 4,9 billones, ya excluida por las
+  // reglas, seguía de #5.
   const previo = leerAnterior(SALIDA)
   exigirCordura([
     { nombre: 'contratistas SECOP II', ahora: mapaSecop2.size, antes: previo?.secop2?.contratistas, minimo: 500_000 },
-    { nombre: 'filas del top por valor (SECOP II)', ahora: salida.secop2.porValor.length, antes: previo?.secop2?.porValor?.length, minimo: 50 },
-    { nombre: 'filas del top por valor (SECOP I)', ahora: salida.secop1.porValor.length, antes: previo?.secop1?.porValor?.length, minimo: 50 },
+    { nombre: 'filas del top por valor (SECOP II)', ahora: salida.secop2.porValor.length, antes: previo?.secop2?.porValor?.length, minimo: TOP },
+    { nombre: 'filas del top por valor (SECOP I)', ahora: salida.secop1.porValor.length, antes: previo?.secop1?.porValor?.length, minimo: TOP },
   ], { saltar: MAX_PAGINAS !== Infinity || args.includes('--sin-guardas') })
 
   mkdirSync(dirname(SALIDA), { recursive: true })
