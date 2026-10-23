@@ -196,15 +196,50 @@ export const TECHO_PERSONA_NATURAL = 100_000_000_000
 // dentro de un GROUP BY sube la consulta de 18,1 s a 129,3 s, con el endpoint
 // en un techo de 60 s. Comparar una cadena sobre 5,5 millones de filas cuesta
 // más que dividir. En un WHERE plano, en cambio, sale gratis.
+//
+// AMPLIADO (oct 2026) a la persona que contrata con su cédula como NIT. Salió
+// del ranking "Quién recibe más": de #5 en el país, ALBA MILENA FAJARDO ISAZA,
+// "BACTERIÓLOGO(A) ESPECIALISTA EN EPIDEMIOLOGÍA" por 4,9 billones y $0 pagado.
+// Se escapaba porque el contrato dice tipodocproveedor = 'NIT' —aunque el
+// número, 52455395, es una cédula de 8 dígitos— y sin pago tampoco lo atrapa
+// la comparación con lo pagado.
+//
+// El patrón AMPLIO no sirve, y se midió antes de descartarlo:
+//   - Desde el techo, 5 contratos con NIT sin forma de NIT de empresa; basura,
+//     solo 1. Los otros: dos empresas extranjeras (AHMSA, Broad Telecom), un
+//     consorcio vial con documento "87654" y Parque Primavera (obra de la EDU).
+//     Los 35 "No Definido" de la banda son todos consorcios y uniones
+//     temporales.
+//   - Entre 10 y 100 mil millones, en prestación de servicios, 12 de 2.034,
+//     casi todos legítimos, incluido un comerciante persona natural (Grupo
+//     Educativo Abel Mendoza) que factura de verdad 12-15 mil millones con su
+//     cédula como NIT.
+// Una persona con NIT puede tener contratos grandes reales; excluir por la
+// forma del documento sacaría contratos buenos.
+//
+// Lo que sí es limpio es la intersección: NIT con forma de cédula (8 dígitos
+// o menos, o 10 que empiezan por 1 —un NIT de empresa tiene 9 que empiezan por
+// 8 o 9, más el dígito de verificación—) + PRESTACIÓN DE SERVICIOS + el mismo
+// techo. Es la misma razón categórica de arriba: una persona no presta
+// servicios por cien mil millones. Hoy atrapa exactamente 1 contrato. Ojo: la
+// evidencia es ese caso, no 18 como en la regla de cédula; si aparecen más, hay
+// que revisarlos antes de dar la regla por buena.
+//
+// Coste medido, intercalado: ninguno (3,6-5,3 s con y sin, total nacional y
+// por departamento). Va dentro del mismo OR, detrás del mismo corte por valor.
+const CEDULA_COMO_NIT = `(tipodocproveedor = 'NIT'
+          AND tipo_de_contrato = 'Prestación de servicios'
+          AND (documento_proveedor NOT LIKE '_________%' OR documento_proveedor LIKE '1_________'))`
+
 export function valorPosibleParaUnaPersona() {
-  return `NOT (tipodocproveedor = 'Cédula de Ciudadanía'
+  return `NOT ((tipodocproveedor = 'Cédula de Ciudadanía' OR ${CEDULA_COMO_NIT})
           AND valor_del_contrato >= ${TECHO_PERSONA_NATURAL})`
 }
 
 // La contraria, para listarlos en "Errores en SECOP": lo que aquí se excluye,
 // allá se muestra.
 export function valorImposibleParaUnaPersona() {
-  return `(tipodocproveedor = 'Cédula de Ciudadanía'
+  return `((tipodocproveedor = 'Cédula de Ciudadanía' OR ${CEDULA_COMO_NIT})
           AND valor_del_contrato >= ${TECHO_PERSONA_NATURAL})`
 }
 

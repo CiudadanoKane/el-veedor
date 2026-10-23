@@ -427,6 +427,25 @@ Efecto colateral buscado: esa lista es un catálogo de trabajo. Si al revisarla
 aparece un patrón limpio —por ejemplo que el objeto nombre un cargo
 individual— ahí sí habría base para excluir con certeza.
 
+### La persona que contrata con su cédula como NIT (oct 2026)
+
+Apareció en la revisión del teléfono: #5 en "Quién recibe más" del país era
+ALBA MILENA FAJARDO ISAZA, "BACTERIÓLOGO(A) ESPECIALISTA EN EPIDEMIOLOGÍA" por
+4,9 billones con $0 pagado. Mismo tipo de error que Sampués, pero la regla de
+persona natural no la veía: el contrato dice `tipodocproveedor = 'NIT'`, aunque
+el número (52455395) es una cédula.
+
+Se midió el patrón amplio —"NIT con forma de cédula"— y se descartó: desde el
+techo, 1 de 5 es basura (los otros: dos extranjeras, un consorcio vial y una
+obra de la EDU de Medellín); entre 10 y 100 mil millones, 12 de 2.034 y casi
+todos legítimos, incluido un comerciante persona natural que factura de verdad
+con su cédula. La regla quedó en la intersección limpia: NIT con forma de
+cédula + prestación de servicios + el techo de 100 mil millones. Hoy atrapa un
+solo contrato, así que la evidencia es ese caso: si aparecen más, revisarlos.
+Coste medido: ninguno. Se lista en Errores → Valores implausibles con el motivo
+de persona natural. Queda como caso a mirar, bajo el techo, DIANA MOSQUERA
+MOSQUERA (36 mil millones, $0 pagado, NIT con forma de cédula).
+
 ### El teléfono, fase 1: que se vea lo que importa (oct 2026)
 
 Un amigo del usuario notó que las pestañas de Rankings había que deslizarlas de
