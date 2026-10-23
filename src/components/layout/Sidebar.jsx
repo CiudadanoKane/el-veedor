@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router-dom'
 import { useTour } from '../ui/Tour'
 import { useFilters } from '../../context/FiltersContext'
+import { SelectorTema } from './SelectorTema'
 
 // Secciones de datos: qué está pasando con la contratación.
 //
@@ -151,6 +152,8 @@ export function Sidebar({ abierto, onCerrar }) {
             </span>
             Guía rápida
           </button>
+
+          <SelectorTema />
 
           <p className="text-micro text-sideSoft leading-relaxed mt-4">
             Datos públicos de SECOP I y II

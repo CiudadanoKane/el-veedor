@@ -447,6 +447,33 @@ oscuro de noche.
 - Verificado que el claro quedó idéntico (mismos valores RGB en mapa y
   gráficos).
 
+**Ahora también se puede elegir** (oct 2026, pedido del usuario): un selector
+"Tema: Auto · Claro · Oscuro" en la barra lateral, debajo de "Guía rápida" —en
+el teléfono, dentro del menú—. "Auto" es lo de antes y sigue siendo el valor por
+defecto. Por qué hacía falta: quien tiene el teléfono en oscuro puede querer leer
+una metodología larga en claro, y al revés.
+
+- **Quién decide el tema** pasó de `@media (prefers-color-scheme)` a un atributo
+  `data-theme` en `<html>`. Así la elección le gana al sistema sin duplicar los
+  colores oscuros en dos bloques.
+- **Sin destello**: un script en línea de `index.html` fija el atributo antes de
+  pintar. Comparte la clave de almacenamiento con `lib/tema.js`, y una prueba
+  falla si se desincronizan.
+- **Tailwind** usaba la media query para sus clases `dark:` (lo hace por defecto):
+  con el tema fijado a mano, la caja de búsqueda rápida tomaba el estilo del
+  modo equivocado. Ahora `darkMode` lee el mismo atributo; en el CSS de
+  producción no queda ninguna media query de esquema de color.
+- En "Auto", si el sistema cambia con la página abierta, la página lo acompaña.
+- Si el navegador bloquea el almacenamiento, la elección vale para la sesión.
+- Radios nativos ocultos: flechas del teclado y lector de pantalla sin código
+  extra.
+
+Verificado en el navegador: Auto sigue al sistema en claro y en oscuro; Oscuro
+con sistema claro, y Claro con sistema oscuro, se respetan y sobreviven a una
+recarga. El seguimiento en vivo no se pudo ver en el panel de desarrollo (con la
+ventana sin dibujar, el cambio emulado no dispara el evento), así que está
+cubierto por pruebas con un `matchMedia` falso.
+
 Caminos nuevos de la misma ronda: sectores de "Qué se contrata" → buscador
 filtrado por segmento UNSPSC (filtro `segmento`, nuevo); modalidades de "Cómo
 adjudica" → esos contratos de la entidad; sede de la entidad → Panorama de la

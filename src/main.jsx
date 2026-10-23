@@ -3,6 +3,12 @@ import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import './index.css'
 import App from './App.jsx'
+import { aplicarTema, seguirAlSistema } from './lib/tema.js'
+
+// El tema ya lo fijó el script en línea de index.html; esto ajusta además el
+// color de la barra del navegador y empieza a seguir los cambios del sistema.
+aplicarTema()
+seguirAlSistema()
 
 const queryClient = new QueryClient({
   defaultOptions: {

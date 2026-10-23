@@ -12,9 +12,24 @@
     <link rel="alternate icon" type="image/png" href="/icono-el-veedor.png" />
     <link rel="apple-touch-icon" href="/icono-el-veedor.png" />
     <!-- Color de la barra del navegador en el teléfono: el de la banda de
-         navegación, en claro y en el modo oscuro automático (index.css). -->
+         navegación. Las media queries cubren el primer instante; en cuanto
+         arranca la app, lib/tema.js los ajusta al tema elegido. -->
     <meta name="theme-color" content="#1A1A18" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0C0C0B" media="(prefers-color-scheme: dark)" />
+
+    <!-- Tema claro u oscuro ANTES de pintar: si esperara a la app, quien eligió
+         oscuro vería un destello blanco al cargar cada página. Misma regla que
+         lib/tema.js (y la misma clave de almacenamiento: si cambia allá, cambia
+         aquí): lo elegido, o si no se eligió nada, lo que diga el sistema. -->
+    <script>
+      (function () {
+        var elegido = null
+        try { elegido = localStorage.getItem('elveedor:tema') } catch (e) {}
+        var oscuro = elegido === 'oscuro' || (elegido !== 'claro' &&
+          !!window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.setAttribute('data-theme', oscuro ? 'dark' : 'light')
+      })()
+    </script>
 
     <!-- "SECOP" y no "SECOP II": la plataforma lee los dos sistemas. Estas dos
          descripciones son además lo que se lee cuando alguien comparte el

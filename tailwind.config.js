@@ -1,6 +1,11 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
+  // Las clases dark: siguen el mismo atributo que los colores de index.css, no
+  // la media query del sistema (lo que Tailwind haría por defecto). Si no, con
+  // el tema fijado a mano la caja de búsqueda rápida tomaba el estilo del modo
+  // equivocado. Ver lib/tema.js.
+  darkMode: ['selector', '[data-theme="dark"]'],
   theme: {
     extend: {
       // Colores semánticos vía variables CSS: el tema se cambia en index.css
