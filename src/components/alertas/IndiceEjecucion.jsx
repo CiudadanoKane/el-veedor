@@ -61,7 +61,7 @@ export function IndiceEjecucion() {
   const colProrroga = (d) =>
     columnaTasa('tasaProrroga', 'prorrogados', 'Necesitaron prórroga', referencia?.tasaProrroga, d)
   const colExcesiva = (d) =>
-    columnaTasa('tasaExcesiva', 'excesivas', 'Prórroga mayor al plazo', referencia?.tasaExcesiva, d)
+    columnaTasa('tasaExcesiva', 'excesivas', 'Plazo más que duplicado', referencia?.tasaExcesiva, d)
 
   // La misma prórroga, medida sobre el dinero. Un contratista puede prorrogar
   // pocos contratos y casi toda su cuantía si los grandes son los que se
@@ -161,7 +161,7 @@ export function IndiceEjecucion() {
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 mb-4">
+      <div className="flex flex-wrap items-center gap-2 mb-2">
         <span className="text-nota text-textSecondary">Ordenar por:</span>
         <Segmented
           value={metrica}
@@ -169,6 +169,11 @@ export function IndiceEjecucion() {
           options={Object.entries(METRICAS).map(([v, m]) => ({ value: v, label: m.label }))}
         />
       </div>
+      {/* Qué mide la opción elegida, a la vista y no dentro de la
+          metodología: es lo que hace falta para leer la tabla. */}
+      <p className="text-cuerpo text-textSecondary mb-5 max-w-2xl leading-snug">
+        {METRICAS[metrica]?.explicacion}
+      </p>
 
       {referencia && (
         <div className="mb-5 max-w-3xl">
@@ -181,7 +186,8 @@ export function IndiceEjecucion() {
             <strong className="font-semibold text-textPrimary">
               {formatPct(referencia.tasaExcesiva, 2)}
             </strong>{' '}
-            se prorrogó por más tiempo del que se había pactado. Esas son las varas para
+            se prorrogó por más tiempo del que se había pactado —su plazo más que se
+            duplicó—. Esas son las varas para
             leer la tabla.
           </p>
           <p className="text-cuerpo text-textPrimary mt-3 leading-relaxed">
@@ -230,8 +236,8 @@ export function IndiceEjecucion() {
         <strong>Conviene comparar las dos primeras columnas.</strong> Una mide qué
         proporción de sus <em>contratos</em> se prorrogó; la otra, qué proporción de su{' '}
         <em>dinero</em>. Cuando difieren mucho, dicen algo que ninguna sola revela: hay
-        contratistas que prorrogan el 11% de sus contratos y el 98% de su cuantía, porque
-        lo que se extiende son los grandes. Ordenar por cuantía saca a la luz a quienes la
+        contratistas que prorrogan el 11% de sus contratos y el 98% de su valor, porque
+        lo que se extiende son los grandes. Ordenar por valor contratado saca a la luz a quienes la
         tasa por número deja en mitad de tabla.
         <br />
         <br />

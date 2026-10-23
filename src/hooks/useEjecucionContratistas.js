@@ -59,17 +59,26 @@ export const UMBRAL_CONTRATOS = 50
 // Esa distinción no es un tecnicismo. MONTAGAS prorroga el 11,6% de sus
 // contratos pero el 98,5% de su cuantía: se prorrogan los grandes y no los
 // pequeños, un patrón que la tasa por número esconde por completo.
+//
+// `explicacion` va debajo del selector, en la página: el rótulo solo no
+// alcanza. "Prórroga mayor al plazo" —el nombre que tuvo la tercera— no se
+// entendía (¿mayor a qué plazo?), y "cuantía" es jerga.
 export const METRICAS = {
   prorroga: {
     label: 'Por número de contratos',
+    explicacion: 'Qué parte de sus contratos necesitó al menos una prórroga.',
     razon: `${SUMA_PRORROGADOS} / ${CONTEO}`,
   },
   cuantia: {
-    label: 'Por cuantía',
+    label: 'Por valor contratado',
+    explicacion:
+      'Qué parte del dinero de sus contratos estuvo en contratos prorrogados. Muestra si los que se alargan son los grandes.',
     razon: `${SUMA_VALOR_PRORROGADO} / ${SUMA_VALOR}`,
   },
   excesiva: {
-    label: 'Prórroga mayor al plazo',
+    label: 'Plazo más que duplicado',
+    explicacion:
+      'Qué parte de sus contratos se prorrogó por más tiempo del que se había pactado al firmar: por ejemplo, uno de 6 meses que terminó durando más de un año.',
     razon: `${SUMA_EXCESIVAS} / ${CONTEO}`,
   },
 }
