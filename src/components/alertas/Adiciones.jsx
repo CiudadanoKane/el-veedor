@@ -11,7 +11,7 @@ import { useFilters } from '../../context/FiltersContext'
 import {
   useAdicionesTiempo, usePrevalenciaAdicionTiempo, useAdicionesCosto, useAdicionesAmbas,
 } from '../../hooks/useAdiciones'
-import { formatCOP, humanDuration } from '../../lib/formatters'
+import { formatCOP, formatPct, humanDuration } from '../../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../ui/EnlacePerfil'
 import { FuenteBadge } from '../ui/FuenteBadge'
 import { Link } from 'react-router-dom'
@@ -23,7 +23,9 @@ function PctBadge({ pct }) {
   if (pct > 200) tone = 'text-danger font-bold'
   else if (pct > 100) tone = 'text-danger'
   else if (pct > 50) tone = 'text-warning'
-  return <span className={tone}>+{pct}%</span>
+  // formatPct y no el número a secas: "+3964%" aquí y "+3.964%" en Noticias,
+  // para el mismo contrato, era el mismo dato escrito de dos formas.
+  return <span className={tone}>+{formatPct(pct, 0)}</span>
 }
 
 const colEntidad = {
@@ -72,7 +74,7 @@ export function AdicionesTiempo() {
           {formatCOP(r.contractValue)}
           {r.valorOriginal > 0 && r.adicionValor > 0 && (
             <span className="block text-micro text-textSecondary font-normal">
-              desde {formatCOP(r.valorOriginal)} · +{r.pctValor}%
+              desde {formatCOP(r.valorOriginal)} · +{formatPct(r.pctValor, 0)}
             </span>
           )}
         </span>

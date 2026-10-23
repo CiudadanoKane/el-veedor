@@ -427,7 +427,7 @@ function RankingAdiciones({ filters }) {
       // dividir entre todos diluye la cifra y no responde a nada.
       render: (r) =>
         r.originalConAdicion > 0
-          ? `+${Math.round((r.adicion / r.originalConAdicion) * 100)}%`
+          ? `+${formatPct(Math.round((r.adicion / r.originalConAdicion) * 100), 0)}`
           : '—',
     },
     {

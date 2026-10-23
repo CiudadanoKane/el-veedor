@@ -1,5 +1,5 @@
 import { useModificaciones } from '../../hooks/useModificaciones'
-import { formatCOP, formatDate } from '../../lib/formatters'
+import { formatCOP, formatDate, formatPct } from '../../lib/formatters'
 import { enMs, diasEntre } from '../../lib/adiciones'
 
 // Línea de tiempo de modificaciones (adiciones de dinero y prórrogas) de un contrato.
@@ -130,7 +130,7 @@ export function ModificationHistory({
                 m.diasMostrar > 0 && (
                   <span className="rounded bg-warning/15 text-warning px-2 py-0.5 text-nota whitespace-nowrap">
                     +{m.diasMostrar.toLocaleString('es-CO')} días
-                    {m.pctDias != null && <span className="opacity-80"> · +{m.pctDias}%</span>}
+                    {m.pctDias != null && <span className="opacity-80"> · +{formatPct(m.pctDias, 0)}</span>}
                     {m.efectiva === true && m.diasReales !== m.dias && (
                       <span className="opacity-80"> (SECOP declara +{m.dias.toLocaleString('es-CO')})</span>
                     )}
@@ -140,7 +140,7 @@ export function ModificationHistory({
               {m.adicionValor > 0 && (
                 <span className="rounded bg-danger/15 text-danger px-2 py-0.5 text-nota whitespace-nowrap">
                   +{formatCOP(m.adicionValor)}
-                  {m.pctValor != null && <span className="opacity-80"> · +{m.pctValor}%</span>}
+                  {m.pctValor != null && <span className="opacity-80"> · +{formatPct(m.pctValor, 0)}</span>}
                 </span>
               )}
               <span className="rounded bg-muted text-textSecondary px-2 py-0.5 text-nota whitespace-nowrap">

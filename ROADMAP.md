@@ -472,6 +472,43 @@ a quien la usa, no a quien arma sus condiciones por su cuenta. Cualquier cifra
 nueva que sume dinero de SECOP II tiene que pasar por `soloContratosValidos()` o
 llevar `cuantiaPosibleSecop2()` explícito.
 
+**Auditoría de todos los porcentajes (oct 2026).** Tras este caso se revisó si
+quedaba algún otro porcentaje imposible, por dos vías:
+
+- **En el código**, los ~40 porcentajes del sitio. Los de *crecimiento* (adición
+  de plazo o valor) pueden pasar de 100% con razón: un plazo duplicado es +100%.
+  Los de *parte de un todo* no. De estos, los que salen de una sola consulta
+  (`sum(case(...))` sobre las mismas filas: mapa, comparación de ciudades,
+  Graficar, "Se cierran bien") son seguros por construcción. Los que dividen dos
+  consultas —concentración, perfiles, categorías— comparten filtro arriba y
+  abajo. Solo `moraConditions()` estaba mal.
+- **En producción**, 113 páginas: las 20 secciones y pestañas a nivel nacional,
+  10 secciones en 9 lugares (Bogotá, Atlántico, Barranquilla, Antioquia,
+  Medellín, Valle, Cúcuta, Chocó, Tumaco) y 3 perfiles. Salieron 491
+  porcentajes sobre 100%, **todos de crecimiento**; ninguno de parte de un todo.
+  El "Valor en riesgo" queda entre 3,1% (Bogotá) y 15,2% (Tumaco).
+
+Lo que sí salió de paso:
+
+- **Los perfiles sumaban valor de SECOP I sin el guardia** (`soloContratosValidosSecop1()`
+  solo filtra estados). Hay dos contratos de SECOP I con cuantía imposible: el
+  perfil de la Empresa de Servicios Públicos de Tabio mostraba $165,33 billones
+  en SECOP I; sin él, $0,03 billones. Corregido en `usePerfilEntidad` y
+  `usePerfilContratista`. No genera porcentajes sobre 100% —el filtro es el mismo
+  arriba y abajo—, pero sí totales absurdos.
+- **Noticias del Valle del Cauca se caía** ("Algo falló en esta sección", siempre,
+  en 3 segundos): la nota de adición de tiempo escribía el plazo original de sus
+  tres casos sin protegerse del nulo, y el tercero no lo tenía reconstruible.
+  Ahora dice "1.866 días más" cuando falta el plazo, y `num()` no revienta con un
+  nulo. Cualquier lugar con ese patrón entre sus tres primeros casos caía igual.
+- **El mismo porcentaje se escribía de dos formas**: "+3.964%" en Noticias y
+  "+3964%" en la tabla de Alertas. Seis sitios imprimían el número sin formato;
+  ahora todos usan `formatPct(..., 0)`.
+
+Queda como pregunta de método, no como error: hay crecimientos de plazo
+enormes (+3.964%: un contrato de 92 días ampliado 3.647) justo bajo el tope de
+3.650 días que hoy separa una prórroga de un error de digitación.
+
 ### Modo oscuro automático (oct 2026)
 
 Decisión: el tema principal sigue siendo claro —la plataforma es lectura

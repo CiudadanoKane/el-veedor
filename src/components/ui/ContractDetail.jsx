@@ -1,5 +1,5 @@
 import { interpretContract } from '../../lib/interpret'
-import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/formatters'
+import { formatCOP, formatDate, formatPct, daysSince, humanDuration } from '../../lib/formatters'
 import { plazoDelContrato, clasificarAdicion } from '../../lib/adiciones'
 import { useModificaciones, useValorOriginalProceso } from '../../hooks/useModificaciones'
 import { Link } from 'react-router-dom'
@@ -216,7 +216,7 @@ export function ContractDetail({ contract: c }) {
               <span>
                 +{formatCOP(adicionValor.adicion)}
                 <span className="block text-micro text-textSecondary font-normal leading-snug mt-0.5">
-                  +{adicionValor.pctAdicion}% sobre los {formatCOP(valorOriginal.data.valor)}{' '}
+                  +{formatPct(adicionValor.pctAdicion, 0)} sobre los {formatCOP(valorOriginal.data.valor)}{' '}
                   {valorOriginal.data.referencia === 'adjudicado'
                     ? 'adjudicados'
                     : 'del precio base'}.
