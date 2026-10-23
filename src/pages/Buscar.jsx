@@ -11,7 +11,8 @@ import { BuscadorContratista } from '../components/ui/BuscadorContratista'
 import { BuscadorEntidad } from '../components/ui/BuscadorEntidad'
 import { useBusquedaDocumentos } from '../hooks/useBusquedaDocumentos'
 import { useDirectorioEntidades } from '../hooks/useDirectorioEntidades'
-import { useBusqueda, hayBusqueda, ORDENES, LIMITE, esIdentificador } from '../hooks/useBusqueda'
+import { useBusqueda, hayBusqueda, ORDENES, LIMITE, esIdentificador, segmentoValido } from '../hooks/useBusqueda'
+import { nombreSegmento } from '../lib/unspsc'
 import { useGeo } from '../hooks/useGeoOptions'
 import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO } from '../lib/catalogos'
 import { ESTADOS_SOLO_SECOP1 } from '../lib/catalogosSecop1'
@@ -48,7 +49,7 @@ function coincidenciaVisible(contrato, textos) {
 
 // Parámetros de URL que le pertenecen al buscador. Todo lo demás en la URL es
 // de otro módulo (hoy, los filtros geográficos) y no se toca desde aquí.
-const PARAMS_BUSQUEDA = ['q', 'amplia', 'modalidad', 'tipo', 'estado', 'orden', 'modo', 'valorMin', 'valorMax', 'desde', 'hasta']
+const PARAMS_BUSQUEDA = ['q', 'amplia', 'modalidad', 'tipo', 'segmento', 'estado', 'orden', 'modo', 'valorMin', 'valorMax', 'desde', 'hasta']
 
 // Separador de la ampliación semántica en la URL. Barra vertical: no aparece
 // en nombres de contratos, así que no choca con los términos.
@@ -72,6 +73,7 @@ function escribirBusqueda(next, sig) {
     amplia: sig.terminos?.length ? sig.terminos.join(SEP_TERMINOS) : '',
     modalidad: sig.modalidad,
     tipo: sig.tipo,
+    segmento: sig.segmento || '',
     estado: sig.estados.length ? sig.estados.join(',') : '',
     orden: sig.orden === 'valor' ? '' : sig.orden,
     modo: sig.modo === 'contratos' ? '' : sig.modo,
@@ -250,6 +252,7 @@ export function Buscar() {
     terminos: (params.get('amplia') || '').split(SEP_TERMINOS).map((s) => s.trim()).filter(Boolean),
     modalidad: params.get('modalidad') || '',
     tipo: params.get('tipo') || '',
+    segmento: segmentoValido(params.get('segmento')) || '',
     estados: (params.get('estado') || '').split(',').filter(Boolean),
     orden: ORDENES[params.get('orden')] ? params.get('orden') : 'valor',
     valorMin: params.get('valorMin') || '',
@@ -408,7 +411,7 @@ export function Buscar() {
   const queryDocumentos = useBusquedaDocumentos(criterios, filters)
   const activa = hayBusqueda(criterios)
   const hayFiltros =
-    criterios.modalidad || criterios.tipo || criterios.estados.length > 0 ||
+    criterios.modalidad || criterios.tipo || criterios.segmento || criterios.estados.length > 0 ||
     criterios.terminos.length > 0 ||
     criterios.valorMin || criterios.valorMax || criterios.fechaDesde || criterios.fechaHasta
 
@@ -607,6 +610,26 @@ export function Buscar() {
                     <span aria-hidden className="text-textSecondary leading-none">×</span>
                   </button>
                 ))}
+              </div>
+            )}
+
+            {/* El sector llega desde "Qué se contrata" (Rankings) y no tiene
+                selector propio: se muestra como una etiqueta que se puede quitar,
+                para que quede claro que la lista de abajo está acotada a él. */}
+            {criterios.segmento && (
+              <div className="mt-4 inline-flex items-center gap-2 border border-textPrimary/30 px-3 py-1.5 text-cuerpo">
+                <span className="text-textSecondary">Sector:</span>
+                <strong className="font-semibold">
+                  {nombreSegmento(criterios.segmento) || `UNSPSC ${criterios.segmento}`}
+                </strong>
+                <button
+                  type="button"
+                  onClick={() => actualizar({ segmento: '' })}
+                  aria-label="Quitar el filtro de sector"
+                  className="toque text-textSecondary hover:text-textPrimary text-base leading-none"
+                >
+                  ×
+                </button>
               </div>
             )}
 

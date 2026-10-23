@@ -13,6 +13,7 @@
 // de la URL. Lo que necesita consultar datos (el nombre de un contratista, las
 // cifras de una entidad) lo agrega el endpoint encima.
 import { PESTANAS_ALERTAS, PESTANAS_RANKINGS, PESTANAS_ERRORES } from './pestanas.js'
+import { nombreSegmento } from './unspsc.js'
 
 export const MARCA = 'El Veedor'
 export const DESCRIPCION_GENERAL =
@@ -133,6 +134,15 @@ export function describirRuta(pathname, params = new URLSearchParams()) {
 
   if (ruta === '/buscar') {
     const q = (params.get('q') || '').trim()
+    // Un enlace a un sector (desde "Qué se contrata") sin texto de búsqueda.
+    const sector = !q && nombreSegmento(params.get('segmento'))
+    if (sector) {
+      return {
+        titulo: conLugar(`Contratos de ${sector}`, lugar),
+        descripcion: `Los contratos públicos de ${sector.toLowerCase()}, con datos abiertos de SECOP II.`,
+        imagen: { etiqueta: 'Qué se contrata', principal: sector, detalle: lugar ? `En ${lugar}` : 'Colombia' },
+      }
+    }
     return q
       ? {
           titulo: conLugar(`Búsqueda de contratos: «${q.slice(0, 80)}»`, lugar),

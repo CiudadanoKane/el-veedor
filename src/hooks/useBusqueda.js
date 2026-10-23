@@ -65,6 +65,15 @@ const CAMPOS_LISTA = {
   tipo: 'tipo_de_contrato',
 }
 
+// Sector (segmento UNSPSC, dos dígitos): los dos primeros del código de
+// categoría, que llega como "V1.80111600". Lo pone el enlace desde "Qué se
+// contrata" en Rankings, para pasar de "el Estado contrató tanto en servicios
+// de salud" a los contratos concretos. Se valida para no meter texto arbitrario
+// en la consulta. Medido: 0,3-0,9 s, con o sin departamento.
+export function segmentoValido(seg) {
+  return /^\d{2}$/.test(seg || '') ? seg : null
+}
+
 // ¿El texto parece un identificador y no una frase? Un número de proceso como
 // "LP-024-2024" o un código SECOP como "CO1.PCCNTR.7491513": sin espacios, con
 // dígitos y con puntos, guiones o barras. Se buscan por código (ver
@@ -79,7 +88,8 @@ export function hayBusqueda(criterios = {}) {
     tieneTextoBuscable(criterios.texto || '') ||
     (criterios.terminos || []).some((t) => tieneTextoBuscable(t))
   const conFiltro =
-    Object.keys(CAMPOS_LISTA).some((k) => criterios[k]) || criterios.estados?.length > 0
+    Object.keys(CAMPOS_LISTA).some((k) => criterios[k]) || criterios.estados?.length > 0 ||
+    !!segmentoValido(criterios.segmento)
   const conRango = !!(
     criterios.valorMin || criterios.valorMax || criterios.fechaDesde || criterios.fechaHasta
   )
@@ -212,7 +222,11 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
   const estadosSecop1 = criterios.estados?.length
     ? [...new Set(criterios.estados.flatMap((e) => ESTADO_A_SECOP1[e] || []))]
     : null
+  const segmento = segmentoValido(criterios.segmento)
+  // SECOP I no clasifica por UNSPSC (ver catalogosSecop1.js): con un sector
+  // elegido, esa fuente no participa en vez de devolver contratos sin filtrar.
   const incluirSecop1 =
+    !segmento &&
     (estadosSecop1 === null || estadosSecop1.length > 0) &&
     (!criterios.modalidad || modalidadSecop1) &&
     (!criterios.tipo || tipoSecop1)
@@ -278,6 +292,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
       for (const [clave, campo] of Object.entries(CAMPOS_LISTA)) {
         if (criterios[clave]) partes2.push(`${campo} = '${esc(criterios[clave])}'`)
       }
+      if (segmento) partes2.push(`codigo_de_categoria_principal LIKE 'V1.${segmento}%'`)
       const where2 = whereFromFilters(filtrosGeo, partes2).join(' AND ')
 
       // El mismo filtro de estado/modalidad/tipo, traducido al vocabulario de

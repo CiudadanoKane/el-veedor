@@ -28,6 +28,8 @@ describe('describirRuta', () => {
       .toBe('Perfil de la entidad ALCALDÍA DE POPAYÁN')
     expect(describirRuta('/contratista/52455395').documento).toBe('52455395')
     expect(describirRuta('/buscar', p('q=hospital')).titulo).toBe('Búsqueda de contratos: «hospital»')
+    expect(describirRuta('/buscar', p('segmento=85&departamento=Cauca')).titulo)
+      .toBe('Contratos de Servicios de salud, en Cauca')
   })
 
   it('toda ruta trae los textos de su imagen', () => {

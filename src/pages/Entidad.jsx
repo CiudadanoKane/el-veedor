@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { Volver } from '../components/ui/Volver'
 import { PageHeader } from '../components/layout/Layout'
 import { QueryState } from '../components/ui/QueryState'
@@ -9,6 +9,8 @@ import { ListaBarra } from '../components/ui/ListaBarra'
 import { Methodology } from '../components/ui/Methodology'
 import { usePerfilEntidad } from '../hooks/usePerfilEntidad'
 import { ERRORES, INCOMPLETOS, useCalidadDatos } from '../hooks/useCalidadDatos'
+import { MODALIDADES } from '../lib/catalogos'
+import { SIN_GEOGRAFIA } from '../lib/departamentos'
 import { formatCOP, formatCOPLista, formatDate, pct, formatPct } from '../lib/formatters'
 import { EnlaceContratista } from '../components/ui/EnlacePerfil'
 import { IndiceSecciones } from '../components/ui/IndiceSecciones'
@@ -48,6 +50,21 @@ function Tasa({ etiqueta, valor, referencia, casos, total, decimales = 2 }) {
   )
 }
 
+// La sede más repetida entre sus contratos de SECOP II (los de SECOP I usan
+// otros nombres de lugar). Sin geografía útil, no se ofrece el enlace.
+function sedeDe(contratos) {
+  const cuenta = new Map()
+  for (const c of contratos) {
+    if (c.source === 'SECOP I' || !c.department || SIN_GEOGRAFIA.includes(c.department)) continue
+    const k = `${c.department}|${SIN_GEOGRAFIA.includes(c.city) ? '' : c.city || ''}`
+    cuenta.set(k, (cuenta.get(k) || 0) + 1)
+  }
+  const [mejor] = [...cuenta.entries()].sort((a, b) => b[1] - a[1])
+  if (!mejor) return null
+  const [departamento, ciudad] = mejor[0].split('|')
+  return { departamento, ciudad }
+}
+
 function Perfil({ perfil, refNacional }) {
   const periodo =
     perfil.desde && perfil.hasta
@@ -61,6 +78,7 @@ function Perfil({ perfil, refNacional }) {
   // Una unidad por lista (ver formatCOPLista): en una misma columna no deben
   // convivir "millones" y "mil millones" para cifras de la misma escala.
   const copContratos = formatCOPLista(perfil.contratos.map((c) => c.contractValue))
+  const sede = sedeDe(perfil.contratos)
   const copActores = formatCOPLista(perfil.contratistas_lista.map((x) => x.valor))
   const copModalidades = formatCOPLista(perfil.modalidades.map((m) => m.valor))
   const copAnios = formatCOPLista(perfil.porAnio.map((a) => a.valor))
@@ -111,6 +129,36 @@ function Perfil({ perfil, refNacional }) {
         title={perfil.nombre}
         subtitle={perfil.nit ? `NIT: ${perfil.nit}` : undefined}
       />
+
+      {/* El lugar de la entidad, como puerta al Panorama de ese lugar. Se dice
+          "sede" y no "donde contrata": en SECOP el departamento y la ciudad
+          son los de la sede de la entidad, no los de la obra (INVÍAS figura
+          100% en Bogotá). Sale del lugar más repetido en sus contratos. */}
+      {sede && (
+        // Ciudad y departamento a la vez: para una alcaldía lo natural es su
+        // municipio, para una gobernación su departamento, y no hay cómo
+        // saber cuál es cuál por el nombre sin equivocarse con alguna.
+        <p className="-mt-4 text-cuerpo text-textSecondary leading-relaxed">
+          Sede: {[sede.ciudad, sede.departamento].filter(Boolean).join(', ')} · Ver la contratación de{' '}
+          {sede.ciudad && (
+            <>
+              <Link
+                to={`/?${new URLSearchParams({ departamento: sede.departamento, ciudad: sede.ciudad })}`}
+                className="toque font-semibold enlace-perfil enlace-visible"
+              >
+                {sede.ciudad}
+              </Link>{' '}
+              o de{' '}
+            </>
+          )}
+          <Link
+            to={`/?${new URLSearchParams({ departamento: sede.departamento })}`}
+            className="toque font-semibold enlace-perfil enlace-visible"
+          >
+            {sede.ciudad ? `todo ${sede.departamento}` : sede.departamento}
+          </Link>
+        </p>
+      )}
 
       {/* La ficha se pinta con SECOP II apenas llega y SECOP I se suma después
           (ver usePerfilEntidad): mientras tanto se dice, porque las cifras de
@@ -293,6 +341,18 @@ function Perfil({ perfil, refNacional }) {
             // no se sabe qué distingue una licitación de una directa.
             ayuda: m.modalidad,
             valor: m.n,
+            // Cada modalidad lleva a esos contratos en el buscador, ya filtrados
+            // por esta entidad: de "93% por contratación directa" a cuáles son.
+            // Solo las del catálogo de SECOP II, que es lo que el buscador
+            // filtra; una etiqueta propia de SECOP I daría una lista vacía.
+            etiqueta: MODALIDADES.includes(m.modalidad) ? (
+              <Link
+                to={`/buscar?${new URLSearchParams({ modalidad: m.modalidad, entidad: perfil.nombre })}`}
+                className="enlace-perfil enlace-visible"
+              >
+                {m.modalidad}
+              </Link>
+            ) : undefined,
             secundario: copModalidades(m.valor),
             nota: /directa/i.test(m.modalidad || '')
               ? 'Sin concurso abierto: la entidad escoge al contratista'

@@ -558,6 +558,20 @@ function RankingCategorias({ filters }) {
 
   const total = metric === 'valor' ? data?.totalValor : data?.totalContratos
   const copValor = formatCOPLista(sorted.map((r) => r.valor))
+  // Cada sector lleva a sus contratos en el buscador, con el mismo lugar
+  // elegido. La vista decía cuánto se gastó en "Servicios de salud" y no dejaba
+  // ver en qué. "Otros / Sin clasificar" no enlaza: no es un segmento.
+  const { rutaConAmbito } = useFilters()
+  const aSector = (r) =>
+    r.segmento !== '—' ? rutaConAmbito('/buscar', { segmento: r.segmento }) : null
+  const nombreSector = (r) => {
+    const a = aSector(r)
+    return a ? (
+      <Link to={a} className="enlace-perfil enlace-visible">{r.nombre}</Link>
+    ) : (
+      r.nombre
+    )
+  }
 
   const columns = [
     {
@@ -565,7 +579,7 @@ function RankingCategorias({ filters }) {
       header: 'Tipo de bien o servicio',
       render: (r) => (
         <div>
-          <span className="text-textPrimary">{r.nombre}</span>
+          <span className="text-textPrimary">{nombreSector(r)}</span>
           {r.segmento !== '—' && (
             <span className="text-nota text-textSecondary ml-2">UNSPSC {r.segmento}</span>
           )}
@@ -638,6 +652,7 @@ function RankingCategorias({ filters }) {
                 items={(todas ? sorted : sorted.slice(0, 15)).map((r) => ({
                   clave: r.segmento,
                   label: r.nombre,
+                  etiqueta: nombreSector(r),
                   valor: r[metric],
                   valorTexto:
                     metric === 'valor' ? copValor(r.valor) : r.contratos.toLocaleString('es-CO'),
