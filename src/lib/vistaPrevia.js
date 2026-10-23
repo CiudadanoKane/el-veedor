@@ -90,8 +90,14 @@ function lugarDe(params) {
 
 const conLugar = (texto, lugar) => (lugar ? `${texto}, en ${lugar}` : texto)
 
-// Devuelve { titulo, descripcion }. El título va sin la marca: el endpoint la
-// agrega ("… | El Veedor"), igual para todas las rutas.
+// Devuelve { titulo, descripcion, imagen }. El título va sin la marca: quien lo
+// usa la agrega ("… | El Veedor"), igual para todas las rutas.
+//
+// `imagen` son los tres textos de la imagen de la vista previa (ver
+// vistaPreviaImagen.js): `etiqueta` —qué es, en versalitas—, `principal` —el
+// sujeto, en grande— y `detalle` —el lugar o las cifras—. Van aparte del
+// título porque la imagen se lee de un vistazo: "Perfil de entidad" arriba y
+// el nombre en grande dicen más que una sola frase larga.
 export function describirRuta(pathname, params = new URLSearchParams()) {
   const ruta = decodeURIComponent((pathname || '/').replace(/\/+$/, '') || '/')
   const lugar = lugarDe(params)
@@ -101,10 +107,12 @@ export function describirRuta(pathname, params = new URLSearchParams()) {
       ? {
           titulo: `Contratación pública en ${lugar}`,
           descripcion: `Cuánto se contrata en ${lugar}, quién recibe el dinero y qué conviene revisar, con datos abiertos de SECOP.`,
+          imagen: { etiqueta: 'Panorama', principal: lugar, detalle: 'Cuánto se contrata, quién recibe el dinero y qué conviene revisar' },
         }
       : {
           titulo: 'Panorama nacional de la contratación',
           descripcion: 'Cómo está contratando Colombia hoy, con datos abiertos de SECOP I y II. Cada cifra dice de dónde sale.',
+          imagen: { etiqueta: 'Panorama nacional', principal: 'Cómo contrata Colombia', detalle: 'Cada cifra dice de dónde sale' },
         }
   }
 
@@ -115,6 +123,11 @@ export function describirRuta(pathname, params = new URLSearchParams()) {
     return {
       titulo: conLugar(pestana ? `${titulo}: ${pestana}` : titulo, lugar),
       descripcion,
+      imagen: {
+        etiqueta: titulo,
+        principal: pestana || titulo,
+        detalle: lugar ? `En ${lugar}` : 'Colombia',
+      },
     }
   }
 
@@ -124,10 +137,12 @@ export function describirRuta(pathname, params = new URLSearchParams()) {
       ? {
           titulo: conLugar(`Búsqueda de contratos: «${q.slice(0, 80)}»`, lugar),
           descripcion: 'Contratos públicos que coinciden con la búsqueda, con datos abiertos de SECOP I y II.',
+          imagen: { etiqueta: 'Búsqueda de contratos', principal: `«${q.slice(0, 80)}»`, detalle: lugar ? `En ${lugar}` : 'En SECOP I y II' },
         }
       : {
           titulo: 'Buscador de contratos',
           descripcion: 'Busca contratos públicos por lo que sea: una obra, un municipio, un monto.',
+          imagen: { etiqueta: 'Buscador', principal: 'Busca cualquier contrato público', detalle: 'Una obra, un municipio, un monto' },
         }
   }
 
@@ -136,6 +151,7 @@ export function describirRuta(pathname, params = new URLSearchParams()) {
     return {
       titulo: `Perfil de la entidad ${entidad[1]}`,
       descripcion: 'Cuánto contrata, a quién, cómo adjudica y qué tan bien registra su información.',
+      imagen: { etiqueta: 'Perfil de entidad', principal: entidad[1], detalle: 'Cuánto contrata, a quién y cómo adjudica' },
     }
   }
 
@@ -145,10 +161,18 @@ export function describirRuta(pathname, params = new URLSearchParams()) {
       titulo: 'Perfil de un contratista',
       descripcion: 'Con qué entidades contrata, cómo se le adjudica y su historial completo.',
       documento: contratista[1],
+      imagen: { etiqueta: 'Perfil de contratista', principal: 'Contratista', detalle: 'Con qué entidades contrata y cómo se le adjudica' },
     }
   }
 
-  if (PAGINAS[ruta]) return { ...PAGINAS[ruta] }
+  if (PAGINAS[ruta]) {
+    const pagina = PAGINAS[ruta]
+    return { ...pagina, imagen: { etiqueta: MARCA, principal: pagina.titulo, detalle: '' } }
+  }
 
-  return { titulo: 'Veeduría Fácil', descripcion: DESCRIPCION_GENERAL }
+  return {
+    titulo: 'Veeduría Fácil',
+    descripcion: DESCRIPCION_GENERAL,
+    imagen: { etiqueta: MARCA, principal: 'Veeduría Fácil', detalle: 'La contratación pública de Colombia, en señales que cualquiera puede leer' },
+  }
 }

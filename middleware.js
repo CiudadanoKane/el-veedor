@@ -1,4 +1,7 @@
-import { htmlVistaPrevia } from './src/lib/vistaPreviaHtml.js'
+import { ImageResponse } from '@vercel/og'
+import { htmlVistaPrevia, enriquecer, RUTA_IMAGEN } from './src/lib/vistaPreviaHtml.js'
+import { describirRuta } from './src/lib/vistaPrevia.js'
+import { arbolImagen, ANCHO, ALTO } from './src/lib/vistaPreviaImagen.js'
 
 // Vista previa propia para cada enlace compartido.
 //
@@ -20,13 +23,58 @@ const LECTORES = /facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|Sl
 
 // Archivos (la imagen de la vista previa, el JS, los JSON precalculados):
 // siempre pasan, también para los lectores, que necesitan bajar la imagen.
-const ARCHIVO = /\.(?:png|jpe?g|svg|ico|json|geojson|js|css|txt|xml|webmanifest|map)$/i
+const ARCHIVO = /\.(?:png|jpe?g|svg|ico|json|geojson|js|css|txt|xml|webmanifest|map|woff2?|ttf)$/i
 
 // Seguir con la petición normal (equivale a next() de @vercel/functions).
 const seguir = () => new Response(null, { headers: { 'x-middleware-next': '1' } })
 
+// Las fuentes se piden al propio sitio (public/fonts) y no van dentro del
+// middleware: su paquete tiene tope de tamaño y @vercel/og ya ocupa casi todo.
+// Se guardan entre peticiones mientras la instancia siga viva.
+let fuentes = null
+function cargarFuentes(origen) {
+  fuentes ??= Promise.all(
+    [800, 500].map(async (weight) => ({
+      name: 'Manrope',
+      weight,
+      style: 'normal',
+      data: await (await fetch(`${origen}/fonts/manrope-${weight}.woff`)).arrayBuffer(),
+    })),
+  ).catch((e) => {
+    fuentes = null
+    throw e
+  })
+  return fuentes
+}
+
+// La imagen de la vista previa, una por enlace (ver vistaPreviaImagen.js). La
+// pide cualquiera —el lector del chat, o alguien que abre la imagen—, así que
+// va antes del filtro por user-agent. Si algo falla, la imagen genérica.
+async function imagenVistaPrevia(url) {
+  try {
+    const destino = new URL(url.searchParams.get('ruta') || '/', url.origin)
+    const vista = await enriquecer(
+      destino.pathname,
+      describirRuta(destino.pathname, destino.searchParams),
+    )
+    return new ImageResponse(
+      arbolImagen(vista.imagen, { logo: `${url.origin}/icono-el-veedor-blanco.png` }),
+      {
+        width: ANCHO,
+        height: ALTO,
+        fonts: await cargarFuentes(url.origin),
+        // Un día en el CDN: la misma imagen para el mismo enlace.
+        headers: { 'cache-control': 'public, s-maxage=86400, stale-while-revalidate=604800' },
+      },
+    )
+  } catch {
+    return Response.redirect(`${url.origin}/og-el-veedor.png`, 302)
+  }
+}
+
 export default async function middleware(request) {
   const url = new URL(request.url)
+  if (url.pathname === RUTA_IMAGEN) return imagenVistaPrevia(url)
   if (ARCHIVO.test(url.pathname)) return seguir()
   if (!LECTORES.test(request.headers.get('user-agent') || '')) return seguir()
 

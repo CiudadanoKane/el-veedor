@@ -30,6 +30,20 @@ describe('describirRuta', () => {
     expect(describirRuta('/buscar', p('q=hospital')).titulo).toBe('Búsqueda de contratos: «hospital»')
   })
 
+  it('toda ruta trae los textos de su imagen', () => {
+    for (const [ruta, qs] of [
+      ['/', ''], ['/', 'departamento=Meta'], ['/rankings', 't=ejecucion'], ['/alertas', ''],
+      ['/errores', 't=fechas'], ['/buscar', 'q=vías'], ['/buscar', ''], ['/entidad/ART'],
+      ['/contratista/123'], ['/noticias'], ['/aprender'], ['/no-existe'],
+    ]) {
+      const { imagen } = describirRuta(ruta, p(qs || ''))
+      expect(imagen?.principal, `${ruta}?${qs || ''}`).toBeTruthy()
+      expect(imagen?.etiqueta, `${ruta}?${qs || ''}`).toBeTruthy()
+    }
+    expect(describirRuta('/rankings', p('t=ejecucion&departamento=Meta')).imagen)
+      .toEqual({ etiqueta: 'Rankings (actores)', principal: 'Quién más prorroga', detalle: 'En Meta' })
+  })
+
   it('una ruta desconocida no se rompe', () => {
     expect(describirRuta('/no-existe').titulo).toBe('Veeduría Fácil')
   })

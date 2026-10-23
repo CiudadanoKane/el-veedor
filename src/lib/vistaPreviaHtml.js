@@ -3,6 +3,8 @@ import { socrataQuery } from './socrataClient.js'
 import { esc, soloContratosValidos } from './soql.js'
 import { describirRuta, MARCA } from './vistaPrevia.js'
 
+export const RUTA_IMAGEN = '/vista-previa/imagen'
+
 // HTML de la vista previa de un enlace compartido, para los lectores que la
 // arman (WhatsApp, Telegram, Facebook, X, Slack…). Lo sirve middleware.js solo
 // a ellos; a una persona nunca le llega esta página, sino la app.
@@ -13,7 +15,6 @@ import { describirRuta, MARCA } from './vistaPrevia.js'
 // responde a tiempo se omite: un lector que espera demasiado no muestra
 // ninguna vista previa, y eso es peor que una genérica.
 const ORIGEN = 'https://el-veedor.vercel.app'
-const IMAGEN = `${ORIGEN}/og-el-veedor.png`
 const ESPERA_MS = 2500
 
 const escapar = (s) =>
@@ -37,7 +38,7 @@ function pesos(v) {
 const aTiempo = (promesa) =>
   Promise.race([promesa, new Promise((r) => setTimeout(() => r(null), ESPERA_MS))]).catch(() => null)
 
-async function enriquecer(pathname, vista) {
+export async function enriquecer(pathname, vista) {
   const entidad = decodeURIComponent(pathname).match(/^\/entidad\/(.+)$/)
   if (entidad) {
     const filas = await aTiempo(
@@ -49,7 +50,9 @@ async function enriquecer(pathname, vista) {
     )
     const n = Number(filas?.[0]?.n) || 0
     if (n) {
-      vista.descripcion = `${n.toLocaleString('es-CO')} contratos por ${pesos(filas[0].v)} en SECOP II. ${vista.descripcion}`
+      const cifras = `${n.toLocaleString('es-CO')} contratos por ${pesos(filas[0].v)}`
+      vista.descripcion = `${cifras} en SECOP II. ${vista.descripcion}`
+      vista.imagen = { ...vista.imagen, detalle: `${cifras} en SECOP II` }
     }
     return vista
   }
@@ -67,7 +70,9 @@ async function enriquecer(pathname, vista) {
     if (fila?.nombre) {
       vista.titulo = `Perfil del contratista ${fila.nombre}`
       const n = Number(fila.n) || 0
-      vista.descripcion = `${n.toLocaleString('es-CO')} ${n === 1 ? 'contrato' : 'contratos'} por ${pesos(fila.v)} en SECOP II. ${vista.descripcion}`
+      const cifras = `${n.toLocaleString('es-CO')} ${n === 1 ? 'contrato' : 'contratos'} por ${pesos(fila.v)}`
+      vista.descripcion = `${cifras} en SECOP II. ${vista.descripcion}`
+      vista.imagen = { ...vista.imagen, principal: fila.nombre, detalle: `${cifras} en SECOP II` }
     }
   }
   return vista
@@ -85,6 +90,10 @@ export async function htmlVistaPrevia(urlPedida) {
 
   const vista = await enriquecer(pathname, describirRuta(pathname, params))
   const titulo = `${vista.titulo} | ${MARCA}`
+  // La imagen se pide aparte y se arma con los mismos textos (ver
+  // vistaPreviaImagen.js y middleware.js). Lleva la ruta completa para que
+  // cada enlace tenga la suya, también en la caché del CDN.
+  const IMAGEN = `${ORIGEN}${RUTA_IMAGEN}?ruta=${encodeURIComponent(`${pathname}${qs ? `?${qs}` : ''}`)}`
 
   return `<!doctype html>
 <html lang="es">
@@ -102,7 +111,7 @@ export async function htmlVistaPrevia(urlPedida) {
 <meta property="og:image" content="${IMAGEN}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="El Veedor, veeduría fácil: la contratación pública de Colombia en señales que cualquiera puede leer.">
+<meta property="og:image:alt" content="${escapar(`${vista.imagen.etiqueta}: ${vista.imagen.principal}. ${vista.imagen.detalle}`)}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${escapar(titulo)}">
 <meta name="twitter:description" content="${escapar(vista.descripcion)}">
