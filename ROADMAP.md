@@ -427,6 +427,39 @@ Efecto colateral buscado: esa lista es un catálogo de trabajo. Si al revisarla
 aparece un patrón limpio —por ejemplo que el objeto nombre un cargo
 individual— ahí sí habría base para excluir con certeza.
 
+### Honorarios que una persona no cobra (oct 2026)
+
+Empezó por DIANA MOSQUERA MOSQUERA: "servicios profesionales para apoyar la
+gestión" de la ART por 7 meses, registrado en 36.000 millones con $0 pagado
+—casi seguro 36 millones con tres ceros de más—, el 7,6% de todo lo contratado
+por la ART. No era un caso aislado. En prestación de servicios a nombre de una
+persona, por franja: 1-3 mil millones, de todo (mediana 233 millones/mes); 3-10,
+mezclado (561); desde 10, casi solo oficios individuales —médico general por
+28 mil millones, enfermera, abogado, instrumentador— y hasta el 10% más barato
+pasa de 1.300 millones al mes.
+
+Regla nueva en `soloContratosValidos()`: prestación de servicios desde **20 mil
+millones**, documento con forma de cédula (también si el tipo dice "Cédula") y
+`es_grupo` distinto de "Si". Las protecciones salvan a ASEOCOLBA S.A. (NIT de
+empresa rotulado como cédula), consorcios y uniones temporales, y —por el
+umbral de 20 y no 10— a Grupo Educativo Abel Mendoza, un comerciante que
+factura de verdad con su cédula. Atrapa 49 contratos y 2,07 billones, leídos
+uno por uno: todos oficios individuales. La ART pasa de 473,5 a 437,5 mil
+millones.
+
+Se probó reconocer organizaciones por el NOMBRE y se descartó: trece
+comparaciones de cadena por fila duplicaban o triplicaban el conteo nacional de
+contratistas (6 s → 13-25 s). Con las protecciones baratas, sin coste
+sistemático (contratistas, concentración, ciudades, evolución a 5 años y el
+cruce de adiciones, intercalado). Errores → Valores implausibles pasa de 18 a
+67 contratos de persona.
+
+De paso: esa misma pestaña se quedaba **cargando más de 80 s en producción**
+—antes de este cambio— esperando el cruce con el dataset de procesos, que
+puede tardar minutos. Como es donde se muestra todo lo excluido, ya no depende
+de él: las otras tres detecciones se pintan al llegar y la digitación se suma
+después, con aviso.
+
 ### Perfil de entidad por partes, una unidad por lista y la primera pantalla (oct 2026)
 
 - **El perfil de entidad pinta en ~1 s.** Medido por fases en frío (Alcaldía de

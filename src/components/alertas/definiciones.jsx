@@ -167,12 +167,23 @@ export function AlertaErrorDigitacion() {
 
   // QueryState acepta cualquier objeto con esta forma; se combinan las cuatro
   // consultas en una sola para manejar carga/error/vacío de forma unificada.
+  //
+  // Salvo la de digitación, que NO detiene la tabla. Es la única que cruza
+  // contra el dataset de procesos, y ese cruce puede tardar minutos: se midió
+  // en oct 2026 la pestaña colgada más de 80 s en producción con las otras
+  // tres ya listas en 1 s. Esta lista es donde se muestra todo lo que las
+  // reglas excluyen de las cifras, así que no puede depender de su consulta más
+  // lenta: las otras tres se pintan apenas llegan y la digitación se suma
+  // después, con aviso (ver `digitacionPendiente`). Si falla, se dice y la
+  // tabla sigue.
+  const digitacionPendiente = digitacionQuery.isLoading
   const combinada = {
-    isLoading: digitacionQuery.isLoading || imposiblesQuery.isLoading || pagoQuery.isLoading
-      || personaQuery.isLoading,
-    isError: digitacionQuery.isError || imposiblesQuery.isError || pagoQuery.isError
-      || personaQuery.isError,
-    error: digitacionQuery.error || imposiblesQuery.error || pagoQuery.error || personaQuery.error,
+    // Si las tres rápidas no trajeron nada, se espera a la digitación antes de
+    // decir "sin valores implausibles": sería falso mientras falte una parte.
+    isLoading: imposiblesQuery.isLoading || pagoQuery.isLoading || personaQuery.isLoading
+      || (digitacionPendiente && filas.length === 0),
+    isError: imposiblesQuery.isError || pagoQuery.isError || personaQuery.isError,
+    error: imposiblesQuery.error || pagoQuery.error || personaQuery.error,
     data: filas,
     refetch: () => {
       digitacionQuery.refetch()
@@ -260,6 +271,16 @@ export function AlertaErrorDigitacion() {
           lo pagado igual a lo registrado.
           <br />
           <br />
+          La misma lógica, ampliada en oct 2026 a los <strong>honorarios</strong>: un
+          contrato de <strong>prestación de servicios a nombre de una persona por $20 mil
+          millones o más</strong>. Son oficios individuales —«MÉDICO GENERAL» por $28 mil
+          millones, enfermera, abogado, instrumentador quirúrgico— con tarifas de más de mil
+          millones al mes, y donde hay pago es un sueldo: $78 millones pagados de «$96 mil
+          millones». Quedan fuera los consorcios y uniones temporales y las empresas con NIT
+          rotulado como cédula. También se cuenta aquí a quien contrata usando su cédula
+          como NIT.
+          <br />
+          <br />
           El cuarto se añadió en sep 2026 y es el que más pesa: <strong>65 contratos que
           declaraban 72 billones habiendo pagado 8,8 mil millones</strong>. Entre ellos, un
           instituto de antropología que registró $31,6 billones en un contrato de servicios
@@ -276,12 +297,27 @@ export function AlertaErrorDigitacion() {
     >
       <QueryState query={combinada} empty="Sin valores implausibles detectados con estos filtros.">
         {(rows) => (
-          <DataTable
-            columns={columns}
-            rows={rows}
-            keyField="id"
-            renderDetail={(row) => <ContractDetail contract={row} />}
-          />
+          <>
+            {digitacionPendiente && (
+              <p className="flex items-center gap-2 text-cuerpo text-textSecondary mb-4" role="status">
+                <span className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                Falta sumar los errores de digitación frente al valor del proceso: ese cruce tarda
+                más y se agrega aquí cuando llegue.
+              </p>
+            )}
+            {digitacionQuery.isError && (
+              <p className="text-cuerpo text-textSecondary mb-4" role="status">
+                No se pudo hacer el cruce con el valor del proceso: faltan aquí los errores de
+                digitación (×100, ×1.000) y los crecimientos de más de 500%.
+              </p>
+            )}
+            <DataTable
+              columns={columns}
+              rows={rows}
+              keyField="id"
+              renderDetail={(row) => <ContractDetail contract={row} />}
+            />
+          </>
         )}
       </QueryState>
     </AlertCard>

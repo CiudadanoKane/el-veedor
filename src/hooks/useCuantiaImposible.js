@@ -6,7 +6,7 @@ import {
   soloContratosValidosSecop1,
   cuantiaImposibleSecop2, cuantiaImposibleSecop1, VALOR_SECOP1_SOQL,
   valorIncoherenteConElPago, soloEstadosVigentes, soloContratosValidos,
-  valorImposibleParaUnaPersona, cuantiaPosibleSecop2, valorCoherenteConElPago,
+  valorImposibleParaUnaPersona, honorariosImposiblesParaUnaPersona, cuantiaPosibleSecop2, valorCoherenteConElPago,
   esc as escSoql,
 } from '../lib/soql.js'
 import { adaptList as adaptListSecop2 } from '../adapters/secop2Adapter.js'
@@ -75,7 +75,7 @@ export function useDigitacionFrenteAlPago(filters = {}) {
       )
       const filas = await socrataQuery(
         DS,
-        `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT 100`,
+        `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT 200`,
       )
       return adaptListSecop2(filas)
     },
@@ -129,7 +129,7 @@ export function useValorDesproporcionado(filters = {}) {
       )
       const filas = await socrataQuery(
         DS,
-        `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT 100`,
+        `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT 200`,
       )
       return adaptListSecop2(filas)
     },
@@ -157,14 +157,17 @@ export function usePersonaConValorImposible(filters = {}) {
       const where = buildWhere(
         whereFromFilters(filters, [
           soloEstadosVigentes(),
-          valorImposibleParaUnaPersona(),
+          // Las dos reglas de persona: valor imposible (techo de 100 mil
+          // millones) y honorarios imposibles (servicios desde 20 mil
+          // millones). Un contrato que cumple ambas se lista una vez.
+          `(${valorImposibleParaUnaPersona()} OR ${honorariosImposiblesParaUnaPersona()})`,
           cuantiaPosibleSecop2(),
           valorCoherenteConElPago(),
         ]),
       )
       const filas = await socrataQuery(
         DS,
-        `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT 100`,
+        `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT 200`,
       )
       return adaptListSecop2(filas)
     },

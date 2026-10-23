@@ -155,7 +155,7 @@ export const ESTADOS_NO_VIGENTES = [
 // pasa por esta función.
 export function soloContratosValidos() {
   return `${soloEstadosVigentes()} AND ${cuantiaPosibleSecop2()} AND ${valorCoherenteConElPago()}
-          AND ${valorPosibleParaUnaPersona()}`
+          AND ${valorPosibleParaUnaPersona()} AND ${honorariosPosiblesParaUnaPersona()}`
 }
 
 // Techo por encima del cual un contrato a nombre de UNA PERSONA no es creíble.
@@ -227,9 +227,13 @@ export const TECHO_PERSONA_NATURAL = 100_000_000_000
 //
 // Coste medido, intercalado: ninguno (3,6-5,3 s con y sin, total nacional y
 // por departamento). Va dentro del mismo OR, detrás del mismo corte por valor.
+// Número con forma de cédula: 8 dígitos o menos, o 10 que empiezan por 1. Un
+// NIT de empresa tiene 9 que empiezan por 8 o 9 (más el dígito de verificación).
+const FORMA_DE_CEDULA = `(documento_proveedor NOT LIKE '_________%' OR documento_proveedor LIKE '1_________')`
+
 const CEDULA_COMO_NIT = `(tipodocproveedor = 'NIT'
           AND tipo_de_contrato = 'Prestación de servicios'
-          AND (documento_proveedor NOT LIKE '_________%' OR documento_proveedor LIKE '1_________'))`
+          AND ${FORMA_DE_CEDULA})`
 
 export function valorPosibleParaUnaPersona() {
   return `NOT ((tipodocproveedor = 'Cédula de Ciudadanía' OR ${CEDULA_COMO_NIT})
@@ -241,6 +245,55 @@ export function valorPosibleParaUnaPersona() {
 export function valorImposibleParaUnaPersona() {
   return `((tipodocproveedor = 'Cédula de Ciudadanía' OR ${CEDULA_COMO_NIT})
           AND valor_del_contrato >= ${TECHO_PERSONA_NATURAL})`
+}
+
+// Honorarios que una persona no cobra: prestación de servicios por veinte mil
+// millones o más a nombre de una persona.
+//
+// Salió de revisar el caso de DIANA MOSQUERA MOSQUERA (oct 2026): "servicios
+// profesionales para apoyar la gestión" de la ART por 7 meses, registrado en
+// 36.000 millones con $0 pagado —casi seguro 36 millones con tres ceros de
+// más—, que por sí solo era el 7,6% de todo lo contratado por la ART. No era un
+// caso aislado. Por debajo del techo de 100 mil millones, la franja de
+// prestación de servicios a nombre de una persona se mide así:
+//   - 1-3 mil millones: de todo (esculturas, una feria ganadera, raciones);
+//     mediana de 233 millones al mes. No se toca.
+//   - 3-10 mil millones: sigue mezclado; mediana de 561 millones al mes.
+//   - Desde 10 mil millones: casi solo oficios individuales —MÉDICO GENERAL
+//     por 28 mil millones, enfermera, abogado, instrumentador quirúrgico— y
+//     hasta el 10% más barato pasa de 1.300 millones al mes. Donde hay pago,
+//     es un sueldo: 78 millones pagados de "96 mil millones".
+//
+// Las protecciones, todas baratas a propósito:
+//   - Número con forma de cédula, también cuando el tipo dice "Cédula": así
+//     no cae ASEOCOLBA S.A., una empresa con NIT 800146077 rotulado como cédula.
+//   - `es_grupo` distinto de "Si": consorcios y uniones temporales.
+//   - Desde 20 mil millones y no 10: entre 12 y 15 está Grupo Educativo Abel
+//     Mendoza, un comerciante persona natural que factura de verdad con su
+//     cédula (uno de sus contratos está pagado completo).
+// Se probó también reconocer organizaciones por el NOMBRE (CONSORCIO, S.A.,
+// LTDA…) y se descartó: trece comparaciones de cadena sobre cada fila
+// duplicaban o triplicaban el conteo nacional de contratistas (6 s → 13-25 s).
+//
+// Efecto medido: 49 contratos y 2,07 billones, leídos uno por uno —todos
+// oficios individuales, ninguna organización—. Coste: ninguno sistemático
+// (conteo de contratistas, concentración y comparación de ciudades,
+// intercalado, tres rondas).
+export const TECHO_SERVICIOS_PERSONA = 20_000_000_000
+
+const HONORARIOS_IMPOSIBLES = `(tipodocproveedor IN ('Cédula de Ciudadanía', 'NIT')
+          AND documento_proveedor IS NOT NULL AND ${FORMA_DE_CEDULA}
+          AND (es_grupo IS NULL OR es_grupo != 'Si')
+          AND tipo_de_contrato = 'Prestación de servicios'
+          AND valor_del_contrato >= ${TECHO_SERVICIOS_PERSONA})`
+
+export function honorariosPosiblesParaUnaPersona() {
+  return `NOT ${HONORARIOS_IMPOSIBLES}`
+}
+
+// La contraria, para listarlos en "Errores en SECOP".
+export function honorariosImposiblesParaUnaPersona() {
+  return HONORARIOS_IMPOSIBLES
 }
 
 // Multiplicadores de un error de digitación: alguien tecleó el valor en
