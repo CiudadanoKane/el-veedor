@@ -1,7 +1,23 @@
 import { describe, it, expect } from 'vitest'
 import {
   esc, soloContratosValidos, cuantiaPosibleSecop2, rangoNumerico, rangoFecha, whereFromFilters,
+  moraConditions, moraConditionsSecop1, cuantiaPosibleSecop1,
 } from './soql.js'
+
+// Las condiciones de mora no pasan por soloContratosValidos(), así que no
+// heredan su guardia: hay que ponérselo a mano, y se olvidó. En oct 2026 cinco
+// contratos vencidos con cuantía imposible hacían que la portada mostrara
+// $20.063 billones "en riesgo", el 2.241% del valor comprometido —que sí los
+// excluía—. Cifra real: $48,6 billones, 5,5%.
+describe('moraConditions', () => {
+  it('incluye el guardia de cuantías imposibles, como el denominador', () => {
+    expect(moraConditions()).toContain(cuantiaPosibleSecop2())
+  })
+
+  it('la versión de SECOP I también lo incluye', () => {
+    expect(moraConditionsSecop1()).toContain(cuantiaPosibleSecop1())
+  })
+})
 
 // Estas pruebas no buscan cobertura: cubren el sitio donde un error se publica
 // como cifra y nadie lo nota. `soloContratosValidos()` es el filtro que heredan

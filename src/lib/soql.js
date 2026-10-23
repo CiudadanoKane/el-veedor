@@ -79,6 +79,15 @@ export function rangoFecha(campo, desde, hasta) {
 // fin >= inicio descarta ~645 contratos con fechas invertidas (error de
 // digitación en SECOP: fin anterior al inicio, ej. firmado 2026, "fin" 2012),
 // que no pueden estar realmente en mora.
+//
+// Y el guardia de cuantías imposibles, que faltaba (oct 2026). Esta función no
+// pasa por soloContratosValidos(), así que no lo heredaba: el "Valor en riesgo"
+// sumaba el pendiente de contratos que el denominador —el valor comprometido,
+// que sí lo aplica— había excluido por absurdos. Cinco contratos vencidos con
+// cuantía imposible (uno de $12.858 billones, 25 veces el presupuesto de la
+// Nación) hacían que la portada mostrara $20.063 billones en riesgo, el 2.241%
+// del comprometido. Sin ellos: $48,6 billones, 5,5%. La versión de SECOP I
+// (moraConditionsSecop1) ya lo tenía.
 export function moraConditions() {
   return [
     `estado_contrato = '${ESTADO_ACTIVO}'`,
@@ -86,6 +95,7 @@ export function moraConditions() {
     `fecha_de_fin_del_contrato < '${HOY()}T00:00:00'`,
     `fecha_de_fin_del_contrato >= fecha_de_inicio_del_contrato`,
     SIN_EVIDENCIA_DE_TERMINADO,
+    cuantiaPosibleSecop2(),
   ]
 }
 

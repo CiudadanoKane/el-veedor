@@ -427,6 +427,51 @@ Efecto colateral buscado: esa lista es un catálogo de trabajo. Si al revisarla
 aparece un patrón limpio —por ejemplo que el objeto nombre un cargo
 individual— ahí sí habría base para excluir con certeza.
 
+### El "Valor en riesgo" de la portada era el 2.241% del comprometido (oct 2026)
+
+Visto al revisar Bogotá: la tarjeta "Valor en riesgo" decía **206,5% del
+comprometido**. Lo pendiente de un grupo de contratos no puede superar el valor
+de todos. A nivel nacional, **en producción y en la portada**, era peor: **$20.063
+billones en riesgo, el 2.241% del comprometido**.
+
+**Causa.** El numerador (pendiente de ejecutar en contratos vencidos) sale de
+`moraConditions()`, y el denominador (valor comprometido) de
+`soloContratosValidos()`. Solo el segundo aplica el guardia de cuantías
+imposibles: `moraConditions()` no pasa por `soloContratosValidos()`, así que no lo
+heredaba. Los contratos que el denominador excluía por absurdos seguían sumando
+arriba. Es el mismo descuido de julio ("el guardia existía pero estaba sin
+usar"), en otro sitio. La versión de SECOP I (`moraConditionsSecop1`) sí lo tenía.
+
+Cinco contratos vencidos con cuantía imposible, verificados contra la API:
+
+| Contrato | Valor registrado | Entidad |
+|---|---|---|
+| CO1.PCCNTR.3102623 | $12.858 billones | Instituto Municipal del Deporte (Valle) |
+| CO1.PCCNTR.5972834 | $6.454 billones | I. E. Eliseo Payán |
+| CO1.PCCNTR.9239943 | $577 billones | Hospital Central de la Policía (Bogotá) |
+| CO1.PCCNTR.3811411 | $63 billones | Hospital Central de la Policía (Bogotá) |
+| CO1.PCCNTR.6960801 | $62 billones | Dir. Seccional Adm. Judicial (Chocó) |
+
+**Arreglo:** `cuantiaPosibleSecop2()` dentro de `moraConditions()`, con una prueba
+que falla si vuelve a faltar. De ahí dependen cuatro consultas, que quedan
+corregidas a la vez: las tarjetas del Panorama, el ranking de entidades en mora,
+el detalle de ejecución y la lista de "Contratos vencidos" en Alertas (que,
+ordenada por valor, tenía esos cinco arriba). Los dos únicos otros sitios que
+suman `valor_pendiente_de_ejecucion` ya estaban protegidos.
+
+| | Antes | Ahora |
+|---|---|---|
+| Nacional | $20.063 B · 2.241% | **$48,6 B · 5,5%** |
+| Bogotá | $649,9 B · 206,5% | **$9,9 B · 3,1%** |
+
+Los cinco contratos no desaparecen: siguen listados en "Errores en SECOP →
+Valores implausibles", que es donde va una cuantía imposible.
+
+**La lección, otra vez:** un guardia que vive en una función compartida protege
+a quien la usa, no a quien arma sus condiciones por su cuenta. Cualquier cifra
+nueva que sume dinero de SECOP II tiene que pasar por `soloContratosValidos()` o
+llevar `cuantiaPosibleSecop2()` explícito.
+
 ### Modo oscuro automático (oct 2026)
 
 Decisión: el tema principal sigue siendo claro —la plataforma es lectura
