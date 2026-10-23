@@ -195,7 +195,7 @@ export function Noticias() {
 
   // --- Patrón de contratista: directa de gran cuantía (la modalidad la elige la entidad) ---
   const notaDirecta = (() => {
-    const base = { key: 'directa', categoria: 'Sin concurso, gran cuantía', icon: 'billete', tono: 'warning' }
+    const base = { key: 'directa', categoria: 'Sin concurso, contratos grandes', icon: 'billete', tono: 'warning' }
     if (directa.isLoading) return { ...base, cargando: true }
     const casos = (directa.data || []).filter((c) => esPersonaJuridica(c.tipoDocumento) && c.nombre)
     const c0 = casos[0]

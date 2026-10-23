@@ -44,7 +44,7 @@ const CAMPOS_FRASE_SECOP1 = [
 
 // Lista blanca: nunca interpolar texto libre en la cláusula ORDER BY.
 export const ORDENES = {
-  valor: { label: 'Mayor cuantía', soql: 'valor_del_contrato DESC' },
+  valor: { label: 'Mayor valor', soql: 'valor_del_contrato DESC' },
   reciente: { label: 'Más reciente', soql: 'fecha_de_firma DESC' },
 }
 

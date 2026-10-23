@@ -135,7 +135,7 @@ export function AdicionesTiempo() {
           onChange={setOrden}
           options={[
             { value: 'dias', label: 'Más días añadidos' },
-            { value: 'valor', label: 'Mayor cuantía' },
+            { value: 'valor', label: 'Mayor valor' },
           ]}
         />
       </div>
@@ -220,7 +220,7 @@ export function AdicionesTiempo() {
 const ORDENES_COSTO = {
   adicion: { label: 'Mayor adición ($)', fn: (a, b) => b.adicion - a.adicion },
   pct: { label: 'Mayor % de adición', fn: (a, b) => b.pctAdicion - a.pctAdicion },
-  valor: { label: 'Mayor cuantía', fn: (a, b) => b.contractValue - a.contractValue },
+  valor: { label: 'Mayor valor', fn: (a, b) => b.contractValue - a.contractValue },
 }
 
 export function AdicionesCosto() {

@@ -243,7 +243,7 @@ function Perfil({ perfil }) {
 
       <Seccion
         id="contratos"
-        titulo="Contratos de mayor cuantía"
+        titulo="Contratos de mayor valor"
         intro="Hasta 50 contratos, del más alto al más bajo."
       >
         <DataTable

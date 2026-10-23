@@ -102,7 +102,7 @@ export function ContratosVencidos() {
           onChange={setOrden}
           options={[
             { value: 'fecha', label: 'Más antiguos' },
-            { value: 'valor', label: 'Mayor cuantía' },
+            { value: 'valor', label: 'Mayor valor' },
           ]}
         />
       </div>

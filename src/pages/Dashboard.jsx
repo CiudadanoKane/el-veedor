@@ -82,7 +82,7 @@ function DesgloseConteoCuantia({ items, colores }) {
           onChange={setOrden}
           options={[
             { value: 'cantidad', label: 'Por cantidad' },
-            { value: 'cuantia', label: 'Por cuantía' },
+            { value: 'cuantia', label: 'Por valor contratado' },
           ]}
         />
       </div>
