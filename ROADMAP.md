@@ -444,8 +444,15 @@ número 13 y el plan admite 12. Producción no se afectó (sigue la versión
 anterior). El middleware no cuenta en ese tope. Antes de agregar un endpoint
 nuevo, contar `api/`.
 
-Pendiente posible: imagen distinta por enlace (con el nombre de la entidad o
-la cifra), que hoy es la misma para todos.
+**Imagen distinta por enlace** (hecho, oct 2026): el mismo middleware genera
+en `/vista-previa/imagen?ruta=…` una imagen 1200×630 con @vercel/og
+(`src/lib/vistaPreviaImagen.js`): qué es arriba ("Perfil de entidad"), el
+sujeto en grande (nombre, pestaña, búsqueda) y el lugar o las cifras debajo,
+con la piel de la imagen genérica. Un día en el CDN; si falla, redirige a la
+genérica. Decisiones: @vercel/og **0.8.6** y no 1.0 (la 1.0 pide Node 22 y
+pesa más; el middleware tiene tope de ~1 MB comprimido y la librería ya ocupa
+~715 KB); las fuentes Manrope se sirven desde `public/fonts` en vez de ir
+dentro del middleware, por el mismo tope.
 
 ### Honorarios que una persona no cobra (oct 2026)
 
