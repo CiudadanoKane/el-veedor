@@ -854,8 +854,9 @@ se eliminó uno. Si dos vistas tienen que mostrar el mismo número, que lean la
 misma función; sincronizar dos cálculos es una deuda que se paga cada vez que
 alguien toca uno de los dos.
 
-**PENDIENTE Y SERIO — SECOP I desaparece en silencio en Bogotá y Norte de
-Santander.** Encontrado por el usuario el 6/8/2026: la gráfica de evolución de
+**~~PENDIENTE Y SERIO~~ RESUELTO (oct 2026) — SECOP I desaparece en silencio en
+Bogotá y Norte de Santander.** Ver la resolución al final de esta entrada: el
+problema era bastante más grande que dos departamentos. Encontrado por el usuario el 6/8/2026: la gráfica de evolución de
 Bogotá solo pintaba SECOP II, sin aviso. No es un fallo de la consulta: **los dos
 sistemas nombran esos departamentos distinto**, y el filtro de SECOP I reutiliza
 tal cual el valor que viene de SECOP II.
@@ -880,6 +881,48 @@ usa `Bogotá D.C.` como municipio y no se verificó qué escribe SECOP II en
 `ciudad` para ese ámbito. Y conviene, además, el aviso que pedía el usuario:
 cuando SECOP I devuelva cero filas en un ámbito, decirlo en vez de dibujar una
 línea ausente.
+
+**Resolución (oct 2026).** Al hacer la comprobación que faltaba —municipios—
+apareció lo grueso: además de los 2 departamentos, **97 municipios** se llaman
+distinto en las dos fuentes.
+
+- **66 solo difieren en mayúsculas o tildes**: "Guadalajara De Buga" /
+  "Guadalajara de Buga", "Itagui" / "Itagüí", "Jamundí" / "Jamundi". SoQL
+  compara exacto, así que también daban cero.
+- **31 tienen otro nombre del todo**: "Bogotá" / "Bogotá D.C.", "Cúcuta" /
+  "San José de Cúcuta", "Tumaco" / "San Andres de Tumaco", "Mocoa" / "San
+  Miguel de Mocoa", "Espinal" / "El Espinal"… No se pueden adivinar: "Santa
+  Rosa" de Bolívar es "Santa Rosa de Lima", no "Santa Rosa del Sur", que es
+  otro municipio. Se revisaron uno por uno contra la lista de su departamento.
+- Ninguna fuente tiene escrituras duplicadas de un mismo municipio, así que la
+  traducción es uno a uno.
+
+**El arreglo:**
+
+- `scripts/generar-lugares-secop1.mjs` genera `src/lib/lugaresSecop1.tabla.js`
+  desde la API. Las diferencias de mayúsculas y tildes salen solas; los 31
+  renombres van curados dentro del script. Si se vuelve a correr y aparece un
+  nombre nuevo sin pareja, lo lista y **no lo inventa**; si un renombre deja de
+  existir en SECOP I, aborta.
+- `whereFromFiltrosSecop1` (soql.js) traduce antes de interpolar. Es el único
+  punto por donde pasan los filtros de SECOP I —Panorama, Evolución, buscador,
+  alertas, rankings, perfiles—, así que el arreglo los cubre a todos.
+- Una ciudad sin departamento (solo posible escribiendo la URL a mano) busca el
+  nombre original **y** sus traducciones con `IN`, para no perder un homónimo
+  ("San Pedro" de Sucre se llama igual en las dos fuentes; el de Antioquia no).
+- El adaptador de SECOP I traduce de vuelta, para que una misma tabla no mezcle
+  "Bogotá D.C." con "Distrito Capital de Bogotá" según la fuente de cada fila.
+
+**Verificado contra la API** (contratos válidos de SECOP I por filtro, antes →
+ahora): Bogotá 0 → 493.296 · Norte de Santander 0 → 230.404 · Cúcuta 0 →
+86.659 · Tumaco 0 → 22.915 · Itagüí 0 → 28.224 · Buga 0 → 7.891 ·
+Barranquilla (control) 48.561 → 48.561. En el navegador, las tarjetas
+"SECOP II + I" de Bogotá pasan a sumar las dos fuentes (1.600.785 contratos), y
+el buscador en Cúcuta trae contratos de SECOP I que antes no podía.
+
+El aviso de "SECOP I devolvió cero en este ámbito" queda sin hacer: con la tabla
+completa ya no hay ámbitos del selector con cero falso, y el generador es el
+sitio donde detectar que vuelva a pasar.
 
 ### HECHO ✅ — Elegir el lugar es el primer gesto, no una instrucción (ago 2026)
 

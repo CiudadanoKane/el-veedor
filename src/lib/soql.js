@@ -1,4 +1,5 @@
 import { ESTADO_ACTIVO, HOY, CUANTIA_IMPOSIBLE } from './constants.js'
+import { departamentoSecop1, municipiosSecop1 } from './lugaresSecop1.js'
 
 // Escapa comillas simples para SoQL (se duplican)
 export function esc(value) {
@@ -432,10 +433,22 @@ export function cuantiaPosibleSecop1() {
 
 // Filtros geográficos y de entidad para SECOP I, con sus propios nombres de
 // campo (departamento_entidad / municipio_entidad, no departamento / ciudad).
+//
+// Los VALORES también cambian: el filtro llega con el nombre de SECOP II y
+// SECOP I escribe distinto 2 departamentos y 97 municipios. Interpolarlo tal
+// cual, como se hizo hasta oct 2026, daba cero contratos de SECOP I en Bogotá,
+// Norte de Santander, Cúcuta, Tumaco, Itagüí… sin ningún aviso. Ver
+// lugaresSecop1.js.
 export function whereFromFiltrosSecop1(filters = {}, extra = []) {
   const parts = [...extra]
-  if (filters.department) parts.push(`departamento_entidad = '${esc(filters.department)}'`)
-  if (filters.city) parts.push(`municipio_entidad = '${esc(filters.city)}'`)
+  if (filters.department) {
+    parts.push(`departamento_entidad = '${esc(departamentoSecop1(filters.department))}'`)
+  }
+  const municipios = municipiosSecop1(filters.city, filters.department)
+  if (municipios.length === 1) parts.push(`municipio_entidad = '${esc(municipios[0])}'`)
+  else if (municipios.length > 1) {
+    parts.push(`municipio_entidad IN (${municipios.map((m) => `'${esc(m)}'`).join(', ')})`)
+  }
   if (filters.entity) parts.push(`nombre_entidad = '${esc(filters.entity)}'`)
   return parts
 }

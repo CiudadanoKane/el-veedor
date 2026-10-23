@@ -6,6 +6,8 @@
 // SECOP I es un sistema de registro, nunca tuvo módulo de ejecución
 // financiera. Ver ROADMAP.md sección 8.
 
+import { lugarDeSecop1 } from '../lib/lugaresSecop1.js'
+
 export function secop1Adapter(raw) {
   const v = (f) => raw[f] ?? null
   const num = (f) => {
@@ -23,6 +25,11 @@ export function secop1Adapter(raw) {
   const objeto = v('objeto_a_contratar')
   const description = (detalle?.length ?? 0) >= (objeto?.length ?? 0) ? detalle : objeto
 
+  // El lugar, con los nombres de SECOP II —los del selector—. SECOP I escribe
+  // distinto Bogotá, Norte de Santander y 97 municipios; sin traducir, la misma
+  // tabla mostraba "Bogotá D.C." y "Distrito Capital de Bogotá" según la fuente.
+  const lugar = lugarDeSecop1(v('departamento_entidad'), v('municipio_entidad'))
+
   return {
     id:               v('uid'),
     reference:        v('numero_de_contrato'),
@@ -32,8 +39,8 @@ export function secop1Adapter(raw) {
 
     entityName:       v('nombre_entidad'),
     entityNit:        v('nit_de_la_entidad'),
-    department:       v('departamento_entidad'),
-    city:             v('municipio_entidad'),
+    department:       lugar.department,
+    city:             lugar.city,
     // SECOP I no tiene el concepto de "sector" de la estructura del gobierno
     // nacional que sí trae SECOP II — no es un dato faltante, es una
     // taxonomía que esta fuente no registra.
