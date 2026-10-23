@@ -427,6 +427,25 @@ Efecto colateral buscado: esa lista es un catálogo de trabajo. Si al revisarla
 aparece un patrón limpio —por ejemplo que el objeto nombre un cargo
 individual— ahí sí habría base para excluir con certeza.
 
+### Que la interfaz muestre a dónde se puede ir (oct 2026)
+
+Observación del usuario: no era obvio que el nombre de una entidad o un
+contratista abría su perfil, y la gente lo pasaba por alto. Iban en el negro
+del texto con un subrayado que solo aparecía al pasar el cursor —en el
+teléfono, nunca—. Ahora hay una marca única de "esto abre un perfil":
+`.enlace-perfil enlace-visible` (index.css), azul de acción y subrayado fino
+permanente, en `EnlaceEntidad`/`EnlaceContratista`, rankings, índices de
+Errores y de prórrogas, y la comparación de ciudades.
+
+Y se abrieron caminos que no existían: "A quién contrata" y "Con quién
+contrata" en los perfiles enlazan a cada actor; los titulares y "También" de
+Noticias enlazan sus nombres (21 enlaces nuevos en la página); el detalle de
+un contrato termina en "Perfil de la entidad →" y "Perfil del contratista →";
+la tarjeta del Panorama dice "Ver composición ▾" a tamaño legible; la guía
+avisa que cada nombre en azul abre su perfil. De paso, las pestañas de página
+se acomodan en filas también en escritorio (las 7 de Errores no cabían a 1366
+px).
+
 ### Vista previa propia para cada enlace (oct 2026)
 
 WhatsApp, Telegram, Facebook y demás arman la vista previa leyendo el HTML sin
