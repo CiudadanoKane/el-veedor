@@ -427,6 +427,26 @@ Efecto colateral buscado: esa lista es un catálogo de trabajo. Si al revisarla
 aparece un patrón limpio —por ejemplo que el objeto nombre un cargo
 individual— ahí sí habría base para excluir con certeza.
 
+### Vista previa propia para cada enlace (oct 2026)
+
+WhatsApp, Telegram, Facebook y demás arman la vista previa leyendo el HTML sin
+ejecutar JavaScript, y la plataforma es un solo index.html: cualquier enlace se
+veía como la portada. Ahora `middleware.js` responde a esos lectores —y solo a
+ellos, por user-agent— un HTML mínimo con título y descripción de la ruta
+(`src/lib/vistaPrevia.js`): la pestaña y el lugar ("Rankings (actores): Quién
+más prorroga, en Meta"), la búsqueda, y en los perfiles el nombre y las cifras
+("21.523 contratos por $2,4 billones en SECOP II"), con una consulta de tope
+2,5 s que se omite si no llega. Las personas y los buscadores reciben la app de
+siempre (verificado con curl en producción).
+
+Primero se hizo como función en /api y **Vercel rechazó el despliegue**: era la
+número 13 y el plan admite 12. Producción no se afectó (sigue la versión
+anterior). El middleware no cuenta en ese tope. Antes de agregar un endpoint
+nuevo, contar `api/`.
+
+Pendiente posible: imagen distinta por enlace (con el nombre de la entidad o
+la cifra), que hoy es la misma para todos.
+
 ### Honorarios que una persona no cobra (oct 2026)
 
 Empezó por DIANA MOSQUERA MOSQUERA: "servicios profesionales para apoyar la
