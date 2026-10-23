@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useFilters } from '../../context/FiltersContext'
 import { useDepartamentos, useCiudades } from '../../hooks/useGeoOptions'
 import { SIN_GEOGRAFIA } from '../../lib/departamentos'
+import { useEsMovil } from '../../hooks/useEsMovil'
 
 const CLAVE_ULTIMO = 'veedor_ultimo_lugar_v1'
 const CLAVE_OCULTO = 'veedor_elegir_lugar_oculto_v1'
@@ -66,6 +67,7 @@ export function ElegirLugar() {
   }, [hayLugar, filters.department, filters.city])
 
   const departamentos = useDepartamentos()
+  const esMovil = useEsMovil()
   const ciudades = useCiudades(filters.department)
 
   if (oculto) return null
@@ -81,9 +83,14 @@ export function ElegirLugar() {
   const nombreUltimo = ultimo?.ciudad || ultimo?.departamento
 
   return (
-    <section className="border-2 border-textPrimary p-5 sm:p-6 mb-8">
+    // En el teléfono, compacto: con el texto largo y los selectores apilados
+    // medía 439 px, y la primera cifra del Panorama quedaba en el px ~930, fuera
+    // de la primera pantalla. Quien llegaba por un enlace no veía ningún dato
+    // antes de que se le pidiera elegir. Sigue siendo lo primero, a propósito
+    // (ver arriba), pero ya no lo único.
+    <section className="border-2 border-textPrimary p-4 sm:p-6 mb-6 sm:mb-8">
       <div className="flex items-start justify-between gap-4">
-        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] leading-tight">
+        <h2 className="font-display font-extrabold text-titulo-3 sm:text-titulo-2 tracking-[-0.03em] leading-tight">
           {faltaMunicipio
             ? `¿En qué municipio de ${filters.department}?`
             : '¿Qué se contrata donde tú vives?'}
@@ -103,9 +110,15 @@ export function ElegirLugar() {
           </>
         ) : (
           <>
-            Elige tu departamento y tu municipio: toda la plataforma pasa a mostrar ese lugar
-            —cuánto se contrata, quién recibe el dinero y qué conviene revisar—. Las cifras de
-            abajo son de Colombia entera.
+            <span className="sm:hidden">
+              Toda la plataforma pasa a mostrar tu lugar. Las cifras de abajo son de Colombia
+              entera.
+            </span>
+            <span className="hidden sm:inline">
+              Elige tu departamento y tu municipio: toda la plataforma pasa a mostrar ese lugar
+              —cuánto se contrata, quién recibe el dinero y qué conviene revisar—. Las cifras de
+              abajo son de Colombia entera.
+            </span>
           </>
         )}
       </p>
@@ -122,7 +135,8 @@ export function ElegirLugar() {
         </button>
       )}
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 max-w-xl">
+      {/* Lado a lado también en el teléfono: apilados sumaban ~75 px. */}
+      <div className="mt-4 grid grid-cols-2 gap-3 max-w-xl">
         <label className="block">
           <span className="block text-micro uppercase tracking-label text-textSecondary font-semibold mb-1">
             Departamento
@@ -139,7 +153,9 @@ export function ElegirLugar() {
                        disabled:opacity-40"
           >
             <option value="">
-              {departamentos.isLoading ? 'Cargando…' : 'Elige un departamento'}
+              {/* Textos cortos en el teléfono: en media fila de 360 px "Elige un
+                  departamento" se cortaba a "Elige un departam…". */}
+              {departamentos.isLoading ? 'Cargando…' : esMovil ? 'Elige' : 'Elige un departamento'}
             </option>
             {/* Fuera "No Definido": es el hueco de un registro sin diligenciar,
                 no un departamento, y ofrecérselo a alguien que busca el suyo
@@ -169,10 +185,10 @@ export function ElegirLugar() {
           >
             <option value="">
               {!filters.department
-                ? 'Primero el departamento'
+                ? esMovil ? 'Opcional' : 'Primero el departamento'
                 : ciudades.isLoading
                   ? 'Cargando…'
-                  : 'Todo el departamento'}
+                  : esMovil ? 'Todo el depto.' : 'Todo el departamento'}
             </option>
             {(ciudades.data || []).map((c) => (
               <option key={c} value={c}>{c}</option>
@@ -185,7 +201,7 @@ export function ElegirLugar() {
           vive en un municipio pequeño que no encuentre en la lista se queda sin
           saber que la vista departamental también lo cubre. */}
       {!faltaMunicipio && (
-        <p className="mt-3 text-nota text-textSecondary/80 leading-snug">
+        <p className="hidden sm:block mt-3 text-nota text-textSecondary/80 leading-snug">
           Con el departamento basta; el municipio es opcional.
         </p>
       )}

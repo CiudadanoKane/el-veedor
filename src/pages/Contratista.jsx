@@ -9,7 +9,7 @@ import { ListaBarra } from '../components/ui/ListaBarra'
 import { Methodology } from '../components/ui/Methodology'
 import { usePerfilContratista } from '../hooks/usePerfilContratista'
 import { documentoVisible, etiquetaDocumento, esPersonaJuridica } from '../lib/identidad'
-import { formatCOP, formatDate, pct, formatPct } from '../lib/formatters'
+import { formatCOP, formatCOPLista, formatDate, pct, formatPct } from '../lib/formatters'
 import { EnlaceEntidad } from '../components/ui/EnlacePerfil'
 import { IndiceSecciones } from '../components/ui/IndiceSecciones'
 import { Seccion } from '../components/ui/Seccion'
@@ -61,6 +61,13 @@ function Perfil({ perfil }) {
     ? pct(perfil.entidades_lista[0].valor, perfil.valorTotal)
     : null
 
+  // Una unidad por lista (ver formatCOPLista): en una misma columna no deben
+  // convivir "millones" y "mil millones" para cifras de la misma escala.
+  const copContratos = formatCOPLista(perfil.contratos.map((c) => c.contractValue))
+  const copActores = formatCOPLista(perfil.entidades_lista.map((x) => x.valor))
+  const copModalidades = formatCOPLista(perfil.modalidades.map((m) => m.valor))
+  const copAnios = formatCOPLista(perfil.porAnio.map((a) => a.valor))
+
   const columns = [
     {
       key: 'entityName',
@@ -86,7 +93,7 @@ function Perfil({ perfil }) {
       key: 'contractValue',
       header: 'Valor',
       className: 'text-right tabular-nums',
-      render: (r) => formatCOP(r.contractValue),
+      render: (r) => copContratos(r.contractValue),
     },
     { key: 'modality', header: 'Modalidad', render: (r) => r.modality || '—' },
     { key: 'signDate', header: 'Firma', render: (r) => formatDate(r.signDate) },
@@ -192,7 +199,7 @@ function Perfil({ perfil }) {
               clave: e.entidad,
               label: e.entidad,
               valor: e.valor,
-              valorTexto: formatCOP(e.valor),
+              valorTexto: copActores(e.valor),
               secundario: `${e.n.toLocaleString('es-CO')} contratos`,
             }))}
           />
@@ -210,7 +217,7 @@ function Perfil({ perfil }) {
             clave: m.modalidad,
             label: m.modalidad || 'Sin registro',
             valor: m.n,
-            secundario: formatCOP(m.valor),
+            secundario: copModalidades(m.valor),
           }))}
         />
       </Seccion>
@@ -226,7 +233,7 @@ function Perfil({ perfil }) {
               clave: a.anio,
               label: String(a.anio),
               valor: a.n,
-              secundario: formatCOP(a.valor),
+              secundario: copAnios(a.valor),
             }))}
           />
         </Seccion>

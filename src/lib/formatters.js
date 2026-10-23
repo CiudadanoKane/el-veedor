@@ -25,6 +25,30 @@ export function formatCOP(value) {
   return COP.format(value)
 }
 
+// Un formateador para TODA una lista, con la unidad elegida por su cifra mayor.
+//
+// formatCOP pasa a "mil millones" solo desde 100 mil millones, y en una cifra
+// suelta eso está bien. En una lista, no: en "Evolución por año" de una
+// alcaldía salía "$78.095,1 millones" justo debajo de "$993 mil millones", dos
+// unidades distintas en filas vecinas, y había que hacer la cuenta para saber
+// cuál era mayor. Si la lista llega a la escala de mil millones, todo lo que
+// está desde mil millones se dice en esa unidad ("$78,1 mil millones"). Lo de
+// menos de mil millones sigue en millones —"$850 millones" junto a "$1,2 mil
+// millones" se compara sin cuentas— y lo de billones, en billones.
+//
+// Si la lista no llega a 100 mil millones no cambia nada: ahí "3.500 millones"
+// es la forma natural, la de la prensa (ver formatCOP).
+export function formatCOPLista(valores) {
+  const max = Math.max(0, ...valores.map((v) => Math.abs(Number(v) || 0)))
+  const enMilMillones = max >= 1e11
+  return (value) => {
+    if (value == null) return '—'
+    const abs = Math.abs(value)
+    if (enMilMillones && abs >= 1e9 && abs < 1e11) return `$${es(value / 1e9)} mil millones`
+    return formatCOP(value)
+  }
+}
+
 // Versión abreviada, solo para las cifras destacadas del Panorama.
 //
 // "$891,6 billones" no cabe en el ancho de una columna y parte la palabra en un

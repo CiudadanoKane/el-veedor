@@ -427,6 +427,27 @@ Efecto colateral buscado: esa lista es un catálogo de trabajo. Si al revisarla
 aparece un patrón limpio —por ejemplo que el objeto nombre un cargo
 individual— ahí sí habría base para excluir con certeza.
 
+### Perfil de entidad por partes, una unidad por lista y la primera pantalla (oct 2026)
+
+- **El perfil de entidad pinta en ~1 s.** Medido por fases en frío (Alcaldía de
+  Popayán): SECOP II 5,5 s, comprobación del NIT 4,8 s, SECOP I 8,8 s —en fila,
+  y la ficha esperaba a las tres—. En caliente todo baja a 1,2 s: el problema
+  es quien llega en frío, que es quien llega por un enlace. Ahora la
+  comprobación del NIT cuelga solo de la consulta de NITs, y SECOP I es una
+  consulta aparte que se suma cuando llega, con aviso ("Sumando su historia en
+  SECOP I…"). Gobernación de Nariño: ficha a los 0,8 s, SECOP I a los 9,2 s
+  (21.523 → 27.458 contratos). Con NIT compartido no se intenta.
+- **Una unidad por lista** (`formatCOPLista`): si la lista llega a 100 mil
+  millones, todo lo que está desde mil millones se dice en mil millones. En
+  "Evolución por año" salía "$78.095,1 millones" junto a "$993 mil millones";
+  ahora "$78,1 mil millones". Aplicado en perfiles, rankings y retrato de
+  lugar. Las listas pequeñas no cambian ("$3.500 millones").
+- **La caja "¿Qué se contrata donde tú vives?" compacta en el teléfono**: de
+  439 a 246 px (texto corto, selectores lado a lado). Sigue siendo lo primero,
+  a propósito, pero la sección de cifras ya asoma en la primera pantalla. Las
+  cifras en sí quedan a un gesto (px 746 a 360×780); verlas sin bajar exigiría
+  poner la caja debajo de las tarjetas, decisión pendiente.
+
 ### La persona que contrata con su cédula como NIT (oct 2026)
 
 Apareció en la revisión del teléfono: #5 en "Quién recibe más" del país era

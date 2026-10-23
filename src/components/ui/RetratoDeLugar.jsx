@@ -4,7 +4,7 @@ import { ListaBarra } from './ListaBarra'
 import { EnlaceContratista } from './EnlacePerfil'
 import { useFilters } from '../../context/FiltersContext'
 import { useRankingContratistas } from '../../hooks/useRankings'
-import { formatCOP, formatCOPCorto } from '../../lib/formatters'
+import { formatCOPCorto, formatCOPLista } from '../../lib/formatters'
 import { Seccion } from './Seccion'
 
 // Lo que el Panorama añade cuando hay un departamento o municipio activo:
@@ -53,7 +53,7 @@ export function RetratoDeLugar({ lugar, generales }) {
                       universo del que sale este ranking. */}
                   <ListaBarra
                     total={generales.data?.valorSecop2}
-                    items={top.map((r) => ({
+                    items={top.map((r, _, todos) => ({
                       clave: r.documento,
                       label: r.nombre,
                       // El texto de arriba promete que cada nombre lleva a su
@@ -62,7 +62,7 @@ export function RetratoDeLugar({ lugar, generales }) {
                       // conserva como cadena limpia (ver ListaBarra).
                       etiqueta: <EnlaceContratista nombre={r.nombre} documento={r.documento} />,
                       valor: r.valorTotal,
-                      valorTexto: formatCOP(r.valorTotal),
+                      valorTexto: formatCOPLista(todos.map((x) => x.valorTotal))(r.valorTotal),
                       secundario: `${N(r.contratos)} ${r.contratos === 1 ? 'contrato' : 'contratos'}`,
                     }))}
                   />

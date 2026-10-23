@@ -242,12 +242,14 @@ export function Layout() {
 // Encabezado de página reutilizable
 export function PageHeader({ title, subtitle }) {
   return (
-    <header className="mb-10">
+    // Más apretado en el teléfono (margen y subtítulo un escalón abajo): ahí
+    // cada línea de cabecera empuja la primera cifra fuera de la pantalla.
+    <header className="mb-6 sm:mb-10">
       <h1 className="font-display text-titulo-1 md:text-hero font-extrabold text-textPrimary leading-[1.02] tracking-[-0.04em]">
         {title}
       </h1>
       {subtitle && (
-        <TextoPlegable className="text-textSecondary mt-4 text-intro max-w-2xl leading-[1.55] font-light">
+        <TextoPlegable className="text-textSecondary mt-3 sm:mt-4 text-lectura sm:text-intro max-w-2xl leading-[1.55] font-light">
           {subtitle}
         </TextoPlegable>
       )}

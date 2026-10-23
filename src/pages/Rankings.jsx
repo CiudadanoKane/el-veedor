@@ -18,7 +18,7 @@ import {
 } from '../hooks/useAdicionesPrecalculadas'
 import { useCategorias } from '../hooks/useCategorias'
 import { useCalidadDeEntidades, UMBRAL_CONTRATOS } from '../hooks/useCalidadDatos'
-import { formatCOP, formatCOPFull, formatDate, formatPct, pct } from '../lib/formatters'
+import { formatCOP, formatCOPFull, formatCOPLista, formatDate, formatPct, pct } from '../lib/formatters'
 import { CHART, tooltipProps } from '../lib/chartTheme'
 import { documentoVisible, etiquetaDocumento, esPersonaJuridica } from '../lib/identidad'
 import { PESTANAS_ALERTAS, PESTANAS_RANKINGS, PESTANAS_ERRORES } from '../lib/pestanas'
@@ -83,6 +83,8 @@ function RankingContratistas({ filters }) {
   const [fuente, setFuente] = useState('secop2')
   const esSecop1 = fuente === 'secop1'
   const query = useRankingContratistas(filters, orderBy, fuente)
+  // Una sola unidad para la columna de valor (ver formatCOPLista).
+  const copValor = formatCOPLista((Array.isArray(query.data) ? query.data : []).map((r) => r.valorTotal))
 
   const columns = [
     { key: 'rank', header: '#', className: 'text-textSecondary tabular-nums', render: (r) => r._rank },
@@ -107,7 +109,7 @@ function RankingContratistas({ filters }) {
       key: 'valorTotal',
       header: 'Valor total',
       className: 'text-right tabular-nums',
-      render: (r) => formatCOP(r.valorTotal),
+      render: (r) => copValor(r.valorTotal),
     },
     { key: 'contratos', header: 'Contratos', className: 'text-right tabular-nums' },
     // La concentración "entidades (país)" está afinada para SECOP II (segunda
@@ -225,6 +227,7 @@ function RankingEntidades({ filters }) {
     [esSecop1, query.data],
   )
   const calidad = useCalidadDeEntidades(nombres)
+  const copValor = formatCOPLista((query.data ?? []).map((r) => r.valorTotal))
 
   const columns = [
     { key: 'rank', header: '#', className: 'text-textSecondary tabular-nums', render: (r) => r._rank },
@@ -253,7 +256,7 @@ function RankingEntidades({ filters }) {
       key: 'valorTotal',
       header: 'Valor total',
       className: 'text-right tabular-nums',
-      render: (r) => formatCOP(r.valorTotal),
+      render: (r) => copValor(r.valorTotal),
     },
     { key: 'contratos', header: 'Contratos', className: 'text-right tabular-nums' },
     // "Proveedores" (contratistas distintos) sale de un count(distinct) que en
@@ -554,6 +557,7 @@ function RankingCategorias({ filters }) {
   }, [data, metric])
 
   const total = metric === 'valor' ? data?.totalValor : data?.totalContratos
+  const copValor = formatCOPLista(sorted.map((r) => r.valor))
 
   const columns = [
     {
@@ -578,7 +582,7 @@ function RankingCategorias({ filters }) {
       key: 'valor',
       header: 'Valor total',
       className: 'text-right tabular-nums',
-      render: (r) => formatCOP(r.valor),
+      render: (r) => copValor(r.valor),
     },
     {
       key: 'share',
@@ -636,11 +640,11 @@ function RankingCategorias({ filters }) {
                   label: r.nombre,
                   valor: r[metric],
                   valorTexto:
-                    metric === 'valor' ? formatCOP(r.valor) : r.contratos.toLocaleString('es-CO'),
+                    metric === 'valor' ? copValor(r.valor) : r.contratos.toLocaleString('es-CO'),
                   secundario:
                     metric === 'valor'
                       ? `${r.contratos.toLocaleString('es-CO')} contratos`
-                      : formatCOP(r.valor),
+                      : copValor(r.valor),
                   nota: r.segmento !== '—' ? `UNSPSC ${r.segmento}` : null,
                 }))}
               />

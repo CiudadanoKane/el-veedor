@@ -9,7 +9,7 @@ import { ListaBarra } from '../components/ui/ListaBarra'
 import { Methodology } from '../components/ui/Methodology'
 import { usePerfilEntidad } from '../hooks/usePerfilEntidad'
 import { ERRORES, INCOMPLETOS, useCalidadDatos } from '../hooks/useCalidadDatos'
-import { formatCOP, formatDate, pct, formatPct } from '../lib/formatters'
+import { formatCOP, formatCOPLista, formatDate, pct, formatPct } from '../lib/formatters'
 import { EnlaceContratista } from '../components/ui/EnlacePerfil'
 import { IndiceSecciones } from '../components/ui/IndiceSecciones'
 import { Seccion } from '../components/ui/Seccion'
@@ -58,6 +58,13 @@ function Perfil({ perfil, refNacional }) {
     ? pct(perfil.contratistas_lista[0].valor, perfil.valorTotal)
     : null
 
+  // Una unidad por lista (ver formatCOPLista): en una misma columna no deben
+  // convivir "millones" y "mil millones" para cifras de la misma escala.
+  const copContratos = formatCOPLista(perfil.contratos.map((c) => c.contractValue))
+  const copActores = formatCOPLista(perfil.contratistas_lista.map((x) => x.valor))
+  const copModalidades = formatCOPLista(perfil.modalidades.map((m) => m.valor))
+  const copAnios = formatCOPLista(perfil.porAnio.map((a) => a.valor))
+
   const columns = [
     {
       key: 'description',
@@ -83,7 +90,7 @@ function Perfil({ perfil, refNacional }) {
       key: 'contractValue',
       header: 'Valor',
       className: 'text-right tabular-nums',
-      render: (r) => formatCOP(r.contractValue),
+      render: (r) => copContratos(r.contractValue),
     },
     { key: 'modality', header: 'Modalidad', render: (r) => r.modality || '—' },
     { key: 'signDate', header: 'Firma', render: (r) => formatDate(r.signDate) },
@@ -104,6 +111,21 @@ function Perfil({ perfil, refNacional }) {
         title={perfil.nombre}
         subtitle={perfil.nit ? `NIT: ${perfil.nit}` : undefined}
       />
+
+      {/* La ficha se pinta con SECOP II apenas llega y SECOP I se suma después
+          (ver usePerfilEntidad): mientras tanto se dice, porque las cifras de
+          abajo van a crecer y sin aviso parecería que cambiaron solas. */}
+      {perfil.secop1Pendiente && (
+        <p className="flex items-center gap-2 text-cuerpo text-textSecondary -mt-2" role="status">
+          <span className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          Sumando su historia en SECOP I… por ahora, las cifras de abajo son solo de SECOP II.
+        </p>
+      )}
+      {perfil.secop1Fallo && (
+        <p className="text-cuerpo text-textSecondary -mt-2 max-w-3xl leading-snug" role="status">
+          No se pudo consultar su historia en SECOP I: las cifras de abajo son solo de SECOP II.
+        </p>
+      )}
 
       {/* Los nombres de entidad no coinciden entre SECOP I y II, así que SECOP I
           se suma por NIT — pero solo si es inequívoco. Cuando el NIT lo comparten
@@ -247,7 +269,7 @@ function Perfil({ perfil, refNacional }) {
               clave: c.documento,
               label: c.nombre,
               valor: c.valor,
-              valorTexto: formatCOP(c.valor),
+              valorTexto: copActores(c.valor),
               secundario: `${c.n.toLocaleString('es-CO')} contratos`,
             }))}
           />
@@ -268,7 +290,7 @@ function Perfil({ perfil, refNacional }) {
             // no se sabe qué distingue una licitación de una directa.
             ayuda: m.modalidad,
             valor: m.n,
-            secundario: formatCOP(m.valor),
+            secundario: copModalidades(m.valor),
             nota: /directa/i.test(m.modalidad || '')
               ? 'Sin concurso abierto: la entidad escoge al contratista'
               : undefined,
@@ -287,7 +309,7 @@ function Perfil({ perfil, refNacional }) {
               clave: a.anio,
               label: String(a.anio),
               valor: a.n,
-              secundario: formatCOP(a.valor),
+              secundario: copAnios(a.valor),
             }))}
           />
         </Seccion>
