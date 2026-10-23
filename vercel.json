@@ -5,16 +5,6 @@
   ],
   "rewrites": [
     {
-      "source": "/",
-      "has": [{ "type": "header", "key": "user-agent", "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|Slackbot|LinkedInBot|Discordbot|SkypeUriPreview|vkShare|redditbot|Pinterestbot|Embedly|Iframely).*" }],
-      "destination": "/api/vista-previa?ruta=/"
-    },
-    {
-      "source": "/:ruta((?!api/|assets/)(?!.*\\.(?:png|jpe?g|svg|ico|json|geojson|js|css|txt|xml|webmanifest)$).+)",
-      "has": [{ "type": "header", "key": "user-agent", "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|Slackbot|LinkedInBot|Discordbot|SkypeUriPreview|vkShare|redditbot|Pinterestbot|Embedly|Iframely).*" }],
-      "destination": "/api/vista-previa?ruta=/:ruta"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
@@ -98,9 +88,6 @@
     },
     "api/buscar-ia.js": {
       "maxDuration": 30
-    },
-    "api/vista-previa.js": {
-      "maxDuration": 10
     },
     "api/noticias-actores.js": {
       "maxDuration": 60

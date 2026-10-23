@@ -1,16 +1,11 @@
-import { DATASETS } from '../src/lib/constants.js'
-import { socrataQuery } from '../src/lib/socrataClient.js'
-import { esc, soloContratosValidos } from '../src/lib/soql.js'
-import { describirRuta, MARCA } from '../src/lib/vistaPrevia.js'
+import { DATASETS } from './constants.js'
+import { socrataQuery } from './socrataClient.js'
+import { esc, soloContratosValidos } from './soql.js'
+import { describirRuta, MARCA } from './vistaPrevia.js'
 
-// Vista previa de un enlace compartido, solo para los lectores que la arman
-// (WhatsApp, Telegram, Facebook, X, Slack…). vercel.json manda aquí sus
-// peticiones según el user-agent; a una persona nunca le llega esta página,
-// sino la app.
-//
-// Los buscadores (Google, Bing) NO pasan por aquí, a propósito: indexan la app
-// real, y darles una página distinta de la que ve la gente perjudicaría cómo
-// aparece el sitio.
+// HTML de la vista previa de un enlace compartido, para los lectores que la
+// arman (WhatsApp, Telegram, Facebook, X, Slack…). Lo sirve middleware.js solo
+// a ellos; a una persona nunca le llega esta página, sino la app.
 //
 // La respuesta es un HTML mínimo con las etiquetas que esos lectores leen. El
 // título y la descripción salen de la URL (src/lib/vistaPrevia.js); para un
@@ -78,12 +73,9 @@ async function enriquecer(pathname, vista) {
   return vista
 }
 
-export default async function handler(req, res) {
-  // vercel.json pasa la ruta original en `ruta`; el resto de la query llega tal
-  // cual (ámbito, pestaña, búsqueda).
-  const { ruta = '/', ...resto } = req.query
-  const pathname = String(ruta).startsWith('/') ? String(ruta) : `/${ruta}`
-  const params = new URLSearchParams(resto)
+export async function htmlVistaPrevia(urlPedida) {
+  const pathname = urlPedida.pathname || '/'
+  const params = new URLSearchParams(urlPedida.search)
   const qs = params.toString()
   // La ruta puede llegar decodificada ("GOBERNACION DE NARIÑO"): se normaliza
   // para que la URL de la vista previa sea válida y no se codifique dos veces.
@@ -94,12 +86,7 @@ export default async function handler(req, res) {
   const vista = await enriquecer(pathname, describirRuta(pathname, params))
   const titulo = `${vista.titulo} | ${MARCA}`
 
-  res.setHeader('Content-Type', 'text/html; charset=utf-8')
-  // Una hora en el CDN: las cifras de un perfil cambian a diario, no a cada
-  // minuto, y así una conversación que reenvía el mismo enlace no repite la
-  // consulta.
-  res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400')
-  res.status(200).send(`<!doctype html>
+  return `<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
@@ -125,5 +112,5 @@ export default async function handler(req, res) {
 <p><a href="${escapar(url)}">${escapar(titulo)}</a></p>
 <p>${escapar(vista.descripcion)}</p>
 </body>
-</html>`)
+</html>`
 }
