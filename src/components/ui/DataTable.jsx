@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { Icon } from './Icon'
 import { useEsMovil } from '../../hooks/useEsMovil'
 
@@ -28,6 +28,31 @@ export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', rend
 
   const toggle = (key) => setOpenKey((cur) => (cur === key ? null : key))
 
+  // Cerrar desde el final del detalle y volver a la fila donde se abrió.
+  // El detalle de un contrato es largo —en el teléfono, varias pantallas—, y
+  // para cerrarlo había que subir a buscar la fila; al cerrarlo, además, la
+  // página se encogía y uno quedaba en un punto cualquiera de la lista, sin
+  // saber por dónde iba. Ahora el botón cierra y deja la fila arriba, a la vista
+  // (con margen para la cabecera, que reaparece al subir).
+  const filas = useRef(new Map())
+  const registrar = (key) => (el) => {
+    if (el) filas.current.set(key, el)
+    else filas.current.delete(key)
+  }
+  // Salto directo y no animado: desde el final de un detalle de varias
+  // pantallas, un desplazamiento suave tarda y pasa por encima de todo lo
+  // leído; además, al cerrar, la página se encoge bajo los pies. El
+  // setTimeout espera a que React pinte la fila ya cerrada.
+  const cerrarYVolver = (key) => {
+    setOpenKey(null)
+    setTimeout(() => {
+      const el = filas.current.get(key)
+      if (!el) return
+      const top = el.getBoundingClientRect().top + window.scrollY - 130
+      window.scrollTo({ top: Math.max(0, top), behavior: 'instant' })
+    }, 0)
+  }
+
   if (esMovil) {
     return (
       <Tarjetas
@@ -37,6 +62,8 @@ export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', rend
         renderDetail={expandable ? renderDetail : null}
         openKey={openKey}
         toggle={toggle}
+        registrar={registrar}
+        cerrarYVolver={cerrarYVolver}
       />
     )
   }
@@ -67,6 +94,7 @@ export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', rend
               return (
                 <Fragment key={key}>
                   <tr
+                    ref={registrar(key)}
                     onClick={expandable ? () => toggle(key) : undefined}
                     className={`group border-b border-border/60 last:border-0 ${
                       expandable ? 'cursor-pointer' : ''
@@ -105,6 +133,7 @@ export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', rend
                     <tr className="bg-muted border-b border-border">
                       <td colSpan={cols.length} className="px-3 pb-6 pt-2">
                         {renderDetail(row)}
+                        <BotonOcultar onClick={() => cerrarYVolver(key)} />
                       </td>
                     </tr>
                   )}
@@ -129,7 +158,7 @@ export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', rend
 // Sin configuración por página: la columna "#" va de prefijo, la primera
 // columna de datos es el título y el resto se lee como "etiqueta: valor".
 // Las columnas sin encabezado (un semáforo, un enlace) van sin etiqueta.
-function Tarjetas({ columns, rows, keyField, renderDetail, openKey, toggle }) {
+function Tarjetas({ columns, rows, keyField, renderDetail, openKey, toggle, registrar, cerrarYVolver }) {
   const rango = columns.find((c) => c.header === '#')
   const datos = columns.filter((c) => c !== rango)
   const [titulo, ...resto] = datos
@@ -159,6 +188,7 @@ function Tarjetas({ columns, rows, keyField, renderDetail, openKey, toggle }) {
         return (
           <li
             key={key}
+            ref={registrar(key)}
             className={`border ${isOpen ? 'border-textPrimary bg-muted' : 'border-textPrimary/25 bg-bg'}`}
           >
             <div
@@ -224,7 +254,12 @@ function Tarjetas({ columns, rows, keyField, renderDetail, openKey, toggle }) {
                 </div>
               </div>
             </div>
-            {renderDetail && isOpen && <div className="px-4 pb-6">{renderDetail(row)}</div>}
+            {renderDetail && isOpen && (
+              <div className="px-4 pb-6">
+                {renderDetail(row)}
+                <BotonOcultar onClick={() => cerrarYVolver(key)} />
+              </div>
+            )}
           </li>
         )
       })}
@@ -246,3 +281,22 @@ function Tarjetas({ columns, rows, keyField, renderDetail, openKey, toggle }) {
 // 10 y no 20: una tarjeta mide 280-320 px, así que 20 eran unas 8 pantallas
 // antes de llegar al botón.
 const TANDA = 10
+
+// Al final de cada detalle desplegado (ver cerrarYVolver en DataTable).
+function BotonOcultar({ onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation()
+        onClick()
+      }}
+      className="mt-5 w-full sm:w-auto min-h-[44px] sm:min-h-0 px-4 py-2 inline-flex items-center justify-center gap-1.5
+                 border border-textPrimary/30 text-cuerpo font-semibold text-textPrimary
+                 hover:bg-textPrimary hover:text-bg transition-colors"
+    >
+      Ocultar detalle
+      <Icon name="chevronAbajo" className="h-4 w-4 rotate-180" />
+    </button>
+  )
+}
