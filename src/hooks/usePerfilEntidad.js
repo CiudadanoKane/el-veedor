@@ -2,7 +2,9 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
 import { DATASETS, CONTRACT_FIELDS, CONTRACT_FIELDS_SECOP1 } from '../lib/constants'
-import { esc, soloContratosValidos, soloContratosValidosSecop1, VALOR_SECOP1_SOQL } from '../lib/soql'
+import {
+  esc, soloContratosValidos, soloContratosValidosSecop1, cuantiaPosibleSecop1, VALOR_SECOP1_SOQL,
+} from '../lib/soql'
 import { MODALIDADES_SIN_COMPETENCIA } from './useDashboard'
 import { SECOP1_A_MODALIDAD, MODALIDAD_SIN_COMPETENCIA_SECOP1 } from '../lib/catalogosSecop1'
 import { ERRORES, INCOMPLETOS } from './useCalidadDatos'
@@ -239,7 +241,11 @@ async function cargarSecop2(nombre) {
 
 // Fase 2: SECOP I, acotado por ese NIT inequívoco.
 async function cargarSecop1(nit) {
-  const F1 = `${soloContratosValidosSecop1()} AND nit_de_la_entidad = '${esc(nit)}'`
+  // Con el guardia de cuantías imposibles, igual que la parte de SECOP II
+  // (soloContratosValidos ya lo trae; la versión de SECOP I solo filtra
+  // estados). Sin él, un contrato de SECOP I registrado por $165 billones
+  // entraba entero en el total del perfil de su entidad.
+  const F1 = `${soloContratosValidosSecop1()} AND ${cuantiaPosibleSecop1()} AND nit_de_la_entidad = '${esc(nit)}'`
   const [resumen1, modalidades1, contratistas1, porAnio1, contratos1] = await Promise.all([
     socrataQuery(
       DS1,
