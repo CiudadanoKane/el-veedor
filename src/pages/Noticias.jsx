@@ -45,8 +45,17 @@ export function Noticias() {
   } = useNoticiasData(filters)
 
   const ambito = filters.city || filters.department || 'Colombia'
-  const num = (n) => n.toLocaleString('es-CO')
+  // A prueba de nulos: un dato faltante en UNA nota tumbaba la sección entera.
+  // Pasó con el Valle del Cauca (oct 2026): el tercer caso de adición de tiempo
+  // no tenía plazo original reconstruible y "Noticias" mostraba "Algo falló".
+  const num = (n) => (n == null ? '—' : n.toLocaleString('es-CO'))
   const finDiasPlazo = (c) => c.plazoOriginal + (c.diasAcumulados || 0)
+  // "de 3.136 a 6.788 días" cuando se sabe el plazo original; si no —la tabla
+  // lo muestra como "—"—, solo los días añadidos, que son el dato de la nota.
+  const plazoTexto = (c) =>
+    c.plazoOriginal != null
+      ? `de ${num(c.plazoOriginal)} a ${num(finDiasPlazo(c))} días`
+      : `${num(c.diasAcumulados)} días más`
 
   // --- Caso específico: adición de tiempo (la nota insignia del roadmap) ---
   const notaAdicion = (() => {
@@ -75,7 +84,7 @@ export function Noticias() {
           {a.pctAdicion != null ? (
             <> en un <strong>{num(a.pctAdicion)}%</strong></>
           ) : null}{' '}
-          — de {num(a.plazoOriginal)} a {num(finDiasPlazo(a))} días.
+          — {plazoTexto(a)}.
         </>
       ),
       secundarios: casos.slice(1, 3).map((c) => ({
@@ -84,7 +93,7 @@ export function Noticias() {
           <>
             <EnlaceEntidad nombre={c.entityName} className="font-semibold" />
             {c.pctAdicion != null ? `: +${num(c.pctAdicion)}%` : ':'}{' '}
-            (de {num(c.plazoOriginal)} a {num(finDiasPlazo(c))} días)
+            ({plazoTexto(c)})
           </>
         ),
       })),
