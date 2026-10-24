@@ -355,15 +355,16 @@ export function Buscar() {
 
   // En el teléfono, después de buscar, a los resultados: el título y la caja
   // ocupan la primera pantalla, y sin esto parecía que el botón no había hecho
-  // nada. Va con setTimeout y no requestAnimationFrame, que no corre si la
-  // pestaña no está a la vista (ver DataTable, cerrarYVolver).
+  // nada. Se marca como pendiente y lo hace el efecto de abajo: la búsqueda
+  // viaja por la URL y React Router la pinta en una transición, así que en la
+  // primera búsqueda el bloque de resultados todavía no existe al terminar
+  // buscarConTexto.
+  const bajarPendiente = useRef(false)
+  const [pedidoBajar, setPedidoBajar] = useState(0)
   const llevarAResultados = () => {
     if (!esMovilAhora()) return
-    setTimeout(() => {
-      const el = resultadosRef.current
-      if (!el) return
-      window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 12, behavior: 'instant' })
-    }, 0)
+    bajarPendiente.current = true
+    setPedidoBajar((n) => n + 1)
   }
 
   const buscarConTexto = async (texto) => {
@@ -487,6 +488,13 @@ export function Buscar() {
     criterios.modalidad || criterios.tipo || criterios.segmento || criterios.estados.length > 0 ||
     criterios.terminos.length > 0 ||
     criterios.valorMin || criterios.valorMax || criterios.fechaDesde || criterios.fechaHasta
+
+  useEffect(() => {
+    const el = resultadosRef.current
+    if (!bajarPendiente.current || !el) return
+    bajarPendiente.current = false
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 12, behavior: 'instant' })
+  }, [pedidoBajar, activa, criterios])
 
   const toggleEstado = (estado) => {
     const set = new Set(criterios.estados)
