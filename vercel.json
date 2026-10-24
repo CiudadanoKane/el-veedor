@@ -19,10 +19,6 @@
       "schedule": "5 9 * * *"
     },
     {
-      "path": "/api/directorio",
-      "schedule": "10 9 * * *"
-    },
-    {
       "path": "/api/noticias",
       "schedule": "15 9 * * *"
     },
@@ -63,9 +59,6 @@
       "maxDuration": 60
     },
     "api/geo.js": {
-      "maxDuration": 60
-    },
-    "api/directorio.js": {
       "maxDuration": 60
     },
     "api/panorama.js": {

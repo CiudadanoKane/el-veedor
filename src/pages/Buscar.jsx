@@ -21,6 +21,7 @@ import { resolverLugar } from '../lib/geoResolver'
 import { formatCOP, formatDate } from '../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
 import { ResultadosWeb } from '../components/ui/ResultadosWeb'
+import { esMovilAhora } from '../hooks/useEsMovil'
 
 // Normaliza texto para comparar sin importar tildes ni espacios de más.
 const norm = (s) => sinTildes(s || '').replace(/\s+/g, ' ').trim()
@@ -170,6 +171,58 @@ function Chips({ label, seleccionados, onToggle, options }) {
 // cada tecla; las fechas (type=date) confirman al elegirlas, que es un solo
 // evento. Estos filtros también los llena la búsqueda con IA, y quedan visibles
 // y editables aquí.
+// Los filtros avanzados activos, con el panel plegado: una etiqueta por filtro,
+// que se quita con un toque. Lo que la IA convirtió en filtro queda a la vista
+// y editable sin tener que abrir el panel entero.
+function FiltrosAplicados({ criterios, actualizar }) {
+  const etiquetas = []
+  if (criterios.modalidad) etiquetas.push({ texto: criterios.modalidad, quitar: { modalidad: '' } })
+  if (criterios.tipo) etiquetas.push({ texto: criterios.tipo, quitar: { tipo: '' } })
+  if (criterios.estados.length) {
+    etiquetas.push({ texto: `Estado: ${criterios.estados.join(', ')}`, quitar: { estados: [] } })
+  }
+  if (criterios.valorMin) {
+    etiquetas.push({ texto: `Desde ${formatCOP(Number(criterios.valorMin))}`, quitar: { valorMin: '' } })
+  }
+  if (criterios.valorMax) {
+    etiquetas.push({ texto: `Hasta ${formatCOP(Number(criterios.valorMax))}`, quitar: { valorMax: '' } })
+  }
+  const { fechaDesde: d, fechaHasta: h } = criterios
+  if (d || h) {
+    // Un año completo se dice como año: "Firmados en 2025".
+    const anio = d && h && d.slice(0, 4) === h.slice(0, 4) && d.endsWith('-01-01') && h.endsWith('-12-31')
+    const texto = anio
+      ? `Firmados en ${d.slice(0, 4)}`
+      : d && h
+        ? `Firmados del ${formatDate(d)} al ${formatDate(h)}`
+        : d ? `Firmados desde el ${formatDate(d)}` : `Firmados hasta el ${formatDate(h)}`
+    etiquetas.push({ texto, quitar: { fechaDesde: '', fechaHasta: '' } })
+  }
+  if (!etiquetas.length) return null
+
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-2">
+      <span className="text-micro uppercase tracking-label text-textSecondary font-semibold">
+        Filtros
+      </span>
+      {etiquetas.map((e) => (
+        <button
+          key={e.texto}
+          type="button"
+          onClick={() => actualizar(e.quitar)}
+          aria-label={`Quitar el filtro "${e.texto}"`}
+          title="Quitar el filtro"
+          className="inline-flex items-center gap-1.5 border border-textPrimary/40 px-2.5 py-1
+                     text-nota text-textPrimary hover:border-textPrimary transition-colors"
+        >
+          {e.texto}
+          <span aria-hidden className="text-textSecondary leading-none">×</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function Rangos({ criterios, actualizar }) {
   const [vMin, setVMin] = useState(criterios.valorMin)
   const [vMax, setVMax] = useState(criterios.valorMax)
@@ -267,12 +320,16 @@ export function Buscar() {
   const [borrador, setBorrador] = useState(criterios.texto)
   useEffect(() => setBorrador(criterios.texto), [criterios.texto])
 
-  // Filtros avanzados, plegados por defecto. Se abren solos si llega uno activo
-  // por la URL (p. ej. un enlace compartido que ya trae una modalidad).
+  // Filtros avanzados, plegados por defecto. En pantalla grande se abren solos
+  // si llega uno activo por la URL (p. ej. un enlace compartido que ya trae una
+  // modalidad). En el teléfono no: el panel abierto mide ~700 px y empujaba el
+  // primer resultado dos pantallas abajo; ahí los filtros activos se ven como
+  // etiquetas que se quitan con un toque (FiltrosAplicados).
   const [avanzados, setAvanzados] = useState(
-    () => !!(criterios.modalidad || criterios.tipo || criterios.estados.length ||
+    () => !esMovilAhora() && !!(criterios.modalidad || criterios.tipo || criterios.estados.length ||
       criterios.valorMin || criterios.valorMax || criterios.fechaDesde || criterios.fechaHasta),
   )
+  const resultadosRef = useRef(null)
 
   // Se toca solo lo propio del buscador y se conserva el resto de la URL (los
   // filtros de departamento y ciudad viven en esos mismos parámetros).
@@ -296,12 +353,26 @@ export function Buscar() {
   const [cargandoIA, setCargandoIA] = useState(false)
   const [errorIA, setErrorIA] = useState('')
 
+  // En el teléfono, después de buscar, a los resultados: el título y la caja
+  // ocupan la primera pantalla, y sin esto parecía que el botón no había hecho
+  // nada. Va con setTimeout y no requestAnimationFrame, que no corre si la
+  // pestaña no está a la vista (ver DataTable, cerrarYVolver).
+  const llevarAResultados = () => {
+    if (!esMovilAhora()) return
+    setTimeout(() => {
+      const el = resultadosRef.current
+      if (!el) return
+      window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 12, behavior: 'instant' })
+    }, 0)
+  }
+
   const buscarConTexto = async (texto) => {
     const limpio = texto.trim()
     // Cada envío nuevo arranca de cero la ampliación semántica: si no la vuelve
     // a poblar la IA, no debe arrastrar los sinónimos del intento anterior.
     if (!limpio || esIdentificador(limpio)) {
       actualizar({ texto: limpio, terminos: [] })
+      if (limpio) llevarAResultados()
       return
     }
     setCargandoIA(true)
@@ -359,7 +430,7 @@ export function Buscar() {
       const huboAvanzados =
         sig.modalidad || sig.tipo || sig.estados.length ||
         sig.valorMin || sig.valorMax || sig.fechaDesde || sig.fechaHasta
-      if (huboAvanzados) setAvanzados(true)
+      if (huboAvanzados && !esMovilAhora()) setAvanzados(true)
 
       // Búsqueda y geografía en el MISMO update: los filtros geo viven en la
       // URL global (departamento/ciudad) y dos setParams seguidos no componen.
@@ -378,6 +449,7 @@ export function Buscar() {
       actualizar({ texto: limpio, terminos: [] })
     } finally {
       setCargandoIA(false)
+      llevarAResultados()
     }
   }
 
@@ -563,7 +635,7 @@ export function Buscar() {
                     type="search"
                     value={borrador}
                     onChange={(e) => setBorrador(e.target.value)}
-                    placeholder="alimentación escolar, acueducto, o el número del proceso…"
+                    placeholder="alimentación escolar en Cali"
                     className="flex-1 min-w-0 bg-transparent border-0 p-0 text-lectura
                                text-textPrimary placeholder:text-textSecondary/60
                                focus:outline-none"
@@ -633,6 +705,8 @@ export function Buscar() {
                 </button>
               </div>
             )}
+
+            {!avanzados && <FiltrosAplicados criterios={criterios} actualizar={actualizar} />}
 
             {/* Filtros avanzados: modalidad y tipo, plegados por defecto. Son de
                 uso experto y ensucian el flujo del ciudadano común, así que no
@@ -709,7 +783,7 @@ export function Buscar() {
                 </div>
               </div>
             ) : (
-              <div className="border-t-2 border-textPrimary pt-5">
+              <div ref={resultadosRef} className="border-t-2 border-textPrimary pt-5">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                   <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
                     Resultados

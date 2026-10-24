@@ -509,6 +509,30 @@ Queda como pregunta de método, no como error: hay crecimientos de plazo
 enormes (+3.964%: un contrato de 92 días ampliado 3.647) justo bajo el tope de
 3.650 días que hoy separa una prórroga de un error de digitación.
 
+### Revisión del Buscador en móvil (oct 2026)
+
+- **El directorio de entidades tenía 414 de 5.648.** `/api/directorio` guardaba
+  el catálogo en Edge Config, pero entero (~400 KB) no cabe: la escritura
+  fallaba con 400 todos los días, en silencio, y se servía una copia vieja.
+  "Alcaldía de Cali" no encontraba nada. Ahora es `public/directorio.json`,
+  recalculado a diario por `.github/workflows/directorio.yml` con guardas
+  (mínimo 4.000 entidades, sin caídas de más del 20%). La función se eliminó:
+  quedan 11 de las 12 del plan.
+- **"Alcaldía" se busca como se dice.** En SECOP la de Cali es "SANTIAGO DE CALI
+  DISTRITO ESPECIAL - …" y la de Sincelejo "MUNICIPIO DE SINCELEJO": alcaldía
+  acepta municipio/distrito, gobernación acepta departamento, y "de", "la"… no
+  cuentan.
+- **La IA ya no inventa tipo ni modalidad.** "Alimentación escolar en Cali…"
+  salía con tipo = Prestación de servicios y escondía 4 de los 8 contratos del
+  PAE de Cali en 2025. Ahora solo se conservan si la consulta los nombra
+  (`src/lib/mencionesIA.js`).
+- **Los resultados quedaban dos pantallas abajo** (primer contrato a 1.587 px):
+  el panel de filtros avanzados se abría solo y mide ~700 px. En el teléfono ya
+  no se abre; los filtros activos se ven como etiquetas que se quitan con un
+  toque, y al buscar la página baja a los resultados.
+- Títulos de noticias sin el medio repetido al final ("… - Semana"), y un
+  texto de ejemplo en la caja que cabe en 375 px.
+
 ### El buscador también busca en la prensa (oct 2026)
 
 Lo pendiente de "buscador general" (ver más abajo, el túnel de la

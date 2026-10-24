@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   extraerArreglo, resultadosReales, limpiarResultados, fechaDeAntiguedad, pareceProceso,
-  variantesProceso, coincideEntidad, pareceTitular,
+  variantesProceso, coincideEntidad, pareceTitular, sinMedioAlFinal,
 } from './busquedaWeb'
 
 const bloques = [
@@ -69,5 +69,10 @@ describe('fechas y títulos', () => {
   it('detecta títulos que no son titulares', () => {
     expect(pareceTitular('Carrera 69 No. 44-35 Piso 1 • Código Postal 111071')).toBe(false)
     expect(pareceTitular('El PAE de Sincelejo es de los más costosos')).toBe(true)
+  })
+  it('quita el medio al final del título, y nada más', () => {
+    expect(sinMedioAlFinal('Fueron seleccionados los operadores del PAE - Semana', 'Semana')).toBe('Fueron seleccionados los operadores del PAE')
+    expect(sinMedioAlFinal('Emcali sigue en la mira | El País', 'El País')).toBe('Emcali sigue en la mira')
+    expect(sinMedioAlFinal('Cali - Jamundí: la vía que no avanza', 'El País')).toBe('Cali - Jamundí: la vía que no avanza')
   })
 })

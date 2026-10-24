@@ -108,6 +108,19 @@ export function pareceTitular(t) {
   return !/(c[oó]digo postal|pbx|piso \d|carrera \d|calle \d|nit[: ]|tel[eé]fono)/i.test(s)
 }
 
+// El título de la página suele cerrar con el medio ("… - Semana", "… | El
+// País"), que la tarjeta ya muestra arriba. Se quita solo si lo que sigue al
+// separador es el nombre del medio, para no cortar un titular con guion.
+export function sinMedioAlFinal(titulo, fuente) {
+  const t = String(titulo || '').trim()
+  const m = t.match(/^(.*\S)\s+[-|–—]\s+([^-|–—]+)$/)
+  if (!m || !fuente) return t
+  const n = (x) => x.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '')
+  const cola = n(m[2])
+  const medio = n(fuente)
+  return cola && medio && (cola === medio || cola.startsWith(medio) || medio.startsWith(cola)) ? m[1] : t
+}
+
 // ¿Parece un número de proceso que valga la pena buscar en SECOP? En la
 // medición, el modelo devolvió a veces una frase ("Convenio interadministrativo
 // 1880 de 2014 y contrato de consultoría 02 de 2017"): eso no se busca.
@@ -137,12 +150,14 @@ export function limpiarResultados(delModelo, reales, hoy = new Date()) {
     vistos.add(real.url)
     let host = ''
     try { host = new URL(real.url).hostname.replace(/^www\./, '') } catch { /* sin host */ }
+    const fuente = String(x.fuente || host).trim()
     salida.push({
       url: real.url,
-      titulo: pareceTitular(real.title)
-        ? String(real.title).trim()
-        : String(x.titulo || real.title || '').trim(),
-      fuente: String(x.fuente || host).trim(),
+      titulo: sinMedioAlFinal(
+        pareceTitular(real.title) ? real.title : x.titulo || real.title,
+        fuente,
+      ),
+      fuente,
       dominio: host,
       fecha: FECHA_ISO.test(x.fecha || '') ? x.fecha : fechaDeAntiguedad(real.page_age, hoy),
       resumen: String(x.resumen || '').trim(),

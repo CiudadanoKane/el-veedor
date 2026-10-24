@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO } from '../src/lib/catalogos.js'
+import { mencionaTipo, mencionaModalidad } from '../src/lib/mencionesIA.js'
 import { excedeLimite } from '../src/lib/limiteTasa.js'
 import { socrataQuery } from '../src/lib/socrataClient.js'
 import { condicionProcesosPorReferencia } from '../src/lib/busquedaId.js'
@@ -185,6 +186,10 @@ export default async function handler(req, res) {
     if (filtros.modalidad && !MODALIDADES.includes(filtros.modalidad)) filtros.modalidad = ''
     if (filtros.tipo && !TIPOS_CONTRATO.includes(filtros.tipo)) filtros.tipo = ''
     filtros.estados = (filtros.estados || []).filter((e) => ESTADOS_CONTRATO.includes(e))
+    // Y solo si la persona los nombró: el modelo los deduce aunque se le pida
+    // que no, y un filtro que nadie pidió esconde contratos (src/lib/mencionesIA.js).
+    if (filtros.tipo && !mencionaTipo(consulta, filtros.tipo)) filtros.tipo = ''
+    if (filtros.modalidad && !mencionaModalidad(consulta, filtros.modalidad)) filtros.modalidad = ''
 
     // Ampliación semántica: se sanea (tope duro, sin vacíos, sin repetir el
     // texto principal ni entre sí, comparando sin tildes ni mayúsculas). El

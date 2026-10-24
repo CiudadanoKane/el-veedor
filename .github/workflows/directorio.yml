@@ -1,0 +1,69 @@
+name: Recalcular el directorio de entidades
+
+# El directorio de entidades del Buscador (~5.600, ~400 KB) no cabe en Edge
+# Config: con /api/directorio la escritura fallaba a diario y se servía una
+# copia vieja de 414 entidades. La consulta es rápida, así que se corre aquí una
+# vez al día y el resultado (public/directorio.json) se sirve como archivo
+# estático. Ver el encabezado de scripts/calcular-directorio.mjs.
+
+on:
+  schedule:
+    # 07:40 UTC = 02:40 en Colombia: antes de los otros precálculos (08:00 en
+    # adelante), que usan el mismo SOCRATA_TOKEN. Es una sola consulta corta.
+    - cron: '40 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: directorio
+  cancel-in-progress: false
+
+jobs:
+  calcular:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Verificar el token
+        env:
+          SOCRATA_TOKEN: ${{ secrets.SOCRATA_TOKEN }}
+        run: |
+          if [ -z "$SOCRATA_TOKEN" ]; then
+            echo "::error::Falta el secreto SOCRATA_TOKEN (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+
+      - name: Calcular el directorio
+        env:
+          SOCRATA_BASE: https://www.datos.gov.co/resource
+          SOCRATA_TOKEN: ${{ secrets.SOCRATA_TOKEN }}
+        run: node scripts/calcular-directorio.mjs
+
+      - name: Commitear si cambió
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git diff --quiet -- public/directorio.json; then
+            echo 'Sin cambios en el directorio.'
+            exit 0
+          fi
+          git add public/directorio.json
+          git commit -m 'Datos: recalcula el directorio de entidades'
+          # Traer lo que otros recálculos hayan subido mientras este corría y
+          # reintentar. Los cron de GitHub llegan con más de una hora de retraso, así
+          # que los tres terminan coincidiendo aunque estén escalonados; con un
+          # `git push` solo, el que llegaba segundo era rechazado y su archivo se
+          # perdía (oct 2026: el ranking de contratistas, dos días seguidos). Cada
+          # workflow toca un archivo distinto, así que el rebase no choca.
+          for intento in 1 2 3; do
+            git pull --rebase --quiet && git push && exit 0
+            sleep $((intento * 5))
+          done
+          exit 1

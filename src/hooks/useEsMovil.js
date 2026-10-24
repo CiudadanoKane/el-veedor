@@ -7,6 +7,11 @@ import { useEffect, useState } from 'react'
 // celda que trae su propia consulta la dispararía dos veces.
 const CONSULTA = '(max-width: 639px)'
 
+// Para decidir una sola vez, fuera de un render (p. ej. al enviar un formulario).
+export function esMovilAhora() {
+  return typeof window !== 'undefined' && window.matchMedia(CONSULTA).matches
+}
+
 export function useEsMovil() {
   const [esMovil, setEsMovil] = useState(
     () => typeof window !== 'undefined' && window.matchMedia(CONSULTA).matches

@@ -2,7 +2,7 @@ import { soloContratosValidos } from './soql.js'
 import { sinTildes } from './acentos.js'
 
 // El directorio completo de entidades, usado por useDirectorioEntidades.js
-// (modo desarrollo) y /api/directorio.js (producción, cacheado).
+// (modo desarrollo) y scripts/calcular-directorio.mjs (producción, precalculado).
 export function soqlDirectorio() {
   return `SELECT nombre_entidad, count(id_contrato) as n
           WHERE ${soloContratosValidos()}
