@@ -962,7 +962,7 @@ export function Buscar() {
               // Alertas): lo de arriba dice qué hacer, y la prensa sí se busca.
               <div ref={resultadosRef}>
                 <div className="mt-6">
-                  <ResumenPrensa consulta={consultaPrensa} lugar={lugarPrensa} />
+                  <ResumenPrensa consulta={consultaPrensa} lugar={lugarPrensa} contratos={0} />
                 </div>
                 {bloquePrensa}
               </div>
@@ -1047,10 +1047,12 @@ export function Buscar() {
                 )}
 
                 {/* Lo de la prensa también arriba: el puente del apodo al
-                    contrato y, si hay contratos, dos titulares. Ver
-                    ResumenPrensa. */}
+                    contrato si hay pocos contratos, o dos titulares si hay
+                    muchos. Ver ResumenPrensa. */}
                 <div className="mt-4">
-                  <ResumenPrensa consulta={consultaPrensa} lugar={lugarPrensa} conTitulares={resultados.length > 0} />
+                  {!queryContratos.isLoading && !buscandoDocs && (
+                    <ResumenPrensa consulta={consultaPrensa} lugar={lugarPrensa} contratos={resultados.length} />
+                  )}
                   <QueryState query={queryContratos}>
                     {() =>
                       resultados.length === 0 ? (

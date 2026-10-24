@@ -109,18 +109,25 @@ function Proceso({ r }) {
 
 // Lo de la prensa que va ARRIBA de los contratos. La sección completa queda
 // abajo, y con resultados quedaba debajo de 30 contratos: quien buscaba una
-// obra polémica no se enteraba de que había cobertura (oct 2026). Aquí van dos
-// cosas, cortas: el puente del apodo al contrato (ver pistasDeContrato en
-// src/lib/busquedaWeb.js) y, si se pide, los dos primeros titulares con un
-// enlace a la sección entera.
-export function ResumenPrensa({ consulta, lugar, conTitulares }) {
+// obra polémica no se enteraba de que había cobertura (oct 2026). Lleva una de
+// dos cosas, según cuántos contratos encontró la búsqueda:
+// - Pocos (3 o menos, incluido ninguno): el puente del apodo al contrato (ver
+//   pistasDeContrato en src/lib/busquedaWeb.js). Es el caso del apodo: "la gran
+//   vía" solo encontraba una ferretería llamada así. Con muchos, el puente
+//   repetía la lista o la contradecía (el PAE de 2026 para quien pidió 2025).
+// - Muchos: los dos primeros titulares, con un enlace a la sección entera.
+//   Con pocos, la sección ya queda a la vista y repetirlos sobra.
+const POCOS = 3
+
+export function ResumenPrensa({ consulta, lugar, contratos }) {
   const query = useBusquedaWeb(consulta, lugar)
   if (!import.meta.env.PROD || !consulta || !query.isSuccess) return null
 
   const resultados = query.data?.resultados ?? []
+  const pocos = contratos <= POCOS
   const vistos = new Set()
   const sugeridos = []
-  for (const o of query.data?.obras ?? []) {
+  for (const o of pocos ? query.data?.obras ?? [] : []) {
     for (const c of o.contratos) {
       if (vistos.has(c.id)) continue
       vistos.add(c.id)
@@ -128,7 +135,7 @@ export function ResumenPrensa({ consulta, lugar, conTitulares }) {
     }
   }
   const pistaTexto = (query.data?.obras ?? []).find((o) => o.tipo === 'obra')
-  const titulares = conTitulares ? resultados.slice(0, 2) : []
+  const titulares = pocos ? [] : resultados.slice(0, 2)
   if (!sugeridos.length && !titulares.length) return null
 
   return (
