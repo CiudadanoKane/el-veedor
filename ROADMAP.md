@@ -555,15 +555,29 @@ Córdoba"…). Lo que fallaba y cómo quedó:
   (`pistasDeContrato`). Lleva al tramo 1 (Gobernación, Consorcio Vial
   Barranquilla, $77.205 millones). La unidad funcional 2 (Edubar,
   EDUREG-022-2022) no está en SECOP II.
-- **Límites de la búsqueda en la prensa.** Con el razonamiento por defecto de
-  Haiku 5.5 tardaba 12-34 s y generaba 2.500-4.000 tokens; la función tiene 30 s,
-  así que a veces se cortaba ("no se pudo buscar"), y el tope de 4.096 tokens
-  quedó a 62 de cortar el JSON. Ahora: sin razonamiento, 3.000 tokens, 22 s de
-  espera sin reintentos, resumen de máximo 30 palabras, y extraerArreglo rescata
-  los resultados completos si la respuesta llega cortada. Medido: 7-10 s. Con 3
-  búsquedas (antes 2) el puente de "la gran vía" acierta 3 de 4 veces.
-- **La prensa, arriba.** `ResumenPrensa` va encima de los contratos: el puente y
-  dos titulares con enlace a la sección completa, que sigue abajo.
+- **Límites de la búsqueda en la prensa: dos llamadas.** Con el razonamiento por
+  defecto de Haiku 5.5 tardaba 12-34 s en una función de 30 s, y una respuesta
+  quedó a 62 tokens de cortarse. Comparación (8 preguntas reales × 3 corridas,
+  revisada a mano): (a) todo en una llamada sin razonamiento, 6 noticias: puente
+  correcto 9/15; (b) con razonamiento y 4 noticias: 14/15, pero 7 de 24 corridas
+  pasaron de 25 s (limitar las noticias no acorta el razonamiento); (c) separadas:
+  noticias en ~7 s y puente 10/15 en ~8 s. Quedó (c) con dos correcciones, que
+  subieron el puente: un consorcio o unión temporal se busca sin la figura ("UT
+  PAE Universal" = "CONSORCIO PAE UNIVERSAL"), y una empresa común solo junto con
+  la obra ("A Construir S.A." traía unas huertas por el Romelio Martínez).
+  Prueba final: gran vía, PAE de Sincelejo y túnel del Toyo correctos; Romelio,
+  Pumarejo y metro de la 80 sin falsos positivos (sus contratos no están en
+  SECOP II o no se encontraron).
+  - El puente es `?puente=1` del mismo endpoint (sin función nueva: siguen 11 de
+    12) y solo se pide con 3 contratos o menos.
+  - La espera se corta con `AbortSignal`: el `timeout` del SDK solo cubre las
+    cabeceras y dejó correr una llamada 118 s.
+  - Si la herramienta de búsqueda falla (pasa: "alimentación escolar en Cali"
+    volvió vacía dos veces), no se guarda en el CDN como "no hay noticias".
+
+- **La prensa, arriba.** `ResumenPrensa` va encima de los contratos: el puente
+  si hay 3 contratos o menos, dos titulares con enlace a la sección completa si
+  hay más.
 
 ### Revisión del Buscador en móvil (oct 2026)
 

@@ -4,22 +4,38 @@ import { useQuery } from '@tanstack/react-query'
 // api/buscar-ia.js). Solo en producción: el servidor de desarrollo de Vite no
 // sirve /api. Cada consulta cuesta (~US$0,016), así que se guarda una hora en
 // el navegador y doce en el CDN.
-// El lugar no cambia lo que se busca en la prensa (ya va en la consulta), sino
-// dónde se buscan en SECOP los contratos que nombran las noticias.
-export function useBusquedaWeb(consulta, { departamento = '', ciudad = '' } = {}) {
+export function useBusquedaWeb(consulta) {
   const q = (consulta || '').trim()
   return useQuery({
-    queryKey: ['busqueda-web', q, departamento, ciudad],
+    queryKey: ['busqueda-web', q],
     enabled: import.meta.env.PROD && q.length >= 3,
     staleTime: 60 * 60 * 1000,
     retry: false,
-    queryFn: async () => {
-      const params = new URLSearchParams({ web: '1', q })
+    queryFn: () => pedir(new URLSearchParams({ web: '1', q })),
+  })
+}
+
+// El puente del apodo al contrato: aparte, porque razona y tarda más, y solo
+// se pide (`activo`) cuando la búsqueda en SECOP trajo poco. El lugar dice
+// dónde buscar en SECOP los contratos que nombran las fuentes.
+export function usePuentePrensa(consulta, { departamento = '', ciudad = '' } = {}, activo = true) {
+  const q = (consulta || '').trim()
+  return useQuery({
+    queryKey: ['puente-prensa', q, departamento, ciudad],
+    enabled: import.meta.env.PROD && activo && q.length >= 3,
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+    queryFn: () => {
+      const params = new URLSearchParams({ puente: '1', q })
       if (departamento) params.set('departamento', departamento)
       if (ciudad) params.set('ciudad', ciudad)
-      const res = await fetch(`/api/buscar-ia?${params}`)
-      if (!res.ok) throw new Error(`búsqueda web: ${res.status}`)
-      return res.json()
+      return pedir(params)
     },
   })
+}
+
+async function pedir(params) {
+  const res = await fetch(`/api/buscar-ia?${params}`)
+  if (!res.ok) throw new Error(`búsqueda web: ${res.status}`)
+  return res.json()
 }

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   extraerArreglo, resultadosReales, limpiarResultados, fechaDeAntiguedad, pareceProceso,
   variantesProceso, coincideEntidad, pareceTitular, sinMedioAlFinal,
-  pareceNombreObra, pistasDeContrato, soqlContratosPorPista,
+  pareceNombreObra, pistasDelPuente, busquedaFallida, nucleoDeContratista, extraerObjeto, soqlContratosPorPista,
 } from './busquedaWeb'
 
 const bloques = [
@@ -85,16 +85,37 @@ describe('el puente del apodo al contrato', () => {
     expect(pareceNombreObra(null)).toBe(false)
   })
 
-  it('prefiere el contratista, no repite y descarta lo que ya se buscó', () => {
-    const resultados = [
-      { obraMencionada: 'Corredor Universitario', contratistaMencionado: null },
-      { obraMencionada: 'corredor universitario', contratistaMencionado: 'Consorcio Vial Barranquilla' },
-      { obraMencionada: 'La Gran Vía', contratistaMencionado: null },
-    ]
-    expect(pistasDeContrato(resultados, 'contrato de la gran via en Atlántico')).toEqual([
-      { tipo: 'contratista', frase: 'Consorcio Vial Barranquilla' },
+  it('consorcio por su nombre sin la figura; obras sin el apodo', () => {
+    const puente = {
+      obras: ['Corredor Universitario', 'corredor universitario', 'Gran Vía segunda unidad funcional'],
+      contratistas: ['Consorcio Vial Barranquilla'],
+    }
+    expect(pistasDelPuente(puente, 'contrato de la gran vía en Atlántico')).toEqual([
+      { tipo: 'contratista', frase: 'vial barranquilla' },
       { tipo: 'obra', frase: 'Corredor Universitario' },
     ])
+  })
+
+  it('"UT" y "Consorcio" se buscan igual', () => {
+    expect(nucleoDeContratista('UT PAE Universal 2024-2027')).toEqual({ nucleo: 'pae universal 2024-2027', figura: true })
+    expect(nucleoDeContratista('Unión Temporal Metro de la 80').nucleo).toBe('metro de la 80')
+  })
+
+  it('una empresa común solo se busca junto con la obra', () => {
+    expect(pistasDelPuente({ obras: [], contratistas: ['A Construir S.A.'] }, 'estadio Romelio Martínez')).toEqual([])
+    const conObra = pistasDelPuente(
+      { obras: ['Túnel Guillermo Gaviria'], contratistas: ['Construcciones El Cóndor'] },
+      'el túnel del Toyo',
+    )
+    expect(conObra[0]).toEqual({ tipo: 'empresa', frase: 'construcciones el condor', obra: 'Túnel Guillermo Gaviria' })
+    const q = soqlContratosPorPista(conObra[0])
+    expect(q).toContain("caseless_contains(proveedor_adjudicado, 'construcciones el condor')")
+    expect(q).toContain("caseless_contains(objeto_del_contrato, 'tunel guillermo gaviria')")
+  })
+
+  it('tolera texto alrededor del objeto', () => {
+    expect(extraerObjeto('Aquí va: {"obras":["X Y"]} listo')).toEqual({ obras: ['X Y'] })
+    expect(extraerObjeto('nada')).toEqual({})
   })
 
   it('busca la obra en el objeto y el contratista en el proveedor, con y sin tildes', () => {
@@ -120,5 +141,14 @@ describe('extraerArreglo con la respuesta cortada', () => {
   })
   it('sin ningún objeto completo devuelve []', () => {
     expect(extraerArreglo('[{"url":"a","tit')).toEqual([])
+  })
+})
+
+describe('busquedaFallida', () => {
+  it('una búsqueda sin resultados o con error es una falla, no "no hay noticias"', () => {
+    expect(busquedaFallida([{ type: 'web_search_tool_result', content: [] }])).toBe(true)
+    expect(busquedaFallida([{ type: 'web_search_tool_result', content: { type: 'web_search_tool_result_error', error_code: 'unavailable' } }])).toBe(true)
+    expect(busquedaFallida(bloques)).toBe(false)
+    expect(busquedaFallida([{ type: 'text', text: '[]' }])).toBe(false)
   })
 })

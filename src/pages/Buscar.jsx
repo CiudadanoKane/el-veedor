@@ -693,7 +693,7 @@ export function Buscar() {
       ].filter(Boolean).join(' ')
     : ''
   const lugarPrensa = { departamento: filters.department, ciudad: filters.city }
-  const bloquePrensa = consultaPrensa && <ResultadosWeb consulta={consultaPrensa} lugar={lugarPrensa} />
+  const bloquePrensa = consultaPrensa && <ResultadosWeb consulta={consultaPrensa} />
   const hayLocales = resultados.some((r) => (r.prioridadLugar ?? 2) < 2)
   const hayMas = queryContratos.data?.hayMas || queryDocumentos.data?.hayMas
 
@@ -960,12 +960,7 @@ export function Buscar() {
               // Se entendió la pregunta pero no queda nada que buscar en SECOP
               // todavía (falta elegir la entidad, o la respuesta está en
               // Alertas): lo de arriba dice qué hacer, y la prensa sí se busca.
-              <div ref={resultadosRef}>
-                <div className="mt-6">
-                  <ResumenPrensa consulta={consultaPrensa} lugar={lugarPrensa} contratos={0} />
-                </div>
-                {bloquePrensa}
-              </div>
+              <div ref={resultadosRef}>{bloquePrensa}</div>
             ) : !activa ? (
               <div className="border-t-2 border-textPrimary pt-6">
                 <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">

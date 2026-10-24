@@ -30,35 +30,49 @@ export const DOMINIOS_WEB = [
   'secop.gov.co', 'colombiacompra.gov.co', 'contraloria.gov.co', 'procuraduria.gov.co', 'fiscalia.gov.co',
 ]
 
-export const MAX_RESULTADOS_WEB = 6
+export const MAX_RESULTADOS_WEB = 5
 
+// Dos llamadas distintas, medidas en oct 2026 (8 preguntas reales × 3 corridas,
+// ver ROADMAP "Límites de la búsqueda en la prensa"):
+// - las noticias, que ve todo el mundo: leer y resumir no necesita razonar, y
+//   sin razonamiento salen en ~7 s;
+// - el puente al contrato (promptPuente), que sí lo necesita —deducir que "la
+//   Gran Vía" es el "Corredor Universitario"— y solo corre cuando la búsqueda
+//   en SECOP trajo poco. Juntas en una sola llamada sin razonamiento, el puente
+//   acertaba 9 de 15; con razonamiento, 14 de 15, pero 7 de 24 corridas pasaban
+//   de 25 s en una función que tiene 30.
 export function promptWeb() {
   return (
     'Eres el buscador de El Veedor, una plataforma de veeduría ciudadana de la contratación pública ' +
     'en Colombia. Busca en la web lo que pide la persona —puede escribir como habla, con el nombre ' +
-    'popular de una obra o un programa—. Si usa un nombre popular, dedica una de tus búsquedas ' +
-    'a encontrar el nombre oficial del proyecto o el contratista (p. ej. "<nombre popular> ' +
-    'contratista consorcio"). Devuelve SOLO un arreglo JSON, sin texto alrededor, con ' +
+    'popular de una obra o un programa— y devuelve SOLO un arreglo JSON, sin texto alrededor, con ' +
     `hasta ${MAX_RESULTADOS_WEB} resultados relevantes sobre contratación pública. Cada uno con:\n` +
     '- "url": exactamente la URL del resultado de búsqueda, sin modificarla.\n' +
     '- "titulo": el titular o nombre del documento, en pocas palabras.\n' +
     '- "fuente": nombre del medio o sitio.\n' +
     '- "fecha": AAAA-MM-DD si la fuente la indica; si no, null.\n' +
-    '- "resumen": una frase de máximo 30 palabras, en español sencillo, con lo que dice la fuente sobre el contrato o la ' +
-    'obra. Solo lo que la fuente dice: no acuses ni concluyas más allá.\n' +
+    '- "resumen": una frase de máximo 30 palabras, en español sencillo, con lo que dice la fuente ' +
+    'sobre el contrato o la obra. Solo lo que la fuente dice: no acuses ni concluyas más allá.\n' +
     '- "proceso": el número de proceso o de contrato tal como lo escribe la fuente (p. ej. ' +
     '"LP-005-2020"), si lo menciona; si no, null. Solo el número, sin palabras alrededor.\n' +
     '- "entidad": la entidad pública contratante que menciona la fuente (p. ej. "Alcaldía de ' +
     'Sincelejo"), si la menciona; si no, null.\n' +
-    '- "obra": el nombre oficial o técnico de la obra o el proyecto, en 2 a 6 palabras, si la ' +
-    'fuente lo menciona en cualquier parte, aunque sea de pasada. Es el nombre con que la ' +
-    'entidad lo registraría en el contrato, NO el apodo que usa la persona: si buscan "la Gran ' +
-    'Vía" y la noticia habla del "Corredor Universitario", devuelve "Corredor Universitario". ' +
-    'Nunca devuelvas el apodo ni una frase que lo contenga ("Gran Vía", "Gran Vía segunda ' +
-    'unidad funcional"): si la fuente solo usa el apodo, null.\n' +
-    '- "contratista": la empresa, consorcio o unión temporal que ejecuta el contrato, tal como ' +
-    'lo nombra la fuente (p. ej. "Consorcio Vial Barranquilla"), si lo menciona; si no, null.\n' +
     'Si no encuentras nada relevante, devuelve [].'
+  )
+}
+
+export function promptPuente() {
+  return (
+    'Eres el buscador de El Veedor, una plataforma de veeduría ciudadana de la contratación pública ' +
+    'en Colombia. La persona busca un contrato y quizá lo nombra como lo llama la gente o la prensa ' +
+    '(un apodo). Busca en la web cómo se llama oficialmente esa obra o proyecto —el nombre con que la ' +
+    'entidad lo registraría en el contrato— y qué empresa, consorcio o unión temporal lo ejecuta. ' +
+    'Devuelve SOLO un objeto JSON, sin texto alrededor:\n' +
+    '{"obras": [hasta 2 nombres oficiales de 2 a 6 palabras; nunca el apodo ni una frase que lo ' +
+    'contenga], "contratistas": [hasta 2 nombres tal como los escribe la fuente], "entidad": la ' +
+    'entidad contratante o null, "fuentes": [las URL exactas de los resultados de búsqueda donde lo ' +
+    'encontraste]}\n' +
+    'Solo lo que digan las fuentes; si no lo encuentras, listas vacías.'
   )
 }
 
@@ -97,6 +111,16 @@ export function resultadosReales(content) {
     }
   }
   return reales
+}
+
+// ¿Falló la búsqueda misma? La herramienta a veces no devuelve nada o devuelve
+// un error (medido oct 2026: "alimentación escolar en Cali" volvió vacía dos
+// veces seguidas y a la tercera trajo 14 resultados). Eso no es "no hay
+// noticias", y no se debe guardar como tal.
+export function busquedaFallida(content) {
+  const bloques = (content || []).filter((b) => b?.type === 'web_search_tool_result')
+  if (!bloques.length) return false
+  return bloques.some((b) => !Array.isArray(b.content)) || resultadosReales(content).size === 0
 }
 
 // "1570 days ago", "3 months ago", "2 hours ago" o una fecha: a AAAA-MM-DD.
@@ -184,8 +208,6 @@ export function limpiarResultados(delModelo, reales, hoy = new Date()) {
       resumen: String(x.resumen || '').trim(),
       procesoMencionado: pareceProceso(x.proceso) ? String(x.proceso).trim() : null,
       entidadMencionada: x.entidad ? String(x.entidad).trim() : null,
-      obraMencionada: pareceNombreObra(x.obra) ? String(x.obra).trim() : null,
-      contratistaMencionado: pareceNombreObra(x.contratista) ? String(x.contratista).trim() : null,
     })
     if (salida.length >= MAX_RESULTADOS_WEB) break
   }
@@ -210,22 +232,75 @@ export function pareceNombreObra(s) {
 
 const plano = (x) => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
 
-// Las pistas que vale la pena buscar en SECOP: el nombre oficial de la obra
-// (en el objeto del contrato) y el contratista (en proveedor_adjudicado), que
-// la prensa nombra casi siempre y es lo más exacto que hay —"Consorcio Vial
-// Barranquilla" lleva directo al tramo 1 de la Gran Vía—. Sin repetir, y sin
-// lo que ya está en lo que escribió la persona (eso ya se buscó arriba).
-export function pistasDeContrato(resultados, consulta, max = 3) {
-  const ya = plano(consulta)
-  const vistas = new Set()
+// El objeto que devuelve el puente, tolerando texto alrededor.
+export function extraerObjeto(texto) {
+  const i = texto.indexOf('{')
+  const j = texto.lastIndexOf('}')
+  if (i === -1 || j <= i) return {}
+  try {
+    const v = JSON.parse(texto.slice(i, j + 1))
+    return v && typeof v === 'object' && !Array.isArray(v) ? v : {}
+  } catch {
+    return {}
+  }
+}
+
+const VACIAS = new Set(['el', 'la', 'los', 'las', 'de', 'del', 'en', 'y', 'a', 'al', 'por', 'para', 'con'])
+
+// ¿La frase repite el apodo? "Gran Vía segunda unidad funcional" lleva dentro
+// "gran vía", que es justo lo que ya se buscó sin éxito. Se mira si contiene
+// dos palabras seguidas (sin las vacías) de lo que escribió la persona.
+function repiteLaConsulta(frase, consulta) {
+  const palabras = plano(consulta).split(/[^a-z0-9ñ]+/).filter((p) => p.length > 2 && !VACIAS.has(p))
+  const f = plano(frase)
+  if (palabras.length === 1) return f.includes(palabras[0])
+  for (let i = 0; i + 1 < palabras.length; i++) {
+    if (f.includes(`${palabras[i]} ${palabras[i + 1]}`)) return true
+  }
+  return false
+}
+
+// "UT PAE Universal 2024-2027" en la prensa es "CONSORCIO PAE UNIVERSAL
+// 2024-2027" en SECOP: el tipo de figura se escribe como sea, así que se busca
+// el nombre sin él ("pae universal 2024-2027"). Dice también si ERA un
+// consorcio o una unión temporal.
+const FIGURA = /^(consorcio|union temporal|u\.?\s?t\.?)\s+/
+export function nucleoDeContratista(nombre) {
+  const t = plano(nombre).replace(/\s+/g, ' ')
+  const m = t.match(FIGURA)
+  return { nucleo: m ? t.slice(m[0].length).trim() : t, figura: !!m }
+}
+
+// De lo que encontró el puente a lo que se busca en SECOP. Dos correcciones
+// que salieron de la medición:
+// - un consorcio o una unión temporal se arma para UNA obra y suele llevar su
+//   nombre, así que basta con él. Una empresa común no: "A Construir S.A."
+//   traía unas huertas urbanas por el estadio Romelio Martínez. A una empresa
+//   solo se la busca junto con la obra (tipo "empresa").
+// - nada que repita el apodo.
+export function pistasDelPuente(puente, consulta, max = 3) {
+  const obras = (puente?.obras || [])
+    .filter((o) => typeof o === 'string' && pareceNombreObra(o) && !repiteLaConsulta(o, consulta))
+    .map((o) => o.trim())
+  const porContratista = []
+  for (const c of puente?.contratistas || []) {
+    if (typeof c !== 'string') continue
+    const { nucleo, figura } = nucleoDeContratista(c)
+    if (nucleo.length < 6) continue
+    if (figura) porContratista.push({ tipo: 'contratista', frase: nucleo })
+    else if (obras[0]) porContratista.push({ tipo: 'empresa', frase: nucleo, obra: obras[0] })
+  }
+  const porObra = obras.map((o) => ({ tipo: 'obra', frase: o }))
+  // Alternadas: con dos contratistas primero, la obra quedaba fuera del tope.
   const salida = []
-  for (const campo of ['contratistaMencionado', 'obraMencionada']) {
-    for (const r of resultados) {
-      const f = r[campo]
-      const k = plano(f)
-      if (!f || vistas.has(k) || ya.includes(k)) continue
+  const vistas = new Set()
+  for (let i = 0; i < Math.max(porContratista.length, porObra.length); i++) {
+    for (const p of [porContratista[i], porObra[i]]) {
+      if (!p) continue
+      const k = `${p.tipo}|${plano(p.frase)}|${plano(p.obra)}`
+      if (vistas.has(k)) continue
       vistas.add(k)
-      salida.push({ tipo: campo === 'obraMencionada' ? 'obra' : 'contratista', frase: f })
+      salida.push(p)
     }
   }
   return salida.slice(0, max)
@@ -236,14 +311,19 @@ export function pistasDeContrato(resultados, consulta, max = 3) {
 // PAE de Boyacá y de Bogotá, de cientos de miles de millones, como "lo que
 // buscas". Con y sin tildes, porque la API las distingue y SECOP las usa a
 // veces sí, a veces no.
-export function soqlContratosPorPista({ tipo, frase }, limite = 4, lugar = {}) {
+export function soqlContratosPorPista({ tipo, frase, obra }, limite = 4, lugar = {}) {
   const campo = tipo === 'obra' ? 'objeto_del_contrato' : 'proveedor_adjudicado'
-  const variantes = [...new Set([frase.toLowerCase(), plano(frase)])]
-  const texto = variantes.map((v) => `caseless_contains(${campo}, '${esc(v)}')`).join(' OR ')
+  let texto = contiene(campo, frase)
+  if (tipo === 'empresa' && obra) texto = `(${texto}) AND (${contiene('objeto_del_contrato', obra)})`
   return `SELECT id_contrato, referencia_del_contrato, nombre_entidad, proveedor_adjudicado,
     objeto_del_contrato, valor_del_contrato, fecha_de_firma
     WHERE ${soloContratosValidos()} AND (${texto})${condicionLugar(lugar)}
     ORDER BY valor_del_contrato DESC LIMIT ${limite + 1}`
+}
+
+function contiene(campo, frase) {
+  const variantes = [...new Set([String(frase).toLowerCase(), plano(frase)])]
+  return variantes.map((v) => `caseless_contains(${campo}, '${esc(v)}')`).join(' OR ')
 }
 
 function condicionLugar({ departamento, ciudad } = {}) {

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useBusquedaWeb } from '../../hooks/useBusquedaWeb'
+import { useBusquedaWeb, usePuentePrensa } from '../../hooks/useBusquedaWeb'
 import { formatDate, formatCOP } from '../../lib/formatters'
 
 // "En las noticias y fuentes públicas": lo que la prensa y los órganos de
@@ -13,8 +13,8 @@ import { formatDate, formatCOP } from '../../lib/formatters'
 // así, y el enlace al medio va siempre a la vista para leer el original.
 export const ID_PRENSA = 'en-la-prensa'
 
-export function ResultadosWeb({ consulta, lugar }) {
-  const query = useBusquedaWeb(consulta, lugar)
+export function ResultadosWeb({ consulta }) {
+  const query = useBusquedaWeb(consulta)
   if (!import.meta.env.PROD || !consulta) return null
 
   const resultados = query.data?.resultados ?? []
@@ -111,105 +111,142 @@ function Proceso({ r }) {
 // abajo, y con resultados quedaba debajo de 30 contratos: quien buscaba una
 // obra polémica no se enteraba de que había cobertura (oct 2026). Lleva una de
 // dos cosas, según cuántos contratos encontró la búsqueda:
-// - Pocos (3 o menos, incluido ninguno): el puente del apodo al contrato (ver
-//   pistasDeContrato en src/lib/busquedaWeb.js). Es el caso del apodo: "la gran
-//   vía" solo encontraba una ferretería llamada así. Con muchos, el puente
-//   repetía la lista o la contradecía (el PAE de 2026 para quien pidió 2025).
+// - Pocos (3 o menos, incluido ninguno): el puente del apodo al contrato, que
+//   se pide aparte (ver promptPuente en src/lib/busquedaWeb.js). Es el caso del
+//   apodo: "la gran vía" solo encontraba una ferretería llamada así. Con
+//   muchos, el puente repetía la lista o la contradecía (el PAE de 2026 para
+//   quien pidió 2025), y no se paga.
 // - Muchos: los dos primeros titulares, con un enlace a la sección entera.
 //   Con pocos, la sección ya queda a la vista y repetirlos sobra.
 const POCOS = 3
 
 export function ResumenPrensa({ consulta, lugar, contratos }) {
-  const query = useBusquedaWeb(consulta, lugar)
-  if (!import.meta.env.PROD || !consulta || !query.isSuccess) return null
-
-  const resultados = query.data?.resultados ?? []
   const pocos = contratos <= POCOS
+  if (!import.meta.env.PROD || !consulta) return null
+  return pocos ? <PuentePrensa consulta={consulta} lugar={lugar} /> : <TitularesPrensa consulta={consulta} />
+}
+
+const CAJA = 'mb-5 border-l-4 border-primary bg-textPrimary/[0.04] px-4 py-3 max-w-3xl'
+
+function PuentePrensa({ consulta, lugar }) {
+  const query = usePuentePrensa(consulta, lugar)
+
+  // Tarda (razona y busca en la web): mejor decir qué se está haciendo que
+  // dejar un hueco que aparece de golpe.
+  if (query.isLoading) {
+    return (
+      <p className={`${CAJA} flex items-center gap-2 text-nota text-textSecondary`}>
+        <span className="h-3 w-3 shrink-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+        Buscando en la prensa cómo se llama oficialmente lo que buscas…
+      </p>
+    )
+  }
+  if (!query.isSuccess) return null
+
+  const obras = query.data?.obras ?? []
   const vistos = new Set()
   const sugeridos = []
-  for (const o of pocos ? query.data?.obras ?? [] : []) {
+  for (const o of obras) {
     for (const c of o.contratos) {
       if (vistos.has(c.id)) continue
       vistos.add(c.id)
       sugeridos.push({ ...c, pista: o })
     }
   }
-  const pistaTexto = (query.data?.obras ?? []).find((o) => o.tipo === 'obra')
-  const titulares = pocos ? [] : resultados.slice(0, 2)
-  if (!sugeridos.length && !titulares.length) return null
+  if (!sugeridos.length) return null
+  const pistaTexto = obras.find((o) => o.tipo === 'obra')
+  const fuentes = query.data?.fuentes ?? []
+  const pista = sugeridos[0].pista
 
   return (
-    <div className="mb-5 border-l-4 border-primary bg-textPrimary/[0.04] px-4 py-3 max-w-3xl">
-      {sugeridos.length > 0 && (
-        <>
-          <p className="text-cuerpo font-semibold text-textPrimary leading-snug">
-            Según la prensa, esto podría ser lo que buscas:
-          </p>
-          <ul className="mt-2 space-y-2">
-            {sugeridos.slice(0, 2).map((c) => (
-              <li key={c.id}>
-                <Link
-                  to={`/buscar?${new URLSearchParams({ q: c.id })}`}
-                  className="text-cuerpo font-semibold text-primary enlace-visible leading-snug"
-                >
-                  {recortar(c.objeto, 90)}
-                </Link>
-                <p className="text-nota text-textSecondary leading-snug">
-                  {c.entidad} · {c.contratista} · {formatCOP(c.valor)}
-                  {c.fecha && <> · {formatDate(c.fecha)}</>}
-                </p>
-              </li>
+    <div className={CAJA}>
+      <p className="text-cuerpo font-semibold text-textPrimary leading-snug">
+        Según la prensa, esto podría ser lo que buscas:
+      </p>
+      <ul className="mt-2 space-y-2">
+        {sugeridos.slice(0, 2).map((c) => (
+          <li key={c.id}>
+            <Link
+              to={`/buscar?${new URLSearchParams({ q: c.id })}`}
+              className="text-cuerpo font-semibold text-primary enlace-visible leading-snug"
+            >
+              {recortar(c.objeto, 90)}
+            </Link>
+            <p className="text-nota text-textSecondary leading-snug">
+              {c.entidad} · {c.contratista} · {formatCOP(c.valor)}
+              {c.fecha && <> · {formatDate(c.fecha)}</>}
+            </p>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-nota text-textSecondary leading-snug">
+        Lo encontramos en SECOP por{' '}
+        {pista.tipo === 'obra' ? 'el nombre oficial de la obra' : 'el contratista'} que dan las
+        fuentes («{pista.frase}»)
+        {fuentes.length > 0 && (
+          <>
+            {', según '}
+            {fuentes.map((f, i) => (
+              <span key={f.url}>
+                {i > 0 && ' y '}
+                <a href={f.url} target="_blank" rel="noopener noreferrer" className="enlace-sutil" title={f.titulo}>
+                  {f.dominio} ↗
+                </a>
+              </span>
             ))}
-          </ul>
-          <p className="mt-2 text-nota text-textSecondary leading-snug">
-            Lo encontramos en SECOP por{' '}
-            {sugeridos[0].pista.tipo === 'obra' ? 'el nombre de la obra' : 'el contratista'} que
-            nombran las noticias («{sugeridos[0].pista.frase}»). Compruébalo en el detalle.
-            {pistaTexto && (
-              <>
-                {' '}
-                <Link
-                  to={`/buscar?${new URLSearchParams({
-                    q: pistaTexto.frase,
-                    ...(lugar?.departamento && { departamento: lugar.departamento }),
-                    ...(lugar?.ciudad && { ciudad: lugar.ciudad }),
-                  })}`}
-                  className="font-semibold text-primary enlace-sutil"
-                >
-                  Ver todos los contratos que nombran «{pistaTexto.frase}» →
-                </Link>
-              </>
-            )}
-          </p>
-        </>
-      )}
+          </>
+        )}
+        . Compruébalo en el detalle.
+        {pistaTexto && (
+          <>
+            {' '}
+            <Link
+              to={`/buscar?${new URLSearchParams({
+                q: pistaTexto.frase,
+                ...(lugar?.departamento && { departamento: lugar.departamento }),
+                ...(lugar?.ciudad && { ciudad: lugar.ciudad }),
+              })}`}
+              className="font-semibold text-primary enlace-sutil"
+            >
+              Ver todos los contratos que nombran «{pistaTexto.frase}» →
+            </Link>
+          </>
+        )}
+      </p>
+    </div>
+  )
+}
 
-      {titulares.length > 0 && (
-        <div className={sugeridos.length ? 'mt-3 pt-3 border-t border-textPrimary/15' : ''}>
-          <p className="text-micro uppercase tracking-label text-textSecondary font-semibold">
-            En la prensa
-          </p>
-          <ul className="mt-1 space-y-1">
-            {titulares.map((r) => (
-              <li key={r.url} className="text-cuerpo leading-snug">
-                <a
-                  href={r.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold enlace-perfil enlace-visible"
-                >
-                  {r.titulo} <span aria-hidden>↗</span>
-                </a>{' '}
-                <span className="text-nota text-textSecondary">{r.fuente}</span>
-              </li>
-            ))}
-          </ul>
-          {resultados.length > titulares.length && (
-            <a href={`#${ID_PRENSA}`} className="mt-1.5 inline-block text-nota font-semibold text-primary enlace-sutil">
-              Ver las {resultados.length} noticias y fuentes ↓
-            </a>
-          )}
-        </div>
+function TitularesPrensa({ consulta }) {
+  const query = useBusquedaWeb(consulta)
+  const resultados = query.data?.resultados ?? []
+  const titulares = resultados.slice(0, 2)
+  if (!titulares.length) return null
+
+  return (
+    <div className={CAJA}>
+      <p className="text-micro uppercase tracking-label text-textSecondary font-semibold">
+        En la prensa
+      </p>
+      <ul className="mt-1 space-y-1">
+        {titulares.map((r) => (
+          <li key={r.url} className="text-cuerpo leading-snug">
+            <a
+              href={r.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold enlace-perfil enlace-visible"
+            >
+              {r.titulo} <span aria-hidden>↗</span>
+            </a>{' '}
+            <span className="text-nota text-textSecondary">{r.fuente}</span>
+          </li>
+        ))}
+      </ul>
+      {resultados.length > titulares.length && (
+        <a href={`#${ID_PRENSA}`} className="mt-1.5 inline-block text-nota font-semibold text-primary enlace-sutil">
+          Ver las {resultados.length} noticias y fuentes ↓
+        </a>
       )}
     </div>
   )

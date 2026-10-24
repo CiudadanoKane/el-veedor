@@ -6,7 +6,8 @@ import { socrataQuery } from '../src/lib/socrataClient.js'
 import { condicionProcesosPorReferencia } from '../src/lib/busquedaId.js'
 import {
   MODELO_WEB, DOMINIOS_WEB, promptWeb, extraerArreglo, resultadosReales,
-  limpiarResultados, variantesProceso, coincideEntidad, pistasDeContrato, soqlContratosPorPista,
+  limpiarResultados, variantesProceso, coincideEntidad, promptPuente, extraerObjeto, pistasDelPuente, busquedaFallida,
+  soqlContratosPorPista,
 } from '../src/lib/busquedaWeb.js'
 
 const client = new Anthropic()
@@ -161,6 +162,10 @@ export default async function handler(req, res) {
   // funciones y ya están las 12. Es GET para que el CDN guarde la respuesta:
   // la misma búsqueda repetida ("PAE Sincelejo") no vuelve a costar.
   if (req.method === 'GET' && req.query?.web === '1') return buscarEnLaWeb(req, res)
+  // El puente del apodo al contrato, en su propia petición: así tiene sus
+  // propios 30 s y solo se paga cuando la búsqueda en SECOP trajo poco. Ver
+  // promptPuente en src/lib/busquedaWeb.js.
+  if (req.method === 'GET' && req.query?.puente === '1') return puenteAlContrato(req, res)
 
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'method not allowed' })
@@ -251,15 +256,17 @@ export default async function handler(req, res) {
 const DS_PROCESOS = 'p6dx-8zbt'
 const DS_CONTRATOS = 'jbjy-vk9h'
 
-async function buscarEnLaWeb(req, res) {
+// La consulta de una búsqueda en la web, validada, o null si ya se respondió
+// con el error.
+function consultaWeb(req, res) {
   const consulta = String(req.query.q || '').trim()
   if (consulta.length < 3) {
     res.status(400).json({ error: 'consulta demasiado corta' })
-    return
+    return null
   }
   if (consulta.length > 200) {
     res.status(400).json({ error: 'consulta demasiado larga' })
-    return
+    return null
   }
   // Mismo tope que la interpretación con IA (comparten contador por IP): cada
   // llamada cuesta. Solo cuenta lo que no sirve el CDN.
@@ -267,24 +274,30 @@ async function buscarEnLaWeb(req, res) {
   if (exceso) {
     res.setHeader('Retry-After', String(exceso.segundos))
     res.status(429).json({ error: 'demasiadas búsquedas seguidas', reintentarEn: exceso.segundos })
-    return
+    return null
   }
+  return consulta
+}
+
+async function buscarEnLaWeb(req, res) {
+  const consulta = consultaWeb(req, res)
+  if (!consulta) return
 
   try {
-    // Límites, medidos en oct 2026 con 3 consultas reales. La función tiene 30 s
-    // (vercel.json) y con el razonamiento por defecto de Haiku 5.5 la búsqueda
-    // tardaba 12-34 s y generaba 2.500-4.000 tokens, uno de ellos a 62 del tope:
-    // pasado el tope el JSON queda cortado, y pasados los 30 s la persona ve
-    // "no se pudo buscar". Sin razonamiento: 8,4 s y ~1.950 tokens, con la
-    // misma calidad (la tarea es leer y resumir, no deducir).
-    // - thinking desactivado (Haiku 5.5 lo acepta con effort bajo);
+    // Límites, medidos en oct 2026. La función tiene 30 s (vercel.json) y con
+    // el razonamiento por defecto de Haiku 5.5 la búsqueda tardaba 12-34 s y
+    // generaba 2.500-4.000 tokens, uno de ellos a 62 del tope: pasado el tope
+    // el JSON queda cortado, y pasados los 30 s la persona ve "no se pudo
+    // buscar". Leer y resumir noticias no necesita razonar; deducir el nombre
+    // oficial de una obra sí, y por eso va aparte (puenteAlContrato).
+    // - thinking desactivado (Haiku 5.5 lo acepta con effort bajo): ~7 s;
     // - max_tokens con un 50 % de margen sobre lo medido;
     // - 22 s de espera y sin reintentos: deja tiempo a la verificación en
-    //   SECOP dentro de los 30 s;
+    //   SECOP dentro de los 30 s. Con una señal de cancelación y no con el
+    //   `timeout` del SDK: ese solo cubre la espera de las cabeceras, que la API
+    //   manda enseguida, y no el cuerpo, que es donde trabaja el modelo (medido:
+    //   118 s con timeout de 24 s);
     // - y si aun así se corta, extraerArreglo rescata los resultados completos.
-    // Sin razonamiento, el puente al contrato acertaba menos ("la gran vía": 1
-    // de 4): con 3 búsquedas en vez de 2 volvió a 3 de 4, sin más tiempo
-    // (9-10 s, máximo 2.128 tokens).
     const response = await client.messages.create(
       {
         model: MODELO_WEB,
@@ -293,9 +306,9 @@ async function buscarEnLaWeb(req, res) {
         thinking: { type: 'disabled' },
         output_config: { effort: 'low' },
         messages: [{ role: 'user', content: consulta }],
-        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3, allowed_domains: DOMINIOS_WEB }],
+        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 2, allowed_domains: DOMINIOS_WEB }],
       },
-      { timeout: 22_000, maxRetries: 0 },
+      { signal: AbortSignal.timeout(22_000), maxRetries: 0 },
     )
 
     // Una negativa del modelo o una respuesta cortada no son un error para
@@ -303,19 +316,22 @@ async function buscarEnLaWeb(req, res) {
     if (response.stop_reason === 'refusal') {
       return responderWeb(res, { resultados: [] })
     }
+    if (busquedaFallida(response.content)) return fallaPasajera(res)
     const texto = response.content.filter((b) => b.type === 'text').map((b) => b.text).join('')
     const resultados = limpiarResultados(extraerArreglo(texto), resultadosReales(response.content))
-    const [, obras] = await Promise.all([
-      Promise.all(resultados.map(verificarProceso)),
-      buscarObras(resultados, consulta, {
-        departamento: String(req.query.departamento || '').slice(0, 60),
-        ciudad: String(req.query.ciudad || '').slice(0, 60),
-      }),
-    ])
-    return responderWeb(res, { resultados, obras })
+    await Promise.all(resultados.map(verificarProceso))
+    return responderWeb(res, { resultados })
   } catch (err) {
+    res.setHeader('Cache-Control', 'no-store')
     res.status(502).json({ error: err.message })
   }
+}
+
+// Una búsqueda que falló del lado de la herramienta no se guarda en el CDN:
+// guardada, quien busque lo mismo vería "no hay noticias" durante doce horas.
+function fallaPasajera(res) {
+  res.setHeader('Cache-Control', 'no-store')
+  res.status(503).json({ error: 'la búsqueda en la web no respondió' })
 }
 
 function responderWeb(res, cuerpo) {
@@ -325,18 +341,64 @@ function responderWeb(res, cuerpo) {
   res.status(200).json(cuerpo)
 }
 
-// El nombre oficial de la obra y el contratista que dan las noticias, buscados
-// en los contratos de SECOP II. Solo se devuelve lo que SECOP confirma: una
-// pista sin contratos no se muestra. Ver pistasDeContrato en
-// src/lib/busquedaWeb.js.
+// Del apodo al contrato: el nombre oficial de la obra y el contratista,
+// buscados en la web y luego en los contratos de SECOP II del lugar elegido.
+// Solo se devuelve lo que SECOP confirma: una pista sin contratos no se
+// muestra. Con razonamiento (es lo que lo hace acertar: 14 de 15 contra 9 de
+// 15 sin él), 3 búsquedas, y 24 s de espera: medido, 7,6 s de mediana y 24,9 s
+// el peor caso. Ver promptPuente y pistasDelPuente en src/lib/busquedaWeb.js.
 const LIMITE_OBRA = 4
-async function buscarObras(resultados, consulta, lugar) {
-  const pistas = pistasDeContrato(resultados, consulta)
-  const obras = await Promise.all(pistas.map(async (pista) => {
+async function puenteAlContrato(req, res) {
+  const consulta = consultaWeb(req, res)
+  if (!consulta) return
+  const lugar = {
+    departamento: String(req.query.departamento || '').slice(0, 60),
+    ciudad: String(req.query.ciudad || '').slice(0, 60),
+  }
+
+  let response
+  try {
+    response = await client.messages.create(
+      {
+        model: MODELO_WEB,
+        max_tokens: 4096,
+        system: promptPuente(),
+        output_config: { effort: 'low' },
+        messages: [{ role: 'user', content: consulta }],
+        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3, allowed_domains: DOMINIOS_WEB }],
+      },
+      { signal: AbortSignal.timeout(24_000), maxRetries: 0 },
+    )
+  } catch (err) {
+    // Sin puente no pasa nada: la búsqueda y las noticias ya están. No se
+    // guarda en el CDN, para que la próxima vez se intente de nuevo.
+    res.setHeader('Cache-Control', 'no-store')
+    res.status(504).json({ error: err.message })
+    return
+  }
+  if (response.stop_reason === 'refusal') return responderWeb(res, { obras: [], fuentes: [] })
+  if (busquedaFallida(response.content)) return fallaPasajera(res)
+
+  const texto = response.content.filter((b) => b.type === 'text').map((b) => b.text).join('')
+  const puente = extraerObjeto(texto)
+  // Las fuentes, solo si son resultados reales de la búsqueda: el enlace y el
+  // título salen de la API, no de lo que escribió el modelo.
+  const reales = resultadosReales(response.content)
+  const fuentes = (Array.isArray(puente.fuentes) ? puente.fuentes : [])
+    .map((u) => reales.get(u))
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((r) => {
+      let dominio = ''
+      try { dominio = new URL(r.url).hostname.replace(/^www\./, '') } catch { /* sin host */ }
+      return { url: r.url, titulo: r.title, dominio }
+    })
+
+  const pistas = pistasDelPuente(puente, consulta)
+  const obras = (await Promise.all(pistas.map(async (pista) => {
     try {
       const filas = await socrataQuery(DS_CONTRATOS, soqlContratosPorPista(pista, LIMITE_OBRA, lugar))
       if (!filas.length) return null
-      const campo = pista.tipo === 'obra' ? 'obraMencionada' : 'contratistaMencionado'
       return {
         ...pista,
         hayMas: filas.length > LIMITE_OBRA,
@@ -349,14 +411,14 @@ async function buscarObras(resultados, consulta, lugar) {
           valor: Number(f.valor_del_contrato) || 0,
           fecha: f.fecha_de_firma?.slice(0, 10) || null,
         })),
-        // De qué noticias sale el nombre, para poder comprobarlo.
-        fuentes: resultados.filter((r) => r[campo] === pista.frase).map((r) => r.url),
       }
     } catch {
       return null
     }
-  }))
-  return obras.filter(Boolean)
+  }))).filter(Boolean)
+  // Las pistas van también en la respuesta: lo que se buscó en SECOP, aunque
+  // no diera nada, para poder revisar por qué un puente falló.
+  return responderWeb(res, { obras, fuentes, pistas })
 }
 
 // El número de proceso que menciona una noticia, comprobado en SECOP. Un número
