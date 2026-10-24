@@ -441,6 +441,25 @@ export function cuantiaPosibleSecop1() {
   return `(valor_contrato_con_adiciones IS NULL OR valor_contrato_con_adiciones < ${CUANTIA_IMPOSIBLE}) AND (cuantia_contrato IS NULL OR cuantia_contrato < ${CUANTIA_IMPOSIBLE})`
 }
 
+// El valor del contrato es el presupuesto del proceso con ceros de más.
+//
+// SECOP I no trae pagos, así que valorCoherenteConElPago() no tiene con qué
+// comparar; pero sí trae cuantia_proceso, el presupuesto con el que se abrió.
+// Mismo criterio y misma tolerancia: no "¿es demasiado grande?" sino "¿son los
+// mismos dígitos con la coma corrida?". El caso que lo motivó (oct 2026): un
+// sendero peatonal en San Antero con proceso de $851.588.321 y contrato de
+// $851.588.262.000, que encabezaba la búsqueda "obras en Córdoba". Medido
+// entonces: 1.528 contratos y 17,6 billones de los 740 de SECOP I.
+//
+// Por ahora solo en el Buscador: en los agregados nacionales la condición
+// pasaba la consulta de 1,5 s a 7 s. Ver ROADMAP.
+export function valorCoherenteConElPresupuestoSecop1() {
+  const ors = MULTIPLICADORES_DIGITACION
+    .map((m) => `abs(cuantia_contrato / cuantia_proceso - ${m}) < ${m * TOLERANCIA_DIGITACION}`)
+    .join(' OR ')
+  return `NOT (cuantia_proceso > 0 AND cuantia_contrato > 0 AND (${ors}))`
+}
+
 // Filtros geográficos y de entidad para SECOP I, con sus propios nombres de
 // campo (departamento_entidad / municipio_entidad, no departamento / ciudad).
 //

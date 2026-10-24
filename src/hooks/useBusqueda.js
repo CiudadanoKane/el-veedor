@@ -3,7 +3,7 @@ import { socrataQuery, socrataBusqueda } from '../lib/socrataClient'
 import { DATASETS, CONTRACT_FIELDS, CONTRACT_FIELDS_SECOP1 } from '../lib/constants'
 import {
   esc, whereFromFilters, condicionEstado,
-  soloContratosValidosSecop1, condicionEstadoSecop1, whereFromFiltrosSecop1,
+  soloContratosValidosSecop1, valorCoherenteConElPresupuestoSecop1, cuantiaPosibleSecop1, condicionEstadoSecop1, whereFromFiltrosSecop1,
   rangoNumerico, rangoValorSecop1, rangoFecha,
 } from '../lib/soql'
 import { variantesDeFrase, variantesReducidas, tieneTextoBuscable, palabrasDeFrase } from '../lib/acentos'
@@ -303,8 +303,11 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
       // estado propio de SECOP I como 'Celebrado (SECOP I)' no coincide con
       // ningún estado_contrato y no trae filas de SECOP II, que es lo correcto.)
       const partes1 = [
+        // Por defecto, también fuera las cuantías imposibles y los valores con
+        // ceros de más: lo mismo que SECOP II ya descarta dentro de
+        // condicionEstado (cuantiaPosibleSecop2 y valorCoherenteConElPago).
         estadosSecop1 === null
-          ? soloContratosValidosSecop1()
+          ? [soloContratosValidosSecop1(), cuantiaPosibleSecop1(), valorCoherenteConElPresupuestoSecop1()].join(' AND ')
           : condicionEstadoSecop1(estadosSecop1),
         ...rangosSecop1(criterios),
       ]

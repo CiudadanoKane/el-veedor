@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  valorCoherenteConElPresupuestoSecop1,
   esc, soloContratosValidos, cuantiaPosibleSecop2, rangoNumerico, rangoFecha, whereFromFilters,
   moraConditions, moraConditionsSecop1, cuantiaPosibleSecop1,
 } from './soql.js'
@@ -91,5 +92,13 @@ describe('whereFromFilters', () => {
 
   it('omite los filtros vacíos', () => {
     expect(whereFromFilters({ department: '', city: null })).toEqual([])
+  })
+})
+
+describe('valorCoherenteConElPresupuestoSecop1', () => {
+  it('compara el contrato con el presupuesto del proceso por potencias de diez', () => {
+    const c = valorCoherenteConElPresupuestoSecop1()
+    expect(c.startsWith('NOT (cuantia_proceso > 0 AND cuantia_contrato > 0')).toBe(true)
+    expect(c).toContain('abs(cuantia_contrato / cuantia_proceso - 1000) < 0.001')
   })
 })
