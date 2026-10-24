@@ -509,6 +509,41 @@ Queda como pregunta de método, no como error: hay crecimientos de plazo
 enormes (+3.964%: un contrato de 92 días ampliado 3.647) justo bajo el tope de
 3.650 días que hoy separa una prórroga de un error de digitación.
 
+### El concepto del Buscador, probado con personas (oct 2026)
+
+Se simularon siete preguntas reales ("cuánto le pagan al operador del PAE en
+Sincelejo", "contratos a dedo de la gobernación del Atlántico en 2025",
+"contratos del INVÍAS en Nariño que van retrasados", "obras abandonadas en
+Córdoba"…). Lo que fallaba y cómo quedó:
+
+- **La entidad se perdía.** "La Gobernación del Atlántico" se volvía "todo lo
+  que tiene sede en Atlántico" (salía el Distrito de Barranquilla). La IA tiene
+  ahora el campo `entidad`, y el Buscador propone las que coinciden para que la
+  persona elija: no se aplica sola porque "alcaldía de Cali" son decenas de
+  entidades, una por secretaría. Si la elegida no tiene sede en el lugar pedido
+  (INVÍAS, en Bogotá), el lugar pasa a buscarse en el texto del contrato.
+- **Las preguntas de juicio engañaban.** "Sobrecostos en Medellín" ponía primero
+  un contrato con un anexo llamado "Certificación de *no* sobrecostos". Ningún
+  contrato se describe con esas palabras: la IA las reconoce (`tema`), se dice
+  qué no registra SECOP y se lleva al indicador de Alertas más cercano, con el
+  mismo lugar.
+- **La pregunta desaparecía.** La caja mostraba solo lo que quedaba para SECOP
+  ("operador PAE"), o nada. Ahora conserva lo escrito (`pregunta` en la URL) y
+  dice debajo qué palabras se buscan; la prensa se busca con la pregunta.
+- **La ñ se perdía en toda búsqueda.** `sinTildes` la volvía n: "Nariño" daba 9
+  contratos del INVÍAS en vez de 636. Ver `src/lib/acentos.js`.
+- Ejemplos como preguntas, cabecera más corta (oculta en el teléfono tras
+  buscar), estados de SECOP con mayúscula uniforme.
+
+**Pendiente:**
+- Una búsqueda sin texto (solo filtros, p. ej. "a dedo en Atlántico en 2025")
+  tarda ~20 s.
+- SECOP I trae valores imposibles que las reglas de SECOP II no filtran: un
+  sendero peatonal en San Antero por $852 mil millones encabeza "obras en
+  Córdoba".
+- Mientras la persona elige la entidad, la lista de abajo es la del lugar
+  entero.
+
 ### Revisión del Buscador en móvil (oct 2026)
 
 - **El directorio de entidades tenía 414 de 5.648.** `/api/directorio` guardaba
