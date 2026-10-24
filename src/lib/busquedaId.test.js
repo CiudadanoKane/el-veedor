@@ -122,6 +122,12 @@ describe('prioridadLugar', () => {
     expect(prioridadLugar({ department: 'ATLANTICO' }, { department: 'Atlántico' })).toBe(1)
   })
 
+  it('la entidad del filtro va antes que la ciudad', () => {
+    const f = { entity: 'MUNICIPIO DE SINCELEJO', city: 'Sincelejo' }
+    expect(prioridadLugar({ entityName: 'Municipio de Sincelejo', city: 'Sincelejo' }, f)).toBe(-1)
+    expect(prioridadLugar({ entityName: 'ESE Hospital', city: 'Sincelejo' }, f)).toBe(0)
+  })
+
   it('sin filtro de lugar no favorece a nadie', () => {
     expect(prioridadLugar(barranquilla, {})).toBe(2)
     expect(prioridadLugar(barranquilla)).toBe(2)

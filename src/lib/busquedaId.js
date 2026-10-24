@@ -101,12 +101,16 @@ export function coincidenciaId(contrato, texto) {
   return 'el número que la entidad le dio al proceso'
 }
 
-// 0 = misma ciudad del filtro, 1 = mismo departamento, 2 = resto (o sin filtro).
+// -1 = la entidad del filtro, 0 = misma ciudad, 1 = mismo departamento,
+// 2 = resto (o sin filtro). La entidad va antes que todo: es lo que fija el
+// enlace "Ver el proceso X" de una noticia (ResultadosWeb), y sin esto el de la
+// entidad de la noticia quedaba detrás de los de otras, ordenados por valor.
 // Con un número que usan decenas de entidades, esto decide si la persona ve el
 // suyo arriba o tiene que buscarlo entre los de medio país. Se compara sin
 // tildes ni mayúsculas porque las dos fuentes no escriben igual los nombres.
 export function prioridadLugar(contrato, filtrosGeo = {}) {
   const igual = (a, b) => !!a && !!b && sinTildes(a).trim() === sinTildes(b).trim()
+  if (filtrosGeo.entity && igual(contrato.entityName, filtrosGeo.entity)) return -1
   if (filtrosGeo.city && igual(contrato.city, filtrosGeo.city)) return 0
   if (filtrosGeo.department && igual(contrato.department, filtrosGeo.department)) return 1
   return 2
