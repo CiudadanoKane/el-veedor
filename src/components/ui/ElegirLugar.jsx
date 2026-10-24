@@ -66,6 +66,7 @@ export function ElegirLugar() {
     } catch { /* sin almacenamiento se pierde al cerrar: no es grave */ }
   }, [hayLugar, filters.department, filters.city])
 
+  const [abierto, setAbierto] = useState(false)
   const departamentos = useDepartamentos()
   const esMovil = useEsMovil()
   const ciudades = useCiudades(filters.department)
@@ -82,129 +83,110 @@ export function ElegirLugar() {
 
   const nombreUltimo = ultimo?.ciudad || ultimo?.departamento
 
+  // Una línea, no una tarjeta. La tarjeta con título, párrafo y dos
+  // selectores medía media pantalla del teléfono, y el primer dato del
+  // Panorama solo aparecía al bajar o al cerrarla: la invitación tapaba
+  // justo lo que invitaba a ver (oct 2026). Ahora es una franja que dice de
+  // qué son las cifras y ofrece el cambio a un toque; los selectores solo se
+  // abren cuando alguien lo pide.
+  const selectorDepartamento = (
+    <select
+      aria-label="Departamento"
+      value={filters.department}
+      onChange={(e) => setFilter('department', e.target.value)}
+      disabled={departamentos.isLoading}
+      className={CLASE_SELECT}
+    >
+      <option value="">{departamentos.isLoading ? 'Cargando…' : 'Departamento'}</option>
+      {/* Fuera "No Definido": es el hueco de un registro sin diligenciar, no
+          un departamento. La barra de arriba sí lo ofrece, para quien audita
+          el dato en sí. */}
+      {(departamentos.data || [])
+        .filter((d) => !SIN_GEOGRAFIA.includes(d))
+        .map((d) => (
+          <option key={d} value={d}>{d}</option>
+        ))}
+    </select>
+  )
+
+  const selectorMunicipio = (
+    <select
+      aria-label="Municipio"
+      value={filters.city}
+      onChange={(e) => setFilter('city', e.target.value)}
+      disabled={!filters.department || ciudades.isLoading}
+      className={CLASE_SELECT}
+    >
+      <option value="">
+        {!filters.department
+          ? 'Municipio (opcional)'
+          : ciudades.isLoading
+            ? 'Cargando…'
+            : esMovil ? 'Todo el depto.' : 'Todo el departamento'}
+      </option>
+      {(ciudades.data || []).map((c) => (
+        <option key={c} value={c}>{c}</option>
+      ))}
+    </select>
+  )
+
   return (
-    // En el teléfono, compacto: con el texto largo y los selectores apilados
-    // medía 439 px, y la primera cifra del Panorama quedaba en el px ~930, fuera
-    // de la primera pantalla. Quien llegaba por un enlace no veía ningún dato
-    // antes de que se le pidiera elegir. Sigue siendo lo primero, a propósito
-    // (ver arriba), pero ya no lo único.
-    <section className="border-2 border-textPrimary p-4 sm:p-6 mb-6 sm:mb-8">
-      <div className="flex items-start justify-between gap-4">
-        <h2 className="font-display font-extrabold text-titulo-3 sm:text-titulo-2 tracking-[-0.03em] leading-tight">
-          {faltaMunicipio
-            ? `¿En qué municipio de ${filters.department}?`
-            : '¿Qué se contrata donde tú vives?'}
-        </h2>
-        <button
-          onClick={ocultar}
-          className="toque shrink-0 text-nota text-textSecondary hover:text-textPrimary transition-colors"
-        >
-          {faltaMunicipio ? 'Así está bien' : 'Ahora no'}
-        </button>
-      </div>
-      <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
-        {faltaMunicipio ? (
+    <section className="border-l-4 border-primary bg-textPrimary/[0.04] px-3 py-2.5 sm:px-4 mb-6 sm:mb-8">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <p className="text-cuerpo leading-snug min-w-0">
+          {faltaMunicipio ? (
+            <>Todo es de <strong>{filters.department}</strong>. ¿Bajar a un municipio?</>
+          ) : (
+            <>Las cifras son de <strong>todo Colombia</strong>.</>
+          )}
+        </p>
+
+        {!faltaMunicipio && !abierto && (
           <>
-            Todo lo de abajo ya es de <strong className="text-textPrimary">{filters.department}</strong>.
-            Si quieres bajar a tu municipio, elígelo aquí; si no, así está bien.
-          </>
-        ) : (
-          <>
-            <span className="sm:hidden">
-              Toda la plataforma pasa a mostrar tu lugar. Las cifras de abajo son de Colombia
-              entera.
-            </span>
-            <span className="hidden sm:inline">
-              Elige tu departamento y tu municipio: toda la plataforma pasa a mostrar ese lugar
-              —cuánto se contrata, quién recibe el dinero y qué conviene revisar—. Las cifras de
-              abajo son de Colombia entera.
-            </span>
+            <button
+              onClick={() => setAbierto(true)}
+              className="toque text-cuerpo font-bold text-primary enlace-visible"
+            >
+              Ver mi municipio →
+            </button>
+            {/* La vuelta rápida para quien ya estuvo: un toque en vez de dos. */}
+            {nombreUltimo && (
+              <button
+                onClick={() => setAmbito(ultimo.departamento, ultimo.ciudad)}
+                className="toque text-cuerpo font-semibold text-textSecondary hover:text-textPrimary underline"
+              >
+                Volver a {nombreUltimo}
+              </button>
+            )}
           </>
         )}
-      </p>
 
-      {/* La vuelta rápida para quien ya estuvo. Va antes de los selectores
-          porque para esa persona es UN toque en vez de dos. */}
-      {nombreUltimo && !faltaMunicipio && (
         <button
-          onClick={() => setAmbito(ultimo.departamento, ultimo.ciudad)}
-          className="mt-4 inline-flex items-center border-2 border-textPrimary px-4 py-2
-                     text-cuerpo font-bold hover:bg-textPrimary hover:text-bg transition-colors"
+          onClick={ocultar}
+          aria-label={faltaMunicipio ? 'Así está bien' : 'Ocultar'}
+          className="toque ml-auto shrink-0 text-nota text-textSecondary hover:text-textPrimary"
         >
-          Volver a {nombreUltimo} →
+          {faltaMunicipio ? 'Así está bien' : '×'}
         </button>
-      )}
-
-      {/* Lado a lado también en el teléfono: apilados sumaban ~75 px. */}
-      <div className="mt-4 grid grid-cols-2 gap-3 max-w-xl">
-        <label className="block">
-          <span className="block text-micro uppercase tracking-label text-textSecondary font-semibold mb-1">
-            Departamento
-          </span>
-          <select
-            value={filters.department}
-            onChange={(e) => setFilter('department', e.target.value)}
-            disabled={departamentos.isLoading}
-            // py-2.5 y no el py-0.5 de la barra de arriba: aquí el control es el
-            // gesto principal y tiene que ser cómodo de tocar con el pulgar.
-            className="w-full bg-bg border-0 border-b-2 border-border px-0 py-2.5
-                       text-lectura font-semibold text-textPrimary cursor-pointer
-                       hover:border-textPrimary focus:border-textPrimary focus:outline-none
-                       disabled:opacity-40"
-          >
-            <option value="">
-              {/* Textos cortos en el teléfono: en media fila de 360 px "Elige un
-                  departamento" se cortaba a "Elige un departam…". */}
-              {departamentos.isLoading ? 'Cargando…' : esMovil ? 'Elige' : 'Elige un departamento'}
-            </option>
-            {/* Fuera "No Definido": es el hueco de un registro sin diligenciar,
-                no un departamento, y ofrecérselo a alguien que busca el suyo
-                solo confunde. Se filtra aquí y no en useDepartamentos porque el
-                selector de la barra de arriba lo usan también quienes vienen a
-                auditar el dato en sí, donde ese valor sí significa algo. */}
-            {(departamentos.data || [])
-              .filter((d) => !SIN_GEOGRAFIA.includes(d))
-              .map((d) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-          </select>
-        </label>
-
-        <label className="block">
-          <span className="block text-micro uppercase tracking-label text-textSecondary font-semibold mb-1">
-            Municipio
-          </span>
-          <select
-            value={filters.city}
-            onChange={(e) => setFilter('city', e.target.value)}
-            disabled={!filters.department || ciudades.isLoading}
-            className="w-full bg-bg border-0 border-b-2 border-border px-0 py-2.5
-                       text-lectura font-semibold text-textPrimary cursor-pointer
-                       hover:border-textPrimary focus:border-textPrimary focus:outline-none
-                       disabled:opacity-40 disabled:cursor-default"
-          >
-            <option value="">
-              {!filters.department
-                ? esMovil ? 'Opcional' : 'Primero el departamento'
-                : ciudades.isLoading
-                  ? 'Cargando…'
-                  : esMovil ? 'Todo el depto.' : 'Todo el departamento'}
-            </option>
-            {(ciudades.data || []).map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </label>
       </div>
 
-      {/* Elegir solo el departamento ya sirve, y conviene decirlo: si no, quien
-          vive en un municipio pequeño que no encuentre en la lista se queda sin
-          saber que la vista departamental también lo cubre. */}
-      {!faltaMunicipio && (
-        <p className="hidden sm:block mt-3 text-nota text-textSecondary/80 leading-snug">
-          Con el departamento basta; el municipio es opcional.
-        </p>
+      {(abierto || faltaMunicipio) && (
+        <div className="mt-2 grid grid-cols-2 gap-3 max-w-xl">
+          {faltaMunicipio ? <div className="col-span-2">{selectorMunicipio}</div> : (
+            <>
+              {selectorDepartamento}
+              {selectorMunicipio}
+            </>
+          )}
+        </div>
       )}
     </section>
   )
 }
+
+// py-2 y no el py-0.5 de la barra de arriba: aquí el control se toca con el
+// pulgar.
+const CLASE_SELECT = `w-full bg-bg border-0 border-b-2 border-border px-0 py-2
+  text-cuerpo font-semibold text-textPrimary cursor-pointer
+  hover:border-textPrimary focus:border-textPrimary focus:outline-none
+  disabled:opacity-40 disabled:cursor-default`
