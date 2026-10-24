@@ -48,14 +48,21 @@ export function Sidebar({ abierto, onCerrar }) {
         />
       )}
 
+      {/* En el teléfono el panel se desplaza ENTERO si no cabe, y es más
+          compacto. Necesitaba 787 px, y el alto visible de un teléfono cambia
+          según si la barra del navegador está desplegada (~660-730 px) o
+          escondida tras bajar por la página (~750-800): por eso a veces cabía
+          y a veces no, con el mismo menú. Y cuando no cabía, la que se
+          encogía con barra de scroll era la lista principal —Panorama,
+          Noticias, Alertas—, mientras el pie seguía fijo abajo. */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-40 w-64 bg-side flex-col
+          fixed inset-y-0 left-0 z-40 w-64 bg-side flex-col overflow-y-auto lg:overflow-visible
           ${abierto ? 'flex' : 'hidden'}
           lg:flex lg:sticky lg:top-0 lg:h-screen lg:z-auto lg:shrink-0
         `}
       >
-        <div className="px-7 pt-8 pb-7 flex items-start justify-between gap-3">
+        <div className="px-7 pt-5 pb-4 lg:pt-8 lg:pb-7 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <Link
               to={rutaConAmbito('/')}
@@ -87,7 +94,7 @@ export function Sidebar({ abierto, onCerrar }) {
           </button>
         </div>
 
-        <nav data-tour="nav" className="flex-1 overflow-y-auto px-7 py-2">
+        <nav data-tour="nav" className="lg:flex-1 lg:overflow-y-auto px-7 py-1 lg:py-2">
           {NAV.map((item) => (
             <NavLink
               key={item.to}
@@ -110,7 +117,7 @@ export function Sidebar({ abierto, onCerrar }) {
 
         {/* Estas van aparte: no describen la contratación sino cómo leerla,
             cuánto fiarse del dato y cómo corregirnos. */}
-        <div className="px-7 pt-5 pb-7">
+        <div className="px-7 pt-3 pb-5 lg:pt-5 lg:pb-7">
           {[
             // "Cómo funciona" sonaba a manual de uso, y "Reportar un error" a
             // reporte técnico. Ninguna de las dos es eso: una es la metodología
@@ -155,10 +162,10 @@ export function Sidebar({ abierto, onCerrar }) {
 
           <SelectorTema />
 
-          <p className="text-micro text-sideSoft leading-relaxed mt-4">
+          <p className="hidden lg:block text-micro text-sideSoft leading-relaxed mt-4">
             Datos públicos de SECOP I y II
           </p>
-          <p className="text-micro text-sideSoft/60 leading-relaxed mt-1">
+          <p className="hidden lg:block text-micro text-sideSoft/60 leading-relaxed mt-1">
             La plataforma señala patrones, no acusa.
           </p>
         </div>

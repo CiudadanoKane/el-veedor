@@ -10,7 +10,7 @@ export function SelectorTema() {
   const [preferencia, cambiar] = useTema()
 
   return (
-    <fieldset className="mt-5">
+    <fieldset className="mt-3 lg:mt-5">
       <legend className="text-micro uppercase tracking-label text-sideSoft mb-1.5">Tema</legend>
       <div className="flex border border-sideSoft/30">
         {TEMAS.map((t) => (
