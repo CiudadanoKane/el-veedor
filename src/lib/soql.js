@@ -463,6 +463,12 @@ export function valorCoherenteConElPresupuestoSecop1() {
   return `NOT (cuantia_proceso > 0 AND cuantia_contrato > 0 AND (${ors}))`
 }
 
+// La contraria, para listarlos en Errores en SECOP: lo que se excluye de las
+// cifras se muestra allá.
+export function valorIncoherenteConElPresupuestoSecop1() {
+  return valorCoherenteConElPresupuestoSecop1().replace(/^NOT /, '')
+}
+
 // Filtros geográficos y de entidad para SECOP I, con sus propios nombres de
 // campo (departamento_entidad / municipio_entidad, no departamento / ciudad).
 //

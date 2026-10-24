@@ -542,7 +542,9 @@ Córdoba"…). Lo que fallaba y cómo quedó:
   proceso por potencias de diez, como SECOP II contra lo pagado: 1.528 contratos
   y 17,6 billones. Se aplica también al Panorama, Rankings y perfiles: el "1,5 s
   a 7 s" que lo frenaba era ruido de caché (medido de nuevo: 4,0 s con y sin
-  ella). Pendiente: listarlos en Errores en SECOP, como su gemela de SECOP II.
+  ella). Se listan en Errores en SECOP → Valores implausibles («Ceros de más frente al
+  presupuesto», con el presupuesto como valor original); a nivel nacional esa consulta
+  tarda ~9 s, así que la tabla no la espera.
 - **Los ~20 s sin texto no se reprodujeron.** Medido de nuevo: IA 2,1 s + SECOP
   0,6 s; combinaciones sin caché, <1 s. Probablemente una lentitud pasajera de
   datos.gov.co. Si vuelve, medir con `performance.getEntriesByType('resource')`.

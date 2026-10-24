@@ -14,7 +14,7 @@ import {
 } from '../../hooks/useAlertas'
 import { useAdicionesCosto } from '../../hooks/useAdiciones'
 import {
-  useCuantiaImposible, useDigitacionFrenteAlPago, useValorDesproporcionado,
+  useCuantiaImposible, useDigitacionFrenteAlPago, useDigitacionFrentePresupuestoSecop1, useValorDesproporcionado,
   usePersonaConValorImposible,
 } from '../../hooks/useCuantiaImposible'
 import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/formatters'
@@ -129,6 +129,7 @@ export function AlertaErrorDigitacion() {
   const digitacionQuery = useAdicionesCosto(filters)
   const imposiblesQuery = useCuantiaImposible(filters)
   const pagoQuery = useDigitacionFrenteAlPago(filters)
+  const presupuestoQuery = useDigitacionFrentePresupuestoSecop1(filters)
   const personaQuery = usePersonaConValorImposible(filters)
 
   // CUATRO detecciones del mismo problema —el valor registrado no es real— que se
@@ -154,6 +155,13 @@ export function AlertaErrorDigitacion() {
     valorOriginal: c.valuePaid,
     motivo: 'Ceros de más frente al pago',
   }))
+  // La de SECOP I, que no trae pagos: "valor original" es el presupuesto del
+  // proceso, los mismos dígitos sin los ceros de más.
+  const frentePresupuesto = (presupuestoQuery.data ?? []).map((c) => ({
+    ...c,
+    valorOriginal: c.valorProceso,
+    motivo: 'Ceros de más frente al presupuesto',
+  }))
   // Cuarta: una persona natural con un contrato de cien mil millones o más.
   // "Valor original" vuelve a ser lo pagado, que cuando existe es microscópico
   // —4 millones contra 19,81 billones— y remata la prueba.
@@ -163,7 +171,7 @@ export function AlertaErrorDigitacion() {
     motivo: 'Persona natural, valor imposible',
   }))
   // Las imposibles primero: son el error más extremo (y las únicas de SECOP I).
-  const filas = [...imposibles, ...persona, ...frenteAlPago, ...digitacion]
+  const filas = [...imposibles, ...persona, ...frenteAlPago, ...frentePresupuesto, ...digitacion]
 
   // QueryState acepta cualquier objeto con esta forma; se combinan las cuatro
   // consultas en una sola para manejar carga/error/vacío de forma unificada.
@@ -177,11 +185,14 @@ export function AlertaErrorDigitacion() {
   // después, con aviso (ver `digitacionPendiente`). Si falla, se dice y la
   // tabla sigue.
   const digitacionPendiente = digitacionQuery.isLoading
+  // La de SECOP I tampoco detiene la tabla: a nivel nacional tarda ~9 s (medido
+  // oct 2026) contra ~1 s de las otras. Con un lugar elegido, menos de 1 s.
+  const presupuestoPendiente = presupuestoQuery.isLoading
   const combinada = {
     // Si las tres rápidas no trajeron nada, se espera a la digitación antes de
     // decir "sin valores implausibles": sería falso mientras falte una parte.
     isLoading: imposiblesQuery.isLoading || pagoQuery.isLoading || personaQuery.isLoading
-      || (digitacionPendiente && filas.length === 0),
+      || ((digitacionPendiente || presupuestoPendiente) && filas.length === 0),
     isError: imposiblesQuery.isError || pagoQuery.isError || personaQuery.isError,
     error: imposiblesQuery.error || pagoQuery.error || personaQuery.error,
     data: filas,
@@ -189,6 +200,7 @@ export function AlertaErrorDigitacion() {
       digitacionQuery.refetch()
       imposiblesQuery.refetch()
       pagoQuery.refetch()
+      presupuestoQuery.refetch()
       personaQuery.refetch()
     },
   }
@@ -240,7 +252,7 @@ export function AlertaErrorDigitacion() {
       count={combinada.isLoading ? null : filas.length}
       methodology={
         <>
-          Cinco patrones de valor que no puede ser real: (1) el valor es{' '}
+          Seis patrones de valor que no puede ser real: (1) el valor es{' '}
           <strong>exactamente ×100, ×1.000 o ×10.000</strong> el original del proceso — se
           digitó en unidades equivocadas (ej. un proceso de $450 millones registrado como
           $450.000 millones); (2) el valor creció <strong>más de 500%</strong>, cuando la
@@ -290,6 +302,15 @@ export function AlertaErrorDigitacion() {
           un contrato pagado al 1% da razón 100 sin que nada esté mal, así que solo se
           marca cuando los dígitos coinciden. <strong>Su límite:</strong> hace falta un pago
           con el que comparar, y la mitad de los contratos no lo reporta.
+          <br />
+          <br />
+          <strong>SECOP I</strong> no reporta pagos, así que ahí la misma prueba se hace
+          contra el <strong>presupuesto con que se abrió el proceso</strong>: un contrato que
+          vale exactamente ×100, ×1.000 o más ese presupuesto es el mismo número con ceros de
+          más. Se añadió en oct 2026: <strong>1.528 contratos que sumaban 17,6
+          billones</strong>, entre ellos un sendero peatonal en San Antero con proceso de
+          $851.588.321 registrado como $851.588.262.000, que encabezaba la búsqueda «obras en
+          Córdoba». En la tabla, «valor original» es ese presupuesto.
           Todos inflan las estadísticas públicas y se excluyen de los rankings por valor.{' '}
           <strong>Pulsa un contrato</strong> para ver el detalle.
         </>
@@ -303,6 +324,19 @@ export function AlertaErrorDigitacion() {
                 <span className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
                 Falta sumar los errores de digitación frente al valor del proceso: ese cruce tarda
                 más y se agrega aquí cuando llegue.
+              </p>
+            )}
+            {presupuestoPendiente && (
+              <p className="flex items-center gap-2 text-cuerpo text-textSecondary mb-4" role="status">
+                <span className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                Falta sumar los de SECOP I con ceros de más frente al presupuesto: se agregan aquí
+                cuando lleguen.
+              </p>
+            )}
+            {presupuestoQuery.isError && (
+              <p className="text-cuerpo text-textSecondary mb-4" role="status">
+                No se pudo consultar SECOP I: faltan aquí sus contratos con ceros de más frente al
+                presupuesto del proceso.
               </p>
             )}
             {digitacionQuery.isError && (

@@ -36,7 +36,7 @@ export function Errores() {
     <SeccionConPestanas
       titulo="Errores en SECOP"
       subtitulo="La calidad del registro también es una forma de rendición de cuentas, y hoy nadie la mide."
-      intro="Estos no son indicios de corrupción sino de descuido en el registro. Importan porque cada error borra información del escrutinio público: un contrato sin identificación del contratista es un pago que nadie puede rastrear, y uno registrado en $0 desaparece de toda estadística de gasto. Cada filtro que tuvimos que añadir para publicar cifras correctas nació de uno de estos problemas. Lo que se mide aquí es SECOP II, y cada pestaña explica por qué: en unos casos SECOP I no registra el dato —nunca tuvo módulo de pagos—, y en otro, el de las fechas imposibles, sencillamente no tiene el error."
+      intro="Estos no son indicios de corrupción sino de descuido en el registro. Importan porque cada error borra información del escrutinio público: un contrato sin identificación del contratista es un pago que nadie puede rastrear, y uno registrado en $0 desaparece de toda estadística de gasto. Cada filtro que tuvimos que añadir para publicar cifras correctas nació de uno de estos problemas. Lo que se mide aquí es sobre todo SECOP II —de SECOP I solo los valores implausibles—, y cada pestaña explica por qué: en unos casos SECOP I no registra el dato —nunca tuvo módulo de pagos—, y en otro, el de las fechas imposibles, sencillamente no tiene el error."
       items={ERRORES}
     />
   )

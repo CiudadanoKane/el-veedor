@@ -3,7 +3,7 @@ import { socrataQuery } from '../lib/socrataClient.js'
 import { DATASETS, CONTRACT_FIELDS, CONTRACT_FIELDS_SECOP1 } from '../lib/constants.js'
 import {
   buildWhere, whereFromFilters, whereFromFiltrosSecop1,
-  soloContratosValidosSecop1,
+  soloContratosValidosSecop1, cuantiaPosibleSecop1, valorIncoherenteConElPresupuestoSecop1,
   cuantiaImposibleSecop2, cuantiaImposibleSecop1, VALOR_SECOP1_SOQL,
   valorIncoherenteConElPago, soloEstadosVigentes, soloContratosValidos,
   valorImposibleParaUnaPersona, honorariosImposiblesParaUnaPersona, cuantiaPosibleSecop2, valorCoherenteConElPago,
@@ -78,6 +78,38 @@ export function useDigitacionFrenteAlPago(filters = {}) {
         `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT 200`,
       )
       return adaptListSecop2(filas)
+    },
+  })
+}
+
+// Lo mismo en SECOP I, que no trae pagos: allá se compara con el presupuesto
+// con que se abrió el proceso (cuantia_proceso). Se excluyen de las cifras
+// desde oct 2026 (ver valorCoherenteConElPresupuestoSecop1 en soql.js): 1.528
+// contratos y 17,6 billones, entre ellos un sendero peatonal en San Antero con
+// proceso de $851.588.321 y contrato de $851.588.262.000. Y lo que se excluye
+// allá se muestra aquí.
+//
+// Sin las cuantías imposibles, que ya lista useCuantiaImposible: así cada
+// contrato aparece una vez, con el motivo que lo explica.
+export function useDigitacionFrentePresupuestoSecop1(filters = {}) {
+  return useQuery({
+    queryKey: ['errores', 'digitacion-presupuesto-secop1', filters],
+    queryFn: async () => {
+      const where = buildWhere(
+        whereFromFiltrosSecop1(filters, [
+          soloContratosValidosSecop1(),
+          cuantiaPosibleSecop1(),
+          valorIncoherenteConElPresupuestoSecop1(),
+        ]),
+      )
+      const filas = await socrataQuery(
+        DS1,
+        `SELECT ${CONTRACT_FIELDS_SECOP1}, cuantia_proceso ${where} ORDER BY ${VALOR_SECOP1_SOQL} DESC LIMIT 200`,
+      )
+      return adaptListSecop1(filas).map((c, i) => ({
+        ...c,
+        valorProceso: Number(filas[i].cuantia_proceso) || null,
+      }))
     },
   })
 }
