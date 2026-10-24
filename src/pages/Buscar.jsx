@@ -447,6 +447,7 @@ export function Buscar() {
       criterios.valorMin || criterios.valorMax || criterios.fechaDesde || criterios.fechaHasta),
   )
   const resultadosRef = useRef(null)
+  const sugerenciaRef = useRef(null)
 
   // Se toca solo lo propio del buscador y se conserva el resto de la URL (los
   // filtros de departamento y ciudad viven en esos mismos parámetros).
@@ -632,12 +633,15 @@ export function Buscar() {
     criterios.terminos.length > 0 ||
     criterios.valorMin || criterios.valorMax || criterios.fechaDesde || criterios.fechaHasta
 
+  // Si falta elegir la entidad que nombró, ese es el paso siguiente: se baja a
+  // la sugerencia, no a una lista que todavía no es la que pidió.
+  const faltaEntidad = !!criterios.quien && !filters.entity
   useEffect(() => {
-    const el = resultadosRef.current
+    const el = faltaEntidad ? sugerenciaRef.current : resultadosRef.current
     if (!bajarPendiente.current || !el) return
     bajarPendiente.current = false
     window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 12, behavior: 'instant' })
-  }, [pedidoBajar, activa, criterios])
+  }, [pedidoBajar, activa, criterios, faltaEntidad])
 
   const toggleEstado = (estado) => {
     const set = new Set(criterios.estados)
@@ -830,11 +834,13 @@ export function Buscar() {
 
             <AvisoTema tema={criterios.tema} />
             {!filters.entity && (
-              <SugerenciaEntidad
-                quien={criterios.quien}
-                lugar={filters.city || filters.department}
-                onElegir={elegirEntidad}
-              />
+              <div ref={sugerenciaRef}>
+                <SugerenciaEntidad
+                  quien={criterios.quien}
+                  lugar={filters.city || filters.department}
+                  onElegir={elegirEntidad}
+                />
+              </div>
             )}
 
             {/* Qué palabras quedaron de la pregunta: la caja muestra lo que
@@ -960,7 +966,7 @@ export function Buscar() {
                   Por dónde empezar
                 </h2>
                 <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
-                  Escribe una palabra arriba, o prueba con una de estas búsquedas.
+                  Escribe tu pregunta arriba, o prueba con una de estas.
                 </p>
                 <div className="flex flex-wrap gap-2 mt-5">
                   {EJEMPLOS.map((t) => (
