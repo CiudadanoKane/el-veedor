@@ -67,7 +67,7 @@ function AvisoSecop1() {
       </p>
       <p className="text-cuerpo text-textSecondary font-light leading-relaxed mt-1 max-w-3xl">
         SECOP I no tiene los controles de valor de SECOP II. Ya se excluyen las{' '}
-        <strong className="font-semibold text-textPrimary">cuantías imposibles</strong>{' '}
+        <strong className="font-semibold text-textPrimary">valores imposibles</strong>{' '}
         (aparecen en Errores → Valores implausibles), pero el orden por valor puede
         seguir trayendo sumas infladas por registros mal digitados que no se pueden
         distinguir de contratos reales. <strong className="font-semibold text-textPrimary">
@@ -319,7 +319,7 @@ function RankingEntidades({ filters }) {
         <strong>Errores de registro</strong> es la proporción de los contratos de esa
         entidad —en todo el país, no solo los del top— en los que el dato se contradice a
         sí mismo: sin contratista identificado, fecha de fin anterior al inicio, en $0 con
-        presupuesto comprometido, pagado por encima de lo contratado, cuantía imposible,
+        presupuesto comprometido, pagado por encima de lo contratado, valor imposible,
         más de diez años añadidos al plazo, o arrancado sin reportar ni pago ni pendiente.
         Es la misma medida del <strong>Índice por entidad</strong> de Errores en SECOP, y
         el porcentaje enlaza allá. Se marca en ámbar por encima del doble de la tasa

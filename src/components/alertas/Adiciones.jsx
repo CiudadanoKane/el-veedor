@@ -250,7 +250,7 @@ export function AdicionesCosto() {
               esto era un ternario y cualquier valor nuevo caía en "precio base",
               que habría etiquetado mal cada fila de SECOP I. */}
           <div className="text-micro text-textSecondary">
-            {{ adjudicado: 'adjudicado', cuantia: 'cuantía pactada' }[r.referencia]
+            {{ adjudicado: 'adjudicado', cuantia: 'valor pactado' }[r.referencia]
               ?? 'precio base'}
           </div>
         </div>
@@ -299,7 +299,7 @@ export function AdicionesCosto() {
         procesos competitivos (exacto), o el <strong>precio base</strong> del proceso en
         contratación directa (donde no existe adjudicación porque no hubo competencia).
         En <strong>SECOP I</strong> no hace falta cruzar nada: lo pactado y lo vigente
-        están en el mismo registro, y la referencia es la <strong>cuantía pactada</strong>{' '}
+        están en el mismo registro, y la referencia es el <strong>valor pactado</strong>{' '}
         del contrato. Cada fila indica cuál se usó, y las de SECOP I van marcadas.
         <br />
         <br />
@@ -447,7 +447,7 @@ export function AdicionesAmbas() {
         digitación (×100, ×1.000) y crecimientos de más del 500%, que la Ley 80 no
         permite. Y también por abajo: lo que creció <strong>menos del 1%</strong>{' '}
         —unos pesos sobre una base de miles de millones— es redondeo del registro, no
-        una adición. Se revisan los contratos de mayor cuantía entre los que ya tienen
+        una adición. Se revisan los contratos de mayor valor entre los que ya tienen
         adición de plazo, así que la lista no es exhaustiva: es la punta por valor.
         <br />
         <br />

@@ -211,7 +211,7 @@ export function Noticias() {
     if (!c0) return null
     return {
       ...base,
-      contexto: 'La modalidad la elige la entidad, no el contratista. Aun así, dónde se acumula la contratación directa de mayor cuantía es una pregunta de veeduría.',
+      contexto: 'La modalidad la elige la entidad, no el contratista. Aun así, dónde se acumula la contratación directa de mayor valor es una pregunta de veeduría.',
       enlace: { to: `/contratista/${encodeURIComponent(c0.documento)}`, texto: 'Ver el perfil de la empresa' },
       titular: (
         <>

@@ -482,7 +482,7 @@ export function Dashboard() {
                 },
                 {
                   clave: 'otros',
-                  label: 'Otros estados o sin cuantía registrada',
+                  label: 'Otros estados o sin valor registrado',
                   valor: d.otros,
                   color: 'rgb(var(--c-border))',
                   nota: 'Suspendidos, modificados, y contratos en $0 donde "pago completo" no significa nada',

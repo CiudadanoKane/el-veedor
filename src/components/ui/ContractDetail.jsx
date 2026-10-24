@@ -124,7 +124,7 @@ export function ContractDetail({ contract: c }) {
         <div className="rounded-none bg-warning/10 border border-warning/30 p-4 text-cuerpo">
           <span className="text-warning font-medium">¿Por qué aparece en $0?</span>
           <p className="text-textSecondary mt-1 leading-relaxed">
-            SECOP registra este contrato sin cuantía. Suele ocurrir en contratos que por
+            SECOP registra este contrato sin valor. Suele ocurrir en contratos que por
             naturaleza no tienen valor monetario (comodatos, algunos convenios, o acuerdos
             marco donde el valor se define por cada orden) o por registro incompleto de la
             entidad.

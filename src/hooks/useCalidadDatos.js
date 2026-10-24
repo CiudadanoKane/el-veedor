@@ -71,7 +71,7 @@ export const ERRORES = {
   // cuenta —ver soloEstadosVigentes en soql.js—: es el peor error de registro
   // que existe y era justamente el único invisible para este índice.
   cuantiaImposible: {
-    label: 'Cuantía imposible para un solo contrato',
+    label: 'Valor imposible para un solo contrato',
     campo: 'cuantia_imposible',
     pestana: 'digitacion',
     condicion: `valor_del_contrato >= ${CUANTIA_IMPOSIBLE}`,

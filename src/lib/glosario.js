@@ -26,7 +26,7 @@ export const MODALIDADES_GLOSARIO = {
     detalle:
       'Es la regla general de la contratación estatal y la que más competencia asegura. ' +
       'Se usa cuando no aplica ninguna de las modalidades especiales, y normalmente para ' +
-      'los contratos de mayor cuantía.',
+      'los contratos de mayor valor.',
   },
   'Licitación pública Obra Publica': {
     resumen: 'Una licitación pública cuyo objeto es una obra.',
@@ -136,7 +136,7 @@ export const TIPOS_GLOSARIO = {
   Seguros: { resumen: 'Pólizas que cubren bienes, personas o responsabilidades de la entidad.' },
   Concesión: {
     resumen: 'Un privado construye u opera un servicio público y se paga con su explotación.',
-    detalle: 'Peajes, puertos, aeropuertos. Son contratos largos y de cuantía alta.',
+    detalle: 'Peajes, puertos, aeropuertos. Son contratos largos y de valor alto.',
   },
   'Asociación Público Privada': {
     resumen: 'Inversión privada en infraestructura pública, pagada por disponibilidad y servicio.',

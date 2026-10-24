@@ -220,7 +220,7 @@ export function IndiceEjecucion() {
         <br />
         <strong>Solo entran contratos cuyo dato permite medirlos</strong>, y este filtro
         es la condición para que el índice sea justo: fechas coherentes y posibles, plazo
-        ya terminado, cuantía registrada, y prórrogas menores a diez años. Un contrato con
+        ya terminado, valor registrado, y prórrogas menores a diez años. Un contrato con
         fecha de fin en el año 205, o con un valor mil veces mayor por un error de
         digitación, produciría un atraso inventado — y el contratista cargaría con un
         error que cometió la entidad al registrar. Quedan 4.727.389 contratos, el 89% del

@@ -147,7 +147,7 @@ export function AlertaErrorDigitacion() {
   const imposibles = (imposiblesQuery.data ?? []).map((c) => ({
     ...c,
     valorOriginal: null,
-    motivo: 'Cuantía imposible',
+    motivo: 'Valor imposible',
   }))
   const frenteAlPago = (pagoQuery.data ?? []).map((c) => ({
     ...c,
@@ -245,7 +245,7 @@ export function AlertaErrorDigitacion() {
           digitó en unidades equivocadas (ej. un proceso de $450 millones registrado como
           $450.000 millones); (2) el valor creció <strong>más de 500%</strong>, cuando la
           Ley 80 limita las adiciones al 50% del valor inicial; (3){' '}
-          <strong>cuantía imposible</strong>: por encima de <strong>$50 billones</strong>,
+          <strong>valor imposible</strong>: por encima de <strong>$50 billones</strong>,
           diez veces el contrato real más grande del país — un valor centinela
           (<code>999.999.999.999.999</code>) o ceros de más; (4){' '}
           <strong>ceros de más frente al pago</strong>: el valor registrado es una potencia
@@ -371,7 +371,7 @@ export function AlertaCerradoSinPago() {
       tone="warning"
       methodology={
         <>
-          Contratos cuyo estado es <strong>"Cerrado"</strong>, con una cuantía registrada
+          Contratos cuyo estado es <strong>"Cerrado"</strong>, con un valor registrado
           mayor a cero, y que no reportan <strong>ningún pago</strong>. Es una
           contradicción: si de verdad no se pagó nada, el contrato no debería figurar como
           cerrado sino como cancelado.
@@ -386,7 +386,7 @@ export function AlertaCerradoSinPago() {
           <br />
           <br />
           Es el defecto de registro más extendido del país: <strong>el 34%</strong> de
-          todos los contratos cerrados con cuantía. Ordenados de mayor a menor valor; se
+          todos los contratos cerrados con valor registrado. Ordenados de mayor a menor valor; se
           muestran hasta 100.
         </>
       }
