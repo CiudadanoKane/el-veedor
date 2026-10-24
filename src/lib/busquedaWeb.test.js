@@ -91,7 +91,7 @@ describe('el puente del apodo al contrato', () => {
       contratistas: ['Consorcio Vial Barranquilla'],
     }
     expect(pistasDelPuente(puente, 'contrato de la gran vía en Atlántico')).toEqual([
-      { tipo: 'contratista', frase: 'vial barranquilla' },
+      { tipo: 'contratista', frase: 'vial barranquilla', nombre: 'Consorcio Vial Barranquilla' },
       { tipo: 'obra', frase: 'Corredor Universitario' },
     ])
   })
@@ -107,7 +107,9 @@ describe('el puente del apodo al contrato', () => {
       { obras: ['Túnel Guillermo Gaviria'], contratistas: ['Construcciones El Cóndor'] },
       'el túnel del Toyo',
     )
-    expect(conObra[0]).toEqual({ tipo: 'empresa', frase: 'construcciones el condor', obra: 'Túnel Guillermo Gaviria' })
+    expect(conObra[0]).toEqual({
+      tipo: 'empresa', frase: 'construcciones el condor', nombre: 'Construcciones El Cóndor', obra: 'Túnel Guillermo Gaviria',
+    })
     const q = soqlContratosPorPista(conObra[0])
     expect(q).toContain("caseless_contains(proveedor_adjudicado, 'construcciones el condor')")
     expect(q).toContain("caseless_contains(objeto_del_contrato, 'tunel guillermo gaviria')")
@@ -122,8 +124,10 @@ describe('el puente del apodo al contrato', () => {
     const obra = soqlContratosPorPista({ tipo: 'obra', frase: 'Vía al Mar' })
     expect(obra).toContain("caseless_contains(objeto_del_contrato, 'vía al mar')")
     expect(obra).toContain("caseless_contains(objeto_del_contrato, 'via al mar')")
-    expect(soqlContratosPorPista({ tipo: 'contratista', frase: "Consorcio D'Vial" }))
-      .toContain("caseless_contains(proveedor_adjudicado, 'consorcio d''vial')")
+    const consorcio = soqlContratosPorPista({ tipo: 'contratista', frase: "d'vial" })
+    expect(consorcio).toContain("caseless_starts_with(proveedor_adjudicado, 'consorcio d''vial')")
+    expect(consorcio).toContain("caseless_starts_with(proveedor_adjudicado, 'ut d''vial')")
+    expect(consorcio).not.toContain('caseless_contains(proveedor_adjudicado')
   })
 
   it('se limita al lugar que se está mirando', () => {

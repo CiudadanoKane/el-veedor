@@ -182,7 +182,7 @@ function PuentePrensa({ consulta, lugar }) {
       <p className="mt-2 text-nota text-textSecondary leading-snug">
         Lo encontramos en SECOP por{' '}
         {pista.tipo === 'obra' ? 'el nombre oficial de la obra' : 'el contratista'} que dan las
-        fuentes («{pista.frase}»)
+        fuentes («{pista.nombre || pista.frase}»)
         {fuentes.length > 0 && (
           <>
             {', según '}

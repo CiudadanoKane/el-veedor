@@ -287,8 +287,9 @@ export function pistasDelPuente(puente, consulta, max = 3) {
     if (typeof c !== 'string') continue
     const { nucleo, figura } = nucleoDeContratista(c)
     if (nucleo.length < 6) continue
-    if (figura) porContratista.push({ tipo: 'contratista', frase: nucleo })
-    else if (obras[0]) porContratista.push({ tipo: 'empresa', frase: nucleo, obra: obras[0] })
+    const nombre = c.trim()
+    if (figura) porContratista.push({ tipo: 'contratista', frase: nucleo, nombre })
+    else if (obras[0]) porContratista.push({ tipo: 'empresa', frase: nucleo, nombre, obra: obras[0] })
   }
   const porObra = obras.map((o) => ({ tipo: 'obra', frase: o }))
   // Alternadas: con dos contratistas primero, la obra quedaba fuera del tope.
@@ -311,10 +312,21 @@ export function pistasDelPuente(puente, consulta, max = 3) {
 // PAE de Boyacá y de Bogotá, de cientos de miles de millones, como "lo que
 // buscas". Con y sin tildes, porque la API las distingue y SECOP las usa a
 // veces sí, a veces no.
+//
+// Un consorcio se busca por su nombre JUSTO después de la figura: "vial
+// barranquilla" en cualquier parte traía también al "CONSORCIO DESARROLLO VIAL
+// BARRANQUILLA", que es otra obra.
+const FIGURAS = ['consorcio ', 'union temporal ', 'unión temporal ', 'ut ', 'u.t. ']
 export function soqlContratosPorPista({ tipo, frase, obra }, limite = 4, lugar = {}) {
-  const campo = tipo === 'obra' ? 'objeto_del_contrato' : 'proveedor_adjudicado'
-  let texto = contiene(campo, frase)
-  if (tipo === 'empresa' && obra) texto = `(${texto}) AND (${contiene('objeto_del_contrato', obra)})`
+  let texto
+  if (tipo === 'obra') texto = contiene('objeto_del_contrato', frase)
+  else if (tipo === 'contratista') {
+    texto = [...new Set([String(frase).toLowerCase(), plano(frase)])]
+      .flatMap((v) => FIGURAS.map((f) => `caseless_starts_with(proveedor_adjudicado, '${esc(f + v)}')`))
+      .join(' OR ')
+  } else {
+    texto = `(${contiene('proveedor_adjudicado', frase)}) AND (${contiene('objeto_del_contrato', obra)})`
+  }
   return `SELECT id_contrato, referencia_del_contrato, nombre_entidad, proveedor_adjudicado,
     objeto_del_contrato, valor_del_contrato, fecha_de_firma
     WHERE ${soloContratosValidos()} AND (${texto})${condicionLugar(lugar)}
