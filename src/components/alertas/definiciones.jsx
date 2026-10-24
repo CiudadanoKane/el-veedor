@@ -170,8 +170,12 @@ export function AlertaErrorDigitacion() {
     valorOriginal: c.valuePaid || null,
     motivo: 'Persona natural, valor imposible',
   }))
-  // Las imposibles primero: son el error más extremo (y las únicas de SECOP I).
+  // Todas juntas por valor registrado, de mayor a menor. Por bloques de motivo,
+  // los de SECOP I quedaban al final de la lista nacional, a 17 "Ver más" de
+  // distancia, aunque varios valen más que los de arriba. Las imposibles siguen
+  // saliendo primero, porque pasan de 50 billones.
   const filas = [...imposibles, ...persona, ...frenteAlPago, ...frentePresupuesto, ...digitacion]
+    .sort((a, b) => (b.contractValue || 0) - (a.contractValue || 0))
 
   // QueryState acepta cualquier objeto con esta forma; se combinan las cuatro
   // consultas en una sola para manejar carga/error/vacío de forma unificada.
