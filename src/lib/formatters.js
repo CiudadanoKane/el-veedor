@@ -96,7 +96,12 @@ export function semaforo(days) {
 
 export function formatDate(dateStr) {
   if (!dateStr) return '—'
-  return new Date(dateStr).toLocaleDateString('es-CO', {
+  // "2022-08-04" a secas, JavaScript la lee como medianoche UTC, que en
+  // Colombia es todavía el día anterior: las fechas de las noticias salían un
+  // día antes. Con hora explícita se lee como hora local, igual que las de
+  // SECOP ("2022-08-04T00:00:00.000").
+  const s = /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? `${dateStr}T00:00:00` : dateStr
+  return new Date(s).toLocaleDateString('es-CO', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
