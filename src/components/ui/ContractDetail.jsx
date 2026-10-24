@@ -7,6 +7,7 @@ import { SecopLink } from './SecopLink'
 import { DOCUMENTOS_SIN_IDENTIDAD } from '../../lib/identidad'
 import { ModificationHistory } from './ModificationHistory'
 import { TerminoConAyuda } from './Ayuda'
+import { etiquetaEstado } from '../../lib/catalogos'
 
 // Estados donde la fecha de fin pasada no es una alerta: el contrato ya cerró
 // como corresponde, o nunca llegó a ejecutarse. En cualquier otro estado
@@ -145,7 +146,7 @@ export function ContractDetail({ contract: c }) {
         {/* Los tres campos que usan vocabulario de contratación estatal llevan
             su "?" al lado: son justo los que no significan nada para quien no
             trabaja en el sector. Ver glosario.js. */}
-        <Fact label="Estado" value={<TerminoConAyuda termino={c.status} />} />
+        <Fact label="Estado" value={<TerminoConAyuda termino={c.status} texto={etiquetaEstado(c.status)} />} />
         <Fact label="Modalidad" value={<TerminoConAyuda termino={c.modality} />} />
         <Fact label="Tipo de contrato" value={<TerminoConAyuda termino={c.contractType} />} />
         <Fact label="Sector" value={c.sector} />

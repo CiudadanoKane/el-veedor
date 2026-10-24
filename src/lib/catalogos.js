@@ -56,6 +56,18 @@ export const ESTADOS_CONTRATO = [
   'Prorrogado',
 ]
 
+// SECOP escribe unos estados en minúscula y otros no ("terminado", "enviado
+// Proveedor", "cedido" junto a "En ejecución"). El valor se conserva tal cual
+// para filtrar —es lo que hay en la base—; esto es solo cómo se muestra.
+const ESTADOS_A_LA_VISTA = {
+  terminado: 'Terminado',
+  'enviado Proveedor': 'Enviado al proveedor',
+  cedido: 'Cedido',
+}
+export function etiquetaEstado(estado) {
+  return ESTADOS_A_LA_VISTA[estado] ?? estado
+}
+
 // Causal invocada para no licitar. Es el filtro con más carga interpretativa
 // del buscador: "Urgencia manifiesta" permite contratar sin proceso alguno, y
 // es legítima ante un desastre — por eso quien la usa más son las entidades de

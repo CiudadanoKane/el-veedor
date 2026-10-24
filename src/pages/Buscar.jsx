@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import { PageHeader } from '../components/layout/Layout'
 import { QueryState } from '../components/ui/QueryState'
 import { DataTable } from '../components/ui/DataTable'
@@ -10,18 +10,19 @@ import { useFilters } from '../context/FiltersContext'
 import { BuscadorContratista } from '../components/ui/BuscadorContratista'
 import { BuscadorEntidad } from '../components/ui/BuscadorEntidad'
 import { useBusquedaDocumentos } from '../hooks/useBusquedaDocumentos'
-import { useDirectorioEntidades } from '../hooks/useDirectorioEntidades'
+import { useDirectorioEntidades, filtrarEntidades } from '../hooks/useDirectorioEntidades'
 import { useBusqueda, hayBusqueda, ORDENES, LIMITE, esIdentificador, segmentoValido } from '../hooks/useBusqueda'
 import { nombreSegmento } from '../lib/unspsc'
 import { useGeo } from '../hooks/useGeoOptions'
-import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO } from '../lib/catalogos'
+import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO, etiquetaEstado } from '../lib/catalogos'
 import { ESTADOS_SOLO_SECOP1 } from '../lib/catalogosSecop1'
 import { sinTildes } from '../lib/acentos'
 import { resolverLugar } from '../lib/geoResolver'
 import { formatCOP, formatDate } from '../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
 import { ResultadosWeb } from '../components/ui/ResultadosWeb'
-import { esMovilAhora } from '../hooks/useEsMovil'
+import { esMovilAhora, useEsMovil } from '../hooks/useEsMovil'
+import { PESTANAS_ALERTAS } from '../lib/pestanas'
 
 // Normaliza texto para comparar sin importar tildes ni espacios de más.
 const norm = (s) => sinTildes(s || '').replace(/\s+/g, ' ').trim()
@@ -51,7 +52,7 @@ function coincidenciaVisible(contrato, textos) {
 
 // Parámetros de URL que le pertenecen al buscador. Todo lo demás en la URL es
 // de otro módulo (hoy, los filtros geográficos) y no se toca desde aquí.
-const PARAMS_BUSQUEDA = ['q', 'amplia', 'modalidad', 'tipo', 'segmento', 'estado', 'orden', 'modo', 'valorMin', 'valorMax', 'desde', 'hasta']
+const PARAMS_BUSQUEDA = ['q', 'amplia', 'modalidad', 'tipo', 'segmento', 'estado', 'orden', 'modo', 'valorMin', 'valorMax', 'desde', 'hasta', 'pregunta', 'quien', 'tema']
 
 // Separador de la ampliación semántica en la URL. Barra vertical: no aparece
 // en nombres de contratos, así que no choca con los términos.
@@ -83,6 +84,12 @@ function escribirBusqueda(next, sig) {
     valorMax: sig.valorMax || '',
     desde: sig.fechaDesde || '',
     hasta: sig.fechaHasta || '',
+    // Lo que escribió la persona, tal cual, si la IA lo interpretó: la caja lo
+    // conserva (si no, "a dedo en la Gobernación del Atlántico" se quedaba
+    // vacía, porque todo se volvió filtros) y es lo que se busca en la prensa.
+    pregunta: sig.pregunta && sig.pregunta !== sig.texto ? sig.pregunta : '',
+    quien: sig.quien || '',
+    tema: sig.tema || '',
   }
   for (const [k, v] of Object.entries(propios)) {
     if (v) next.set(k, v)
@@ -103,7 +110,44 @@ const MODOS = [
 
 // Búsquedas de arranque: la página en blanco no sugiere nada, y el punto de la
 // plataforma es que alguien sin saber qué buscar encuentre por dónde empezar.
-const EJEMPLOS = ['alimentación escolar', 'vías terciarias', 'hospital', 'acueducto']
+// Lo que deja la IA cuando interpreta, y que una búsqueda sin IA (un número de
+// proceso, un fallo de la IA) debe borrar para no arrastrar lo de la anterior.
+const SIN_INTERPRETACION = { pregunta: '', quien: '', tema: '' }
+
+// Preguntas de juicio que SECOP no registra como texto —nadie escribe
+// "sobrecosto" en el objeto de su contrato— y el indicador de Alertas que más
+// se les acerca. La IA elige el tema (campo "tema" en api/buscar-ia.js).
+const TEMAS = {
+  adiciones_valor: {
+    pestana: PESTANAS_ALERTAS.adicionescosto,
+    explica: 'SECOP no dice si un contrato tiene sobrecostos. Lo que sí registra es cuánta plata se le sumó después de firmado.',
+    enlace: 'Ver las adiciones de presupuesto',
+  },
+  adiciones_plazo: {
+    pestana: PESTANAS_ALERTAS.adiciones,
+    explica: 'SECOP no marca un contrato como retrasado, pero sí registra cada vez que se le alarga el plazo.',
+    enlace: 'Ver las prórrogas de plazo',
+  },
+  vencidos: {
+    pestana: PESTANAS_ALERTAS.vencidos,
+    explica: 'SECOP no dice si un contrato está retrasado, pero sí cuáles siguen en ejecución con el plazo ya vencido.',
+    enlace: 'Ver los contratos con plazo vencido',
+  },
+  obra_paralizada: {
+    pestana: PESTANAS_ALERTAS.obra,
+    explica: 'SECOP no marca una obra como abandonada. Lo más cercano son las obras con el plazo vencido y casi nada pagado.',
+    enlace: 'Ver las obras que parecen paralizadas',
+  },
+}
+
+// Preguntas, no palabras sueltas: enseñan lo que se puede pedir —un lugar, un
+// año, un valor, la forma de contratar, una entidad, un número de proceso—.
+const EJEMPLOS = [
+  'alimentación escolar en Cali en 2025',
+  'contratos a dedo de la Gobernación del Atlántico',
+  'vías terciarias en Nariño de más de 1.000 millones',
+  'obras abandonadas en Córdoba',
+]
 
 // Opciones del selector de estado: las de SECOP II (que además arrastran su
 // equivalente en SECOP I donde lo hay, ver catalogosSecop1.js) más los estados
@@ -157,7 +201,7 @@ function Chips({ label, seleccionados, onToggle, options }) {
                   : 'border-border text-textSecondary hover:border-textPrimary hover:text-textPrimary'
               }`}
             >
-              {o}
+              {etiquetaEstado(o)}
             </button>
           )
         })}
@@ -171,6 +215,75 @@ function Chips({ label, seleccionados, onToggle, options }) {
 // cada tecla; las fechas (type=date) confirman al elegirlas, que es un solo
 // evento. Estos filtros también los llena la búsqueda con IA, y quedan visibles
 // y editables aquí.
+// Una pregunta de juicio ("sobrecostos", "obras abandonadas"): se dice qué no
+// registra SECOP y se lleva al indicador que más se acerca, con el mismo lugar.
+function AvisoTema({ tema }) {
+  const { rutaConAmbito } = useFilters()
+  const t = TEMAS[tema]
+  if (!t) return null
+  return (
+    <div className="mt-4 border-l-2 border-primary pl-3 max-w-2xl">
+      <p className="text-cuerpo text-textPrimary leading-snug">{t.explica}</p>
+      <Link
+        to={rutaConAmbito('/alertas', { t: t.pestana })}
+        className="toque mt-1 inline-block text-cuerpo font-semibold text-primary enlace-visible"
+      >
+        {t.enlace} →
+      </Link>
+    </div>
+  )
+}
+
+// La entidad que nombró la persona ("la Gobernación del Atlántico"), entre las
+// de SECOP. No se aplica sola: "alcaldía de Cali" son decenas de entidades
+// (cada secretaría por separado), y elegir una por la persona sería adivinar.
+function SugerenciaEntidad({ quien, lugar, onElegir }) {
+  const directorio = useDirectorioEntidades()
+  if (!quien) return null
+  const opciones = directorio.data ? filtrarEntidades(directorio.data, quien, 4) : []
+  return (
+    <div className="mt-4 max-w-2xl">
+      {directorio.isLoading ? (
+        <p className="text-nota text-textSecondary">Buscando «{quien}» entre las entidades…</p>
+      ) : opciones.length === 0 ? (
+        <p className="text-nota text-textSecondary">
+          No encontramos «{quien}» entre las entidades de SECOP II; prueba con otro nombre en la
+          pestaña Entidades.
+        </p>
+      ) : (
+        <>
+          <p className="text-cuerpo text-textPrimary leading-snug">
+            ¿Hablas de alguna de estas entidades? Elige una para ver solo sus contratos:
+          </p>
+          <ul className="mt-2 flex flex-col gap-1.5">
+            {opciones.map((e) => (
+              <li key={e.nombre}>
+                <button
+                  type="button"
+                  onClick={() => onElegir(e.nombre)}
+                  className="w-full text-left flex items-baseline justify-between gap-3 border border-textPrimary/30
+                             px-3 py-2 hover:border-textPrimary transition-colors"
+                >
+                  <span className="text-cuerpo text-textPrimary">{e.nombre}</span>
+                  <span className="shrink-0 text-micro tabular-nums text-textSecondary">
+                    {e.contratos.toLocaleString('es-CO')} contratos
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          {lugar && (
+            <p className="mt-2 text-nota text-textSecondary leading-snug">
+              SECOP registra cada contrato donde tiene su sede la entidad, no donde se ejecuta. Si
+              eliges una de fuera de {lugar}, buscamos «{lugar}» en el texto de sus contratos.
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 // Los filtros avanzados activos, con el panel plegado: una etiqueta por filtro,
 // que se quita con un toque. Lo que la IA convirtió en filtro queda a la vista
 // y editable sin tener que abrir el panel entero.
@@ -179,7 +292,7 @@ function FiltrosAplicados({ criterios, actualizar }) {
   if (criterios.modalidad) etiquetas.push({ texto: criterios.modalidad, quitar: { modalidad: '' } })
   if (criterios.tipo) etiquetas.push({ texto: criterios.tipo, quitar: { tipo: '' } })
   if (criterios.estados.length) {
-    etiquetas.push({ texto: `Estado: ${criterios.estados.join(', ')}`, quitar: { estados: [] } })
+    etiquetas.push({ texto: `Estado: ${criterios.estados.map(etiquetaEstado).join(', ')}`, quitar: { estados: [] } })
   }
   if (criterios.valorMin) {
     etiquetas.push({ texto: `Desde ${formatCOP(Number(criterios.valorMin))}`, quitar: { valorMin: '' } })
@@ -286,6 +399,7 @@ function Rangos({ criterios, actualizar }) {
 
 export function Buscar() {
   const { filters } = useFilters()
+  const esMovil = useEsMovil()
   // La búsqueda vive en la URL para que se pueda compartir: quien encuentre
   // algo puede mandar el enlace y el otro ve exactamente lo mismo.
   const [params, setParams] = useSearchParams()
@@ -313,12 +427,15 @@ export function Buscar() {
     valorMax: params.get('valorMax') || '',
     fechaDesde: params.get('desde') || '',
     fechaHasta: params.get('hasta') || '',
+    pregunta: params.get('pregunta') || '',
+    quien: params.get('quien') || '',
+    tema: TEMAS[params.get('tema')] ? params.get('tema') : '',
   }), [params])
 
   // El texto se escribe libre y solo viaja a la URL al enviar: cada consulta
   // pega contra 5,3 millones de registros, no conviene dispararla por tecla.
-  const [borrador, setBorrador] = useState(criterios.texto)
-  useEffect(() => setBorrador(criterios.texto), [criterios.texto])
+  const [borrador, setBorrador] = useState(criterios.pregunta || criterios.texto)
+  useEffect(() => setBorrador(criterios.pregunta || criterios.texto), [criterios.pregunta, criterios.texto])
 
   // Filtros avanzados, plegados por defecto. En pantalla grande se abren solos
   // si llega uno activo por la URL (p. ej. un enlace compartido que ya trae una
@@ -372,7 +489,7 @@ export function Buscar() {
     // Cada envío nuevo arranca de cero la ampliación semántica: si no la vuelve
     // a poblar la IA, no debe arrastrar los sinónimos del intento anterior.
     if (!limpio || esIdentificador(limpio)) {
-      actualizar({ texto: limpio, terminos: [] })
+      actualizar({ texto: limpio, terminos: [], ...SIN_INTERPRETACION })
       if (limpio) llevarAResultados()
       return
     }
@@ -394,7 +511,7 @@ export function Buscar() {
           ? `${Math.ceil(reintentarEn / 60)} minutos`
           : 'un momento'
         setErrorIA(`Demasiadas búsquedas seguidas. Espera ${espera} y vuelve a intentarlo; mientras tanto se buscó el texto tal cual.`)
-        actualizar({ texto: limpio, terminos: [] })
+        actualizar({ texto: limpio, terminos: [], ...SIN_INTERPRETACION })
         return
       }
       if (!res.ok) throw new Error('fallo la traducción')
@@ -421,6 +538,9 @@ export function Buscar() {
         valorMax: filtros.valorMax ? String(filtros.valorMax) : '',
         fechaDesde: filtros.fechaDesde || '',
         fechaHasta: filtros.fechaHasta || '',
+        pregunta: limpio,
+        quien: filtros.entidad || '',
+        tema: TEMAS[filtros.tema] ? filtros.tema : '',
       }
       // El lugar se valida contra el catálogo real (no se inventa un municipio).
       const lugar = resolverLugar(geo.data, {
@@ -447,7 +567,7 @@ export function Buscar() {
       })
     } catch {
       setErrorIA('No se pudieron interpretar los filtros de la frase; se buscó el texto tal cual.')
-      actualizar({ texto: limpio, terminos: [] })
+      actualizar({ texto: limpio, terminos: [], ...SIN_INTERPRETACION })
     } finally {
       setCargandoIA(false)
       llevarAResultados()
@@ -484,6 +604,29 @@ export function Buscar() {
   const queryContratos = useBusqueda(criterios, filters)
   const queryDocumentos = useBusquedaDocumentos(criterios, filters)
   const activa = hayBusqueda(criterios)
+  // Elegir la entidad que nombró la persona. Si su nombre no lleva el lugar
+  // elegido (INVÍAS, con sede en Bogotá, para "INVÍAS en Nariño"), el filtro de
+  // lugar dejaría la lista vacía: se cambia por buscar el lugar en el texto.
+  const elegirEntidad = (nombre) => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('entidad', nombre)
+      next.delete('quien')
+      const lugar = filters.city || filters.department
+      if (lugar && !sinTildes(nombre).includes(sinTildes(lugar))) {
+        next.delete('departamento')
+        next.delete('ciudad')
+        if (!criterios.texto) next.set('q', lugar)
+      }
+      return next
+    })
+    llevarAResultados()
+  }
+
+  // La IA entendió algo, aunque no quede nada que buscar en SECOP: una entidad
+  // por elegir, o una pregunta de juicio ("obras abandonadas en Córdoba") que
+  // responde un indicador de Alertas. No es "Por dónde empezar".
+  const hayPregunta = !!(criterios.pregunta || criterios.quien || criterios.tema)
   const hayFiltros =
     criterios.modalidad || criterios.tipo || criterios.segmento || criterios.estados.length > 0 ||
     criterios.terminos.length > 0 ||
@@ -531,6 +674,21 @@ export function Buscar() {
   const porId = queryContratos.data?.porId
   const entidadesId = queryContratos.data?.entidades ?? 0
   const lugarFiltro = filters.city || filters.department
+
+  // Debajo de los contratos, lo que dice la prensa. Con lo que escribió la
+  // persona si pasó por la IA ("a dedo en la Gobernación del Atlántico" dice más
+  // que lo que quedó para SECOP, a veces nada), y con el lugar elegido si no lo
+  // nombra, porque la prensa no tiene filtro de departamento. No con un número
+  // de proceso: ese ya se buscó tal cual arriba.
+  const basePrensa = (criterios.pregunta || criterios.texto).trim()
+  const bloquePrensa = !esIdentificador(basePrensa) && basePrensa.length >= 3 && (
+    <ResultadosWeb
+      consulta={[
+        basePrensa,
+        lugarFiltro && !sinTildes(basePrensa).includes(sinTildes(lugarFiltro)) ? lugarFiltro : '',
+      ].filter(Boolean).join(' ')}
+    />
+  )
   const hayLocales = resultados.some((r) => (r.prioridadLugar ?? 2) < 2)
   const hayMas = queryContratos.data?.hayMas || queryDocumentos.data?.hayMas
 
@@ -589,9 +747,11 @@ export function Buscar() {
 
   return (
     <div className="space-y-6">
+      {/* En el teléfono, con una búsqueda hecha, la explicación sobra: ya se
+          usó, y sus tres líneas empujaban los resultados abajo. */}
       <PageHeader
         title="Buscador inteligente"
-        subtitle="Escribe en lenguaje natural y una IA arma los filtros por ti —fecha, valor, lugar, modalidad—, sobre más de 11 millones de contratos de SECOP II y SECOP I. También puedes buscar por palabra exacta, o encontrar a un contratista o entidad por nombre —estos dos, solo con datos de SECOP II—."
+        subtitle={esMovil && (activa || hayPregunta) ? null : 'Pregunta como lo dirías: «contratos a dedo en Soledad en 2025». Una IA lo convierte en filtros sobre más de 11 millones de contratos de SECOP, y buscamos también lo que dice la prensa.'}
       />
 
       <div>
@@ -614,7 +774,7 @@ export function Buscar() {
                   htmlFor="busqueda"
                   className="text-micro uppercase tracking-label text-textSecondary font-semibold"
                 >
-                  Palabra o frase
+                  ¿Qué quieres saber?
                 </label>
                 {/* Es la acción principal de toda la página, así que lleva una caja
                     propia (fondo + borde completo) en vez del subrayado que usan los
@@ -650,8 +810,8 @@ export function Buscar() {
                   />
                 </div>
                 <span className="text-nota text-textSecondary mt-1">
-                  Escribe en lenguaje natural: la IA convierte fecha, valor, lugar o modalidad
-                  en filtros. ¿Número de proceso o código SECOP? Va directo al contrato.
+                  ¿Tienes el número del proceso o el código SECOP? Pégalo y va directo al
+                  contrato.
                 </span>
               </div>
               <button
@@ -668,15 +828,35 @@ export function Buscar() {
               <p className="mt-2 text-nota text-textSecondary">{errorIA}</p>
             )}
 
+            <AvisoTema tema={criterios.tema} />
+            {!filters.entity && (
+              <SugerenciaEntidad
+                quien={criterios.quien}
+                lugar={filters.city || filters.department}
+                onElegir={elegirEntidad}
+              />
+            )}
+
+            {/* Qué palabras quedaron de la pregunta: la caja muestra lo que
+                escribió la persona, y esto es lo que de verdad se busca. */}
+            {criterios.pregunta && criterios.texto && (
+              <p className="mt-4 text-nota text-textSecondary">
+                Buscamos las palabras <strong className="text-textPrimary">«{criterios.texto}»</strong>
+                {criterios.terminos.length > 0 ? ' y también:' : '.'}
+              </p>
+            )}
+
             {/* Ampliación semántica: la IA sumó términos relacionados para no
                 perder contratos que nombran lo mismo con otras palabras. Se
                 muestran y se pueden quitar uno a uno —transparente y editable,
                 como el resto de los filtros—. */}
             {criterios.terminos.length > 0 && (
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                <span className="text-micro uppercase tracking-label text-textSecondary font-semibold">
-                  También busca
-                </span>
+                {!(criterios.pregunta && criterios.texto) && (
+                  <span className="text-micro uppercase tracking-label text-textSecondary font-semibold">
+                    También busca
+                  </span>
+                )}
                 {criterios.terminos.map((t) => (
                   <button
                     key={t}
@@ -769,7 +949,12 @@ export function Buscar() {
           </form>
 
           <div className="pb-8">
-            {!activa ? (
+            {!activa && hayPregunta ? (
+              // Se entendió la pregunta pero no queda nada que buscar en SECOP
+              // todavía (falta elegir la entidad, o la respuesta está en
+              // Alertas): lo de arriba dice qué hacer, y la prensa sí se busca.
+              <div ref={resultadosRef}>{bloquePrensa}</div>
+            ) : !activa ? (
               <div className="border-t-2 border-textPrimary pt-6">
                 <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
                   Por dónde empezar
@@ -781,7 +966,7 @@ export function Buscar() {
                   {EJEMPLOS.map((t) => (
                     <button
                       key={t}
-                      onClick={() => actualizar({ texto: t, terminos: [], modalidad: '', tipo: '', estados: [] })}
+                      onClick={() => buscarConTexto(t)}
                       className="border border-border px-4 py-2 text-cuerpo text-textPrimary
                                  hover:border-textPrimary hover:bg-muted transition-colors"
                     >
@@ -818,8 +1003,11 @@ export function Buscar() {
                   elegir uno o varios <strong>estados</strong> a la vez —incluidos esos, si es
                   justo lo que quieres revisar—. Si la frase describe una fecha, un valor, una
                   modalidad o un lugar, una IA los interpreta y los aplica como filtros —el lugar
-                  en la barra de arriba, el resto en Filtros avanzados, todos visibles y
-                  editables—; nunca decide qué contrato mostrar, solo cómo buscarlo. Cuando lo
+                  en la barra de arriba, el resto como etiquetas que se pueden quitar—; nunca decide
+                  qué contrato mostrar, solo cómo buscarlo. Si nombras una <strong>entidad</strong>,
+                  te propone las que coinciden para que elijas tú. Y si preguntas por algo que SECOP
+                  no registra —<em>sobrecostos</em>, <em>obras abandonadas</em>—, te lo dice y te lleva
+                  al indicador de Alertas que más se acerca. Cuando lo
                   buscado es un concepto, la IA también <strong>amplía a términos relacionados</strong>{' '}
                   («puente» además de «viaducto»), que aparecen como etiquetas quitables bajo la
                   caja. Se muestran hasta <strong>{LIMITE}</strong> resultados.{' '}
@@ -928,20 +1116,7 @@ export function Buscar() {
                   </QueryState>
                 </div>
 
-                {/* Debajo de los contratos, lo que dice la prensa. Con el lugar
-                    elegido dentro de la frase, porque la prensa no tiene filtro
-                    de departamento. No con un número de proceso: ese ya se
-                    buscó tal cual arriba. */}
-                {!esIdentificador(criterios.texto) && criterios.texto.trim().length >= 3 && (
-                  <ResultadosWeb
-                    consulta={[
-                      criterios.texto.trim(),
-                      lugarFiltro && !sinTildes(criterios.texto.toLowerCase()).includes(sinTildes(lugarFiltro.toLowerCase()))
-                        ? lugarFiltro
-                        : '',
-                    ].filter(Boolean).join(' ')}
-                  />
-                )}
+                {bloquePrensa}
               </div>
             )}
           </div>

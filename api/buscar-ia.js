@@ -13,6 +13,10 @@ const client = new Anthropic()
 
 export const MODELO = 'claude-haiku-4-5'
 
+// Los indicadores de Alertas a los que se puede mandar una pregunta de juicio
+// ("sobrecostos"): ver el campo "tema" del esquema y AvisoTema en Buscar.jsx.
+const TEMAS = ['adiciones_valor', 'adiciones_plazo', 'vencidos', 'obra_paralizada']
+
 // El comportamiento de este endpoint depende del prompt tanto como del código,
 // así que el esquema y las instrucciones se exportan: se pueden probar contra
 // el modelo sin desplegar, y la prueba usa exactamente lo que corre en
@@ -117,12 +121,33 @@ export const ESQUEMA = {
         'tipeo (p. ej. "barranqilla" → "Barranquilla", "medallo" → "Medellín"). Vacío si no se ' +
         'menciona ninguna ciudad.',
     },
+    entidad: {
+      type: 'string',
+      description:
+        'La entidad pública contratante que la persona nombra, tal como la nombra (p. ej. "Gobernación ' +
+        'del Atlántico", "Alcaldía de Medellín", "INVÍAS", "Hospital San Jorge"). Va SOLO aquí: no la ' +
+        'repitas en "texto". Su ciudad o departamento sí van también en sus campos ("Gobernación del ' +
+        'Atlántico" → departamento "Atlántico"). Vacío si no se nombra una entidad.',
+    },
+    tema: {
+      type: 'string',
+      enum: ['', 'adiciones_valor', 'adiciones_plazo', 'vencidos', 'obra_paralizada'],
+      description:
+        'Cuando la persona pregunta por un JUICIO sobre los contratos que SECOP no registra como texto ' +
+        '—sobrecostos, corrupción, irregularidades, retrasos, obras abandonadas o paralizadas, ' +
+        '"elefantes blancos"—, el indicador de la plataforma que más se le acerca: "adiciones_valor" ' +
+        '(sobrecostos, le metieron más plata, se encareció), "adiciones_plazo" (retrasos, prórrogas, ' +
+        'no la terminan), "vencidos" (contratos con el plazo vencido que siguen en ejecución), ' +
+        '"obra_paralizada" (obras abandonadas, paralizadas, elefantes blancos). Esas palabras de ' +
+        'juicio NO van en "texto": ningún contrato se describe a sí mismo con ellas. Vacío si no hay ' +
+        'un juicio así en la pregunta.',
+    },
     valorMin: { type: 'integer', description: 'Valor mínimo en pesos colombianos (COP). 0 si no se menciona.' },
     valorMax: { type: 'integer', description: 'Valor máximo en pesos colombianos (COP). 0 si no se menciona.' },
     fechaDesde: { type: 'string', description: 'Fecha de firma desde, formato YYYY-MM-DD. Cadena vacía si no se menciona.' },
     fechaHasta: { type: 'string', description: 'Fecha de firma hasta, formato YYYY-MM-DD. Cadena vacía si no se menciona.' },
   },
-  required: ['texto', 'terminos', 'modalidad', 'tipo', 'estados', 'departamento', 'ciudad', 'valorMin', 'valorMax', 'fechaDesde', 'fechaHasta'],
+  required: ['texto', 'terminos', 'modalidad', 'tipo', 'estados', 'departamento', 'ciudad', 'entidad', 'tema', 'valorMin', 'valorMax', 'fechaDesde', 'fechaHasta'],
   additionalProperties: false,
 }
 
@@ -190,6 +215,8 @@ export default async function handler(req, res) {
     // que no, y un filtro que nadie pidió esconde contratos (src/lib/mencionesIA.js).
     if (filtros.tipo && !mencionaTipo(consulta, filtros.tipo)) filtros.tipo = ''
     if (filtros.modalidad && !mencionaModalidad(consulta, filtros.modalidad)) filtros.modalidad = ''
+    filtros.entidad = String(filtros.entidad || '').trim().slice(0, 120)
+    if (!TEMAS.includes(filtros.tema)) filtros.tema = ''
 
     // Ampliación semántica: se sanea (tope duro, sin vacíos, sin repetir el
     // texto principal ni entre sí, comparando sin tildes ni mayúsculas). El

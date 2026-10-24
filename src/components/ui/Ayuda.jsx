@@ -113,11 +113,13 @@ export function Ayuda({ termino, definicion, className = '' }) {
 
 // El término y su ayuda como una sola pieza, para no repetir el par en cada
 // tabla. Devuelve solo el texto si no hay definición.
-export function TerminoConAyuda({ termino, className = '' }) {
+// `texto`: cómo se muestra, si no es el término tal cual (p. ej. un estado de
+// SECOP en minúscula); la ayuda se busca siempre por el término original.
+export function TerminoConAyuda({ termino, texto, className = '' }) {
   if (!termino) return '—'
   return (
     <span className={className}>
-      {termino}
+      {texto ?? termino}
       <Ayuda termino={termino} />
     </span>
   )
