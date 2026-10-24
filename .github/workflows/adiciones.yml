@@ -77,4 +77,14 @@ jobs:
             exit 0
           fi
           git commit -m 'Datos: recalcula adiciones de valor'
-          git push
+          # Traer lo que otros recálculos hayan subido mientras este corría y
+          # reintentar. Los cron de GitHub llegan con más de una hora de retraso, así
+          # que los tres terminan coincidiendo aunque estén escalonados; con un
+          # `git push` solo, el que llegaba segundo era rechazado y su archivo se
+          # perdía (oct 2026: el ranking de contratistas, dos días seguidos). Cada
+          # workflow toca un archivo distinto, así que el rebase no choca.
+          for intento in 1 2 3; do
+            git pull --rebase --quiet && git push && exit 0
+            sleep $((intento * 5))
+          done
+          exit 1
