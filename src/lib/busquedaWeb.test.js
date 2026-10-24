@@ -104,4 +104,11 @@ describe('el puente del apodo al contrato', () => {
     expect(soqlContratosPorPista({ tipo: 'contratista', frase: "Consorcio D'Vial" }))
       .toContain("caseless_contains(proveedor_adjudicado, 'consorcio d''vial')")
   })
+
+  it('se limita al lugar que se está mirando', () => {
+    const q = soqlContratosPorPista({ tipo: 'obra', frase: 'alimentación escolar' }, 4, {
+      departamento: 'Valle del Cauca', ciudad: 'Cali',
+    })
+    expect(q).toContain("AND departamento = 'Valle del Cauca' AND ciudad = 'Cali'")
+  })
 })

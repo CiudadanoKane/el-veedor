@@ -289,7 +289,10 @@ async function buscarEnLaWeb(req, res) {
     const resultados = limpiarResultados(extraerArreglo(texto), resultadosReales(response.content))
     const [, obras] = await Promise.all([
       Promise.all(resultados.map(verificarProceso)),
-      buscarObras(resultados, consulta),
+      buscarObras(resultados, consulta, {
+        departamento: String(req.query.departamento || '').slice(0, 60),
+        ciudad: String(req.query.ciudad || '').slice(0, 60),
+      }),
     ])
     return responderWeb(res, { resultados, obras })
   } catch (err) {
@@ -309,11 +312,11 @@ function responderWeb(res, cuerpo) {
 // pista sin contratos no se muestra. Ver pistasDeContrato en
 // src/lib/busquedaWeb.js.
 const LIMITE_OBRA = 4
-async function buscarObras(resultados, consulta) {
+async function buscarObras(resultados, consulta, lugar) {
   const pistas = pistasDeContrato(resultados, consulta)
   const obras = await Promise.all(pistas.map(async (pista) => {
     try {
-      const filas = await socrataQuery(DS_CONTRATOS, soqlContratosPorPista(pista, LIMITE_OBRA))
+      const filas = await socrataQuery(DS_CONTRATOS, soqlContratosPorPista(pista, LIMITE_OBRA, lugar))
       if (!filas.length) return null
       const campo = pista.tipo === 'obra' ? 'obraMencionada' : 'contratistaMencionado'
       return {

@@ -13,8 +13,8 @@ import { formatDate, formatCOP } from '../../lib/formatters'
 // así, y el enlace al medio va siempre a la vista para leer el original.
 export const ID_PRENSA = 'en-la-prensa'
 
-export function ResultadosWeb({ consulta }) {
-  const query = useBusquedaWeb(consulta)
+export function ResultadosWeb({ consulta, lugar }) {
+  const query = useBusquedaWeb(consulta, lugar)
   if (!import.meta.env.PROD || !consulta) return null
 
   const resultados = query.data?.resultados ?? []
@@ -113,8 +113,8 @@ function Proceso({ r }) {
 // cosas, cortas: el puente del apodo al contrato (ver pistasDeContrato en
 // src/lib/busquedaWeb.js) y, si se pide, los dos primeros titulares con un
 // enlace a la sección entera.
-export function ResumenPrensa({ consulta, conTitulares }) {
-  const query = useBusquedaWeb(consulta)
+export function ResumenPrensa({ consulta, lugar, conTitulares }) {
+  const query = useBusquedaWeb(consulta, lugar)
   if (!import.meta.env.PROD || !consulta || !query.isSuccess) return null
 
   const resultados = query.data?.resultados ?? []
@@ -139,13 +139,13 @@ export function ResumenPrensa({ consulta, conTitulares }) {
             Según la prensa, esto podría ser lo que buscas:
           </p>
           <ul className="mt-2 space-y-2">
-            {sugeridos.slice(0, 3).map((c) => (
+            {sugeridos.slice(0, 2).map((c) => (
               <li key={c.id}>
                 <Link
                   to={`/buscar?${new URLSearchParams({ q: c.id })}`}
                   className="text-cuerpo font-semibold text-primary enlace-visible leading-snug"
                 >
-                  {recortar(c.objeto, 140)}
+                  {recortar(c.objeto, 90)}
                 </Link>
                 <p className="text-nota text-textSecondary leading-snug">
                   {c.entidad} · {c.contratista} · {formatCOP(c.valor)}
@@ -162,7 +162,11 @@ export function ResumenPrensa({ consulta, conTitulares }) {
               <>
                 {' '}
                 <Link
-                  to={`/buscar?${new URLSearchParams({ q: pistaTexto.frase })}`}
+                  to={`/buscar?${new URLSearchParams({
+                    q: pistaTexto.frase,
+                    ...(lugar?.departamento && { departamento: lugar.departamento }),
+                    ...(lugar?.ciudad && { ciudad: lugar.ciudad }),
+                  })}`}
                   className="font-semibold text-primary enlace-sutil"
                 >
                   Ver todos los contratos que nombran «{pistaTexto.frase}» →

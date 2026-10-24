@@ -692,7 +692,8 @@ export function Buscar() {
         lugarFiltro && !sinTildes(basePrensa).includes(sinTildes(lugarFiltro)) ? lugarFiltro : '',
       ].filter(Boolean).join(' ')
     : ''
-  const bloquePrensa = consultaPrensa && <ResultadosWeb consulta={consultaPrensa} />
+  const lugarPrensa = { departamento: filters.department, ciudad: filters.city }
+  const bloquePrensa = consultaPrensa && <ResultadosWeb consulta={consultaPrensa} lugar={lugarPrensa} />
   const hayLocales = resultados.some((r) => (r.prioridadLugar ?? 2) < 2)
   const hayMas = queryContratos.data?.hayMas || queryDocumentos.data?.hayMas
 
@@ -961,7 +962,7 @@ export function Buscar() {
               // Alertas): lo de arriba dice qué hacer, y la prensa sí se busca.
               <div ref={resultadosRef}>
                 <div className="mt-6">
-                  <ResumenPrensa consulta={consultaPrensa} />
+                  <ResumenPrensa consulta={consultaPrensa} lugar={lugarPrensa} />
                 </div>
                 {bloquePrensa}
               </div>
@@ -1049,7 +1050,7 @@ export function Buscar() {
                     contrato y, si hay contratos, dos titulares. Ver
                     ResumenPrensa. */}
                 <div className="mt-4">
-                  <ResumenPrensa consulta={consultaPrensa} conTitulares={resultados.length > 0} />
+                  <ResumenPrensa consulta={consultaPrensa} lugar={lugarPrensa} conTitulares={resultados.length > 0} />
                   <QueryState query={queryContratos}>
                     {() =>
                       resultados.length === 0 ? (

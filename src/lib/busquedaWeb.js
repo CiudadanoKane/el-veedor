@@ -219,16 +219,26 @@ export function pistasDeContrato(resultados, consulta, max = 3) {
   return salida.slice(0, max)
 }
 
-// Los contratos que nombran la pista, los de mayor valor primero. Con y sin
-// tildes, porque la API las distingue y SECOP las usa a veces sí, a veces no.
-export function soqlContratosPorPista({ tipo, frase }, limite = 4) {
+// Los contratos que nombran la pista, los de mayor valor primero, y solo del
+// lugar que se está mirando: sin eso, "alimentación escolar en Cali" traía el
+// PAE de Boyacá y de Bogotá, de cientos de miles de millones, como "lo que
+// buscas". Con y sin tildes, porque la API las distingue y SECOP las usa a
+// veces sí, a veces no.
+export function soqlContratosPorPista({ tipo, frase }, limite = 4, lugar = {}) {
   const campo = tipo === 'obra' ? 'objeto_del_contrato' : 'proveedor_adjudicado'
   const variantes = [...new Set([frase.toLowerCase(), plano(frase)])]
   const texto = variantes.map((v) => `caseless_contains(${campo}, '${esc(v)}')`).join(' OR ')
   return `SELECT id_contrato, referencia_del_contrato, nombre_entidad, proveedor_adjudicado,
     objeto_del_contrato, valor_del_contrato, fecha_de_firma
-    WHERE ${soloContratosValidos()} AND (${texto})
+    WHERE ${soloContratosValidos()} AND (${texto})${condicionLugar(lugar)}
     ORDER BY valor_del_contrato DESC LIMIT ${limite + 1}`
+}
+
+function condicionLugar({ departamento, ciudad } = {}) {
+  let c = ''
+  if (departamento) c += ` AND departamento = '${esc(departamento)}'`
+  if (ciudad) c += ` AND ciudad = '${esc(ciudad)}'`
+  return c
 }
 
 // Palabras que distinguen a una entidad ("Alcaldía de Sincelejo" → sincelejo),
