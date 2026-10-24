@@ -7,7 +7,7 @@
 import { ESTADO_ACTIVO, HOY } from './constants.js'
 import {
   whereFromFilters, buildWhere, moraConditions, soloContratosValidos, RANGOS_VENCIMIENTO,
-  esc, soloContratosValidosSecop1, whereFromFiltrosSecop1, VALOR_SECOP1_SOQL, cuantiaPosibleSecop1,
+  esc, soloContratosValidosSecop1, whereFromFiltrosSecop1, VALOR_SECOP1_SOQL, cuantiaPosibleSecop1, valorCoherenteConElPresupuestoSecop1,
   RANGOS_VENCIMIENTO_SECOP1,
 } from './soql.js'
 import { documentoIdentifica } from './identidad.js'
@@ -108,7 +108,7 @@ export const PANORAMA_SOQL = {
 // SECOP I no reporta, así que sigue siendo solo de SECOP II. Ver ROADMAP.md.
 export function soqlGeneralesSecop1(filters) {
   const where = buildWhere(
-    whereFromFiltrosSecop1(filters, [soloContratosValidosSecop1(), cuantiaPosibleSecop1()]),
+    whereFromFiltrosSecop1(filters, [soloContratosValidosSecop1(), cuantiaPosibleSecop1(), valorCoherenteConElPresupuestoSecop1()]),
   )
   const V = VALOR_SECOP1_SOQL
   // Estimación de "vivo" en SECOP I: 'Celebrado' es firmado y aún no liquidado

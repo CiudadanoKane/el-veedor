@@ -271,14 +271,32 @@ async function buscarEnLaWeb(req, res) {
   }
 
   try {
-    const response = await client.messages.create({
-      model: MODELO_WEB,
-      max_tokens: 4096,
-      system: promptWeb(),
-      output_config: { effort: 'low' },
-      messages: [{ role: 'user', content: consulta }],
-      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 2, allowed_domains: DOMINIOS_WEB }],
-    })
+    // Límites, medidos en oct 2026 con 3 consultas reales. La función tiene 30 s
+    // (vercel.json) y con el razonamiento por defecto de Haiku 5.5 la búsqueda
+    // tardaba 12-34 s y generaba 2.500-4.000 tokens, uno de ellos a 62 del tope:
+    // pasado el tope el JSON queda cortado, y pasados los 30 s la persona ve
+    // "no se pudo buscar". Sin razonamiento: 8,4 s y ~1.950 tokens, con la
+    // misma calidad (la tarea es leer y resumir, no deducir).
+    // - thinking desactivado (Haiku 5.5 lo acepta con effort bajo);
+    // - max_tokens con un 50 % de margen sobre lo medido;
+    // - 22 s de espera y sin reintentos: deja tiempo a la verificación en
+    //   SECOP dentro de los 30 s;
+    // - y si aun así se corta, extraerArreglo rescata los resultados completos.
+    // Sin razonamiento, el puente al contrato acertaba menos ("la gran vía": 1
+    // de 4): con 3 búsquedas en vez de 2 volvió a 3 de 4, sin más tiempo
+    // (9-10 s, máximo 2.128 tokens).
+    const response = await client.messages.create(
+      {
+        model: MODELO_WEB,
+        max_tokens: 3000,
+        system: promptWeb(),
+        thinking: { type: 'disabled' },
+        output_config: { effort: 'low' },
+        messages: [{ role: 'user', content: consulta }],
+        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3, allowed_domains: DOMINIOS_WEB }],
+      },
+      { timeout: 22_000, maxRetries: 0 },
+    )
 
     // Una negativa del modelo o una respuesta cortada no son un error para
     // quien busca: simplemente no hay resultados de prensa.

@@ -36,13 +36,15 @@ export function promptWeb() {
   return (
     'Eres el buscador de El Veedor, una plataforma de veeduría ciudadana de la contratación pública ' +
     'en Colombia. Busca en la web lo que pide la persona —puede escribir como habla, con el nombre ' +
-    'popular de una obra o un programa— y devuelve SOLO un arreglo JSON, sin texto alrededor, con ' +
+    'popular de una obra o un programa—. Si usa un nombre popular, dedica una de tus búsquedas ' +
+    'a encontrar el nombre oficial del proyecto o el contratista (p. ej. "<nombre popular> ' +
+    'contratista consorcio"). Devuelve SOLO un arreglo JSON, sin texto alrededor, con ' +
     `hasta ${MAX_RESULTADOS_WEB} resultados relevantes sobre contratación pública. Cada uno con:\n` +
     '- "url": exactamente la URL del resultado de búsqueda, sin modificarla.\n' +
     '- "titulo": el titular o nombre del documento, en pocas palabras.\n' +
     '- "fuente": nombre del medio o sitio.\n' +
     '- "fecha": AAAA-MM-DD si la fuente la indica; si no, null.\n' +
-    '- "resumen": una frase en español sencillo con lo que dice la fuente sobre el contrato o la ' +
+    '- "resumen": una frase de máximo 30 palabras, en español sencillo, con lo que dice la fuente sobre el contrato o la ' +
     'obra. Solo lo que la fuente dice: no acuses ni concluyas más allá.\n' +
     '- "proceso": el número de proceso o de contrato tal como lo escribe la fuente (p. ej. ' +
     '"LP-005-2020"), si lo menciona; si no, null. Solo el número, sin palabras alrededor.\n' +
@@ -52,7 +54,8 @@ export function promptWeb() {
     'fuente lo menciona en cualquier parte, aunque sea de pasada. Es el nombre con que la ' +
     'entidad lo registraría en el contrato, NO el apodo que usa la persona: si buscan "la Gran ' +
     'Vía" y la noticia habla del "Corredor Universitario", devuelve "Corredor Universitario". ' +
-    'Si la fuente solo usa el apodo, null.\n' +
+    'Nunca devuelvas el apodo ni una frase que lo contenga ("Gran Vía", "Gran Vía segunda ' +
+    'unidad funcional"): si la fuente solo usa el apodo, null.\n' +
     '- "contratista": la empresa, consorcio o unión temporal que ejecuta el contrato, tal como ' +
     'lo nombra la fuente (p. ej. "Consorcio Vial Barranquilla"), si lo menciona; si no, null.\n' +
     'Si no encuentras nada relevante, devuelve [].'
@@ -60,16 +63,25 @@ export function promptWeb() {
 }
 
 // El texto de la respuesta debería ser solo el arreglo, pero se tolera texto
-// alrededor: se toma del primer "[" al último "]".
+// alrededor: se toma del primer "[" al último "]". Si la respuesta llegó
+// cortada por max_tokens, el arreglo no cierra: se rescatan los objetos
+// completos, en vez de perderlos todos por el último a medias.
 export function extraerArreglo(texto) {
   const i = texto.indexOf('[')
+  if (i === -1) return []
   const j = texto.lastIndexOf(']')
-  if (i === -1 || j <= i) return []
+  const entero = j > i ? leer(texto.slice(i, j + 1)) : null
+  if (entero) return entero
+  const k = texto.lastIndexOf('}')
+  return (k > i && leer(`${texto.slice(i, k + 1)}]`)) || []
+}
+
+function leer(json) {
   try {
-    const v = JSON.parse(texto.slice(i, j + 1))
-    return Array.isArray(v) ? v : []
+    const v = JSON.parse(json)
+    return Array.isArray(v) ? v : null
   } catch {
-    return []
+    return null
   }
 }
 

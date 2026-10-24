@@ -112,3 +112,13 @@ describe('el puente del apodo al contrato', () => {
     expect(q).toContain("AND departamento = 'Valle del Cauca' AND ciudad = 'Cali'")
   })
 })
+
+describe('extraerArreglo con la respuesta cortada', () => {
+  it('rescata los resultados completos', () => {
+    const cortado = '[{"url":"a","titulo":"Uno"},{"url":"b","titulo":"Dos"},{"url":"c","tit'
+    expect(extraerArreglo(cortado)).toEqual([{ url: 'a', titulo: 'Uno' }, { url: 'b', titulo: 'Dos' }])
+  })
+  it('sin ningún objeto completo devuelve []', () => {
+    expect(extraerArreglo('[{"url":"a","tit')).toEqual([])
+  })
+})

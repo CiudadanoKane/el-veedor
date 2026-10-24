@@ -4,7 +4,7 @@ import { DATASETS } from '../lib/constants.js'
 import {
   esc, whereFromFilters, buildWhere, soloContratosValidos,
   soloContratosValidosSecop1, whereFromFiltrosSecop1,
-  VALOR_SECOP1_SOQL, cuantiaPosibleSecop1,
+  VALOR_SECOP1_SOQL, cuantiaPosibleSecop1, valorCoherenteConElPresupuestoSecop1,
 } from '../lib/soql.js'
 import { valorMasFrecuente, documentoIdentifica } from '../lib/identidad.js'
 import { tipoDocSecop1ASecop2 } from '../lib/catalogosSecop1.js'
@@ -127,7 +127,7 @@ export async function rankingContratistasQuerySecop1(filters = {}, orderBy = 'va
     soloContratosValidosSecop1(),
     documentoIdentifica('identificacion_del_contratista'),
     `tipo_identifi_del_contratista <> 'No Definido'`,
-    cuantiaPosibleSecop1(),
+    cuantiaPosibleSecop1(), valorCoherenteConElPresupuestoSecop1(),
   ]
   const where = buildWhere(whereFromFiltrosSecop1(filters, base))
 
@@ -244,7 +244,7 @@ function rankingEntidadesQuery(filters = {}) {
 // como su gemela de SECOP II). La columna se oculta para esta fuente.
 function rankingEntidadesQuerySecop1(filters = {}) {
   const where = buildWhere(
-    whereFromFiltrosSecop1(filters, [soloContratosValidosSecop1(), cuantiaPosibleSecop1()]),
+    whereFromFiltrosSecop1(filters, [soloContratosValidosSecop1(), cuantiaPosibleSecop1(), valorCoherenteConElPresupuestoSecop1()]),
   )
   return socrataQuery(
     DS1,

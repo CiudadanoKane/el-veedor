@@ -33,7 +33,7 @@ import { fileURLToPath } from 'node:url'
 import { DATASETS } from '../src/lib/constants.js'
 import {
   esc, buildWhere, soloContratosValidos,
-  soloContratosValidosSecop1, cuantiaPosibleSecop1, VALOR_SECOP1_SOQL,
+  soloContratosValidosSecop1, cuantiaPosibleSecop1, valorCoherenteConElPresupuestoSecop1, VALOR_SECOP1_SOQL,
 } from '../src/lib/soql.js'
 import { documentoIdentifica, valorMasFrecuente } from '../src/lib/identidad.js'
 
@@ -252,7 +252,7 @@ async function main() {
       soloContratosValidosSecop1(),
       documentoIdentifica('identificacion_del_contratista'),
       `tipo_identifi_del_contratista <> 'No Definido'`,
-      cuantiaPosibleSecop1(),
+      cuantiaPosibleSecop1(), valorCoherenteConElPresupuestoSecop1(),
     ],
   })
 

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
 import { DATASETS, CONTRACT_FIELDS, CONTRACT_FIELDS_SECOP1 } from '../lib/constants'
-import { esc, soloContratosValidos, soloContratosValidosSecop1, cuantiaPosibleSecop1 } from '../lib/soql'
+import { esc, soloContratosValidos, soloContratosValidosSecop1, cuantiaPosibleSecop1, valorCoherenteConElPresupuestoSecop1 } from '../lib/soql'
 import { MODALIDADES_SIN_COMPETENCIA } from './useDashboard'
 import { SECOP1_A_MODALIDAD, MODALIDAD_SIN_COMPETENCIA_SECOP1 } from '../lib/catalogosSecop1'
 import { valorMasFrecuente } from '../lib/identidad'
@@ -113,7 +113,7 @@ export function usePerfilContratista(documento) {
       // Mismo guardia de cuantías imposibles que la parte de SECOP II, que lo
       // hereda de soloContratosValidos; la versión de SECOP I solo filtra
       // estados. Ver usePerfilEntidad.
-      const F1 = `${soloContratosValidosSecop1()} AND ${cuantiaPosibleSecop1()} AND identificacion_del_contratista = '${esc(documento)}'`
+      const F1 = `${soloContratosValidosSecop1()} AND ${cuantiaPosibleSecop1()} AND ${valorCoherenteConElPresupuestoSecop1()} AND identificacion_del_contratista = '${esc(documento)}'`
 
       // Todas en paralelo: cada una tarda medio segundo, y encadenarlas
       // multiplicaría la espera sin necesidad. SECOP I participa con su propio

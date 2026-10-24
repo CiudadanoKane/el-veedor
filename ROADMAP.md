@@ -540,8 +540,9 @@ Córdoba"…). Lo que fallaba y cómo quedó:
   de presupuesto, $851.588.262.000 de contrato) encabezaba "obras en Córdoba".
   `valorCoherenteConElPresupuestoSecop1()` compara contrato y presupuesto del
   proceso por potencias de diez, como SECOP II contra lo pagado: 1.528 contratos
-  y 17,6 billones. **Solo en el Buscador**: en los agregados nacionales pasaba la
-  consulta de 1,5 s a 7 s. Pendiente decidir si entra al Panorama y Rankings.
+  y 17,6 billones. Se aplica también al Panorama, Rankings y perfiles: el "1,5 s
+  a 7 s" que lo frenaba era ruido de caché (medido de nuevo: 4,0 s con y sin
+  ella). Pendiente: listarlos en Errores en SECOP, como su gemela de SECOP II.
 - **Los ~20 s sin texto no se reprodujeron.** Medido de nuevo: IA 2,1 s + SECOP
   0,6 s; combinaciones sin caché, <1 s. Probablemente una lentitud pasajera de
   datos.gov.co. Si vuelve, medir con `performance.getEntriesByType('resource')`.
@@ -554,6 +555,13 @@ Córdoba"…). Lo que fallaba y cómo quedó:
   (`pistasDeContrato`). Lleva al tramo 1 (Gobernación, Consorcio Vial
   Barranquilla, $77.205 millones). La unidad funcional 2 (Edubar,
   EDUREG-022-2022) no está en SECOP II.
+- **Límites de la búsqueda en la prensa.** Con el razonamiento por defecto de
+  Haiku 5.5 tardaba 12-34 s y generaba 2.500-4.000 tokens; la función tiene 30 s,
+  así que a veces se cortaba ("no se pudo buscar"), y el tope de 4.096 tokens
+  quedó a 62 de cortar el JSON. Ahora: sin razonamiento, 3.000 tokens, 22 s de
+  espera sin reintentos, resumen de máximo 30 palabras, y extraerArreglo rescata
+  los resultados completos si la respuesta llega cortada. Medido: 7-10 s. Con 3
+  búsquedas (antes 2) el puente de "la gran vía" acierta 3 de 4 veces.
 - **La prensa, arriba.** `ResumenPrensa` va encima de los contratos: el puente y
   dos titulares con enlace a la sección completa, que sigue abajo.
 

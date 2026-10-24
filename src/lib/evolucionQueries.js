@@ -1,6 +1,6 @@
 import {
   esc, whereFromFilters, buildWhere, soloContratosValidos,
-  whereFromFiltrosSecop1, soloContratosValidosSecop1, cuantiaPosibleSecop1,
+  whereFromFiltrosSecop1, soloContratosValidosSecop1, cuantiaPosibleSecop1, valorCoherenteConElPresupuestoSecop1,
   VALOR_SECOP1_SOQL,
 } from './soql.js'
 import { MODALIDAD_SIN_COMPETENCIA_SECOP1 } from './catalogosSecop1.js'
@@ -99,7 +99,7 @@ export function soqlEvolucionSecop1(filters = {}, periodoClave = '24m') {
   const where = buildWhere(
     whereFromFiltrosSecop1(filters, [
       soloContratosValidosSecop1(),
-      cuantiaPosibleSecop1(),
+      cuantiaPosibleSecop1(), valorCoherenteConElPresupuestoSecop1(),
       `fecha_de_firma_del_contrato >= '${desde}'`,
       `fecha_de_firma_del_contrato < '${hasta}'`,
     ]),

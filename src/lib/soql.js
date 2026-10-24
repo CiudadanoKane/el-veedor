@@ -451,8 +451,11 @@ export function cuantiaPosibleSecop1() {
 // $851.588.262.000, que encabezaba la búsqueda "obras en Córdoba". Medido
 // entonces: 1.528 contratos y 17,6 billones de los 740 de SECOP I.
 //
-// Por ahora solo en el Buscador: en los agregados nacionales la condición
-// pasaba la consulta de 1,5 s a 7 s. Ver ROADMAP.
+// Se aplica donde se aplica cuantiaPosibleSecop1 para sumar o listar: Buscador,
+// Panorama (cifras y evolución), Rankings y perfiles. Primero fue solo el
+// Buscador por un "1,5 s a 7 s" medido en el agregado nacional que resultó ser
+// ruido de caché: medido de nuevo, 4,0 s con y sin ella. En Córdoba el valor
+// de SECOP I bajó de 12,9 a 11,4 billones.
 export function valorCoherenteConElPresupuestoSecop1() {
   const ors = MULTIPLICADORES_DIGITACION
     .map((m) => `abs(cuantia_contrato / cuantia_proceso - ${m}) < ${m * TOLERANCIA_DIGITACION}`)
