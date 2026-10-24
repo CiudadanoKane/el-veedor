@@ -217,6 +217,11 @@ export default async function handler(req, res) {
     if (filtros.modalidad && !mencionaModalidad(consulta, filtros.modalidad)) filtros.modalidad = ''
     filtros.entidad = String(filtros.entidad || '').trim().slice(0, 120)
     if (!TEMAS.includes(filtros.tema)) filtros.tema = ''
+    // Con un tema, el estado que el modelo saque de las mismas palabras ("van
+    // retrasados" → En ejecución) sobra y estorba: dejaba fuera los
+    // "Modificado", que son tan vigentes como esos (264 frente a 48 del INVÍAS
+    // en Nariño). La respuesta a esa pregunta es el indicador de Alertas.
+    if (filtros.tema) filtros.estados = []
 
     // Ampliación semántica: se sanea (tope duro, sin vacíos, sin repetir el
     // texto principal ni entre sí, comparando sin tildes ni mayúsculas). El

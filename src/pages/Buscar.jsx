@@ -633,9 +633,9 @@ export function Buscar() {
     criterios.terminos.length > 0 ||
     criterios.valorMin || criterios.valorMax || criterios.fechaDesde || criterios.fechaHasta
 
-  // Si falta elegir la entidad que nombró, ese es el paso siguiente: se baja a
-  // la sugerencia, no a una lista que todavía no es la que pidió.
-  const faltaEntidad = !!criterios.quien && !filters.entity
+  // Si falta elegir la entidad que nombró, o la respuesta está en Alertas, ese
+  // es el paso siguiente: se baja ahí, no a una lista que no es la que pidió.
+  const faltaEntidad = (!!criterios.quien && !filters.entity) || !!criterios.tema
   useEffect(() => {
     const el = faltaEntidad ? sugerenciaRef.current : resultadosRef.current
     if (!bajarPendiente.current || !el) return
@@ -832,16 +832,16 @@ export function Buscar() {
               <p className="mt-2 text-nota text-textSecondary">{errorIA}</p>
             )}
 
-            <AvisoTema tema={criterios.tema} />
-            {!filters.entity && (
-              <div ref={sugerenciaRef}>
+            <div ref={sugerenciaRef}>
+              <AvisoTema tema={criterios.tema} />
+              {!filters.entity && (
                 <SugerenciaEntidad
                   quien={criterios.quien}
                   lugar={filters.city || filters.department}
                   onElegir={elegirEntidad}
                 />
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Qué palabras quedaron de la pregunta: la caja muestra lo que
                 escribió la persona, y esto es lo que de verdad se busca. */}

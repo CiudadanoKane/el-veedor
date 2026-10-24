@@ -31,10 +31,24 @@ export function sinTildes(texto) {
     .toLowerCase()
 }
 
+// Como sinTildes, pero la ñ se queda: no es una tilde sino otra letra. Con
+// sinTildes, "Nariño" se buscaba solo como "narino" y se perdían los contratos
+// que lo escriben bien ("NARIÑO"), igual que "niños", "año" o "diseño" (oct
+// 2026: 14 de ~600 contratos del INVÍAS en Nariño).
+function sinTildesConEnie(texto) {
+  // Se separa en letras ya en NFD y se recompone la ñ (n + tilde combinante)
+  // antes de quitar las demás marcas.
+  return String(texto)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/ñ/g, 'ñ')
+    .replace(/[̀-ͯ]/g, '')
+}
+
 // Palabras de la frase, sin signos. No se descarta ninguna: al buscar la frase
 // completa, quitar el "de" de "carro de bomberos" impediría encontrarla.
 export function palabrasDeFrase(texto) {
-  return sinTildes(texto)
+  return sinTildesConEnie(texto)
     .replace(/[^a-z0-9ñ\s]/g, ' ')
     .split(/\s+/)
     .filter(Boolean)
@@ -46,14 +60,16 @@ export function tieneTextoBuscable(texto) {
 
 // Todas las escrituras plausibles de una palabra: sin tilde, y con tilde en
 // cada vocal. "vias" → vias, vías, viás (la última no existe, y no estorba).
+// Con ñ, también la escritura sin ella: hay registros que escriben "NARINO".
 export function variantesConTilde(palabra) {
-  const base = sinTildes(palabra)
+  const base = sinTildesConEnie(palabra)
   if (!base) return []
   const variantes = [base]
   for (let i = 0; i < base.length; i++) {
     const acentuada = TILDES[base[i]]
     if (acentuada) variantes.push(base.slice(0, i) + acentuada + base.slice(i + 1))
   }
+  if (base.includes('ñ')) variantes.push(base.replace(/ñ/g, 'n'))
   return variantes
 }
 
