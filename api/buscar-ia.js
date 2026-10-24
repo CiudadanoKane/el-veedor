@@ -1,6 +1,12 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO } from '../src/lib/catalogos.js'
 import { excedeLimite } from '../src/lib/limiteTasa.js'
+import { socrataQuery } from '../src/lib/socrataClient.js'
+import { condicionProcesosPorReferencia } from '../src/lib/busquedaId.js'
+import {
+  MODELO_WEB, DOMINIOS_WEB, promptWeb, extraerArreglo, resultadosReales,
+  limpiarResultados, variantesProceso, coincideEntidad,
+} from '../src/lib/busquedaWeb.js'
 
 const client = new Anthropic()
 
@@ -124,6 +130,12 @@ export const ESQUEMA = {
 // de SECOP (vía enum en el esquema) y palabras libres para "texto"; los
 // contratos siempre salen de la consulta normal a Socrata, nunca del LLM.
 export default async function handler(req, res) {
+  // Búsqueda en la prensa y sitios públicos (ver src/lib/busquedaWeb.js). Va
+  // en este mismo endpoint y no en uno propio porque el plan admite 12
+  // funciones y ya están las 12. Es GET para que el CDN guarde la respuesta:
+  // la misma búsqueda repetida ("PAE Sincelejo") no vuelve a costar.
+  if (req.method === 'GET' && req.query?.web === '1') return buscarEnLaWeb(req, res)
+
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'method not allowed' })
     return
@@ -192,5 +204,87 @@ export default async function handler(req, res) {
     res.status(200).json(filtros)
   } catch (err) {
     res.status(502).json({ error: err.message })
+  }
+}
+
+// --- Búsqueda en la prensa y sitios públicos -------------------------------
+
+// Procesos de SECOP II, donde vive el número que pone la entidad (ver
+// src/lib/busquedaId.js). Mismo id que usan useBusqueda y useAdiciones.
+const DS_PROCESOS = 'p6dx-8zbt'
+
+async function buscarEnLaWeb(req, res) {
+  const consulta = String(req.query.q || '').trim()
+  if (consulta.length < 3) {
+    res.status(400).json({ error: 'consulta demasiado corta' })
+    return
+  }
+  if (consulta.length > 200) {
+    res.status(400).json({ error: 'consulta demasiado larga' })
+    return
+  }
+  // Mismo tope que la interpretación con IA (comparten contador por IP): cada
+  // llamada cuesta. Solo cuenta lo que no sirve el CDN.
+  const exceso = excedeLimite(req)
+  if (exceso) {
+    res.setHeader('Retry-After', String(exceso.segundos))
+    res.status(429).json({ error: 'demasiadas búsquedas seguidas', reintentarEn: exceso.segundos })
+    return
+  }
+
+  try {
+    const response = await client.messages.create({
+      model: MODELO_WEB,
+      max_tokens: 4096,
+      system: promptWeb(),
+      output_config: { effort: 'low' },
+      messages: [{ role: 'user', content: consulta }],
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 2, allowed_domains: DOMINIOS_WEB }],
+    })
+
+    // Una negativa del modelo o una respuesta cortada no son un error para
+    // quien busca: simplemente no hay resultados de prensa.
+    if (response.stop_reason === 'refusal') {
+      return responderWeb(res, { resultados: [] })
+    }
+    const texto = response.content.filter((b) => b.type === 'text').map((b) => b.text).join('')
+    const resultados = limpiarResultados(extraerArreglo(texto), resultadosReales(response.content))
+    await Promise.all(resultados.map(verificarProceso))
+    return responderWeb(res, { resultados })
+  } catch (err) {
+    res.status(502).json({ error: err.message })
+  }
+}
+
+function responderWeb(res, cuerpo) {
+  // Doce horas en el CDN: la prensa no cambia de un minuto a otro, y es lo que
+  // hace barato que muchos busquen lo mismo.
+  res.setHeader('Cache-Control', 'public, s-maxage=43200, stale-while-revalidate=86400')
+  res.status(200).json(cuerpo)
+}
+
+// El número de proceso que menciona una noticia, comprobado en SECOP. Un número
+// así NO es único —unas 45 entidades tienen un "LP-006-2025"—, así que se
+// busca entre las entidades que lo usan la que menciona la noticia. Resultado
+// en `r.proceso`: { numero, entidad, entidades } si existe en SECOP (entidad
+// es el nombre exacto en SECOP si coincide con la de la noticia; si no, null),
+// o null si no se encontró. Nunca se enlaza un número que SECOP no tiene.
+async function verificarProceso(r) {
+  r.proceso = null
+  if (!r.procesoMencionado) return
+  for (const numero of variantesProceso(r.procesoMencionado)) {
+    try {
+      const filas = await socrataQuery(
+        DS_PROCESOS,
+        `SELECT entidad, count(*) as n WHERE ${condicionProcesosPorReferencia(numero)}
+         GROUP BY entidad LIMIT 60`,
+      )
+      if (!filas.length) continue
+      const propia = filas.find((f) => coincideEntidad(r.entidadMencionada, f.entidad))
+      r.proceso = { numero, entidad: propia?.entidad ?? null, entidades: filas.length }
+      return
+    } catch {
+      return
+    }
   }
 }

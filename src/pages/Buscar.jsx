@@ -20,6 +20,7 @@ import { sinTildes } from '../lib/acentos'
 import { resolverLugar } from '../lib/geoResolver'
 import { formatCOP, formatDate } from '../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
+import { ResultadosWeb } from '../components/ui/ResultadosWeb'
 
 // Normaliza texto para comparar sin importar tildes ni espacios de más.
 const norm = (s) => sinTildes(s || '').replace(/\s+/g, ' ').trim()
@@ -844,6 +845,21 @@ export function Buscar() {
                     }
                   </QueryState>
                 </div>
+
+                {/* Debajo de los contratos, lo que dice la prensa. Con el lugar
+                    elegido dentro de la frase, porque la prensa no tiene filtro
+                    de departamento. No con un número de proceso: ese ya se
+                    buscó tal cual arriba. */}
+                {!esIdentificador(criterios.texto) && criterios.texto.trim().length >= 3 && (
+                  <ResultadosWeb
+                    consulta={[
+                      criterios.texto.trim(),
+                      lugarFiltro && !sinTildes(criterios.texto.toLowerCase()).includes(sinTildes(lugarFiltro.toLowerCase()))
+                        ? lugarFiltro
+                        : '',
+                    ].filter(Boolean).join(' ')}
+                  />
+                )}
               </div>
             )}
           </div>

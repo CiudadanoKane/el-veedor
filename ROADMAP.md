@@ -509,6 +509,39 @@ Queda como pregunta de método, no como error: hay crecimientos de plazo
 enormes (+3.964%: un contrato de 92 días ampliado 3.647) justo bajo el tope de
 3.650 días que hoy separa una prórroga de un error de digitación.
 
+### El buscador también busca en la prensa (oct 2026)
+
+Lo pendiente de "buscador general" (ver más abajo, el túnel de la
+Circunvalar): debajo de los contratos de SECOP, el Buscador muestra "En las
+noticias y fuentes públicas" —prensa nacional y regional, Contraloría,
+Procuraduría, Fiscalía, SECOP y Colombia Compra—, con medio, fecha, titular y
+una frase de resumen. Y hace de puente: si una noticia menciona un número de
+proceso, se comprueba en SECOP **de la entidad que menciona la noticia** (los
+números se repiten: el LP-005-2020 de Sincelejo lo usan 9 entidades) y la
+tarjeta lleva a ese contrato aquí.
+
+Cómo se eligió, medido con 8 consultas reales:
+
+| | tiempo | costo/búsqueda | notas |
+|---|---|---|---|
+| Haiku 4.5 | 12,8 s | US$0,031 | 4 de 47 enlaces mal escritos ("infobea.com") |
+| Opus 5.5 | 24,9 s | US$0,198 | algo más fino, 6 veces más caro |
+| **Haiku 5.5** | **9,6 s** | **US$0,016** | elegido |
+
+- La API de Google para mostrar resultados propios está **cerrada a clientes
+  nuevos** (cierra del todo el 1 ene 2027). Tavily (1.000 gratis/mes) se
+  evaluó; se prefirió Haiku 5.5 por el resumen y la extracción de procesos.
+- Los enlaces y títulos salen de los resultados reales de la búsqueda, nunca
+  de lo que escribe el modelo (ahí estaban los "infobea"). Si el título de la
+  página no es un titular (un PDF de la Contraloría titulado con su dirección),
+  se usa el del modelo.
+- Caracol bloquea al buscador de Anthropic, y un dominio bloqueado tumba la
+  búsqueda entera: está fuera de la lista (`DOMINIOS_WEB`).
+- Va dentro de `/api/buscar-ia` (GET `?web=1`), no en una función nueva: el
+  plan admite 12 y ya están las 12. Es GET para que el CDN la guarde 12 h —la
+  misma búsqueda repetida no vuelve a costar—, con el mismo tope por IP.
+- Las pruebas costaron US$1,96 en total (casi todo, Opus en la primera ronda).
+
 ### Modo oscuro automático (oct 2026)
 
 Decisión: el tema principal sigue siendo claro —la plataforma es lectura
