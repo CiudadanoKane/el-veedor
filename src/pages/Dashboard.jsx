@@ -133,7 +133,7 @@ export function Dashboard() {
   // combinan ("SECOP II + I") y las que solo se pueden medir en SECOP II. Si no
   // hay SECOP I en el alcance, la distinción no existe y no se rotula nada.
   const tieneSecop1 = generales.data?.tieneSecop1
-  const fuenteAmbas = tieneSecop1 ? 'SECOP II + I' : undefined
+  const fuenteAmbas = tieneSecop1 ? 'SECOP II y SECOP I' : undefined
   const fuenteSolo2 = tieneSecop1 ? 'solo SECOP II' : undefined
 
   // Solo los contratos En ejecución pueden tener el plazo vencido.

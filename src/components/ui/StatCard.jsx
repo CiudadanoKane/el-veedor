@@ -22,6 +22,26 @@ const TONE = {
 // una caída de la fuente pintaba el mismo guion que un municipio sin
 // contratación. Ahora el guion queda reservado para "no hay", y cuando no se
 // pudo preguntar se dice con palabras. Ver FuenteCaida.jsx.
+// La flecha va pegada a la última palabra del título: suelta, en el teléfono
+// saltaba sola al renglón de abajo ("Contratos registrados" / "›").
+function TituloConFlecha({ label, abierta }) {
+  const texto = String(label)
+  const corte = texto.lastIndexOf(' ')
+  return (
+    <>
+      {corte > 0 && `${texto.slice(0, corte)} `}
+      <span className="whitespace-nowrap">
+        {texto.slice(corte + 1)}
+        <Icon
+          name="chevronAbajo"
+          className={`inline-block ml-1.5 h-3 w-3 align-baseline text-textSecondary transition-transform duration-200
+                      ${abierta ? 'rotate-0' : '-rotate-90'}`}
+        />
+      </span>
+    </>
+  )
+}
+
 export function StatCard({
   label, value, sub, pct, tone = 'default', loading, error,
   onToggle, abierta, detalle, accion, reservaPct = true, fuente,
@@ -30,51 +50,19 @@ export function StatCard({
 
   const contenido = (
     <>
-      {/* Fila 1: etiqueta + alcance de fuente. La etiqueta de fuente rotula, en
-          el mismo gris tenue del rótulo, si la cifra combina las dos plataformas
-          o es solo de SECOP II — así el alcance viaja pegado a cada cifra en vez
-          de en una nota al pie que hay que ir a buscar. */}
-      {/* flex-wrap: en dos columnas de móvil el rótulo y la etiqueta de fuente
-          no caben en la misma línea, y sin permitir el salto la fuente
-          estrujaba el rótulo hasta partirlo letra a letra. El rótulo y su
-          chevron van agrupados para que al saltar no quede la flecha sola en
-          el renglón de abajo: lo único que baja de línea es la fuente.
+      {/* Fila 1: el título de la tarjeta.
+          Antes era un rótulo de 11 px en mayúsculas grises, con el mismo estilo
+          que la etiqueta de fuente que iba a su lado: competían, y saber que
+          "11.456.957" eran "contratos registrados" costaba una segunda lectura
+          (oct 2026). Ahora es texto de lectura, en el color principal: lo
+          primero que se lee después de la cifra, y como frase, no como rótulo.
 
-          Y se reserva altura cuando hay etiqueta de fuente: los rótulos miden
-          distinto —"Contratos registrados" ocupa dos renglones y "Contratistas"
-          uno—, así que sin la reserva las cifras de una misma fila arrancaban a
-          alturas distintas y la rejilla se veía torcida. Misma solución que ya
-          usan la fila de la cifra y la del porcentaje.
-
-          Son dos reservas porque el rótulo se parte distinto según el ancho: en
-          móvil (dos columnas, ~158 px) "Contratos registrados" ocupa dos
-          renglones y la fuente baja a un tercero; desde sm la fuente vuelve a
-          caber al lado y basta con reservar los dos renglones del rótulo. El
-          desajuste de sm en adelante ya existía antes de las dos columnas —se
-          veía en «Contratos registrados» y «Entidades contratantes»—, solo que
-          nadie lo había medido. */}
-      <div
-        className={`flex items-baseline gap-x-2 flex-wrap ${
-          fuente ? 'min-h-[3.125rem] sm:min-h-[2rem]' : ''
-        }`}
-      >
-        <span className="inline-flex items-baseline gap-2 min-w-0">
-          <span className="text-micro uppercase tracking-label text-textSecondary font-semibold">
-            {label}
-          </span>
-          {desplegable && (
-            <Icon
-              name="chevronAbajo"
-              className={`h-3 w-3 shrink-0 text-textSecondary transition-transform duration-200
-                          ${abierta ? 'rotate-0' : '-rotate-90'}`}
-            />
-          )}
-        </span>
-        {fuente && (
-          <span className="ml-auto text-micro uppercase tracking-label text-textSecondary/70 font-medium whitespace-nowrap">
-            {fuente}
-          </span>
-        )}
+          En el teléfono (dos columnas, ~158 px) se reservan dos renglones:
+          "Entidades contratantes" ocupa dos y "Contratistas" uno, y sin la
+          reserva las cifras de una misma fila arrancaban a alturas distintas.
+          Desde sm los títulos caben en uno. */}
+      <div className="min-h-[2.75em] sm:min-h-0 text-cuerpo leading-snug font-semibold text-textPrimary">
+        {desplegable ? <TituloConFlecha label={label} abierta={abierta} /> : label}
       </div>
 
       {/* Fila 2: la cifra, a una sola línea.
@@ -127,7 +115,16 @@ export function StatCard({
         )}
       </div>
 
-      {/* Fila 5: acción, anclada abajo.
+      {/* Fila 5: la fuente, en su propio renglón y a la misma altura en todas
+          las tarjetas de una fila (va después de la fila flexible). Iba junto
+          al título y bajaba de línea o no según lo que midiera el título: unas
+          tarjetas la mostraban al lado y otras debajo, y se veía desordenado.
+          Aquí rotula el alcance sin competir con lo que dice la cifra. */}
+      <div className={fuente ? 'pt-2' : ''}>
+        {fuente && <div className="text-micro text-textSecondary/80">Fuente: {fuente}</div>}
+      </div>
+
+      {/* Fila 6: acción, anclada abajo.
           Una tarjeta desplegable la usa para su propio detalle; una que no lo
           es puede recibir un enlace a donde continúa esa cifra. */}
       <div className="flex items-end pt-3">
@@ -148,8 +145,8 @@ export function StatCard({
     </>
   )
 
-  // Filas: etiqueta · cifra · porcentaje · contexto (flexible) · acción
-  const rejilla = 'grid grid-rows-[auto_auto_auto_1fr_auto] h-full'
+  // Filas: título · cifra · porcentaje · contexto (flexible) · fuente · acción
+  const rejilla = 'grid grid-rows-[auto_auto_auto_1fr_auto_auto] h-full'
 
   if (!desplegable) {
     return <div className={`${rejilla} border-t-2 border-transparent pt-4`}>{contenido}</div>
