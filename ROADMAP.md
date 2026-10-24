@@ -535,14 +535,27 @@ Córdoba"…). Lo que fallaba y cómo quedó:
 - Ejemplos como preguntas, cabecera más corta (oculta en el teléfono tras
   buscar), estados de SECOP con mayúscula uniforme.
 
-**Pendiente:**
-- Una búsqueda sin texto (solo filtros, p. ej. "a dedo en Atlántico en 2025")
-  tarda ~20 s.
-- SECOP I trae valores imposibles que las reglas de SECOP II no filtran: un
-  sendero peatonal en San Antero por $852 mil millones encabeza "obras en
-  Córdoba".
-- Mientras la persona elige la entidad, la lista de abajo es la del lugar
-  entero.
+**Segunda vuelta (oct 2026):**
+- **Valores con ceros de más en SECOP I.** El sendero de San Antero ($851.588.321
+  de presupuesto, $851.588.262.000 de contrato) encabezaba "obras en Córdoba".
+  `valorCoherenteConElPresupuestoSecop1()` compara contrato y presupuesto del
+  proceso por potencias de diez, como SECOP II contra lo pagado: 1.528 contratos
+  y 17,6 billones. **Solo en el Buscador**: en los agregados nacionales pasaba la
+  consulta de 1,5 s a 7 s. Pendiente decidir si entra al Panorama y Rankings.
+- **Los ~20 s sin texto no se reprodujeron.** Medido de nuevo: IA 2,1 s + SECOP
+  0,6 s; combinaciones sin caché, <1 s. Probablemente una lentitud pasajera de
+  datos.gov.co. Si vuelve, medir con `performance.getEntriesByType('resource')`.
+- **Entidad por elegir:** la lista se rotula "Mientras eliges: todo Atlántico" y
+  explica que aún no son los de la entidad nombrada.
+- **Apodos de obras.** "Contrato de la gran vía en Atlántico" daba cero: SECOP la
+  registra como "MEJORAMIENTO DEL CORREDOR VIAL … CORREDOR UNIVERSITARIO". La
+  búsqueda en la prensa ahora extrae de cada noticia el nombre oficial (`obra`) y
+  el contratista (`contratista`), y el servidor los busca en SECOP
+  (`pistasDeContrato`). Lleva al tramo 1 (Gobernación, Consorcio Vial
+  Barranquilla, $77.205 millones). La unidad funcional 2 (Edubar,
+  EDUREG-022-2022) no está en SECOP II.
+- **La prensa, arriba.** `ResumenPrensa` va encima de los contratos: el puente y
+  dos titulares con enlace a la sección completa, que sigue abajo.
 
 ### Revisión del Buscador en móvil (oct 2026)
 

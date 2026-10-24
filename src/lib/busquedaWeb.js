@@ -16,6 +16,8 @@
 // Este archivo es la parte sin red: dominios, instrucciones, y cómo se limpia
 // lo que devuelve el modelo. La llamada vive en api/buscar-ia.js.
 
+import { esc, soloContratosValidos } from './soql.js'
+
 export const MODELO_WEB = 'claude-haiku-5-5'
 
 // Medios nacionales y regionales, y sitios públicos. Caracol bloquea al
@@ -46,6 +48,13 @@ export function promptWeb() {
     '"LP-005-2020"), si lo menciona; si no, null. Solo el número, sin palabras alrededor.\n' +
     '- "entidad": la entidad pública contratante que menciona la fuente (p. ej. "Alcaldía de ' +
     'Sincelejo"), si la menciona; si no, null.\n' +
+    '- "obra": el nombre oficial o técnico de la obra o el proyecto, en 2 a 6 palabras, si la ' +
+    'fuente lo menciona en cualquier parte, aunque sea de pasada. Es el nombre con que la ' +
+    'entidad lo registraría en el contrato, NO el apodo que usa la persona: si buscan "la Gran ' +
+    'Vía" y la noticia habla del "Corredor Universitario", devuelve "Corredor Universitario". ' +
+    'Si la fuente solo usa el apodo, null.\n' +
+    '- "contratista": la empresa, consorcio o unión temporal que ejecuta el contrato, tal como ' +
+    'lo nombra la fuente (p. ej. "Consorcio Vial Barranquilla"), si lo menciona; si no, null.\n' +
     'Si no encuentras nada relevante, devuelve [].'
   )
 }
@@ -163,10 +172,63 @@ export function limpiarResultados(delModelo, reales, hoy = new Date()) {
       resumen: String(x.resumen || '').trim(),
       procesoMencionado: pareceProceso(x.proceso) ? String(x.proceso).trim() : null,
       entidadMencionada: x.entidad ? String(x.entidad).trim() : null,
+      obraMencionada: pareceNombreObra(x.obra) ? String(x.obra).trim() : null,
+      contratistaMencionado: pareceNombreObra(x.contratista) ? String(x.contratista).trim() : null,
     })
     if (salida.length >= MAX_RESULTADOS_WEB) break
   }
   return salida
+}
+
+// El puente del apodo al contrato. La prensa nombra las obras como las llama
+// la gente ("la Gran Vía") y SECOP como las registró la entidad ("MEJORAMIENTO
+// DEL CORREDOR VIAL QUE VA ENTRE LA CIRCUNVALAR Y EL MUNICIPIO DE PUERTO
+// COLOMBIA … CORREDOR UNIVERSITARIO"): buscar el apodo en SECOP no da nada.
+// Pero las noticias suelen traer también el nombre oficial, y ese sí está en el
+// objeto del contrato. Caso que lo motivó (oct 2026): "contrato de la gran vía
+// en Atlántico", cero contratos.
+//
+// Entre 2 y 6 palabras: una sola ("vía") traería medio país; más de seis rara
+// vez aparece igual, letra por letra, en el objeto.
+export function pareceNombreObra(s) {
+  const t = String(s || '').trim()
+  const n = t.split(/\s+/).length
+  return t.length >= 8 && t.length <= 60 && n >= 2 && n <= 6
+}
+
+const plano = (x) => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+
+// Las pistas que vale la pena buscar en SECOP: el nombre oficial de la obra
+// (en el objeto del contrato) y el contratista (en proveedor_adjudicado), que
+// la prensa nombra casi siempre y es lo más exacto que hay —"Consorcio Vial
+// Barranquilla" lleva directo al tramo 1 de la Gran Vía—. Sin repetir, y sin
+// lo que ya está en lo que escribió la persona (eso ya se buscó arriba).
+export function pistasDeContrato(resultados, consulta, max = 3) {
+  const ya = plano(consulta)
+  const vistas = new Set()
+  const salida = []
+  for (const campo of ['contratistaMencionado', 'obraMencionada']) {
+    for (const r of resultados) {
+      const f = r[campo]
+      const k = plano(f)
+      if (!f || vistas.has(k) || ya.includes(k)) continue
+      vistas.add(k)
+      salida.push({ tipo: campo === 'obraMencionada' ? 'obra' : 'contratista', frase: f })
+    }
+  }
+  return salida.slice(0, max)
+}
+
+// Los contratos que nombran la pista, los de mayor valor primero. Con y sin
+// tildes, porque la API las distingue y SECOP las usa a veces sí, a veces no.
+export function soqlContratosPorPista({ tipo, frase }, limite = 4) {
+  const campo = tipo === 'obra' ? 'objeto_del_contrato' : 'proveedor_adjudicado'
+  const variantes = [...new Set([frase.toLowerCase(), plano(frase)])]
+  const texto = variantes.map((v) => `caseless_contains(${campo}, '${esc(v)}')`).join(' OR ')
+  return `SELECT id_contrato, referencia_del_contrato, nombre_entidad, proveedor_adjudicado,
+    objeto_del_contrato, valor_del_contrato, fecha_de_firma
+    WHERE ${soloContratosValidos()} AND (${texto})
+    ORDER BY valor_del_contrato DESC LIMIT ${limite + 1}`
 }
 
 // Palabras que distinguen a una entidad ("Alcaldía de Sincelejo" → sincelejo),

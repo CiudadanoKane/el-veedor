@@ -6,7 +6,7 @@ import { socrataQuery } from '../src/lib/socrataClient.js'
 import { condicionProcesosPorReferencia } from '../src/lib/busquedaId.js'
 import {
   MODELO_WEB, DOMINIOS_WEB, promptWeb, extraerArreglo, resultadosReales,
-  limpiarResultados, variantesProceso, coincideEntidad,
+  limpiarResultados, variantesProceso, coincideEntidad, pistasDeContrato, soqlContratosPorPista,
 } from '../src/lib/busquedaWeb.js'
 
 const client = new Anthropic()
@@ -249,6 +249,7 @@ export default async function handler(req, res) {
 // Procesos de SECOP II, donde vive el número que pone la entidad (ver
 // src/lib/busquedaId.js). Mismo id que usan useBusqueda y useAdiciones.
 const DS_PROCESOS = 'p6dx-8zbt'
+const DS_CONTRATOS = 'jbjy-vk9h'
 
 async function buscarEnLaWeb(req, res) {
   const consulta = String(req.query.q || '').trim()
@@ -286,8 +287,11 @@ async function buscarEnLaWeb(req, res) {
     }
     const texto = response.content.filter((b) => b.type === 'text').map((b) => b.text).join('')
     const resultados = limpiarResultados(extraerArreglo(texto), resultadosReales(response.content))
-    await Promise.all(resultados.map(verificarProceso))
-    return responderWeb(res, { resultados })
+    const [, obras] = await Promise.all([
+      Promise.all(resultados.map(verificarProceso)),
+      buscarObras(resultados, consulta),
+    ])
+    return responderWeb(res, { resultados, obras })
   } catch (err) {
     res.status(502).json({ error: err.message })
   }
@@ -298,6 +302,40 @@ function responderWeb(res, cuerpo) {
   // hace barato que muchos busquen lo mismo.
   res.setHeader('Cache-Control', 'public, s-maxage=43200, stale-while-revalidate=86400')
   res.status(200).json(cuerpo)
+}
+
+// El nombre oficial de la obra y el contratista que dan las noticias, buscados
+// en los contratos de SECOP II. Solo se devuelve lo que SECOP confirma: una
+// pista sin contratos no se muestra. Ver pistasDeContrato en
+// src/lib/busquedaWeb.js.
+const LIMITE_OBRA = 4
+async function buscarObras(resultados, consulta) {
+  const pistas = pistasDeContrato(resultados, consulta)
+  const obras = await Promise.all(pistas.map(async (pista) => {
+    try {
+      const filas = await socrataQuery(DS_CONTRATOS, soqlContratosPorPista(pista, LIMITE_OBRA))
+      if (!filas.length) return null
+      const campo = pista.tipo === 'obra' ? 'obraMencionada' : 'contratistaMencionado'
+      return {
+        ...pista,
+        hayMas: filas.length > LIMITE_OBRA,
+        contratos: filas.slice(0, LIMITE_OBRA).map((f) => ({
+          id: f.id_contrato,
+          referencia: f.referencia_del_contrato,
+          entidad: f.nombre_entidad,
+          contratista: f.proveedor_adjudicado,
+          objeto: f.objeto_del_contrato,
+          valor: Number(f.valor_del_contrato) || 0,
+          fecha: f.fecha_de_firma?.slice(0, 10) || null,
+        })),
+        // De qué noticias sale el nombre, para poder comprobarlo.
+        fuentes: resultados.filter((r) => r[campo] === pista.frase).map((r) => r.url),
+      }
+    } catch {
+      return null
+    }
+  }))
+  return obras.filter(Boolean)
 }
 
 // El número de proceso que menciona una noticia, comprobado en SECOP. Un número

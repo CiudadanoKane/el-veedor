@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   extraerArreglo, resultadosReales, limpiarResultados, fechaDeAntiguedad, pareceProceso,
   variantesProceso, coincideEntidad, pareceTitular, sinMedioAlFinal,
+  pareceNombreObra, pistasDeContrato, soqlContratosPorPista,
 } from './busquedaWeb'
 
 const bloques = [
@@ -74,5 +75,33 @@ describe('fechas y títulos', () => {
     expect(sinMedioAlFinal('Fueron seleccionados los operadores del PAE - Semana', 'Semana')).toBe('Fueron seleccionados los operadores del PAE')
     expect(sinMedioAlFinal('Emcali sigue en la mira | El País', 'El País')).toBe('Emcali sigue en la mira')
     expect(sinMedioAlFinal('Cali - Jamundí: la vía que no avanza', 'El País')).toBe('Cali - Jamundí: la vía que no avanza')
+  })
+})
+
+describe('el puente del apodo al contrato', () => {
+  it('acepta nombres de 2 a 6 palabras', () => {
+    expect(pareceNombreObra('Corredor Universitario')).toBe(true)
+    expect(pareceNombreObra('vía')).toBe(false)
+    expect(pareceNombreObra(null)).toBe(false)
+  })
+
+  it('prefiere el contratista, no repite y descarta lo que ya se buscó', () => {
+    const resultados = [
+      { obraMencionada: 'Corredor Universitario', contratistaMencionado: null },
+      { obraMencionada: 'corredor universitario', contratistaMencionado: 'Consorcio Vial Barranquilla' },
+      { obraMencionada: 'La Gran Vía', contratistaMencionado: null },
+    ]
+    expect(pistasDeContrato(resultados, 'contrato de la gran via en Atlántico')).toEqual([
+      { tipo: 'contratista', frase: 'Consorcio Vial Barranquilla' },
+      { tipo: 'obra', frase: 'Corredor Universitario' },
+    ])
+  })
+
+  it('busca la obra en el objeto y el contratista en el proveedor, con y sin tildes', () => {
+    const obra = soqlContratosPorPista({ tipo: 'obra', frase: 'Vía al Mar' })
+    expect(obra).toContain("caseless_contains(objeto_del_contrato, 'vía al mar')")
+    expect(obra).toContain("caseless_contains(objeto_del_contrato, 'via al mar')")
+    expect(soqlContratosPorPista({ tipo: 'contratista', frase: "Consorcio D'Vial" }))
+      .toContain("caseless_contains(proveedor_adjudicado, 'consorcio d''vial')")
   })
 })

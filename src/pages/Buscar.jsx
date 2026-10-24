@@ -20,7 +20,7 @@ import { sinTildes } from '../lib/acentos'
 import { resolverLugar } from '../lib/geoResolver'
 import { formatCOP, formatDate } from '../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
-import { ResultadosWeb } from '../components/ui/ResultadosWeb'
+import { ResultadosWeb, ResumenPrensa } from '../components/ui/ResultadosWeb'
 import { esMovilAhora, useEsMovil } from '../hooks/useEsMovil'
 import { PESTANAS_ALERTAS } from '../lib/pestanas'
 
@@ -635,7 +635,8 @@ export function Buscar() {
 
   // Si falta elegir la entidad que nombró, o la respuesta está en Alertas, ese
   // es el paso siguiente: se baja ahí, no a una lista que no es la que pidió.
-  const faltaEntidad = (!!criterios.quien && !filters.entity) || !!criterios.tema
+  const entidadPendiente = !!criterios.quien && !filters.entity
+  const faltaEntidad = entidadPendiente || !!criterios.tema
   useEffect(() => {
     const el = faltaEntidad ? sugerenciaRef.current : resultadosRef.current
     if (!bajarPendiente.current || !el) return
@@ -685,14 +686,13 @@ export function Buscar() {
   // nombra, porque la prensa no tiene filtro de departamento. No con un número
   // de proceso: ese ya se buscó tal cual arriba.
   const basePrensa = (criterios.pregunta || criterios.texto).trim()
-  const bloquePrensa = !esIdentificador(basePrensa) && basePrensa.length >= 3 && (
-    <ResultadosWeb
-      consulta={[
+  const consultaPrensa = !esIdentificador(basePrensa) && basePrensa.length >= 3
+    ? [
         basePrensa,
         lugarFiltro && !sinTildes(basePrensa).includes(sinTildes(lugarFiltro)) ? lugarFiltro : '',
-      ].filter(Boolean).join(' ')}
-    />
-  )
+      ].filter(Boolean).join(' ')
+    : ''
+  const bloquePrensa = consultaPrensa && <ResultadosWeb consulta={consultaPrensa} />
   const hayLocales = resultados.some((r) => (r.prioridadLugar ?? 2) < 2)
   const hayMas = queryContratos.data?.hayMas || queryDocumentos.data?.hayMas
 
@@ -959,7 +959,12 @@ export function Buscar() {
               // Se entendió la pregunta pero no queda nada que buscar en SECOP
               // todavía (falta elegir la entidad, o la respuesta está en
               // Alertas): lo de arriba dice qué hacer, y la prensa sí se busca.
-              <div ref={resultadosRef}>{bloquePrensa}</div>
+              <div ref={resultadosRef}>
+                <div className="mt-6">
+                  <ResumenPrensa consulta={consultaPrensa} />
+                </div>
+                {bloquePrensa}
+              </div>
             ) : !activa ? (
               <div className="border-t-2 border-textPrimary pt-6">
                 <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
@@ -985,7 +990,7 @@ export function Buscar() {
               <div ref={resultadosRef} className="border-t-2 border-textPrimary pt-5">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                   <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
-                    Resultados
+                    {entidadPendiente ? `Mientras eliges: todo ${lugarFiltro || 'el país'}` : 'Resultados'}
                   </h2>
                   <Segmented
                     value={criterios.orden}
@@ -1029,7 +1034,22 @@ export function Buscar() {
                   lugar que tengas elegido arriba aparecen primero.
                 </Methodology>
 
+                {/* Con una entidad por elegir, la lista es la del lugar entero.
+                    Sin decirlo se leía como la respuesta: "contratos de la
+                    Gobernación" mostraba los de la Alcaldía de Barranquilla. */}
+                {entidadPendiente && (
+                  <p className="mt-3 text-cuerpo text-textSecondary max-w-2xl leading-snug">
+                    Estos no son todavía los de «{criterios.quien}»: son todos los contratos de{' '}
+                    {lugarFiltro || 'Colombia'} que coinciden. Elige la entidad arriba para ver solo
+                    los suyos.
+                  </p>
+                )}
+
+                {/* Lo de la prensa también arriba: el puente del apodo al
+                    contrato y, si hay contratos, dos titulares. Ver
+                    ResumenPrensa. */}
                 <div className="mt-4">
+                  <ResumenPrensa consulta={consultaPrensa} conTitulares={resultados.length > 0} />
                   <QueryState query={queryContratos}>
                     {() =>
                       resultados.length === 0 ? (

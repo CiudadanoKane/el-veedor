@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useBusquedaWeb } from '../../hooks/useBusquedaWeb'
-import { formatDate } from '../../lib/formatters'
+import { formatDate, formatCOP } from '../../lib/formatters'
 
 // "En las noticias y fuentes públicas": lo que la prensa y los órganos de
 // control dicen sobre lo que se busca, debajo de los contratos de SECOP.
@@ -11,6 +11,8 @@ import { formatDate } from '../../lib/formatters'
 //
 // Los resúmenes los escribe una IA a partir de la fuente; por eso se rotulan
 // así, y el enlace al medio va siempre a la vista para leer el original.
+export const ID_PRENSA = 'en-la-prensa'
+
 export function ResultadosWeb({ consulta }) {
   const query = useBusquedaWeb(consulta)
   if (!import.meta.env.PROD || !consulta) return null
@@ -18,7 +20,7 @@ export function ResultadosWeb({ consulta }) {
   const resultados = query.data?.resultados ?? []
 
   return (
-    <section className="mt-10 border-t-2 border-textPrimary pt-5" aria-live="polite">
+    <section id={ID_PRENSA} className="mt-10 border-t-2 border-textPrimary pt-5 scroll-mt-4" aria-live="polite">
       <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
         En las noticias y fuentes públicas
       </h2>
@@ -103,4 +105,106 @@ function Proceso({ r }) {
       </p>
     </div>
   )
+}
+
+// Lo de la prensa que va ARRIBA de los contratos. La sección completa queda
+// abajo, y con resultados quedaba debajo de 30 contratos: quien buscaba una
+// obra polémica no se enteraba de que había cobertura (oct 2026). Aquí van dos
+// cosas, cortas: el puente del apodo al contrato (ver pistasDeContrato en
+// src/lib/busquedaWeb.js) y, si se pide, los dos primeros titulares con un
+// enlace a la sección entera.
+export function ResumenPrensa({ consulta, conTitulares }) {
+  const query = useBusquedaWeb(consulta)
+  if (!import.meta.env.PROD || !consulta || !query.isSuccess) return null
+
+  const resultados = query.data?.resultados ?? []
+  const vistos = new Set()
+  const sugeridos = []
+  for (const o of query.data?.obras ?? []) {
+    for (const c of o.contratos) {
+      if (vistos.has(c.id)) continue
+      vistos.add(c.id)
+      sugeridos.push({ ...c, pista: o })
+    }
+  }
+  const pistaTexto = (query.data?.obras ?? []).find((o) => o.tipo === 'obra')
+  const titulares = conTitulares ? resultados.slice(0, 2) : []
+  if (!sugeridos.length && !titulares.length) return null
+
+  return (
+    <div className="mb-5 border-l-4 border-primary bg-textPrimary/[0.04] px-4 py-3 max-w-3xl">
+      {sugeridos.length > 0 && (
+        <>
+          <p className="text-cuerpo font-semibold text-textPrimary leading-snug">
+            Según la prensa, esto podría ser lo que buscas:
+          </p>
+          <ul className="mt-2 space-y-2">
+            {sugeridos.slice(0, 3).map((c) => (
+              <li key={c.id}>
+                <Link
+                  to={`/buscar?${new URLSearchParams({ q: c.id })}`}
+                  className="text-cuerpo font-semibold text-primary enlace-visible leading-snug"
+                >
+                  {recortar(c.objeto, 140)}
+                </Link>
+                <p className="text-nota text-textSecondary leading-snug">
+                  {c.entidad} · {c.contratista} · {formatCOP(c.valor)}
+                  {c.fecha && <> · {formatDate(c.fecha)}</>}
+                </p>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-nota text-textSecondary leading-snug">
+            Lo encontramos en SECOP por{' '}
+            {sugeridos[0].pista.tipo === 'obra' ? 'el nombre de la obra' : 'el contratista'} que
+            nombran las noticias («{sugeridos[0].pista.frase}»). Compruébalo en el detalle.
+            {pistaTexto && (
+              <>
+                {' '}
+                <Link
+                  to={`/buscar?${new URLSearchParams({ q: pistaTexto.frase })}`}
+                  className="font-semibold text-primary enlace-sutil"
+                >
+                  Ver todos los contratos que nombran «{pistaTexto.frase}» →
+                </Link>
+              </>
+            )}
+          </p>
+        </>
+      )}
+
+      {titulares.length > 0 && (
+        <div className={sugeridos.length ? 'mt-3 pt-3 border-t border-textPrimary/15' : ''}>
+          <p className="text-micro uppercase tracking-label text-textSecondary font-semibold">
+            En la prensa
+          </p>
+          <ul className="mt-1 space-y-1">
+            {titulares.map((r) => (
+              <li key={r.url} className="text-cuerpo leading-snug">
+                <a
+                  href={r.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold enlace-perfil enlace-visible"
+                >
+                  {r.titulo} <span aria-hidden>↗</span>
+                </a>{' '}
+                <span className="text-nota text-textSecondary">{r.fuente}</span>
+              </li>
+            ))}
+          </ul>
+          {resultados.length > titulares.length && (
+            <a href={`#${ID_PRENSA}`} className="mt-1.5 inline-block text-nota font-semibold text-primary enlace-sutil">
+              Ver las {resultados.length} noticias y fuentes ↓
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function recortar(t, n) {
+  const s = String(t || '')
+  return s.length > n ? `${s.slice(0, n).replace(/\s+\S*$/, '')}…` : s
 }
