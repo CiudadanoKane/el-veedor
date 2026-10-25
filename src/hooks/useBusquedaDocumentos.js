@@ -37,7 +37,10 @@ export function useBusquedaDocumentos(criterios = {}, filtrosGeo = {}) {
   // Se apaga para identificadores: un código de proceso lo resuelve mejor la
   // coincidencia exacta de useBusqueda, y buscarlo aquí solo repetiría el
   // contrato que esa ya encuentra.
-  const activa = tieneTextoBuscable(texto) && !esIdentificador(texto)
+  // Ni con un contratista nombrado: un anexo que lo menciona no es un contrato
+  // suyo (ver soloContratista en useBusqueda.js).
+  const soloContratista = !!criterios.contratista && criterios.contratista.trim() === texto.trim()
+  const activa = tieneTextoBuscable(texto) && !esIdentificador(texto) && !soloContratista
 
   return useQuery({
     enabled: activa,

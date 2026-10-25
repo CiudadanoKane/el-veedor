@@ -139,7 +139,7 @@ function compararAdaptados(orden) {
 // prefiltro de $q; con una sola palabra $q ya es preciso y se deja amplio para
 // que "hospital" alcance también a la entidad. Todas las consultas corren en
 // paralelo y se fusionan por id.
-async function buscarPorVariantes(dataset, { frases, where, campoId, campos, orderBy, camposFrase }) {
+async function buscarPorVariantes(dataset, { frases, where, campoId, campos, orderBy, camposFrase, exigirCampo = false }) {
   const fraseEn = (v) =>
     '(' + camposFrase.map((c) => `caseless_contains(${c}, '${esc(v)}')`).join(' OR ') + ')'
 
@@ -157,7 +157,10 @@ async function buscarPorVariantes(dataset, { frases, where, campoId, campos, ord
       consultas.push(
         socrataBusqueda(dataset, {
           q: v,
-          where: esFrase ? `${where} AND ${fraseEn(v)}` : where,
+          // Una sola palabra va por el índice de texto, que mira todos los
+          // campos; con exigirCampo (un contratista: "Sacyr") se exige además
+          // que esté en los campos pedidos.
+          where: esFrase || exigirCampo ? `${where} AND ${fraseEn(v)}` : where,
           select: campos,
           order: orderBy,
           limit: LIMITE + 1,
@@ -218,6 +221,12 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
   const orderBySecop1 = ORDENES_SECOP1[orden] || ORDENES_SECOP1.valor
   const activa = hayBusqueda(criterios)
   const porId = esIdentificador(texto)
+  // Si la pregunta nombra a un contratista y eso es lo que se busca, el nombre
+  // va solo contra el campo del contratista. Como texto libre traía también
+  // anexos que lo mencionan y objetos que se le parecen ("contratos de
+  // Consorcio Vial Barranquilla" mostraba parques en Ciudad Bolívar). Medido:
+  // 0,2 s con el índice de texto.
+  const soloContratista = !!criterios.contratista && criterios.contratista.trim() === texto.trim()
   const modalidadSecop1 = criterios.modalidad ? MODALIDAD_A_SECOP1[criterios.modalidad] : undefined
   const tipoSecop1 = criterios.tipo ? TIPO_A_SECOP1[criterios.tipo] : undefined
   // Estados de SECOP I equivalentes a los que eligió el ciudadano (ver
@@ -323,7 +332,8 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
       const consultaSecop2 = frases.length
         ? buscarPorVariantes(DS, {
             frases, where: where2, campoId: 'id_contrato', campos: CONTRACT_FIELDS,
-            orderBy, camposFrase: CAMPOS_FRASE,
+            orderBy, camposFrase: soloContratista ? ['proveedor_adjudicado'] : CAMPOS_FRASE,
+            exigirCampo: soloContratista,
           })
         : socrataBusqueda(DS, { where: where2, select: CONTRACT_FIELDS, order: orderBy, limit: LIMITE + 1 })
             .then((filas) => ({ filas, hayMas: filas.length > LIMITE }))
@@ -332,7 +342,9 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
         ? (frases.length
             ? buscarPorVariantes(DS1, {
                 frases, where: where1, campoId: 'uid', campos: CONTRACT_FIELDS_SECOP1,
-                orderBy: orderBySecop1, camposFrase: CAMPOS_FRASE_SECOP1,
+                orderBy: orderBySecop1,
+                camposFrase: soloContratista ? ['nom_razon_social_contratista'] : CAMPOS_FRASE_SECOP1,
+                exigirCampo: soloContratista,
               })
             : socrataBusqueda(DS1, { where: where1, select: CONTRACT_FIELDS_SECOP1, order: orderBySecop1, limit: LIMITE + 1 })
                 .then((filas) => ({ filas, hayMas: filas.length > LIMITE })))

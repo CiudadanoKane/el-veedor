@@ -764,7 +764,7 @@ export function Buscar() {
   const cuantosMarco = resultados.filter((r) => esContratoMarco(r.description)).length
   // Si ningún resultado nombra lo buscado y no hay contratos marco en la lista,
   // se buscan los del lugar (ver MarcosDelLugar).
-  const buscarMarcosDelLugar = hayPregunta && !!lugarFiltro && !!criterios.texto && cuantosMarco === 0 &&
+  const buscarMarcosDelLugar = hayPregunta && !criterios.contratista && !!lugarFiltro && !!criterios.texto && cuantosMarco === 0 &&
     !queryContratos.isLoading && !buscandoDocs && !resultados.some((r) => contieneFrase(r, criterios.texto))
   // ¿Todo lo que se ve llegó por las palabras relacionadas, y nada por lo que
   // se buscó? Entonces la lista no responde la pregunta, por larga que sea, y
@@ -1149,7 +1149,7 @@ export function Buscar() {
                     "pavimento; pasos a desnivel; puentes… en todas las
                     localidades" y no sabe si es el suyo. Se dice qué es, y que
                     es un candidato y no el contrato confirmado. */}
-                {hayPregunta && cuantosMarco > 0 && (
+                {hayPregunta && !criterios.contratista && cuantosMarco > 0 && (
                   <p className="mt-3 text-cuerpo text-textSecondary max-w-2xl leading-snug">
                     <strong className="text-textPrimary">
                       {cuantosMarco === 1
