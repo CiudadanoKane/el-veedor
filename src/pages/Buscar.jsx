@@ -111,7 +111,7 @@ function coincidenciaVisible(contrato, textos) {
 
 // Parámetros de URL que le pertenecen al buscador. Todo lo demás en la URL es
 // de otro módulo (hoy, los filtros geográficos) y no se toca desde aquí.
-const PARAMS_BUSQUEDA = ['q', 'amplia', 'modalidad', 'tipo', 'segmento', 'estado', 'orden', 'modo', 'valorMin', 'valorMax', 'desde', 'hasta', 'pregunta', 'quien', 'tema']
+const PARAMS_BUSQUEDA = ['q', 'amplia', 'modalidad', 'tipo', 'segmento', 'estado', 'orden', 'modo', 'valorMin', 'valorMax', 'desde', 'hasta', 'pregunta', 'quien', 'contratista', 'tema']
 
 // Separador de la ampliación semántica en la URL. Barra vertical: no aparece
 // en nombres de contratos, así que no choca con los términos.
@@ -148,6 +148,7 @@ function escribirBusqueda(next, sig) {
     // vacía, porque todo se volvió filtros) y es lo que se busca en la prensa.
     pregunta: sig.pregunta && sig.pregunta !== sig.texto ? sig.pregunta : '',
     quien: sig.quien || '',
+    contratista: sig.contratista || '',
     tema: sig.tema || '',
   }
   for (const [k, v] of Object.entries(propios)) {
@@ -171,7 +172,7 @@ const MODOS = [
 // plataforma es que alguien sin saber qué buscar encuentre por dónde empezar.
 // Lo que deja la IA cuando interpreta, y que una búsqueda sin IA (un número de
 // proceso, un fallo de la IA) debe borrar para no arrastrar lo de la anterior.
-const SIN_INTERPRETACION = { pregunta: '', quien: '', tema: '' }
+const SIN_INTERPRETACION = { pregunta: '', quien: '', contratista: '', tema: '' }
 
 // Preguntas de juicio que SECOP no registra como texto —nadie escribe
 // "sobrecosto" en el objeto de su contrato— y el indicador de Alertas que más
@@ -488,6 +489,7 @@ export function Buscar() {
     fechaHasta: params.get('hasta') || '',
     pregunta: params.get('pregunta') || '',
     quien: params.get('quien') || '',
+    contratista: params.get('contratista') || '',
     tema: TEMAS[params.get('tema')] ? params.get('tema') : '',
   }), [params])
 
@@ -600,6 +602,7 @@ export function Buscar() {
         fechaHasta: filtros.fechaHasta || '',
         pregunta: limpio,
         quien: filtros.entidad || '',
+        contratista: filtros.contratista || '',
         tema: TEMAS[filtros.tema] ? filtros.tema : '',
       }
       // El lugar se valida contra el catálogo real (no se inventa un municipio).
@@ -915,6 +918,22 @@ export function Buscar() {
             </div>
             {errorIA && (
               <p className="mt-2 text-nota text-textSecondary">{errorIA}</p>
+            )}
+
+            {/* Un contratista nombrado en la pestaña Contratos: sus contratos
+                ya salen abajo (se buscan por su nombre), y su perfil —todo lo
+                que ha recibido, de qué entidades— está a un toque. */}
+            {criterios.contratista && (
+              <p className="mt-4 text-nota text-textSecondary leading-snug max-w-2xl">
+                Abajo, los contratos que nombran a{' '}
+                <strong className="text-textPrimary">«{criterios.contratista}»</strong>.{' '}
+                <Link
+                  to={`/buscar?${new URLSearchParams({ modo: 'contratistas', nombre: criterios.contratista })}`}
+                  className="font-semibold text-primary enlace-sutil"
+                >
+                  Buscar su perfil de contratista →
+                </Link>
+              </p>
             )}
 
             <div ref={sugerenciaRef}>

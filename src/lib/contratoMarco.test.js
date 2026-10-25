@@ -9,6 +9,13 @@ describe('esContratoMarco', () => {
     )).toBe(true)
   })
 
+  it('reconoce el que junta tres clases de obra aunque no diga "todas las localidades"', () => {
+    expect(esContratoMarco(
+      'EJECUTAR OBRAS DE CONSTRUCCIÓN; REHABILITACIÓN; RECONSTRUCCIÓN; MANTENIMIENTO Y CONSERVACIÓN DE LA ' +
+      'INFRAESTRUCTURA DE DRENAJES; QUE INCLUYAN PAVIMENTOS; PASOS A DESNIVEL; PUENTES; BOX CULVERT Y DEMÁS ESTRUCTURAS',
+    )).toBe(true)
+  })
+
   it('no rotula una obra puntual, aunque tenga varias partes', () => {
     expect(esContratoMarco(
       'CONSTRUCCIÓN; GESTIÓN PREDIAL; SOCIAL; AMBIENTAL SOSTENIBLE DE LAS VÍAS DE ACCESO AL PROYECTO TÚNEL GUILLERMO GAVIRIA ECHEVERRI',

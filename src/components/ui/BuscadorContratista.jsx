@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useBuscarContratista } from '../../hooks/useBuscarContratista'
 import { documentoVisible, etiquetaDocumento } from '../../lib/identidad'
 import { formatCOP } from '../../lib/formatters'
@@ -10,8 +10,13 @@ import { formatCOP } from '../../lib/formatters'
 // llegar al perfil de un contratista concreto: había que dar con él por
 // casualidad en una búsqueda de contratos. Acepta nombre o número de documento.
 export function BuscadorContratista() {
-  const [texto, setTexto] = useState('')
-  const [consulta, setConsulta] = useState('')
+  // Llega con el nombre ya escrito desde la pestaña Contratos ("Buscar su perfil
+  // de contratista", ?modo=contratistas&nombre=…). Un parámetro propio y no
+  // "q": al cambiar de pestaña, "q" trae la búsqueda de contratos.
+  const [params] = useSearchParams()
+  const inicial = params.get('nombre') || ''
+  const [texto, setTexto] = useState(inicial)
+  const [consulta, setConsulta] = useState(inicial)
 
   // Se consulta al dejar de escribir, no en cada tecla: cada búsqueda recorre
   // los 5,3 millones de registros.

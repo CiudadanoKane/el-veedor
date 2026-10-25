@@ -23,13 +23,33 @@ const AMBITO = new RegExp(
     '|\\bmalla vial\\b',
 )
 
+// Segunda señal, en lugar del ámbito: la lista abarca tres o más clases de
+// obra distintas. LP-004-2026 del Distrito de Barranquilla no dice "en todas
+// las localidades", pero junta "DRENAJES; QUE INCLUYAN PAVIMENTOS; PASOS A
+// DESNIVEL; PUENTES; BOX CULVERT…": vías, estructuras y drenaje. Medido sobre
+// 120 obras grandes de seis departamentos: solo añade ese contrato.
+const CLASES_DE_OBRA = [
+  ['tunel', 'deprimido', 'desnivel', 'puente', 'pasarela', 'viaducto', 'intercambiador'],
+  ['pavimento', 'pavimentacion', 'malla', 'vias', 'calles', 'vial'],
+  ['arroyo', 'canal', 'canalizacion', 'drenaje', 'boxcoulvert', 'box', 'pluvial', 'escorrentia'],
+  ['parque', 'plaza', 'espacio', 'urbanismo', 'andenes'],
+  ['colegio', 'escuela', 'educativa', 'aulas'],
+  ['acueducto', 'alcantarillado', 'redes'],
+]
+
+function clasesDeObra(t) {
+  const palabras = t.split(/[^a-z0-9]+/)
+  return CLASES_DE_OBRA.filter((clase) => clase.some((c) => palabras.some((p) => p.startsWith(c)))).length
+}
+
 // La interventoría de un contrato marco repite su objeto entero ("INTERVENTORÍA
 // TÉCNICA… PARA LA EJECUCIÓN DE OBRAS DE… PASOS A DESNIVEL…") pero no ejecuta
 // obras: supervisa. No se rotula.
 export function esContratoMarco(objeto) {
   const t = sinTildes(objeto || '')
   if (t.includes('interventor')) return false
-  return (t.match(SEPARADORES) || []).length >= 3 && AMBITO.test(t)
+  if ((t.match(SEPARADORES) || []).length < 3) return false
+  return AMBITO.test(t) || clasesDeObra(t) >= 3
 }
 
 // ¿Qué tanto tiene que ver un contrato marco con la obra que se preguntó? La

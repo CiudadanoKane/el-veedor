@@ -138,7 +138,17 @@ export const ESQUEMA = {
         'La entidad pública contratante que la persona nombra, tal como la nombra (p. ej. "Gobernación ' +
         'del Atlántico", "Alcaldía de Medellín", "INVÍAS", "Hospital San Jorge"). Va SOLO aquí: no la ' +
         'repitas en "texto". Su ciudad o departamento sí van también en sus campos ("Gobernación del ' +
-        'Atlántico" → departamento "Atlántico"). Vacío si no se nombra una entidad.',
+        'Atlántico" → departamento "Atlántico"). Una empresa, un consorcio, una unión temporal o una ' +
+        'persona que RECIBE el contrato no es una entidad: va en "contratista". Vacío si no se nombra ' +
+        'una entidad.',
+    },
+    contratista: {
+      type: 'string',
+      description:
+        'La empresa, consorcio, unión temporal o persona que RECIBE o ejecuta el contrato, si la ' +
+        'persona la nombra, tal como la escribe (p. ej. "Consorcio Vial Barranquilla", "Sacyr", ' +
+        '"Daniel Quintero"). "contratos de X", "lo que ha ganado X" o "a quién le contrataron X" ' +
+        'hablan del contratista X. No la repitas en "texto". Vacío si no se nombra.',
     },
     tema: {
       type: 'string',
@@ -158,7 +168,7 @@ export const ESQUEMA = {
     fechaDesde: { type: 'string', description: 'Fecha de firma desde, formato YYYY-MM-DD. Cadena vacía si no se menciona.' },
     fechaHasta: { type: 'string', description: 'Fecha de firma hasta, formato YYYY-MM-DD. Cadena vacía si no se menciona.' },
   },
-  required: ['texto', 'terminos', 'modalidad', 'tipo', 'estados', 'departamento', 'ciudad', 'entidad', 'tema', 'valorMin', 'valorMax', 'fechaDesde', 'fechaHasta'],
+  required: ['texto', 'terminos', 'modalidad', 'tipo', 'estados', 'departamento', 'ciudad', 'entidad', 'contratista', 'tema', 'valorMin', 'valorMax', 'fechaDesde', 'fechaHasta'],
   additionalProperties: false,
 }
 
@@ -231,6 +241,32 @@ export default async function handler(req, res) {
     if (filtros.tipo && !mencionaTipo(consulta, filtros.tipo)) filtros.tipo = ''
     if (filtros.modalidad && !mencionaModalidad(consulta, filtros.modalidad)) filtros.modalidad = ''
     filtros.entidad = String(filtros.entidad || '').trim().slice(0, 120)
+    filtros.contratista = String(filtros.contratista || '').trim().slice(0, 120)
+    // Un consorcio o una unión temporal nunca es la entidad contratante, aunque
+    // el modelo lo ponga ahí ("contratos de Consorcio Vial Barranquilla" salía
+    // como entidad y el Buscador sugería entidades en vez de buscarlo).
+    if (/^(consorcio|uni[oó]n temporal|ut)\s/i.test(filtros.entidad) && !filtros.contratista) {
+      filtros.contratista = filtros.entidad
+      filtros.entidad = ''
+    }
+    // Una ciudad que es parte del nombre del contratista no es un lugar
+    // pedido: "contratos de Consorcio Vial Barranquilla" no es "en
+    // Barranquilla". Se quita si no aparece en el resto de la consulta.
+    if (filtros.contratista) {
+      const plano = (x) => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+      const resto = plano(consulta).replace(plano(filtros.contratista), ' ')
+      const ciudad = plano(filtros.ciudad)
+      if (ciudad && plano(filtros.contratista).includes(ciudad) && !resto.includes(ciudad)) {
+        filtros.ciudad = ''
+        // Y el departamento que el modelo dedujo de esa ciudad, si la persona
+        // tampoco lo nombró.
+        if (!resto.includes(plano(filtros.departamento))) filtros.departamento = ''
+      }
+    }
+    // El nombre del contratista se busca como texto: la búsqueda ya mira el
+    // campo del contratista (CAMPOS_FRASE en useBusqueda.js). Si la persona dio
+    // además qué se contrató, eso manda en "texto" y el contratista queda para
+    // el enlace a su perfil.
     if (!TEMAS.includes(filtros.tema)) filtros.tema = ''
     // Con un tema, el estado que el modelo saque de las mismas palabras ("van
     // retrasados" → En ejecución) sobra y estorba: dejaba fuera los
@@ -242,6 +278,7 @@ export default async function handler(req, res) {
     // texto principal ni entre sí, comparando sin tildes ni mayúsculas). El
     // tope defensivo va por si el modelo se pasa del 6 que pide el esquema.
     const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+    if (filtros.contratista && !String(filtros.texto || '').trim()) filtros.texto = filtros.contratista
     const vistos = new Set([norm(filtros.texto)])
     filtros.terminos = (Array.isArray(filtros.terminos) ? filtros.terminos : [])
       .map((t) => String(t || '').trim())
