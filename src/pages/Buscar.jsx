@@ -17,7 +17,8 @@ import { useGeo } from '../hooks/useGeoOptions'
 import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO, etiquetaEstado } from '../lib/catalogos'
 import { ESTADOS_SOLO_SECOP1 } from '../lib/catalogosSecop1'
 import { sinTildes, pluralDeFrase } from '../lib/acentos'
-import { esContratoMarco } from '../lib/contratoMarco'
+import { esContratoMarco, palabrasDeObra, afinidadConObra } from '../lib/contratoMarco'
+import { useContratosMarco } from '../hooks/useContratosMarco'
 import { resolverLugar } from '../lib/geoResolver'
 import { formatCOP, formatDate } from '../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
@@ -39,6 +40,54 @@ const norm = (s) => sinTildes(s || '').replace(/\s+/g, ' ').trim()
 // campos de Socrata, no solo los que se muestran—, así que una fila puede
 // coincidir por su sector, ciudad, modalidad o NIT sin que ningún texto visible
 // lo explique; para esos casos se avisa de forma genérica.
+// Cuando ningún contrato del lugar nombra la obra por la que se preguntó, los
+// contratos marco de ese lugar que incluyen obras de ese tipo (ver
+// lib/contratoMarco.js y useContratosMarco). No depende de cómo se escribió la
+// pregunta: "túnel peatonal", "paso a desnivel" o "túnel de Caribe Verde"
+// llegan a los mismos.
+function MarcosDelLugar({ lugar, nombreLugar, textos, buscado }) {
+  const query = useContratosMarco(lugar, true)
+  if (!query.isSuccess) return null
+  const palabras = palabrasDeObra(textos)
+  const candidatos = query.data
+    .map((c) => ({ c, afinidad: afinidadConObra(c.description, palabras) }))
+    .filter((x) => x.afinidad > 0)
+    .sort((x, y) => y.afinidad - x.afinidad || (y.c.contractValue || 0) - (x.c.contractValue || 0))
+    .slice(0, 4)
+    .map((x) => x.c)
+  if (!candidatos.length) return null
+
+  return (
+    <div className="mt-4 mb-5 border-l-4 border-border px-4 py-3 max-w-3xl">
+      <p className="text-cuerpo text-textPrimary leading-snug">
+        <strong>Ningún contrato de {nombreLugar} nombra «{buscado}».</strong> Obras así suelen
+        ejecutarse dentro de un <strong>contrato marco</strong> —un solo contrato para muchas obras
+        en todo el lugar—. Estos de {nombreLugar} incluyen obras de ese tipo:
+      </p>
+      <ul className="mt-2 space-y-2">
+        {candidatos.map((c) => (
+          <li key={c.id}>
+            <Link
+              to={`/buscar?${new URLSearchParams({ q: c.id })}`}
+              className="text-cuerpo font-semibold text-primary enlace-visible leading-snug line-clamp-2"
+            >
+              {c.description}
+            </Link>
+            <p className="text-nota text-textSecondary leading-snug">
+              {c.entityName} · {c.contractorName} · {formatCOP(c.contractValue)}
+              {c.signDate && <> · {formatDate(c.signDate)}</>}
+            </p>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-nota text-textSecondary leading-snug">
+        Son candidatos, no el contrato confirmado: SECOP no registra cada obra por separado, y qué
+        obras incluye cada uno está en sus documentos y en lo que reporte la entidad.
+      </p>
+    </div>
+  )
+}
+
 // ¿El objeto, la entidad o el contratista contienen la frase (o su plural)?
 function contieneFrase(contrato, texto) {
   const agujas = [texto, pluralDeFrase(texto)].map(norm).filter(Boolean)
@@ -710,6 +759,10 @@ export function Buscar() {
   // puede estar dentro de uno de ellos sin que SECOP la nombre.
   const entidadesMarco = [...new Set(resultados.filter((r) => esContratoMarco(r.description)).map((r) => r.entityName))]
   const cuantosMarco = resultados.filter((r) => esContratoMarco(r.description)).length
+  // Si ningún resultado nombra lo buscado y no hay contratos marco en la lista,
+  // se buscan los del lugar (ver MarcosDelLugar).
+  const buscarMarcosDelLugar = hayPregunta && !!lugarFiltro && !!criterios.texto && cuantosMarco === 0 &&
+    !queryContratos.isLoading && !buscandoDocs && !resultados.some((r) => contieneFrase(r, criterios.texto))
   // ¿Todo lo que se ve llegó por las palabras relacionadas, y nada por lo que
   // se buscó? Entonces la lista no responde la pregunta, por larga que sea, y
   // vale la pena pedirle a la prensa el nombre oficial (ver ResumenPrensa).
@@ -1090,6 +1143,15 @@ export function Buscar() {
                     aparezca. Son candidatos, no el contrato confirmado: qué obras incluye cada uno
                     está en sus documentos y en lo que reporte la entidad.
                   </p>
+                )}
+
+                {buscarMarcosDelLugar && (
+                  <MarcosDelLugar
+                    lugar={{ departamento: filters.department, ciudad: filters.city }}
+                    nombreLugar={lugarFiltro}
+                    textos={[criterios.texto, ...criterios.terminos]}
+                    buscado={criterios.texto}
+                  />
                 )}
 
                 {/* Lo de la prensa también arriba: el puente del apodo al

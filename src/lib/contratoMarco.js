@@ -31,3 +31,40 @@ export function esContratoMarco(objeto) {
   if (t.includes('interventor')) return false
   return (t.match(SEPARADORES) || []).length >= 3 && AMBITO.test(t)
 }
+
+// ¿Qué tanto tiene que ver un contrato marco con la obra que se preguntó? La
+// pregunta casi nunca usa las palabras del contrato: "túnel peatonal" contra
+// "PASOS A DESNIVEL; PUENTES Y BOXCOULVERT". Por eso, además de las palabras
+// de la búsqueda, cuenta la familia de obra a la que pertenecen: un túnel, un
+// deprimido y un puente peatonal se contratan como "pasos a desnivel".
+const FAMILIAS = [
+  ['tunel', 'deprimido', 'desnivel', 'puente', 'pasarela', 'viaducto', 'intercambiador', 'peatonal', 'paso'],
+  ['via', 'vias', 'calle', 'avenida', 'carrera', 'pavimento', 'pavimentacion', 'malla', 'vial'],
+  ['arroyo', 'canal', 'canalizacion', 'drenaje', 'boxcoulvert', 'pluvial', 'escorrentia'],
+  ['parque', 'plaza', 'espacio', 'publico', 'urbanismo', 'andenes', 'anden'],
+  ['colegio', 'escuela', 'educativa', 'aulas', 'megacolegio'],
+  ['acueducto', 'alcantarillado', 'agua', 'redes', 'saneamiento'],
+]
+const VACIAS = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'en', 'y', 'a', 'al', 'para', 'por', 'con', 'obra', 'obras', 'contrato'])
+
+function raices(texto) {
+  return sinTildes(texto || '').split(/[^a-z0-9]+/).filter((p) => p.length >= 4 && !VACIAS.has(p))
+}
+
+export function palabrasDeObra(textos) {
+  const propias = new Set(textos.flatMap(raices))
+  const todas = new Set(propias)
+  for (const familia of FAMILIAS) {
+    if (familia.some((f) => [...propias].some((p) => p.startsWith(f) || f.startsWith(p)))) {
+      familia.forEach((f) => todas.add(f))
+    }
+  }
+  return [...todas]
+}
+
+// Cuántas de esas palabras aparecen como comienzo de una palabra del objeto
+// ("paso" cuenta en "PASOS"). Cero es "no tiene que ver".
+export function afinidadConObra(objeto, palabras) {
+  const delObjeto = raices(objeto)
+  return palabras.filter((p) => delObjeto.some((o) => o.startsWith(p))).length
+}
