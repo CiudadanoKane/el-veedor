@@ -581,6 +581,18 @@ Córdoba"…). Lo que fallaba y cómo quedó:
   si hay 3 contratos o menos, dos titulares con enlace a la sección completa si
   hay más.
 
+**Caso: el túnel peatonal de la Circunvalar en Caribe Verde (oct 2026).** La
+pregunta se volvía la frase "paso a desnivel circunvalar Caribe Verde", sin lugar,
+y la lista se llenaba de acueductos de Casanare. Ahora: `texto` lleva solo la obra;
+un barrio que pertenece sin ambigüedad a una ciudad fija esa ciudad; la frase
+principal se busca también en plural (`pluralDeFrase`: los contratos marco dicen
+"PASOS A DESNIVEL"); el puente corre también cuando nada de la lista contiene lo
+buscado; y los contratos marco se rotulan (`lib/contratoMarco.js`) con una nota que
+los presenta como candidatos. El túnel ($5.900 millones según la prensa) no tiene
+contrato propio en SECOP II: lo más probable es que vaya dentro de LP-006-2025 o
+LP-015-2025 del Distrito, pero ni la prensa ni SECOP lo confirman. Pendiente: el
+marco LP-004-2026 (";" en vez de "y/o", sin "todas las localidades") no se rotula.
+
 ### Revisión del Buscador en móvil (oct 2026)
 
 - **El directorio de entidades tenía 414 de 5.648.** `/api/directorio` guardaba
