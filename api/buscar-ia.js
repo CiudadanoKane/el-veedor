@@ -50,9 +50,14 @@ export const ESQUEMA = {
         'exige que las palabras de "texto" queden JUNTAS y en ese orden, así que menos es mejor —no ' +
         'debe llevar fechas, valores, modalidad ni estado, que van en los otros campos—. Una ciudad o ' +
         'departamento (p. ej. "Barranquilla", "Antioquia") va en sus propios campos (ciudad, ' +
-        'departamento), NO en "texto": ahí serían demasiado genéricos como frase. Un lugar más ' +
-        'específico dentro de la ciudad —una calle, avenida, barrio o corregimiento— sí puede ir en ' +
-        '"texto", porque identifica el contrato en vez de diluirlo. Si la consulta ' +
+        'departamento), NO en "texto": ahí serían demasiado genéricos como frase. "texto" lleva UNA ' +
+        'sola cosa: lo que se contrató ("paso a desnivel", "túnel peatonal", "alimentación escolar") ' +
+        'o, si la persona no dice qué, el lugar específico (una calle, avenida, barrio o ' +
+        'corregimiento: "avenida circunvalar", "Rebolo"). NUNCA encadenes la obra con el lugar ni ' +
+        'con un barrio: el objeto de un contrato casi nunca los trae juntos y en ese orden, y la ' +
+        'búsqueda los exige así. Para "túnel peatonal en la circunvalar a la altura de Caribe Verde" ' +
+        'el resultado correcto es texto="túnel peatonal", no "túnel peatonal circunvalar Caribe ' +
+        'Verde". Si la consulta ' +
         'no tiene ningún otro filtro que extraer, "texto" es lo que quede tras corregir y depurar ' +
         '(nunca vacío solo por ser corta). ' +
         'CUANDO LA PERSONA NOMBRA UN SECTOR, TEMA O ÁREA —"sector transporte", "contratos de salud", ' +
@@ -119,8 +124,13 @@ export const ESQUEMA = {
       type: 'string',
       description:
         'Ciudad o municipio de Colombia mencionado, en su nombre estándar y corrigiendo errores de ' +
-        'tipeo (p. ej. "barranqilla" → "Barranquilla", "medallo" → "Medellín"). Vacío si no se ' +
-        'menciona ninguna ciudad.',
+        'tipeo (p. ej. "barranqilla" → "Barranquilla", "medallo" → "Medellín"). Un barrio, una ' +
+        'comuna o una urbanización NUNCA van aquí ("Caribe Verde" no es una ciudad). Pero si la ' +
+        'persona nombra un barrio, una vía o un sitio que pertenece sin ambigüedad a una sola ciudad ' +
+        '—"Caribe Verde" o "la Circunvalar a la altura de Caribe Verde" → Barranquilla, "El Poblado" ' +
+        '→ Medellín—, pon esa ciudad: sin ella la búsqueda queda en todo el país. Si el nombre ' +
+        'existe en varias ciudades ("la Circunvalar" sola, "El Bosque"), déjalo vacío. Vacío si no ' +
+        'se menciona ningún lugar.',
     },
     entidad: {
       type: 'string',

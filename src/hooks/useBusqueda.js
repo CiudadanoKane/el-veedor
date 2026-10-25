@@ -6,7 +6,7 @@ import {
   soloContratosValidosSecop1, valorCoherenteConElPresupuestoSecop1, cuantiaPosibleSecop1, condicionEstadoSecop1, whereFromFiltrosSecop1,
   rangoNumerico, rangoValorSecop1, rangoFecha,
 } from '../lib/soql'
-import { variantesDeFrase, variantesReducidas, tieneTextoBuscable, palabrasDeFrase } from '../lib/acentos'
+import { variantesDeFrase, variantesReducidas, tieneTextoBuscable, palabrasDeFrase, pluralDeFrase } from '../lib/acentos'
 import { adaptList as adaptListSecop2 } from '../adapters/secop2Adapter'
 import { adaptList as adaptListSecop1 } from '../adapters/secop1Adapter'
 import { MODALIDAD_A_SECOP1, TIPO_A_SECOP1, ESTADO_A_SECOP1 } from '../lib/catalogosSecop1'
@@ -147,7 +147,12 @@ async function buscarPorVariantes(dataset, { frases, where, campoId, campos, ord
   frases.forEach((frase, i) => {
     if (!tieneTextoBuscable(frase)) return
     const esFrase = palabrasDeFrase(frase).length > 1
-    const variantes = i === 0 ? variantesDeFrase(frase) : variantesReducidas(frase)
+    // La frase principal también en plural (ver pluralDeFrase): una consulta
+    // más, en paralelo con las otras.
+    const enPlural = i === 0 && esFrase ? pluralDeFrase(frase) : null
+    const variantes = i === 0
+      ? [...new Set([...variantesDeFrase(frase), ...(enPlural ? variantesReducidas(enPlural) : [])])]
+      : variantesReducidas(frase)
     for (const v of variantes) {
       consultas.push(
         socrataBusqueda(dataset, {

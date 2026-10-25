@@ -117,6 +117,38 @@ export function variantesReducidas(texto) {
   return sin === conAcentos ? [sin] : [sin, conAcentos]
 }
 
+// La frase en plural, o null si ya lo está. Los contratos marco nombran las
+// obras en plural ("obras de… pavimento; PASOS A DESNIVEL; puentes…") y la
+// búsqueda de "paso a desnivel" no los encontraba: es una frase exacta, y
+// "pasos a desnivel" no la contiene (oct 2026, túnel peatonal de Caribe Verde).
+//
+// Se pluralizan las palabras hasta el primer conector: "paso a desnivel" →
+// "pasos a desnivel", "puente peatonal" → "puentes peatonales". Sin pretender
+// toda la gramática: lo que falle solo es una consulta más que no encuentra.
+const CONECTORES = new Set(['a', 'de', 'del', 'en', 'para', 'por', 'con', 'y', 'e', 'o', 'la', 'el', 'los', 'las', 'al'])
+function plural(palabra) {
+  if (/[sx]$/.test(palabra)) return palabra
+  if (/[aeiouáéó]$/.test(palabra)) return `${palabra}s`
+  if (/z$/.test(palabra)) return `${palabra.slice(0, -1)}ces`
+  // Agudas en -n o -s pierden la tilde: "construcción" → "construcciones".
+  const sinTildeFinal = palabra.replace(/[áéíóú](?=[ns]$)/, (v) => sinTildes(v))
+  return `${sinTildeFinal}es`
+}
+export function pluralDeFrase(texto) {
+  const palabras = String(texto).toLowerCase().replace(/\s+/g, ' ').trim().split(' ')
+  if (palabras.length < 2) return null
+  let enConector = false
+  const salida = palabras.map((p) => {
+    if (enConector || CONECTORES.has(p)) {
+      enConector = true
+      return p
+    }
+    return plural(p)
+  })
+  const frase = salida.join(' ')
+  return frase === palabras.join(' ') ? null : frase
+}
+
 // Condición SoQL que busca la frase (con cualquier escritura de tildes) dentro
 // de uno o más campos.
 export function condicionBusqueda(campos, texto) {

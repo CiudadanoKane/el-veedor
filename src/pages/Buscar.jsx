@@ -16,7 +16,7 @@ import { nombreSegmento } from '../lib/unspsc'
 import { useGeo } from '../hooks/useGeoOptions'
 import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO, etiquetaEstado } from '../lib/catalogos'
 import { ESTADOS_SOLO_SECOP1 } from '../lib/catalogosSecop1'
-import { sinTildes } from '../lib/acentos'
+import { sinTildes, pluralDeFrase } from '../lib/acentos'
 import { resolverLugar } from '../lib/geoResolver'
 import { formatCOP, formatDate } from '../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
@@ -39,7 +39,9 @@ const norm = (s) => sinTildes(s || '').replace(/\s+/g, ' ').trim()
 // coincidir por su sector, ciudad, modalidad o NIT sin que ningún texto visible
 // lo explique; para esos casos se avisa de forma genérica.
 function coincidenciaVisible(contrato, textos) {
-  const agujas = textos.map(norm).filter(Boolean)
+  // También en plural, como se buscó (ver pluralDeFrase): sin esto, un contrato
+  // encontrado por "pasos a desnivel" decía "otro campo del registro".
+  const agujas = textos.flatMap((t) => [t, pluralDeFrase(t)]).map(norm).filter(Boolean)
   if (!agujas.length) return null
   // Con la ampliación semántica una fila puede aparecer por cualquiera de los
   // términos; se busca la coincidencia de cualquiera de ellos.
