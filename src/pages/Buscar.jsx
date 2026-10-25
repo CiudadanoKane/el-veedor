@@ -20,6 +20,7 @@ import { sinTildes, pluralDeFrase } from '../lib/acentos'
 import { esContratoMarco, palabrasDeObra, afinidadConObra } from '../lib/contratoMarco'
 import { useContratosMarco } from '../hooks/useContratosMarco'
 import { AdjudicadosSinContrato } from '../components/ui/AdjudicadosSinContrato'
+import { SugerenciasBusqueda } from '../components/ui/SugerenciasBusqueda'
 import { resolverLugar } from '../lib/geoResolver'
 import { formatCOP, formatDate } from '../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
@@ -1003,6 +1004,12 @@ export function Buscar() {
                   ×
                 </button>
               </div>
+            )}
+
+            {/* Búsquedas sugeridas, siempre: que haya contratos no quiere decir
+                que sean los buscados (ver SugerenciasBusqueda). */}
+            {criterios.texto && !esIdentificador(criterios.texto) && (
+              <SugerenciasBusqueda texto={criterios.texto} consultaPrensa={consultaPrensa} filtrosGeo={filters} />
             )}
 
             {!avanzados && <FiltrosAplicados criterios={criterios} actualizar={actualizar} />}
