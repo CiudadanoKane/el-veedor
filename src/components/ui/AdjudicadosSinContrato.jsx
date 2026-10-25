@@ -32,7 +32,7 @@ export function AdjudicadosSinContrato({ texto, filtrosGeo, soloProveedor = fals
                   Selección (Presentación de ofertas))". */}
               {String(p.referencia || '').replace(/\s*\(.*$/, '')} · {p.entidad}
               {p.fuente === 'SECOP I' && (
-                <span className="ml-2 align-middle text-micro uppercase tracking-label border border-border px-1.5 py-0.5">
+                <span className="ml-2 inline-block whitespace-nowrap align-middle text-micro uppercase tracking-label border border-border px-1.5 py-0.5">
                   SECOP I
                 </span>
               )}
