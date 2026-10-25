@@ -118,12 +118,27 @@ function Proceso({ r }) {
 //   quien pidió 2025), y no se paga.
 // - Muchos: los dos primeros titulares, con un enlace a la sección entera.
 //   Con pocos, la sección ya queda a la vista y repetirlos sobra.
+//
+// Y hay un segundo caso en que el puente hace falta aunque la lista sea larga:
+// cuando ningún contrato contiene lo que se buscó y todos llegaron por las
+// palabras relacionadas (`sinLoBuscado`). "Túnel peatonal en Caribe Verde"
+// traía cinco "pasos elevados" de acueducto en Casanare: muchos contratos,
+// ninguno el buscado (oct 2026). Ahí van el puente y los titulares.
 const POCOS = 3
 
-export function ResumenPrensa({ consulta, lugar, contratos }) {
-  const pocos = contratos <= POCOS
+export function ResumenPrensa({ consulta, lugar, contratos, sinLoBuscado = false }) {
   if (!import.meta.env.PROD || !consulta) return null
-  return pocos ? <PuentePrensa consulta={consulta} lugar={lugar} /> : <TitularesPrensa consulta={consulta} />
+  const pocos = contratos <= POCOS
+  if (pocos) return <PuentePrensa consulta={consulta} lugar={lugar} />
+  if (sinLoBuscado) {
+    return (
+      <>
+        <PuentePrensa consulta={consulta} lugar={lugar} />
+        <TitularesPrensa consulta={consulta} />
+      </>
+    )
+  }
+  return <TitularesPrensa consulta={consulta} />
 }
 
 const CAJA = 'mb-5 border-l-4 border-primary bg-textPrimary/[0.04] px-4 py-3 max-w-3xl'

@@ -17,6 +17,7 @@ import { useGeo } from '../hooks/useGeoOptions'
 import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO, etiquetaEstado } from '../lib/catalogos'
 import { ESTADOS_SOLO_SECOP1 } from '../lib/catalogosSecop1'
 import { sinTildes, pluralDeFrase } from '../lib/acentos'
+import { esContratoMarco } from '../lib/contratoMarco'
 import { resolverLugar } from '../lib/geoResolver'
 import { formatCOP, formatDate } from '../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
@@ -38,6 +39,13 @@ const norm = (s) => sinTildes(s || '').replace(/\s+/g, ' ').trim()
 // campos de Socrata, no solo los que se muestran—, así que una fila puede
 // coincidir por su sector, ciudad, modalidad o NIT sin que ningún texto visible
 // lo explique; para esos casos se avisa de forma genérica.
+// ¿El objeto, la entidad o el contratista contienen la frase (o su plural)?
+function contieneFrase(contrato, texto) {
+  const agujas = [texto, pluralDeFrase(texto)].map(norm).filter(Boolean)
+  return ['description', 'entityName', 'contractorName']
+    .some((c) => agujas.some((a) => norm(contrato[c]).includes(a)))
+}
+
 function coincidenciaVisible(contrato, textos) {
   // También en plural, como se buscó (ver pluralDeFrase): sin esto, un contrato
   // encontrado por "pasos a desnivel" decía "otro campo del registro".
@@ -697,6 +705,18 @@ export function Buscar() {
   const lugarPrensa = { departamento: filters.department, ciudad: filters.city }
   const bloquePrensa = consultaPrensa && <ResultadosWeb consulta={consultaPrensa} />
   const hayLocales = resultados.some((r) => (r.prioridadLugar ?? 2) < 2)
+  // Contratos marco entre los resultados (ver lib/contratoMarco.js): un solo
+  // contrato para muchas obras. Si la persona preguntó por una obra puntual,
+  // puede estar dentro de uno de ellos sin que SECOP la nombre.
+  const entidadesMarco = [...new Set(resultados.filter((r) => esContratoMarco(r.description)).map((r) => r.entityName))]
+  const cuantosMarco = resultados.filter((r) => esContratoMarco(r.description)).length
+  // ¿Todo lo que se ve llegó por las palabras relacionadas, y nada por lo que
+  // se buscó? Entonces la lista no responde la pregunta, por larga que sea, y
+  // vale la pena pedirle a la prensa el nombre oficial (ver ResumenPrensa).
+  // Solo se mira con ampliación: sin ella, todo resultado vino de la frase. Y
+  // un acierto en los documentos anexos cuenta como encontrado.
+  const sinLoBuscado = criterios.terminos.length > 0 && !!criterios.texto && resultados.length > 0 &&
+    docUnicos.length === 0 && !resultados.some((r) => contieneFrase(r, criterios.texto))
   const hayMas = queryContratos.data?.hayMas || queryDocumentos.data?.hayMas
 
   const columns = [
@@ -713,6 +733,15 @@ export function Buscar() {
               <span className="ml-2 align-middle text-micro uppercase tracking-label
                                  text-textSecondary border border-border px-1.5 py-0.5">
                 SECOP I
+              </span>
+            )}
+            {esContratoMarco(r.description) && (
+              <span
+                className="ml-2 align-middle text-micro uppercase tracking-label
+                           text-textSecondary border border-border px-1.5 py-0.5"
+                title="Un solo contrato para muchas obras en todo el lugar"
+              >
+                Contrato marco
               </span>
             )}
           </div>
@@ -1043,12 +1072,37 @@ export function Buscar() {
                   </p>
                 )}
 
+                {/* Contratos marco. Quien pregunta por una obra puntual ("el
+                    túnel peatonal de Caribe Verde") encuentra un contrato de
+                    "pavimento; pasos a desnivel; puentes… en todas las
+                    localidades" y no sabe si es el suyo. Se dice qué es, y que
+                    es un candidato y no el contrato confirmado. */}
+                {hayPregunta && cuantosMarco > 0 && (
+                  <p className="mt-3 text-cuerpo text-textSecondary max-w-2xl leading-snug">
+                    <strong className="text-textPrimary">
+                      {cuantosMarco === 1
+                        ? 'Uno de estos es un contrato marco'
+                        : `${cuantosMarco} de estos son contratos marco`}
+                    </strong>
+                    {entidadesMarco.length === 1 && <> de {entidadesMarco[0]}</>}: un solo contrato
+                    para muchas obras en todo el lugar. SECOP no registra cada obra por separado, así
+                    que una obra puntual puede ejecutarse dentro de uno de ellos sin que su nombre
+                    aparezca. Son candidatos, no el contrato confirmado: qué obras incluye cada uno
+                    está en sus documentos y en lo que reporte la entidad.
+                  </p>
+                )}
+
                 {/* Lo de la prensa también arriba: el puente del apodo al
                     contrato si hay pocos contratos, o dos titulares si hay
                     muchos. Ver ResumenPrensa. */}
                 <div className="mt-4">
                   {!queryContratos.isLoading && !buscandoDocs && (
-                    <ResumenPrensa consulta={consultaPrensa} lugar={lugarPrensa} contratos={resultados.length} />
+                    <ResumenPrensa
+                      consulta={consultaPrensa}
+                      lugar={lugarPrensa}
+                      contratos={resultados.length}
+                      sinLoBuscado={sinLoBuscado}
+                    />
                   )}
                   <QueryState query={queryContratos}>
                     {() =>
