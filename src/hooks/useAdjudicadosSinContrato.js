@@ -28,10 +28,10 @@ const CAMPOS = [
   'respuestas_al_procedimiento', 'urlproceso',
 ].join(', ')
 
-export function useAdjudicadosSinContrato(texto, filtrosGeo = {}, activo = true) {
+export function useAdjudicadosSinContrato(texto, filtrosGeo = {}, { soloProveedor = false, activo = true } = {}) {
   const t = (texto || '').trim()
   return useQuery({
-    queryKey: ['adjudicados-sin-contrato', t, filtrosGeo.department, filtrosGeo.city, filtrosGeo.entity],
+    queryKey: ['adjudicados-sin-contrato', t, soloProveedor, filtrosGeo.department, filtrosGeo.city, filtrosGeo.entity],
     enabled: activo && tieneTextoBuscable(t),
     staleTime: 30 * 60 * 1000,
     queryFn: async () => {
@@ -49,7 +49,15 @@ export function useAdjudicadosSinContrato(texto, filtrosGeo = {}, activo = true)
 
       const respuestas = await Promise.all(
         variantesReducidas(t).map((q) =>
-          socrataBusqueda(DS_PROCESOS, { q, where, select: CAMPOS, order: 'valor_total_adjudicacion DESC', limit: 20 }),
+          socrataBusqueda(DS_PROCESOS, {
+            q,
+            // En Contratistas el nombre es el del adjudicatario, no cualquier
+            // mención en la descripción del proceso.
+            where: soloProveedor ? `${where} AND caseless_contains(nombre_del_proveedor, '${esc(q)}')` : where,
+            select: CAMPOS,
+            order: 'valor_total_adjudicacion DESC',
+            limit: 20,
+          }),
         ),
       )
       // Un proceso aparece en varias filas (una por fase): uno por portafolio.

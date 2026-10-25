@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useBuscarContratista } from '../../hooks/useBuscarContratista'
 import { documentoVisible, etiquetaDocumento } from '../../lib/identidad'
 import { formatCOP } from '../../lib/formatters'
+import { AdjudicadosSinContrato } from './AdjudicadosSinContrato'
 
 // Buscador de contratistas que lleva directo al perfil.
 //
@@ -70,10 +71,18 @@ export function BuscadorContratista() {
         <p className="text-cuerpo text-textSecondary mt-4">Buscando…</p>
       )}
 
+      {/* Un consorcio recién adjudicado todavía no tiene contratos, así que
+          abajo no aparece: se avisa de la adjudicación. No con un número de
+          documento: en esos procesos el NIT del adjudicatario suele venir
+          "No Definido". */}
+      {consulta && !/^\d[\d.\s-]*$/.test(consulta.trim()) && (
+        <AdjudicadosSinContrato texto={consulta} soloProveedor className="mt-4" />
+      )}
+
       {!buscando && consulta && resultados.length === 0 && (
         <p className="text-cuerpo text-textSecondary mt-4">
-          Ningún contratista coincide. Prueba con menos palabras: se buscan juntas y en
-          ese orden.
+          Ningún contratista con contratos en SECOP II coincide. Prueba con menos palabras: se
+          buscan juntas y en ese orden.
         </p>
       )}
 
