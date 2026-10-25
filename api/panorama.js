@@ -6,6 +6,14 @@ import { refrescoBloqueado } from '../src/lib/limiteTasa.js'
 
 const CLAVE = 'panorama'
 
+// Piso de contratos de SECOP II para el Panorama nacional. El 25 de octubre de
+// 2026 datos.gov.co recargó el dataset y quedó con 1.000 contratos; el cron
+// recalculó con eso y sobrescribió en Edge Config las cifras buenas, y la home
+// mostró 992 contratos en todo el país. Por debajo de este piso no se escribe:
+// se conserva lo que había. Mismo umbral que useSaludFuente.
+const MINIMO_CONTRATOS_NACIONAL = 1_000_000
+const totalDe = (payload) => Number(payload?.generales?.[0]?.total) || 0
+
 // Cifras del Panorama (la home). El caso por defecto —sin filtros geográficos,
 // el que ve todo el mundo al entrar— se sirve desde Edge Config: un almacén
 // global de lectura instantánea que NO se purga con los deploys ni depende del
@@ -34,7 +42,10 @@ export default async function handler(req, res) {
     // Camino rápido: sin filtros y sin forzar refresco, leer de Edge Config.
     if (sinFiltros && !forzar) {
       const cache = await leerEdgeConfig(CLAVE)
-      if (cache) {
+      // Lo guardado incompleto (de antes de esta guarda) no se sirve: se
+      // recalcula, y así la home se cura sola en cuanto la fuente vuelve, sin
+      // esperar al cron del día siguiente.
+      if (cache && totalDe(cache) >= MINIMO_CONTRATOS_NACIONAL) {
         res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=86400')
         res.setHeader('X-Panorama-Source', 'edge-config')
         return res.status(200).json(cache)
@@ -64,9 +75,26 @@ export default async function handler(req, res) {
     // termine; en cómputo el costo del write (~200ms) es despreciable frente a
     // los ~15s de las consultas.
     let escrito = 'skip'
-    if (sinFiltros) escrito = await escribirEdgeConfig(CLAVE, payload)
+    if (sinFiltros) {
+      if (totalDe(payload) < MINIMO_CONTRATOS_NACIONAL) {
+        // La fuente llegó incompleta: no se pisa lo guardado. Se sirve lo
+        // anterior si es bueno; si no, lo calculado, marcado como incompleto.
+        escrito = 'rechazado-fuente-incompleta'
+        const anterior = await leerEdgeConfig(CLAVE)
+        if (anterior && totalDe(anterior) >= MINIMO_CONTRATOS_NACIONAL) {
+          res.setHeader('Cache-Control', 'no-store')
+          res.setHeader('X-Panorama-Write', escrito)
+          return res.status(200).json(anterior)
+        }
+        payload.fuenteIncompleta = true
+      } else {
+        escrito = await escribirEdgeConfig(CLAVE, payload)
+      }
+    }
 
-    res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=86400')
+    // Lo incompleto no se guarda en el CDN: que la próxima visita vuelva a
+    // preguntar y se cure sola cuando la fuente vuelva.
+    res.setHeader('Cache-Control', payload.fuenteIncompleta ? 'no-store' : 'public, s-maxage=86400, stale-while-revalidate=86400')
     res.setHeader('X-Panorama-Source', 'compute')
     // Estado de la escritura a Edge Config (ok | no-config | error-<status> |
     // excepcion): sirve para vigilar la salud del refresco diario del cron.

@@ -8,6 +8,7 @@ import { NavInferior } from './NavInferior'
 import { ErrorBoundary } from '../ui/ErrorBoundary'
 import { Icon } from '../ui/Icon'
 import { TextoPlegable } from '../ui/TextoPlegable'
+import { AvisoFuenteIncompleta } from '../ui/AvisoFuenteIncompleta'
 import { useFilters } from '../../context/FiltersContext'
 
 // Secciones donde el ámbito geográfico significa algo. Se deja fuera el manual
@@ -215,6 +216,7 @@ export function Layout() {
             no tapaba el final de cada página. */}
         <main className="flex-1 px-5 py-8 pb-24 sm:px-8 lg:px-14 lg:py-12 lg:pb-12">
           <div className="max-w-6xl">
+            <AvisoFuenteIncompleta />
             {/* key por ruta: al navegar se limpia un error previo */}
             <ErrorBoundary key={pathname}>
               {/* Las páginas llegan en su propio archivo (ver App.jsx): mientras
