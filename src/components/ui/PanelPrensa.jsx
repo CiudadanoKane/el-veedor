@@ -8,8 +8,9 @@ import { ID_PRENSA } from './ResultadosWeb'
 // Al lado y no encima. Encima, la prensa empujaba los contratos fuera de la
 // pantalla; debajo, nadie bajaba a buscarla (oct 2026: "intercambiador vial
 // puerta dorada" y "calle 72"). A la derecha se ven las dos cosas a la vez, en
-// el ancho que la lista de contratos no usa. En el teléfono no caben dos
-// columnas: va encima de los contratos, plegada a tres líneas.
+// el ancho que la lista de contratos no usa. Solo desde 1.280 px: con el menú
+// lateral del sitio, a 1.024 px la lista quedaba en 314 px. Más angosto (y en
+// el teléfono), va encima de los contratos, plegada a tres líneas.
 //
 // Lleva el resumen de lo que dicen las fuentes (lo escribe la IA, ver
 // promptWeb), los primeros titulares y el enlace a la sección completa, abajo.
@@ -29,7 +30,7 @@ export function PanelPrensa({ consulta }) {
   return (
     <aside
       aria-live="polite"
-      className="border-l-4 border-primary bg-textPrimary/[0.04] px-4 py-3 lg:sticky lg:top-4"
+      className="border-l-4 border-primary bg-textPrimary/[0.04] px-4 py-3 xl:sticky xl:top-4"
     >
       <h2 className="text-micro uppercase tracking-label text-textSecondary font-semibold">
         En la prensa
@@ -51,14 +52,14 @@ export function PanelPrensa({ consulta }) {
       )}
 
       {resumen && (
-        <p className={`mt-1.5 text-cuerpo text-textPrimary leading-relaxed ${abierto ? '' : 'line-clamp-3 lg:line-clamp-6'}`}>
+        <p className={`mt-1.5 text-cuerpo text-textPrimary leading-relaxed ${abierto ? '' : 'line-clamp-3 xl:line-clamp-6'}`}>
           {resumen}
         </p>
       )}
 
-      {/* En el teléfono, los titulares van plegados con el resumen. */}
+      {/* En una sola columna, los titulares van plegados con el resumen. */}
       {resultados.length > 0 && (
-        <ul className={`mt-3 space-y-2 ${abierto ? '' : 'max-lg:hidden'}`}>
+        <ul className={`mt-3 space-y-2 ${abierto ? '' : 'max-xl:hidden'}`}>
           {resultados.slice(0, TITULARES).map((r) => (
             <li key={r.url} className="text-nota leading-snug">
               <a

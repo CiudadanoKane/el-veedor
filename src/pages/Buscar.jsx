@@ -1122,11 +1122,11 @@ export function Buscar() {
               <div
                 ref={resultadosRef}
                 className={`border-t-2 border-textPrimary pt-5 ${
-                  consultaPrensa ? 'grid gap-5 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_340px]' : ''
+                  consultaPrensa ? 'grid gap-5 xl:gap-8 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_360px]' : ''
                 }`}
               >
                 {consultaPrensa && (
-                  <div className="lg:order-last">
+                  <div className="xl:order-last">
                     <PanelPrensa consulta={consultaPrensa} />
                   </div>
                 )}
