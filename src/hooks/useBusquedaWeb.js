@@ -29,8 +29,9 @@ export function usePuentePrensa(consulta, { departamento = '', ciudad = '' } = {
     staleTime: 60 * 60 * 1000,
     retry: false,
     queryFn: () => {
-      // `v`: como en useBusquedaWeb. La 2 prueba recortes del nombre de la obra.
-      const params = new URLSearchParams({ puente: '1', v: '2', q })
+      // `v`: como en useBusquedaWeb. La 3 prueba recortes del nombre de la obra
+      // (la 2 quedó guardada con un recorte que ganó por un error).
+      const params = new URLSearchParams({ puente: '1', v: '3', q })
       if (departamento) params.set('departamento', departamento)
       if (ciudad) params.set('ciudad', ciudad)
       return pedir(params)

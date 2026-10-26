@@ -399,6 +399,7 @@ function responderWeb(res, cuerpo) {
 // el peor caso. Ver promptPuente y pistasDelPuente en src/lib/busquedaWeb.js.
 const LIMITE_OBRA = 4
 async function puenteAlContrato(req, res) {
+  const inicio = Date.now()
   const consulta = consultaWeb(req, res)
   if (!consulta) return
   const lugar = {
@@ -451,10 +452,15 @@ async function puenteAlContrato(req, res) {
       // vez: cada consulta tarda hasta 10 s sin caché, y en serie no cabrían
       // en los 30 s. Gana el más largo que SECOP tenga (ver recortesDeObra).
       const frases = pista.tipo === 'obra' ? [pista.frase, ...recortesDeObra(pista.frase, consulta)] : [pista.frase]
-      const intentos = await Promise.all(frases.map((frase) =>
-        socrataQuery(DS_CONTRATOS, soqlContratosPorPista({ ...pista, frase }, LIMITE_OBRA, lugar)).catch(() => []),
-      ))
-      const k = intentos.findIndex((f) => f.length)
+      const buscar = (frase) =>
+        socrataQuery(DS_CONTRATOS, soqlContratosPorPista({ ...pista, frase }, LIMITE_OBRA, lugar)).catch(() => null)
+      const intentos = await Promise.all(frases.map(buscar))
+      // Una consulta que falló no es una que no encontró: en la verificación,
+      // la frase entera falló, el recorte ganó, y se sugirió «Canalización y
+      // reconstrucción» cuando «…vial» tenía 5 contratos. Se reintenta una
+      // vez si queda tiempo dentro de los 30 s.
+      if (intentos[0] === null && Date.now() - inicio < 18_000) intentos[0] = await buscar(frases[0])
+      const k = intentos.findIndex((f) => f?.length)
       if (k < 0) return null
       const filas = intentos[k]
       return {
