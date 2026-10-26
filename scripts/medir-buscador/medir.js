@@ -44,9 +44,9 @@ async function medirCaso(caso, { maxMs = 90_000 } = {}) {
     if (estable >= 2) break
   }
 
-  // La lista va de a 10 (ver DataTable): se despliega entera para saber en
+  // La lista va de a 5 (ver DataTable): se despliega entera para saber en
   // qué puesto quedó el contrato, aunque no esté entre los primeros. "En los
-  // 10 primeros" es lo que se ve sin pulsar nada.
+  // 5 primeros" es lo que se ve sin pulsar nada.
   const d = iframe.contentDocument
   const w = iframe.contentWindow
   const visiblesSinPulsar = [...d.querySelectorAll('[data-fila]')].map((e) => e.dataset.fila)

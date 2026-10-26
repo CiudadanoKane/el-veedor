@@ -127,7 +127,7 @@ function terminoQueCoincide(contrato, terminos) {
 
 // Parámetros de URL que le pertenecen al buscador. Todo lo demás en la URL es
 // de otro módulo (hoy, los filtros geográficos) y no se toca desde aquí.
-const PARAMS_BUSQUEDA = ['q', 'amplia', 'modalidad', 'tipo', 'segmento', 'estado', 'orden', 'modo', 'valorMin', 'valorMax', 'desde', 'hasta', 'pregunta', 'quien', 'contratista', 'tema']
+const PARAMS_BUSQUEDA = ['q', 'amplia', 'modalidad', 'tipo', 'segmento', 'estado', 'orden', 'modo', 'valorMin', 'valorMax', 'desde', 'hasta', 'pregunta', 'quien', 'contratista', 'tema', 'abierto']
 
 // Separador de la ampliación semántica en la URL. Barra vertical: no aparece
 // en nombres de contratos, así que no choca con los términos.
@@ -174,6 +174,8 @@ function escribirBusqueda(next, sig) {
   // Todo camino que escribe una búsqueda consume ya la marca de "interpretar":
   // así no queda en la URL ni se vuelve a disparar al recargar o compartirla.
   next.delete(PARAM_IA)
+  // Y cierra el contrato que estuviera abierto: es de la búsqueda anterior.
+  next.delete('abierto')
 }
 
 // Nivel superior: buscar contratos por palabra, o encontrar un contratista o
@@ -704,6 +706,16 @@ export function Buscar() {
   // que casi nunca coincide, y esa tanda —22 consultas en la medición de oct
   // 2026— se quedaba en la cola de Socrata delante de la búsqueda de verdad.
   const pendienteIA = !!params.get(PARAM_IA)
+  // El contrato desplegado va en la URL (`abierto`), para que siga abierto al
+  // volver atrás desde un enlace de su detalle, y al compartir el enlace. Se
+  // reemplaza la entrada del historial: abrir y cerrar filas no debe llenar
+  // el botón "atrás".
+  const abrirContrato = (id) => setParams((prev) => {
+    const next = new URLSearchParams(prev)
+    if (id) next.set('abierto', id)
+    else next.delete('abierto')
+    return next
+  }, { replace: true })
   const queryContratos = useBusqueda(criterios, filters, { pausada: pendienteIA })
   const queryDocumentos = useBusquedaDocumentos(criterios, filters, { pausada: pendienteIA })
   const cargandoContratos = pendienteIA || queryContratos.isLoading
@@ -1435,14 +1447,18 @@ export function Buscar() {
                               todas sus palabras, aunque no juntas; después, los de términos relacionados.
                             </p>
                           )}
-                          {/* De a 10: con 100 contratos, la prensa quedaba a 30
+                          {/* De a 5: con 100 contratos, la prensa quedaba a 30
                               pantallas, y casi siempre el que se busca está entre
-                              los primeros (ver el orden por niveles en `lista`). */}
+                              los primeros (ver el orden por niveles en `lista`).
+                              Con 10, en el teléfono seguían siendo varias
+                              pantallas antes de las noticias. */}
                           <DataTable
                             columns={columns}
                             rows={lista}
                             keyField="id"
-                            tanda={10}
+                            tanda={5}
+                            abierto={params.get('abierto')}
+                            onAbrir={abrirContrato}
                             renderDetail={(row) => <ContractDetail contract={row} />}
                           />
                           {buscandoAproximados && (

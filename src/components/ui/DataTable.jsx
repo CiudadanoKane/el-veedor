@@ -17,11 +17,27 @@ function normalizarColumna(c) {
   return { ...c, className: `${c.className} whitespace-nowrap` }
 }
 
-// `tanda`: en escritorio, mostrar de a tantas filas, con un botón para ver
-// más (en el teléfono las tarjetas ya van de a TANDA). Sin ella, todas.
-export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', renderDetail, tanda }) {
-  const [openKey, setOpenKey] = useState(null)
-  const [filasVisibles, quedanEnTabla, verMasEnTabla] = useTanda(rows, keyField, tanda ?? Infinity)
+// `tanda`: mostrar de a tantas filas, con un botón para ver más. Sin ella,
+// en escritorio todas y en el teléfono de a TANDA tarjetas.
+//
+// `abierto` y `onAbrir`: quién decide qué fila está desplegada, si no es la
+// tabla. El Buscador lo guarda en la URL: al seguir un enlace del detalle
+// (el perfil de la entidad) y volver atrás, el detalle se había cerrado, y
+// había que buscar de nuevo el contrato en la lista.
+export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', renderDetail, tanda, abierto, onAbrir }) {
+  const controlado = typeof onAbrir === 'function'
+  const [openKeyInterno, setOpenKeyInterno] = useState(null)
+  const indiceAbierto = controlado && abierto != null ? rows.findIndex((r) => r[keyField] === abierto) : -1
+  const openKey = controlado
+    ? (indiceAbierto < 0 ? null : `${rows[indiceAbierto][keyField] ?? 'row'}-${indiceAbierto}`)
+    : openKeyInterno
+  // La clave de una fila es "<id>-<posición>": de ella sale el id.
+  const setOpenKey = (cambio) => {
+    const nueva = typeof cambio === 'function' ? cambio(openKey) : cambio
+    if (!controlado) return setOpenKeyInterno(nueva)
+    onAbrir(nueva == null ? null : nueva.replace(/-\d+$/, ''))
+  }
+  const [filasVisibles, quedanEnTabla, verMasEnTabla] = useTanda(rows, keyField, tanda ?? Infinity, indiceAbierto + 1)
   const esMovil = useEsMovil()
   const columns = columnasCrudas.map(normalizarColumna)
   const expandable = typeof renderDetail === 'function'
@@ -64,6 +80,8 @@ export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', rend
         keyField={keyField}
         renderDetail={expandable ? renderDetail : null}
         openKey={openKey}
+        indiceAbierto={indiceAbierto}
+        tanda={tanda ?? TANDA}
         toggle={toggle}
         registrar={registrar}
         cerrarYVolver={cerrarYVolver}
@@ -166,7 +184,7 @@ export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', rend
 // Sin configuración por página: la columna "#" va de prefijo, la primera
 // columna de datos es el título y el resto se lee como "etiqueta: valor".
 // Las columnas sin encabezado (un semáforo, un enlace) van sin etiqueta.
-function Tarjetas({ columns, rows, keyField, renderDetail, openKey, toggle, registrar, cerrarYVolver }) {
+function Tarjetas({ columns, rows, keyField, renderDetail, openKey, indiceAbierto = -1, tanda = TANDA, toggle, registrar, cerrarYVolver }) {
   const rango = columns.find((c) => c.header === '#')
   const datos = columns.filter((c) => c !== rango)
   const [titulo, ...resto] = datos
@@ -175,7 +193,7 @@ function Tarjetas({ columns, rows, keyField, renderDetail, openKey, toggle, regi
   // De a TANDA tarjetas (ver useTanda). Una tarjeta ocupa lo que tres filas
   // de tabla: los 140 resultados de una búsqueda medían 38.000 px, unas 45
   // pantallas de pulgar.
-  const [visiblesRows, quedan, verMas] = useTanda(rows, keyField, TANDA)
+  const [visiblesRows, quedan, verMas] = useTanda(rows, keyField, tanda, indiceAbierto + 1)
 
   return (
     <>
@@ -267,7 +285,7 @@ function Tarjetas({ columns, rows, keyField, renderDetail, openKey, toggle, regi
         )
       })}
     </ul>
-    {quedan > 0 && <BotonVerMas quedan={quedan} tanda={TANDA} onClick={verMas} />}
+    {quedan > 0 && <BotonVerMas quedan={quedan} tanda={tanda} onClick={verMas} />}
     </>
   )
 }
@@ -280,11 +298,14 @@ const TANDA = 10
 // empezar. Se compara por firma y no por referencia: varias páginas rearman
 // `rows` en cada render, y con [rows] cualquier re-render del padre devolvería
 // la lista al comienzo justo después de pedir más.
-function useTanda(rows, keyField, tanda) {
+// `minimo`: cuántas filas hay que mostrar sí o sí (hasta la desplegada, que
+// no puede quedar escondida detrás de "Ver más").
+function useTanda(rows, keyField, tanda, minimo = 0) {
   const [visibles, setVisibles] = useState(tanda)
   const firma = `${rows.length}|${rows[0]?.[keyField] ?? ''}`
   useEffect(() => setVisibles(tanda), [firma, tanda])
-  return [rows.slice(0, visibles), Math.max(0, rows.length - visibles), () => setVisibles((v) => v + tanda)]
+  const n = Math.max(visibles, Number.isFinite(tanda) ? Math.ceil(minimo / tanda) * tanda : minimo)
+  return [rows.slice(0, n), Math.max(0, rows.length - n), () => setVisibles(n + tanda)]
 }
 
 function BotonVerMas({ quedan, tanda, onClick }) {
