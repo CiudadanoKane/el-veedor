@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useBusquedaWeb } from '../../hooks/useBusquedaWeb'
 import { formatDate } from '../../lib/formatters'
 import { ID_PRENSA } from './ResultadosWeb'
+import { Icon } from './Icon'
 
 // "En la prensa": la columna de al lado de los contratos, en el Buscador.
 //
@@ -32,7 +33,8 @@ export function PanelPrensa({ consulta }) {
       aria-live="polite"
       className="border-l-4 border-primary bg-textPrimary/[0.04] px-4 py-3 xl:sticky xl:top-4"
     >
-      <h2 className="text-micro uppercase tracking-label text-textSecondary font-semibold">
+      <h2 className="flex items-center gap-1.5 text-micro uppercase tracking-label text-textSecondary font-semibold">
+        <Icon name="noticias" className="h-4 w-4" />
         En la prensa
       </h2>
 
@@ -53,9 +55,14 @@ export function PanelPrensa({ consulta }) {
 
       {/* "Leer más" pegado al texto que corta: al pie del panel, debajo de
           los titulares, no se veía como la continuación del resumen. */}
+      {/* La marca "IA" antes del texto, y no solo al pie: en el teléfono el
+          resumen va plegado y el pie no se ve, y se leía como dato de SECOP. */}
       {resumen && (
         <>
-          <p className={`mt-1.5 text-cuerpo text-textPrimary leading-relaxed ${abierto ? '' : 'line-clamp-3 xl:line-clamp-6'}`}>
+          <p className="mt-2 inline-block border border-textSecondary/60 px-1.5 text-micro uppercase tracking-label text-textSecondary">
+            Resumen escrito por IA
+          </p>
+          <p className={`mt-1 text-cuerpo text-textPrimary leading-relaxed ${abierto ? '' : 'line-clamp-3 xl:line-clamp-6'}`}>
             {resumen}
           </p>
           <button
@@ -101,7 +108,7 @@ export function PanelPrensa({ consulta }) {
         </button>
       )}
       {resumen && (
-        <p className="mt-2 text-micro text-textSecondary">Resumen escrito por IA a partir de las noticias.</p>
+        <p className="mt-2 text-micro text-textSecondary">A partir de las noticias: ábrelas para leer el original.</p>
       )}
     </aside>
   )

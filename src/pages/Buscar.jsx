@@ -25,12 +25,13 @@ import { useContratosMarco } from '../hooks/useContratosMarco'
 import { AdjudicadosSinContrato } from '../components/ui/AdjudicadosSinContrato'
 import { SugerenciasBusqueda } from '../components/ui/SugerenciasBusqueda'
 import { PanelPrensa } from '../components/ui/PanelPrensa'
-import { useBusquedaWeb } from '../hooks/useBusquedaWeb'
+import { useBusquedaWeb, usePuentePrensa } from '../hooks/useBusquedaWeb'
+import { useContratosPorId } from '../hooks/useContratosPorId'
 import { Icon } from '../components/ui/Icon'
 import { resolverLugar } from '../lib/geoResolver'
 import { formatCOP, formatDate } from '../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
-import { ResultadosWeb, ResumenPrensa, ID_PRENSA } from '../components/ui/ResultadosWeb'
+import { ResultadosWeb, ID_PRENSA } from '../components/ui/ResultadosWeb'
 import { esMovilAhora } from '../hooks/useEsMovil'
 import { PESTANAS_ALERTAS } from '../lib/pestanas'
 
@@ -813,7 +814,7 @@ export function Buscar() {
     !cargandoContratos && !buscandoDocs && !resultados.some((r) => contieneFrase(r, criterios.texto))
   // ¿Todo lo que se ve llegó por las palabras relacionadas, y nada por lo que
   // se buscó? Entonces la lista no responde la pregunta, por larga que sea, y
-  // vale la pena pedirle a la prensa el nombre oficial (ver ResumenPrensa).
+  // vale la pena sumar los contratos que nombra la prensa (ver idsPuente).
   // Solo se mira con ampliación: sin ella, todo resultado vino de la frase. Y
   // un acierto en los documentos anexos cuenta como encontrado.
   const sinLoBuscado = criterios.terminos.length > 0 && !!criterios.texto && resultados.length > 0 &&
@@ -847,15 +848,36 @@ export function Buscar() {
   // Ordenar todo junto por valor ponía delante cualquier contrato grande que
   // dijera "afirmado" o "mejoramiento de vías", y el de "pavimentación… de
   // Fresno" quedaba en el puesto 18 de 19 (oct 2026).
-  const nivel = (r) => (contieneFrase(r, criterios.texto) ? 0 : r.aproximado ? 1 : 2)
+  // Los contratos que nombra la prensa (el puente del apodo al contrato, ver
+  // promptPuente) van en la misma lista, primero y rotulados. Hasta oct 2026
+  // iban en una caja aparte, igual a la de la prensa y a la de los contratos
+  // marco: en el teléfono no se distinguía qué era contrato, qué noticia y qué
+  // texto de la IA. Solo si la frase encontró poco, como la búsqueda
+  // aproximada: con muchos, el puente repetía la lista o la contradecía.
+  const puente = usePuentePrensa(consultaPrensa, lugarPrensa, !!consultaPrensa)
+  const medioPuente = puente.data?.fuentes?.[0]?.dominio || 'la prensa'
+  const idsPuente = !porId && (conLaFrase < 5 || sinLoBuscado)
+    ? [...new Set((puente.data?.obras ?? []).flatMap((o) => o.contratos.map((c) => c.id)))].slice(0, 6)
+    : []
+  const idsVistos = new Set([...idsResultados, ...aproximados.map((c) => c.id)])
+  const queryPrensaPorId = useContratosPorId(idsPuente.filter((id) => !idsVistos.has(id)))
+  const dePrensa = new Set(idsPuente)
+
+  const nivel = (r) => (dePrensa.has(r.id) ? -1 : contieneFrase(r, criterios.texto) ? 0 : r.aproximado ? 1 : 2)
   const lista = porId || !criterios.texto
     ? resultados
-    : [...resultados, ...aproximados]
+    : [...resultados, ...aproximados, ...(queryPrensaPorId.data ?? [])]
+      .map((r) => (dePrensa.has(r.id) ? { ...r, porPrensa: medioPuente } : r))
       .map((r, i) => ({ r, i, n: nivel(r) }))
       .sort((a, b) => a.n - b.n || a.i - b.i)
       .map(({ r, n }) => (n === 2 && !r.documentos?.length
         ? { ...r, porTermino: terminoQueCoincide(r, criterios.terminos) }
         : r))
+  // Los contratos marco del lugar, solo como último recurso: si la lista ya
+  // trae algo con todas las palabras o algo que nombra la prensa, el aviso de
+  // "ningún contrato nombra…" era falso ("arroyo calle 85", oct 2026).
+  const marcosComoUltimoRecurso = buscarMarcosDelLugar && !buscandoAproximados &&
+    !lista.some((r) => r.aproximado || r.porPrensa)
 
   const columns = [
     {
@@ -887,7 +909,11 @@ export function Buscar() {
           {/* Misma etiqueta y color para toda pista de "por qué apareció esta
               fila", venga de un campo del registro o de un documento anexo: es
               la misma promesa —explicar la coincidencia— sin importar la fuente. */}
-          {r.aproximado ? (
+          {r.porPrensa ? (
+            <div className="mt-1 text-micro text-primary">
+              Lo nombra la prensa ({r.porPrensa})
+            </div>
+          ) : r.aproximado ? (
             <div className="mt-1 text-micro text-primary">
               Tiene {r.aproximado} las palabras, no juntas
             </div>
@@ -1208,7 +1234,7 @@ export function Buscar() {
                 <div className="min-w-0">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
                   <h2 className="font-display font-extrabold text-titulo-3 tracking-[-0.02em]">
-                    {entidadPendiente ? `Mientras eliges: todo ${lugarFiltro || 'el país'}` : 'Resultados'}
+                    {entidadPendiente ? `Mientras eliges: todo ${lugarFiltro || 'el país'}` : 'Contratos en SECOP'}
                   </h2>
                   <div className="flex flex-wrap items-center gap-3">
                     {/* La sección de prensa va al final de la lista, y con
@@ -1311,7 +1337,7 @@ export function Buscar() {
                   <AdjudicadosSinContrato texto={criterios.texto} filtrosGeo={filters} />
                 )}
 
-                {buscarMarcosDelLugar && (
+                {marcosComoUltimoRecurso && (
                   <MarcosDelLugar
                     lugar={{ departamento: filters.department, ciudad: filters.city }}
                     nombreLugar={lugarFiltro}
@@ -1320,17 +1346,7 @@ export function Buscar() {
                   />
                 )}
 
-                {/* Los contratos que la prensa ayuda a encontrar (el puente del
-                    apodo al contrato), si la lista trajo poco. Ver ResumenPrensa. */}
                 <div className="mt-4">
-                  {!cargandoContratos && !buscandoDocs && (
-                    <ResumenPrensa
-                      consulta={consultaPrensa}
-                      lugar={lugarPrensa}
-                      contratos={resultados.length}
-                      sinLoBuscado={sinLoBuscado}
-                    />
-                  )}
                   <QueryState query={pendienteIA ? { isLoading: true } : queryContratos}>
                     {() =>
                       lista.length === 0 ? (

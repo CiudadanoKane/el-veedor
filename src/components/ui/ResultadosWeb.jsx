@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
-import { useBusquedaWeb, usePuentePrensa } from '../../hooks/useBusquedaWeb'
-import { formatDate, formatCOP } from '../../lib/formatters'
+import { useBusquedaWeb } from '../../hooks/useBusquedaWeb'
+import { formatDate } from '../../lib/formatters'
+import { Icon } from './Icon'
 
 // "En las noticias y fuentes públicas": lo que la prensa y los órganos de
 // control dicen sobre lo que se busca, debajo de los contratos de SECOP.
@@ -21,7 +22,8 @@ export function ResultadosWeb({ consulta }) {
 
   return (
     <section id={ID_PRENSA} className="mt-10 border-t-2 border-textPrimary pt-5 scroll-mt-4" aria-live="polite">
-      <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
+      <h2 className="flex items-center gap-2 font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
+        <Icon name="noticias" className="h-6 w-6 shrink-0" />
         En las noticias y fuentes públicas
       </h2>
       <p className="mt-1 text-cuerpo text-textSecondary max-w-2xl leading-snug">
@@ -51,9 +53,12 @@ export function ResultadosWeb({ consulta }) {
       {resultados.length > 0 && (
         <ul className="mt-5 space-y-3">
           {resultados.map((r) => (
-            <li key={r.url} className="border border-textPrimary/25 p-4">
-              <div className="text-nota text-textSecondary">
-                <span className="font-semibold text-textPrimary">{r.fuente}</span>
+            // Sin recuadro y con línea a la izquierda: los contratos van en
+            // recuadros (en el teléfono, tarjetas), y una noticia con la misma
+            // forma se confundía con un contrato.
+            <li key={r.url} className="border-l-2 border-textSecondary/50 pl-4 py-1">
+              <div className="text-micro uppercase tracking-label text-textSecondary">
+                Noticia · <span className="font-semibold text-textPrimary">{r.fuente}</span>
                 {r.fecha && <> · {formatDate(r.fecha)}</>}
               </div>
               <a
@@ -105,112 +110,4 @@ function Proceso({ r }) {
       </p>
     </div>
   )
-}
-
-// Los contratos que la prensa ayuda a encontrar, encima de la lista: el puente
-// del apodo al contrato (ver promptPuente en src/lib/busquedaWeb.js). Es el caso
-// del apodo: "la gran vía" solo encontraba una ferretería llamada así. Solo:
-// - con pocos contratos (3 o menos, incluido ninguno). Con muchos, el puente
-//   repetía la lista o la contradecía (el PAE de 2026 para quien pidió 2025);
-// - o cuando ningún contrato contiene lo que se buscó y todos llegaron por las
-//   palabras relacionadas (`sinLoBuscado`). "Túnel peatonal en Caribe Verde"
-//   traía cinco "pasos elevados" de acueducto en Casanare: muchos contratos,
-//   ninguno el buscado (oct 2026).
-//
-// El resumen y los titulares de la prensa van en la columna de al lado
-// (PanelPrensa); hasta oct 2026 iban aquí, encima de la lista.
-const POCOS = 3
-
-export function ResumenPrensa({ consulta, lugar, contratos, sinLoBuscado = false }) {
-  if (!import.meta.env.PROD || !consulta) return null
-  if (contratos > POCOS && !sinLoBuscado) return null
-  return <PuentePrensa consulta={consulta} lugar={lugar} />
-}
-
-const CAJA = 'mb-5 border-l-4 border-primary bg-textPrimary/[0.04] px-4 py-3 max-w-3xl'
-
-function PuentePrensa({ consulta, lugar }) {
-  const query = usePuentePrensa(consulta, lugar)
-
-  // Mientras busca, el aviso va arriba, en SugerenciasBusqueda: con dos
-  // avisos iguales en pantalla parecía que buscaba dos veces.
-  if (!query.isSuccess) return null
-
-  const obras = query.data?.obras ?? []
-  const vistos = new Set()
-  const sugeridos = []
-  for (const o of obras) {
-    for (const c of o.contratos) {
-      if (vistos.has(c.id)) continue
-      vistos.add(c.id)
-      sugeridos.push({ ...c, pista: o })
-    }
-  }
-  if (!sugeridos.length) return null
-  const pistaTexto = obras.find((o) => o.tipo === 'obra')
-  const fuentes = query.data?.fuentes ?? []
-  const pista = sugeridos[0].pista
-
-  return (
-    <div className={CAJA}>
-      <p className="text-cuerpo font-semibold text-textPrimary leading-snug">
-        Según la prensa, esto podría ser lo que buscas:
-      </p>
-      <ul className="mt-2 space-y-2">
-        {sugeridos.slice(0, 2).map((c) => (
-          <li key={c.id}>
-            <Link
-              to={`/buscar?${new URLSearchParams({ q: c.id })}`}
-              className="text-cuerpo font-semibold text-primary enlace-visible leading-snug"
-            >
-              {recortar(c.objeto, 90)}
-            </Link>
-            <p className="text-nota text-textSecondary leading-snug">
-              {c.entidad} · {c.contratista} · {formatCOP(c.valor)}
-              {c.fecha && <> · {formatDate(c.fecha)}</>}
-            </p>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-2 text-nota text-textSecondary leading-snug">
-        Lo encontramos en SECOP por{' '}
-        {pista.tipo === 'obra' ? 'el nombre oficial de la obra' : 'el contratista'} que dan las
-        fuentes («{pista.nombre || pista.frase}»)
-        {fuentes.length > 0 && (
-          <>
-            {', según '}
-            {fuentes.map((f, i) => (
-              <span key={f.url}>
-                {i > 0 && ' y '}
-                <a href={f.url} target="_blank" rel="noopener noreferrer" className="enlace-sutil" title={f.titulo}>
-                  {f.dominio} ↗
-                </a>
-              </span>
-            ))}
-          </>
-        )}
-        . Compruébalo en el detalle.
-        {pistaTexto && (
-          <>
-            {' '}
-            <Link
-              to={`/buscar?${new URLSearchParams({
-                q: pistaTexto.frase,
-                ...(lugar?.departamento && { departamento: lugar.departamento }),
-                ...(lugar?.ciudad && { ciudad: lugar.ciudad }),
-              })}`}
-              className="font-semibold text-primary enlace-sutil"
-            >
-              Ver todos los contratos que nombran «{pistaTexto.frase}» →
-            </Link>
-          </>
-        )}
-      </p>
-    </div>
-  )
-}
-
-function recortar(t, n) {
-  const s = String(t || '')
-  return s.length > n ? `${s.slice(0, n).replace(/\s+\S*$/, '')}…` : s
 }
