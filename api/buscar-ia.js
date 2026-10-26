@@ -6,7 +6,7 @@ import { socrataQuery } from '../src/lib/socrataClient.js'
 import { condicionProcesosPorReferencia } from '../src/lib/busquedaId.js'
 import {
   MODELO_WEB, DOMINIOS_WEB, promptWeb, extraerArreglo, resultadosReales,
-  limpiarResultados, variantesProceso, coincideEntidad, promptPuente, extraerObjeto, pistasDelPuente, busquedaFallida,
+  limpiarResultados, separarResumen, variantesProceso, coincideEntidad, promptPuente, extraerObjeto, pistasDelPuente, busquedaFallida,
   soqlContratosPorPista,
 } from '../src/lib/busquedaWeb.js'
 
@@ -348,7 +348,7 @@ async function buscarEnLaWeb(req, res) {
     const response = await client.messages.create(
       {
         model: MODELO_WEB,
-        max_tokens: 3000,
+        max_tokens: 3200,
         system: promptWeb(),
         thinking: { type: 'disabled' },
         output_config: { effort: 'low' },
@@ -365,9 +365,12 @@ async function buscarEnLaWeb(req, res) {
     }
     if (busquedaFallida(response.content)) return fallaPasajera(res)
     const texto = response.content.filter((b) => b.type === 'text').map((b) => b.text).join('')
-    const resultados = limpiarResultados(extraerArreglo(texto), resultadosReales(response.content))
+    const { resto, resumen } = separarResumen(texto)
+    const resultados = limpiarResultados(extraerArreglo(resto), resultadosReales(response.content))
     await Promise.all(resultados.map(verificarProceso))
-    return responderWeb(res, { resultados })
+    // Sin resultados reales no hay de qué haber resumido: un resumen solo
+    // sería lo que el modelo cree saber.
+    return responderWeb(res, { resultados, resumen: resultados.length ? resumen : null })
   } catch (err) {
     res.setHeader('Cache-Control', 'no-store')
     res.status(502).json({ error: err.message })

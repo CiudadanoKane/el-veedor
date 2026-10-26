@@ -3,6 +3,7 @@ import {
   extraerArreglo, resultadosReales, limpiarResultados, fechaDeAntiguedad, pareceProceso,
   variantesProceso, coincideEntidad, pareceTitular, sinMedioAlFinal,
   pareceNombreObra, pistasDelPuente, busquedaFallida, nucleoDeContratista, extraerObjeto, soqlContratosPorPista,
+  separarResumen,
 } from './busquedaWeb'
 
 const bloques = [
@@ -154,5 +155,19 @@ describe('busquedaFallida', () => {
     expect(busquedaFallida([{ type: 'web_search_tool_result', content: { type: 'web_search_tool_result_error', error_code: 'unavailable' } }])).toBe(true)
     expect(busquedaFallida(bloques)).toBe(false)
     expect(busquedaFallida([{ type: 'text', text: '[]' }])).toBe(false)
+  })
+})
+
+describe('separarResumen', () => {
+  it('separa el resumen del arreglo, aunque el resumen tenga corchetes', () => {
+    const texto = '[{"url":"u"}]\nRESUMEN: La Alcaldía contrató la canalización [tramo 2] por $90 mil millones (El Heraldo).'
+    const { resto, resumen } = separarResumen(texto)
+    expect(extraerArreglo(resto)).toEqual([{ url: 'u' }])
+    expect(resumen).toBe('La Alcaldía contrató la canalización [tramo 2] por $90 mil millones (El Heraldo).')
+  })
+
+  it('sin marca, o con un resumen vacío, no hay resumen', () => {
+    expect(separarResumen('[{"url":"u"}]')).toEqual({ resto: '[{"url":"u"}]', resumen: null })
+    expect(separarResumen('[]\n**RESUMEN:** ').resumen).toBeNull()
   })
 })

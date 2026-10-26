@@ -11,7 +11,10 @@ export function useBusquedaWeb(consulta) {
     enabled: import.meta.env.PROD && q.length >= 3,
     staleTime: 60 * 60 * 1000,
     retry: false,
-    queryFn: () => pedir(new URLSearchParams({ web: '1', q })),
+    // `v`: cambia la clave del CDN cuando cambia la forma de la respuesta. La
+    // 2 trae el resumen de conjunto; sin ella, las búsquedas guardadas antes
+    // seguirían doce horas sin él.
+    queryFn: () => pedir(new URLSearchParams({ web: '1', v: '2', q })),
   })
 }
 

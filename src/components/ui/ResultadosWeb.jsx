@@ -48,6 +48,8 @@ export function ResultadosWeb({ consulta }) {
         </p>
       )}
 
+      <ResumenFuentes resumen={query.data?.resumen} className="mt-5 max-w-3xl" />
+
       {resultados.length > 0 && (
         <ul className="mt-5 space-y-3">
           {resultados.map((r) => (
@@ -73,6 +75,22 @@ export function ResultadosWeb({ consulta }) {
         </ul>
       )}
     </section>
+  )
+}
+
+// Lo que dicen las fuentes en conjunto, en dos o tres frases: quien busca un
+// contrato polémico quiere saber primero qué pasó, y después leer las notas.
+// Lo escribe el mismo modelo que resume cada fuente (ver promptWeb), con el
+// medio de cada dato entre paréntesis; se rotula como de IA.
+function ResumenFuentes({ resumen, className = '' }) {
+  if (!resumen) return null
+  return (
+    <div className={className}>
+      <p className="text-lectura text-textPrimary leading-relaxed">{resumen}</p>
+      <p className="mt-1 text-nota text-textSecondary">
+        Resumen escrito por IA a partir de las fuentes de abajo. Compruébalo en cada una.
+      </p>
+    </div>
   )
 }
 
@@ -243,6 +261,12 @@ function TitularesPrensa({ consulta }) {
       <p className="text-micro uppercase tracking-label text-textSecondary font-semibold">
         En la prensa
       </p>
+      {query.data?.resumen && (
+        <p className="mt-1 text-cuerpo text-textPrimary leading-snug">
+          {query.data.resumen}{' '}
+          <span className="text-nota text-textSecondary">(resumen escrito por IA)</span>
+        </p>
+      )}
       <ul className="mt-1 space-y-1">
         {titulares.map((r) => (
           <li key={r.url} className="text-cuerpo leading-snug">

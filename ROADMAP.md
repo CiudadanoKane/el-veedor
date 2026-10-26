@@ -698,6 +698,27 @@ consultas de catálogo de ~50 s al cargar, que saturan la cola de Socrata y
 hacen que cada búsqueda parezca tardar 5 s. En producción la misma búsqueda
 tarda 0,3 s por consulta.
 
+**Sugerencias: solo nombres que da la prensa (26 oct).** La idea de "Prueba
+también" no era dar palabras clave sino el nombre con más probabilidad de
+encontrar el contrato, según lo que dicen las noticias. Se quitaron los
+recortes de lo escrito («arroyo» por "arroyo 85": 930 contratos de arroyos en
+Barranquilla, que diluyen en vez de acercar). Quedan el nombre oficial de la
+obra y el contratista que da el puente, con el medio y cuántos contratos
+encontró en SECOP ("nombre oficial según elheraldo.co · más de 4 contratos"), y
+los números de proceso que citan las noticias. Mientras el puente trabaja (8 a
+25 s) se dice que está buscando.
+
+**Resumen de lo que dicen las fuentes (26 oct).** La misma llamada que resume
+cada noticia escribe ahora, después del arreglo y marcado con "RESUMEN:", un
+párrafo de conjunto de hasta 60 palabras, con el medio de cada dato entre
+paréntesis. Va en la caja "En la prensa" de arriba y al comienzo de la sección
+de prensa, rotulado como escrito por IA. Medido con la API real (4 consultas:
+arroyo 85, la Gran Vía, PAE de Sincelejo, túnel de Caribe Verde): 7,3 a 8,3 s y
+~1.630 tokens de salida, lo mismo que sin resumen. Los cuatro se quedaron en lo
+que dicen las fuentes, dijeron lo que no informan ("no informan sobre el avance
+actual") y señalaron contradicciones (la longitud del túnel, 200 o 270 m). Sin
+resultados reales no se devuelve resumen.
+
 ### Modo oscuro automático (oct 2026)
 
 Decisión: el tema principal sigue siendo claro —la plataforma es lectura

@@ -45,7 +45,7 @@ export function promptWeb() {
   return (
     'Eres el buscador de El Veedor, una plataforma de veeduría ciudadana de la contratación pública ' +
     'en Colombia. Busca en la web lo que pide la persona —puede escribir como habla, con el nombre ' +
-    'popular de una obra o un programa— y devuelve SOLO un arreglo JSON, sin texto alrededor, con ' +
+    'popular de una obra o un programa— y devuelve un arreglo JSON, sin texto antes, con ' +
     `hasta ${MAX_RESULTADOS_WEB} resultados relevantes sobre contratación pública. Cada uno con:\n` +
     '- "url": exactamente la URL del resultado de búsqueda, sin modificarla.\n' +
     '- "titulo": el titular o nombre del documento, en pocas palabras.\n' +
@@ -57,8 +57,26 @@ export function promptWeb() {
     '"LP-005-2020"), si lo menciona; si no, null. Solo el número, sin palabras alrededor.\n' +
     '- "entidad": la entidad pública contratante que menciona la fuente (p. ej. "Alcaldía de ' +
     'Sincelejo"), si la menciona; si no, null.\n' +
-    'Si no encuentras nada relevante, devuelve [].'
+    'Después del arreglo, en una línea aparte que empiece con "RESUMEN:", escribe en máximo 60 ' +
+    'palabras y en español sencillo lo que dicen esas fuentes en conjunto sobre lo que busca la ' +
+    'persona: qué se contrató, quién, por cuánto y qué ha pasado. Nombra entre paréntesis el medio ' +
+    'de cada dato, p. ej. "(El Heraldo)". Solo lo que dicen las fuentes: no acuses ni concluyas, y ' +
+    'si se contradicen, dilo.\n' +
+    'Si no encuentras nada relevante, devuelve [] y ningún resumen.'
   )
+}
+
+// El resumen va DESPUÉS del arreglo, marcado: así el modelo resume lo que ya
+// eligió, y si la respuesta llega cortada se pierde el resumen y no los
+// resultados. Se separa antes de leer el arreglo, porque un "]" en el resumen
+// confundiría a extraerArreglo.
+const MARCA_RESUMEN = /\n\s*\**RESUMEN\**:\s*/i
+export function separarResumen(texto) {
+  const t = String(texto || '')
+  const m = t.match(MARCA_RESUMEN)
+  if (!m) return { resto: t, resumen: null }
+  const resumen = t.slice(m.index + m[0].length).replace(/\s+/g, ' ').trim()
+  return { resto: t.slice(0, m.index), resumen: resumen.length >= 20 ? resumen.slice(0, 600) : null }
 }
 
 export function promptPuente() {
