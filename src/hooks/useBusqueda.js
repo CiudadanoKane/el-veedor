@@ -139,7 +139,7 @@ function compararAdaptados(orden) {
 // prefiltro de $q; con una sola palabra $q ya es preciso y se deja amplio para
 // que "hospital" alcance también a la entidad. Todas las consultas corren en
 // paralelo y se fusionan por id.
-async function buscarPorVariantes(dataset, { frases, where, campoId, campos, orderBy, camposFrase, exigirCampo = false }) {
+async function buscarPorVariantes(dataset, { frases, where, campoId, campos, orderBy, camposFrase, exigirCampo = false, confiable = false }) {
   const fraseEn = (v) =>
     '(' + camposFrase.map((c) => `caseless_contains(${c}, '${esc(v)}')`).join(' OR ') + ')'
 
@@ -151,7 +151,7 @@ async function buscarPorVariantes(dataset, { frases, where, campoId, campos, ord
     // más, en paralelo con las otras.
     const enPlural = i === 0 && esFrase ? pluralDeFrase(frase) : null
     const variantes = i === 0
-      ? [...new Set([...variantesDeFrase(frase), ...(enPlural ? variantesReducidas(enPlural) : [])])]
+      ? [...new Set([...variantesDeFrase(frase, { confiable }), ...(enPlural ? variantesReducidas(enPlural) : [])])]
       : variantesReducidas(frase)
     for (const v of variantes) {
       consultas.push(
@@ -229,6 +229,9 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
   // Consorcio Vial Barranquilla" mostraba parques en Ciudad Bolívar). Medido:
   // 0,2 s con el índice de texto.
   const soloContratista = !!criterios.contratista && criterios.contratista.trim() === texto.trim()
+  // El texto lo escribió la IA (hay pregunta original): sus tildes son las de
+  // la ortografía estándar, y no hace falta probar otras (ver variantesDeFrase).
+  const confiable = !!criterios.pregunta
   const modalidadSecop1 = criterios.modalidad ? MODALIDAD_A_SECOP1[criterios.modalidad] : undefined
   const tipoSecop1 = criterios.tipo ? TIPO_A_SECOP1[criterios.tipo] : undefined
   // Estados de SECOP I equivalentes a los que eligió el ciudadano (ver
@@ -335,7 +338,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
         ? buscarPorVariantes(DS, {
             frases, where: where2, campoId: 'id_contrato', campos: CONTRACT_FIELDS,
             orderBy, camposFrase: soloContratista ? ['proveedor_adjudicado'] : CAMPOS_FRASE,
-            exigirCampo: soloContratista,
+            exigirCampo: soloContratista, confiable,
           })
         : socrataBusqueda(DS, { where: where2, select: CONTRACT_FIELDS, order: orderBy, limit: LIMITE + 1 })
             .then((filas) => ({ filas, hayMas: filas.length > LIMITE }))
@@ -346,7 +349,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
                 frases, where: where1, campoId: 'uid', campos: CONTRACT_FIELDS_SECOP1,
                 orderBy: orderBySecop1,
                 camposFrase: soloContratista ? ['nom_razon_social_contratista'] : CAMPOS_FRASE_SECOP1,
-                exigirCampo: soloContratista,
+                exigirCampo: soloContratista, confiable,
               })
             : socrataBusqueda(DS1, { where: where1, select: CONTRACT_FIELDS_SECOP1, order: orderBySecop1, limit: LIMITE + 1 })
                 .then((filas) => ({ filas, hayMas: filas.length > LIMITE })))

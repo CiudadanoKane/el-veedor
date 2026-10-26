@@ -24,7 +24,7 @@ const TILDES = { a: 'á', e: 'é', i: 'í', o: 'ó', u: 'ú' }
 // cada combinación es una consulta: Socrata las atiende en fila, así que más
 // consultas es más espera para todos (oct 2026: 56 consultas, 70 s con carga).
 // Pasado este número, cada palabra dudosa se prueba por separado (ver abajo).
-const MAX_COMBINACIONES = 15
+const MAX_COMBINACIONES = 12
 // Tope de consultas de una frase larga.
 const MAX_VARIANTES = 16
 
@@ -172,52 +172,49 @@ const cartesiano = (porPalabra) =>
   )
 
 // Todas las escrituras plausibles de la frase completa.
-export function variantesDeFrase(texto) {
+//
+// Hasta oct 2026, con más de 24 combinaciones se variaba solo la palabra más
+// larga y las demás quedaban fijas SIN tilde, aunque la persona la hubiera
+// escrito. Como la búsqueda exige la tilde exacta, una frase bien escrita no se
+// buscaba nunca: "canalización y reconstrucción vial" en Barranquilla daba 0
+// contratos, con 15 que la dicen tal cual; "policía nacional", 5.868 de 23.456.
+//
+// Ahora se distingue qué palabras tienen una escritura conocida —la tilde que
+// escribió la persona, o la regla de -ión— y cuáles son dudosas. Las conocidas
+// van bien escritas (y la frase entera, también sin tildes y a medias). Las
+// dudosas se prueban con la tilde donde el español la admite: todas las
+// combinaciones si son pocas, o cada palabra por separado si son muchas.
+//
+// `confiable`: el texto lo escribió la IA, en ortografía estándar (ver
+// useBusqueda). Una palabra sin tilde es entonces una palabra sin tilde, y no
+// hay dudosas: "escenario deportivo" se buscaba en 12 escrituras de las que
+// solo una existe; ahora en 1. Medido con la API (oct 2026): mismos contratos.
+export function variantesDeFrase(texto, { confiable = false } = {}) {
   const palabras = palabrasDeFrase(texto)
   if (!palabras.length) return []
   const talCual = palabrasTalCual(texto, palabras.length)
 
-  const porPalabra = palabras.map(variantesConTilde)
-  const total = porPalabra.reduce((n, v) => n * v.length, 1)
-  if (total <= MAX_COMBINACIONES) {
-    // La frase tal cual va siempre: el cartesiano no cubre letras como la ü
-    // ("pingüino"), que variantesConTilde no genera.
-    const unicas = new Set([...(talCual ? [talCual.join(' ')] : []), ...cartesiano(porPalabra)])
-    return [...unicas]
-  }
-
-  // Demasiadas combinaciones para probarlas todas. Hasta oct 2026 se variaba
-  // solo la palabra más larga y las demás quedaban fijas SIN tilde, aunque la
-  // persona la hubiera escrito. Como la búsqueda exige la tilde exacta, una
-  // frase bien escrita no se buscaba nunca: "canalización y reconstrucción vial"
-  // en Barranquilla daba 0 contratos, con 15 que la dicen tal cual; "construcción
-  // de la institución educativa", 8 de 45; "mantenimiento de vías terciarias",
-  // 185 de 533 (aquí la tilde ni siquiera está en la palabra más larga).
-  //
-  // Ahora se distingue qué palabras ya tienen una escritura conocida —la tilde
-  // que escribió la persona, o la regla de -ión— y cuáles no. Las conocidas se
-  // prueban en dos formas, bien escritas y sin tilde. Las que no, cada una por
-  // separado, con las demás en su escritura probable: así se cubre la tilde
-  // en cualquier palabra ("policía nacional": con solo la más larga variada,
-  // 5.868 contratos en vez de 23.457), sumando variantes en vez de
-  // multiplicarlas. Lo que no se cubre son dos palabras dudosas tildadas a la
-  // vez; con la regla de -ión y las tildes que escriba la persona, es raro.
   const conocida = palabras.map((p, i) => {
     if (talCual && talCual[i] !== p) return talCual[i]
+    if (confiable) return null
     const regla = escrituraProbable(p)
     return regla !== p ? regla : null
   })
   const probable = palabras.map((p, i) => conocida[i] ?? p)
-
+  const conTilde = (i) => variantesConTilde(palabras[i])
   // Las dudosas, de la más larga a la más corta: si se llega al tope, lo que
   // queda fuera son las variantes de las palabras cortas.
-  const inciertas = palabras
-    .map((p, i) => i)
-    .filter((i) => conocida[i] == null && porPalabra[i].length > 1)
-    .sort((a, b) => palabras[b].length - palabras[a].length)
+  const dudosas = confiable
+    ? []
+    : palabras
+      .map((_, i) => i)
+      .filter((i) => conocida[i] == null && conTilde(i).length > 1)
+      .sort((a, b) => palabras[b].length - palabras[a].length)
 
   const unicas = new Set()
-  // 1. La escritura más probable.
+  // 1. Tal como se escribió (cubre letras como la ü, "pingüino", que
+  //    variantesConTilde no genera) y en su escritura más probable.
+  if (talCual) unicas.add(talCual.join(' '))
   unicas.add(probable.join(' '))
   // 2. Sin ninguna tilde: los registros escritos todo en mayúscula sin tildes.
   unicas.add(palabras.join(' '))
@@ -228,9 +225,15 @@ export function variantesDeFrase(texto) {
       if (c) unicas.add(palabras.map((w, j) => (j === i ? c : w)).join(' '))
     })
   }
-  // 4. Cada palabra dudosa con su tilde posible, una a la vez.
-  for (const k of inciertas) {
-    for (const v of porPalabra[k]) unicas.add(probable.map((w, i) => (i === k ? v : w)).join(' '))
+  // 4. Las dudosas con su tilde posible.
+  const combinaciones = dudosas.reduce((n, i) => n * conTilde(i).length, 1)
+  if (combinaciones <= MAX_COMBINACIONES) {
+    const porPalabra = palabras.map((p, i) => (dudosas.includes(i) ? conTilde(i) : [probable[i]]))
+    for (const frase of cartesiano(porPalabra)) unicas.add(frase)
+  } else {
+    for (const k of dudosas) {
+      for (const v of conTilde(k)) unicas.add(probable.map((w, i) => (i === k ? v : w)).join(' '))
+    }
   }
   return [...unicas].slice(0, MAX_VARIANTES)
 }

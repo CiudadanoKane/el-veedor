@@ -30,9 +30,22 @@ describe('variantesDeFrase con frases largas', () => {
     expect(new Set(v).size).toBe(v.length)
   })
 
-  it('las frases con pocas combinaciones las prueban todas', () => {
-    // pavimentacion: 4 escrituras × de: 1 (no lleva tilde) × calles: 2.
-    expect(variantesDeFrase('pavimentacion de calles')).toHaveLength(8)
+  it('las palabras dudosas prueban sus tildes posibles; las conocidas, no', () => {
+    // pavimentacion va con la regla de -ión; "de" no lleva tilde; calles, 2.
+    expect(variantesDeFrase('pavimentacion de calles')).toEqual([
+      'pavimentacion de calles', 'pavimentación de calles', 'pavimentación de callés',
+    ])
+  })
+
+  it('con texto de la IA, confía en sus tildes', () => {
+    expect(variantesDeFrase('escenario deportivo', { confiable: true })).toEqual(['escenario deportivo'])
+    expect(variantesDeFrase('pavimentación de calles', { confiable: true })).toEqual([
+      'pavimentación de calles', 'pavimentacion de calles',
+    ])
+    // A medias, para los registros que tildan una palabra y la otra no.
+    expect(variantesDeFrase('Gran Vía Atlántico', { confiable: true })).toEqual(expect.arrayContaining([
+      'gran vía atlántico', 'gran via atlantico', 'gran vía atlantico', 'gran via atlántico',
+    ]))
   })
 
   it('con muchas, prueba la tilde en cada palabra, no solo en la más larga', () => {
