@@ -1,21 +1,14 @@
 import { Link } from 'react-router-dom'
 import { useBusquedaWeb, usePuentePrensa } from '../../hooks/useBusquedaWeb'
 import { sinTildes } from '../../lib/acentos'
-import { ID_PRENSA } from './ResultadosWeb'
 
-// Lo de la prensa que va justo debajo de la caja: búsquedas sugeridas y, si
-// la lista trajo poco, lo que dicen las fuentes.
+// "Prueba también": búsquedas sugeridas, en una línea bajo la caja.
 //
-// Debajo de la caja y no de los resultados: con "ningún contrato coincide",
-// la prensa quedaba fuera de la pantalla, y casi nadie baja a buscarla (oct
-// 2026, "intercambiador vial puerta dorada"). Sin contratos, lo útil es saber
-// qué dice la prensa y con qué otra búsqueda probar, y eso va primero.
-//
-// Las sugerencias, siempre y no solo cuando no hay resultados: que la lista
-// tenga contratos no quiere decir que sean los que la persona buscaba. La
-// gente busca como habla la prensa; SECOP registra como escribe la entidad. Se
-// sugieren búsquedas completas con más probabilidad de acertar, no palabras
-// sueltas, y solo las que SECOP confirma:
+// Siempre y no solo cuando no hay resultados: que la lista tenga contratos no
+// quiere decir que sean los que la persona buscaba. La gente busca como habla
+// la prensa; SECOP registra como escribe la entidad. Se sugieren búsquedas
+// completas con más probabilidad de acertar, no palabras sueltas, y solo las
+// que SECOP confirma:
 // - el nombre oficial de la obra y el contratista que dan las noticias (el
 //   puente, ver promptPuente en lib/busquedaWeb.js);
 // - frases como la entidad pudo escribir el objeto ("puente peatonal",
@@ -25,9 +18,13 @@ import { ID_PRENSA } from './ResultadosWeb'
 // Hasta oct 2026 iban también recortes de lo escrito ("arroyo" por "arroyo
 // 85"). Se quitaron: no sacaban nada de la prensa, y un recorte amplio (930
 // contratos de arroyos en Barranquilla) no acerca al contrato, lo diluye.
+//
+// Lo que dice la prensa va aparte, en la columna de al lado (PanelPrensa): en
+// un solo bloque bajo la caja, con resumen, titulares y sugerencias, ocupaba la
+// pantalla entera y los contratos quedaban fuera de vista (oct 2026, "calle 72").
 const MAX = 6
 
-export function SugerenciasBusqueda({ consultaPrensa, texto, filtrosGeo, pocos = false }) {
+export function SugerenciasBusqueda({ consultaPrensa, texto, filtrosGeo }) {
   const lugar = { departamento: filtrosGeo.department, ciudad: filtrosGeo.city }
   const puente = usePuentePrensa(consultaPrensa, lugar, !!consultaPrensa)
   const noticias = useBusquedaWeb(consultaPrensa)
@@ -46,25 +43,24 @@ export function SugerenciasBusqueda({ consultaPrensa, texto, filtrosGeo, pocos =
     sugerencias.push(s)
   }
 
-  // De dónde salió: el medio da confianza en el nombre, y el conteo dice qué
-  // tanto acierta en SECOP. El puente trae hasta 4 contratos por pista y avisa
-  // si hay más.
+  // De dónde salió y qué tanto acierta: el medio va en el detalle (al pasar
+  // el cursor), el conteo a la vista. El puente trae hasta 4 contratos por
+  // pista y avisa si hay más.
   const medio = puente.data?.fuentes?.[0]?.dominio
   const segun = medio ? `según ${medio}` : 'según la prensa'
-  const cuantos = (o) => {
-    const n = o.contratos?.length ?? 0
-    return o.hayMas ? `más de ${n} contratos` : `${n} contrato${n === 1 ? '' : 's'}`
-  }
+  const contratos = (n, mas = false) => `${mas ? 'más de ' : ''}${n.toLocaleString('es-CO')} contrato${n === 1 && !mas ? '' : 's'}`
   const nombreLugar = filtrosGeo.city || filtrosGeo.department
 
   for (const o of puente.data?.obras ?? []) {
+    const n = o.contratos?.length ?? 0
     if (o.tipo === 'obra') {
       agregar({
         clave: o.frase,
         etiqueta: `«${o.frase}»`,
+        cuantos: contratos(n, o.hayMas),
         // Si la frase entera no estaba en SECOP, lo que se encontró es un
         // recorte suyo (ver recortesDeObra): se dice.
-        detalle: `${o.recorteDe ? 'parte del nombre oficial' : 'nombre oficial'} ${segun} · ${cuantos(o)}`,
+        detalle: `${o.recorteDe ? 'Parte del nombre oficial' : 'Nombre oficial'} ${segun}`,
         href: `/buscar?${conLugar(new URLSearchParams({ q: o.frase }))}`,
       })
     } else {
@@ -74,7 +70,8 @@ export function SugerenciasBusqueda({ consultaPrensa, texto, filtrosGeo, pocos =
       agregar({
         clave: nombre,
         etiqueta: nombre,
-        detalle: `contratista ${segun} · ${cuantos(o)}`,
+        cuantos: contratos(n, o.hayMas),
+        detalle: `Contratista ${segun}`,
         href: `/buscar?${new URLSearchParams({ q: o.tipo === 'empresa' ? o.obra : nombre, contratista: nombre })}`,
       })
     }
@@ -83,7 +80,8 @@ export function SugerenciasBusqueda({ consultaPrensa, texto, filtrosGeo, pocos =
     agregar({
       clave: b.frase,
       etiqueta: `«${b.frase}»`,
-      detalle: `${b.n.toLocaleString('es-CO')} contrato${b.n === 1 ? '' : 's'}${nombreLugar ? ` en ${nombreLugar}` : ''}, ${segun}`,
+      cuantos: contratos(b.n),
+      detalle: `Búsqueda sugerida ${segun}${nombreLugar ? `, contada en ${nombreLugar}` : ''}`,
       href: `/buscar?${conLugar(new URLSearchParams({ q: b.frase }))}`,
     })
   }
@@ -94,105 +92,39 @@ export function SugerenciasBusqueda({ consultaPrensa, texto, filtrosGeo, pocos =
     agregar({
       clave: r.proceso.numero,
       etiqueta: `Proceso ${r.proceso.numero}`,
-      detalle: `mencionado por ${r.fuente}`,
+      cuantos: '',
+      detalle: `Mencionado por ${r.fuente}`,
       href: `/buscar?${params}`,
     })
   }
 
-  const chips = sugerencias.length > 0 && (
-    <ul className="mt-2 flex flex-wrap gap-2">
-      {sugerencias.slice(0, MAX).map((s) => (
-        <li key={s.href}>
-          <Link
-            to={s.href}
-            className="inline-flex flex-col border border-border bg-bg px-3 py-1.5 hover:border-textPrimary transition-colors"
-          >
-            <span className="text-cuerpo text-textPrimary leading-tight">{s.etiqueta}</span>
-            <span className="text-micro text-textSecondary leading-tight">{s.detalle}</span>
-          </Link>
-        </li>
-      ))}
-    </ul>
-  )
   // El puente razona y busca en la web: tarda de 8 a 25 s. Mejor decir que
   // viene algo que hacerlo aparecer de golpe.
-  const girando = (texto) => (
-    <p className="mt-2 flex items-center gap-2 text-nota text-textSecondary">
-      <span className="h-3 w-3 shrink-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-      {texto}
-    </p>
-  )
-
-  if (!pocos) {
-    if (!sugerencias.length && !puente.isLoading) return null
-    return (
-      <div className="mt-4" aria-live="polite">
-        <p className="text-micro uppercase tracking-label text-textSecondary font-semibold">
-          Prueba también, con lo que dice la prensa
-        </p>
-        {chips}
-        {puente.isLoading && girando('Buscando otros nombres en la prensa…')}
-      </div>
-    )
-  }
-
-  // Con poco o nada en la lista: la prensa entera, arriba.
-  const resultados = noticias.data?.resultados ?? []
-  const resumen = noticias.data?.resumen
-  const buscando = puente.isLoading || noticias.isLoading
-  if (!buscando && !resumen && !resultados.length && !sugerencias.length) return null
-  const verNoticias = () => document.getElementById(ID_PRENSA)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  if (!sugerencias.length && !puente.isLoading) return null
 
   return (
-    <section
-      className="mt-5 max-w-3xl border-l-4 border-primary bg-textPrimary/[0.04] px-4 py-3"
-      aria-live="polite"
-    >
-      <p className="text-micro uppercase tracking-label text-textSecondary font-semibold">
-        Lo que dice la prensa
-      </p>
-      {resumen && (
-        <>
-          <p className="mt-1 text-lectura text-textPrimary leading-relaxed">{resumen}</p>
-          <p className="mt-1 text-nota text-textSecondary">Resumen escrito por IA a partir de las noticias.</p>
-        </>
+    <div className="mt-4 flex flex-wrap items-center gap-2" aria-live="polite">
+      <span className="text-micro uppercase tracking-label text-textSecondary font-semibold">
+        Prueba también
+      </span>
+      {sugerencias.slice(0, MAX).map((s) => (
+        <Link
+          key={s.href}
+          to={s.href}
+          title={s.detalle}
+          className="inline-flex items-baseline gap-1.5 border border-border px-2.5 py-1 text-nota
+                     text-textPrimary hover:border-textPrimary transition-colors"
+        >
+          {s.etiqueta}
+          {s.cuantos && <span className="text-micro text-textSecondary">· {s.cuantos}</span>}
+        </Link>
+      ))}
+      {puente.isLoading && (
+        <span className="inline-flex items-center gap-2 text-nota text-textSecondary">
+          <span className="h-3 w-3 shrink-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          Buscando en la prensa otros nombres…
+        </span>
       )}
-      {resultados.length > 0 && (
-        <ul className="mt-2 space-y-1">
-          {resultados.slice(0, 2).map((r) => (
-            <li key={r.url} className="text-cuerpo leading-snug">
-              <a
-                href={r.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold enlace-perfil enlace-visible"
-              >
-                {r.titulo} <span aria-hidden>↗</span>
-              </a>{' '}
-              <span className="text-nota text-textSecondary">{r.fuente}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-      {resultados.length > 2 && (
-        <button type="button" onClick={verNoticias} className="mt-1 text-nota font-semibold text-primary enlace-sutil">
-          Ver las {resultados.length} noticias y fuentes ↓
-        </button>
-      )}
-      {noticias.isSuccess && !resultados.length && (
-        <p className="mt-1 text-cuerpo text-textSecondary">No encontramos noticias sobre esta búsqueda.</p>
-      )}
-      {noticias.isLoading && girando('Buscando en la prensa… tarda unos segundos.')}
-
-      {(sugerencias.length > 0 || puente.isLoading) && (
-        <div className="mt-3">
-          <p className="text-micro uppercase tracking-label text-textSecondary font-semibold">
-            Prueba con estas búsquedas
-          </p>
-          {chips}
-          {puente.isLoading && girando('Buscando en la prensa cómo se llama oficialmente…')}
-        </div>
-      )}
-    </section>
+    </div>
   )
 }

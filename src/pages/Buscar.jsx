@@ -21,11 +21,12 @@ import { esContratoMarco, palabrasDeObra, afinidadConObra } from '../lib/contrat
 import { useContratosMarco } from '../hooks/useContratosMarco'
 import { AdjudicadosSinContrato } from '../components/ui/AdjudicadosSinContrato'
 import { SugerenciasBusqueda } from '../components/ui/SugerenciasBusqueda'
+import { PanelPrensa } from '../components/ui/PanelPrensa'
 import { resolverLugar } from '../lib/geoResolver'
 import { formatCOP, formatDate } from '../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
 import { ResultadosWeb, ResumenPrensa } from '../components/ui/ResultadosWeb'
-import { esMovilAhora, useEsMovil } from '../hooks/useEsMovil'
+import { esMovilAhora } from '../hooks/useEsMovil'
 import { PESTANAS_ALERTAS } from '../lib/pestanas'
 
 // Normaliza texto para comparar sin importar tildes ni espacios de más.
@@ -461,7 +462,6 @@ function Rangos({ criterios, actualizar }) {
 
 export function Buscar() {
   const { filters } = useFilters()
-  const esMovil = useEsMovil()
   // La búsqueda vive en la URL para que se pueda compartir: quien encuentre
   // algo puede mandar el enlace y el otro ve exactamente lo mismo.
   const [params, setParams] = useSearchParams()
@@ -862,11 +862,12 @@ export function Buscar() {
 
   return (
     <div className="space-y-6">
-      {/* En el teléfono, con una búsqueda hecha, la explicación sobra: ya se
-          usó, y sus tres líneas empujaban los resultados abajo. */}
+      {/* Con una búsqueda hecha, la explicación sobra y el título se achica:
+          ya se usó, y título y subtítulo ocupaban casi 250 px antes de la caja. */}
       <PageHeader
         title="Buscador inteligente"
-        subtitle={esMovil && (activa || hayPregunta) ? null : 'Pregunta como lo dirías: «contratos a dedo en Soledad en 2025». Una IA lo convierte en filtros sobre más de 11 millones de contratos de SECOP, y buscamos también lo que dice la prensa.'}
+        compacto={activa || hayPregunta}
+        subtitle={activa || hayPregunta ? null : 'Pregunta como lo dirías: «contratos a dedo en Soledad en 2025». Una IA lo convierte en filtros sobre más de 11 millones de contratos de SECOP, y buscamos también lo que dice la prensa.'}
       />
 
       <div>
@@ -1030,16 +1031,7 @@ export function Buscar() {
             {/* Búsquedas sugeridas, siempre: que haya contratos no quiere decir
                 que sean los buscados (ver SugerenciasBusqueda). */}
             {criterios.texto && !esIdentificador(criterios.texto) && (
-              <SugerenciasBusqueda
-                texto={criterios.texto}
-                consultaPrensa={consultaPrensa}
-                filtrosGeo={filters}
-                // La prensa entera arriba mientras no se sepa que hay muchos
-                // contratos: SECOP puede tardar más de un minuto (medido oct
-                // 2026, "intercambiador vial puerta dorada": 72 consultas, 70 s),
-                // y la prensa llega en 8.
-                pocos={!(resultados.length > 3 && !sinLoBuscado)}
-              />
+              <SugerenciasBusqueda texto={criterios.texto} consultaPrensa={consultaPrensa} filtrosGeo={filters} />
             )}
 
             {!avanzados && <FiltrosAplicados criterios={criterios} actualizar={actualizar} />}
@@ -1124,7 +1116,21 @@ export function Buscar() {
                 </div>
               </div>
             ) : (
-              <div ref={resultadosRef} className="border-t-2 border-textPrimary pt-5">
+              // Dos columnas: los contratos, y a la derecha lo que dice la
+              // prensa (PanelPrensa). En el teléfono, la prensa va primero y
+              // plegada. Sin prensa (un número de proceso), una sola columna.
+              <div
+                ref={resultadosRef}
+                className={`border-t-2 border-textPrimary pt-5 ${
+                  consultaPrensa ? 'grid gap-5 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_340px]' : ''
+                }`}
+              >
+                {consultaPrensa && (
+                  <div className="lg:order-last">
+                    <PanelPrensa consulta={consultaPrensa} />
+                  </div>
+                )}
+                <div className="min-w-0">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                   <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
                     {entidadPendiente ? `Mientras eliges: todo ${lugarFiltro || 'el país'}` : 'Resultados'}
@@ -1215,9 +1221,8 @@ export function Buscar() {
                   />
                 )}
 
-                {/* Lo de la prensa también arriba: el puente del apodo al
-                    contrato si hay pocos contratos, o dos titulares si hay
-                    muchos. Ver ResumenPrensa. */}
+                {/* Los contratos que la prensa ayuda a encontrar (el puente del
+                    apodo al contrato), si la lista trajo poco. Ver ResumenPrensa. */}
                 <div className="mt-4">
                   {!cargandoContratos && !buscandoDocs && (
                     <ResumenPrensa
@@ -1325,6 +1330,7 @@ export function Buscar() {
                 </div>
 
                 {bloquePrensa}
+                </div>
               </div>
             )}
           </div>

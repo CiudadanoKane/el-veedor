@@ -242,12 +242,18 @@ export function Layout() {
 }
 
 // Encabezado de página reutilizable
-export function PageHeader({ title, subtitle }) {
+export function PageHeader({ title, subtitle, compacto = false }) {
   return (
     // Más apretado en el teléfono (margen y subtítulo un escalón abajo): ahí
     // cada línea de cabecera empuja la primera cifra fuera de la pantalla.
-    <header className="mb-6 sm:mb-10">
-      <h1 className="font-display text-titulo-1 md:text-hero font-extrabold text-textPrimary leading-[1.02] tracking-[-0.04em]">
+    // `compacto`: cuando la página ya está en uso (el Buscador con una
+    // búsqueda hecha), el título grande solo empuja lo que importa.
+    <header className={compacto ? 'mb-4' : 'mb-6 sm:mb-10'}>
+      <h1
+        className={`font-display text-titulo-1 font-extrabold text-textPrimary leading-[1.02] tracking-[-0.04em] ${
+          compacto ? '' : 'md:text-hero'
+        }`}
+      >
         {title}
       </h1>
       {subtitle && (

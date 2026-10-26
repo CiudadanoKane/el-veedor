@@ -1,0 +1,102 @@
+import { useState } from 'react'
+import { useBusquedaWeb } from '../../hooks/useBusquedaWeb'
+import { formatDate } from '../../lib/formatters'
+import { ID_PRENSA } from './ResultadosWeb'
+
+// "En la prensa": la columna de al lado de los contratos, en el Buscador.
+//
+// Al lado y no encima. Encima, la prensa empujaba los contratos fuera de la
+// pantalla; debajo, nadie bajaba a buscarla (oct 2026: "intercambiador vial
+// puerta dorada" y "calle 72"). A la derecha se ven las dos cosas a la vez, en
+// el ancho que la lista de contratos no usa. En el teléfono no caben dos
+// columnas: va encima de los contratos, plegada a tres líneas.
+//
+// Lleva el resumen de lo que dicen las fuentes (lo escribe la IA, ver
+// promptWeb), los primeros titulares y el enlace a la sección completa, abajo.
+// La misma consulta que esa sección: no cuesta una llamada más.
+const TITULARES = 3
+
+export function PanelPrensa({ consulta }) {
+  const query = useBusquedaWeb(consulta)
+  const [abierto, setAbierto] = useState(false)
+  if (!import.meta.env.PROD || !consulta) return null
+
+  const resultados = query.data?.resultados ?? []
+  const resumen = query.data?.resumen
+  const verNoticias = () =>
+    document.getElementById(ID_PRENSA)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+  return (
+    <aside
+      aria-live="polite"
+      className="border-l-4 border-primary bg-textPrimary/[0.04] px-4 py-3 lg:sticky lg:top-4"
+    >
+      <h2 className="text-micro uppercase tracking-label text-textSecondary font-semibold">
+        En la prensa
+      </h2>
+
+      {query.isLoading && (
+        <p className="mt-2 flex items-center gap-2 text-nota text-textSecondary">
+          <span className="h-3 w-3 shrink-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          Buscando en la prensa… tarda unos segundos.
+        </p>
+      )}
+      {query.isError && (
+        <p className="mt-2 text-nota text-textSecondary">
+          No se pudo buscar en la prensa ahora. Los contratos no dependen de esto.
+        </p>
+      )}
+      {query.isSuccess && !resultados.length && (
+        <p className="mt-2 text-nota text-textSecondary">No encontramos noticias sobre esta búsqueda.</p>
+      )}
+
+      {resumen && (
+        <p className={`mt-1.5 text-cuerpo text-textPrimary leading-relaxed ${abierto ? '' : 'line-clamp-3 lg:line-clamp-6'}`}>
+          {resumen}
+        </p>
+      )}
+
+      {/* En el teléfono, los titulares van plegados con el resumen. */}
+      {resultados.length > 0 && (
+        <ul className={`mt-3 space-y-2 ${abierto ? '' : 'max-lg:hidden'}`}>
+          {resultados.slice(0, TITULARES).map((r) => (
+            <li key={r.url} className="text-nota leading-snug">
+              <a
+                href={r.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-textPrimary enlace-perfil enlace-visible"
+              >
+                {r.titulo} <span aria-hidden>↗</span>
+              </a>
+              <span className="block text-micro text-textSecondary">
+                {r.fuente}
+                {r.fecha && <> · {formatDate(r.fecha)}</>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {(resumen || resultados.length > 0) && (
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-nota">
+          <button
+            type="button"
+            onClick={() => setAbierto((v) => !v)}
+            className="toque font-semibold text-primary enlace-sutil"
+          >
+            {abierto ? 'Ver menos' : 'Leer todo'}
+          </button>
+          {resultados.length > 0 && (
+            <button type="button" onClick={verNoticias} className="toque font-semibold text-primary enlace-sutil">
+              Las {resultados.length} noticias ↓
+            </button>
+          )}
+        </div>
+      )}
+      {resumen && (
+        <p className="mt-2 text-micro text-textSecondary">Resumen escrito por IA a partir de las noticias.</p>
+      )}
+    </aside>
+  )
+}

@@ -48,8 +48,6 @@ export function ResultadosWeb({ consulta }) {
         </p>
       )}
 
-      <ResumenFuentes resumen={query.data?.resumen} className="mt-5 max-w-3xl" />
-
       {resultados.length > 0 && (
         <ul className="mt-5 space-y-3">
           {resultados.map((r) => (
@@ -75,22 +73,6 @@ export function ResultadosWeb({ consulta }) {
         </ul>
       )}
     </section>
-  )
-}
-
-// Lo que dicen las fuentes en conjunto, en dos o tres frases: quien busca un
-// contrato polémico quiere saber primero qué pasó, y después leer las notas.
-// Lo escribe el mismo modelo que resume cada fuente (ver promptWeb), con el
-// medio de cada dato entre paréntesis; se rotula como de IA.
-function ResumenFuentes({ resumen, className = '' }) {
-  if (!resumen) return null
-  return (
-    <div className={className}>
-      <p className="text-lectura text-textPrimary leading-relaxed">{resumen}</p>
-      <p className="mt-1 text-nota text-textSecondary">
-        Resumen escrito por IA a partir de las fuentes de abajo. Compruébalo en cada una.
-      </p>
-    </div>
   )
 }
 
@@ -125,38 +107,24 @@ function Proceso({ r }) {
   )
 }
 
-// Lo de la prensa que va ARRIBA de los contratos. La sección completa queda
-// abajo, y con resultados quedaba debajo de 30 contratos: quien buscaba una
-// obra polémica no se enteraba de que había cobertura (oct 2026). Lleva una de
-// dos cosas, según cuántos contratos encontró la búsqueda:
-// - Pocos (3 o menos, incluido ninguno): el puente del apodo al contrato, que
-//   se pide aparte (ver promptPuente en src/lib/busquedaWeb.js). Es el caso del
-//   apodo: "la gran vía" solo encontraba una ferretería llamada así. Con
-//   muchos, el puente repetía la lista o la contradecía (el PAE de 2026 para
-//   quien pidió 2025), y no se paga.
-// - Muchos: los dos primeros titulares, con un enlace a la sección entera.
-//   Con pocos, la sección ya queda a la vista y repetirlos sobra.
+// Los contratos que la prensa ayuda a encontrar, encima de la lista: el puente
+// del apodo al contrato (ver promptPuente en src/lib/busquedaWeb.js). Es el caso
+// del apodo: "la gran vía" solo encontraba una ferretería llamada así. Solo:
+// - con pocos contratos (3 o menos, incluido ninguno). Con muchos, el puente
+//   repetía la lista o la contradecía (el PAE de 2026 para quien pidió 2025);
+// - o cuando ningún contrato contiene lo que se buscó y todos llegaron por las
+//   palabras relacionadas (`sinLoBuscado`). "Túnel peatonal en Caribe Verde"
+//   traía cinco "pasos elevados" de acueducto en Casanare: muchos contratos,
+//   ninguno el buscado (oct 2026).
 //
-// Y hay un segundo caso en que el puente hace falta aunque la lista sea larga:
-// cuando ningún contrato contiene lo que se buscó y todos llegaron por las
-// palabras relacionadas (`sinLoBuscado`). "Túnel peatonal en Caribe Verde"
-// traía cinco "pasos elevados" de acueducto en Casanare: muchos contratos,
-// ninguno el buscado (oct 2026). Ahí van el puente y los titulares.
+// El resumen y los titulares de la prensa van en la columna de al lado
+// (PanelPrensa); hasta oct 2026 iban aquí, encima de la lista.
 const POCOS = 3
 
 export function ResumenPrensa({ consulta, lugar, contratos, sinLoBuscado = false }) {
   if (!import.meta.env.PROD || !consulta) return null
-  const pocos = contratos <= POCOS
-  if (pocos) return <PuentePrensa consulta={consulta} lugar={lugar} />
-  if (sinLoBuscado) {
-    return (
-      <>
-        <PuentePrensa consulta={consulta} lugar={lugar} />
-        <TitularesPrensa consulta={consulta} />
-      </>
-    )
-  }
-  return <TitularesPrensa consulta={consulta} />
+  if (contratos > POCOS && !sinLoBuscado) return null
+  return <PuentePrensa consulta={consulta} lugar={lugar} />
 }
 
 const CAJA = 'mb-5 border-l-4 border-primary bg-textPrimary/[0.04] px-4 py-3 max-w-3xl'
@@ -238,47 +206,6 @@ function PuentePrensa({ consulta, lugar }) {
           </>
         )}
       </p>
-    </div>
-  )
-}
-
-function TitularesPrensa({ consulta }) {
-  const query = useBusquedaWeb(consulta)
-  const resultados = query.data?.resultados ?? []
-  const titulares = resultados.slice(0, 2)
-  if (!titulares.length) return null
-
-  return (
-    <div className={CAJA}>
-      <p className="text-micro uppercase tracking-label text-textSecondary font-semibold">
-        En la prensa
-      </p>
-      {query.data?.resumen && (
-        <p className="mt-1 text-cuerpo text-textPrimary leading-snug">
-          {query.data.resumen}{' '}
-          <span className="text-nota text-textSecondary">(resumen escrito por IA)</span>
-        </p>
-      )}
-      <ul className="mt-1 space-y-1">
-        {titulares.map((r) => (
-          <li key={r.url} className="text-cuerpo leading-snug">
-            <a
-              href={r.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold enlace-perfil enlace-visible"
-            >
-              {r.titulo} <span aria-hidden>↗</span>
-            </a>{' '}
-            <span className="text-nota text-textSecondary">{r.fuente}</span>
-          </li>
-        ))}
-      </ul>
-      {resultados.length > titulares.length && (
-        <a href={`#${ID_PRENSA}`} className="mt-1.5 inline-block text-nota font-semibold text-primary enlace-sutil">
-          Ver las {resultados.length} noticias y fuentes ↓
-        </a>
-      )}
     </div>
   )
 }
