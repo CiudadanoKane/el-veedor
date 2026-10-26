@@ -30,6 +30,42 @@ export function variantesId(texto) {
   return t ? [...new Set([t, t.toUpperCase()])] : []
 }
 
+// El número de un contrato o proceso escrito como lo escribe una persona, o
+// null. En la medición de oct 2026 dos se perdían:
+//   "contrato 4600098664" → la IA dejaba el texto vacío y no se buscaba nada;
+//   "sa 015 2024 barranquilla" → se buscaba "SA 015" como palabras sueltas.
+// Se reconocen tres formas, en este orden:
+//   1. un código con guiones, puntos o barras en cualquier parte de la frase
+//      ("LP-006-2025 barranquilla", "CO1.PCCNTR.123");
+//   2. letras cortas, número y año separados por espacios ("sa 015 2024",
+//      "lp sim 011 2025") → "SA-015-2024", que es como lo registran;
+//   3. un número de 6 cifras o más, solo o con "contrato", "proceso", "número"
+//      alrededor ("contrato 4600098664").
+// La 2 exige letras de código, no palabras: "calle 18 2024" o "lote 2 2024"
+// son parte de una descripción, no un proceso.
+const RELLENO = new Set([
+  'contrato', 'contratos', 'proceso', 'numero', 'número', 'no', 'no.', 'n°', 'nº', '#', 'nro', 'nro.',
+  'del', 'de', 'el', 'la', 'secop', 'codigo', 'código', 'id', 'referencia', 'ref', 'ref.', 'buscar',
+])
+const NO_SON_CODIGO = new Set(['via', 'vía', 'cra', 'cll', 'kr', 'km', 'de', 'la', 'el', 'en', 'no', 'mz', 'int', 'lote', 'casa', 'sede', 'piso', 'año', 'ano', 'del', 'los', 'las', 'con', 'por'])
+export function extraerIdentificador(texto) {
+  const t = String(texto || '').trim()
+  if (!t) return null
+  const tokens = t.split(/\s+/)
+  const conSignos = tokens.find((x) => /\d/.test(x) && /[.\-/]/.test(x) && x.replace(/[.,;:]+$/, '').length >= 5)
+  if (conSignos) return conSignos.replace(/[.,;:]+$/, '')
+  const m = t.match(/(?:^|\s)([a-zñ]{1,5}(?:\s[a-zñ]{1,5})?)\s+(\d{1,5})\s+((?:19|20)\d{2})(?=\s|$)/i)
+  if (m) {
+    const letras = m[1].toLowerCase().split(/\s+/)
+    if (!letras.some((l) => NO_SON_CODIGO.has(l) || RELLENO.has(l))) {
+      return `${letras.join('-').toUpperCase()}-${m[2]}-${m[3]}`
+    }
+  }
+  const numeros = tokens.filter((x) => /^\d{6,}$/.test(x))
+  if (numeros.length === 1 && tokens.every((x) => x === numeros[0] || RELLENO.has(x.toLowerCase()))) return numeros[0]
+  return null
+}
+
 // Los códigos que genera SECOP (CO1.PCCNTR…, CO1.BDOS…) son únicos: van por
 // igualdad. Un prefijo sobre ellos sería peligroso —"CO1.PCCNTR.79" arrastraría
 // miles de contratos—. Los números que pone la ENTIDAD (referencia del
@@ -59,6 +95,9 @@ export function condicionIdSecop2(texto, procesos = []) {
     ...igualA('proceso_de_compra', v),
     ...empiezaCon('referencia_del_contrato', v),
   ]
+  // Un número solo puede ser también un NIT o una cédula: los contratos de
+  // ese contratista, en vez de nada.
+  if (/^\d{6,}$/.test(String(texto).trim())) partes.push(...igualA('documento_proveedor', v))
   const unicos = [...new Set(procesos)].filter(Boolean)
   if (unicos.length) {
     partes.push(`proceso_de_compra IN (${unicos.map((p) => `'${esc(p)}'`).join(', ')})`)

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   variantesId, condicionProcesosPorReferencia, condicionIdSecop2, condicionIdSecop1, prioridadLugar,
-  esNoVigente, coincidenciaId,
+  esNoVigente, coincidenciaId, extraerIdentificador,
 } from './busquedaId.js'
 
 // El caso que motivó este módulo: el túnel peatonal de Caribe Verde
@@ -135,5 +135,30 @@ describe('prioridadLugar', () => {
 
   it('un contrato sin ciudad registrada no coincide por accidente', () => {
     expect(prioridadLugar({ city: null, department: null }, { city: 'Barranquilla' })).toBe(2)
+  })
+})
+
+describe('extraerIdentificador', () => {
+  it('saca el número aunque venga con palabras alrededor', () => {
+    expect(extraerIdentificador('contrato 4600098664')).toBe('4600098664')
+    expect(extraerIdentificador('LP-006-2025 barranquilla')).toBe('LP-006-2025')
+    expect(extraerIdentificador('proceso No. CO1.PCCNTR.6880374')).toBe('CO1.PCCNTR.6880374')
+  })
+  it('arma el número de proceso escrito con espacios', () => {
+    expect(extraerIdentificador('sa 015 2024 barranquilla')).toBe('SA-015-2024')
+    expect(extraerIdentificador('lp sim 011 2025')).toBe('LP-SIM-011-2025')
+  })
+  it('no confunde una descripción con un número', () => {
+    expect(extraerIdentificador('pavimentación de la calle 18 2024')).toBeNull()
+    expect(extraerIdentificador('obras 2024 en soledad')).toBeNull()
+    expect(extraerIdentificador('arroyo 85')).toBeNull()
+    expect(extraerIdentificador('mejoramiento 4600098664 vivienda')).toBeNull()
+  })
+})
+
+describe('un número solo', () => {
+  it('se busca también como documento del contratista', () => {
+    expect(condicionIdSecop2('900123456')).toContain("documento_proveedor = '900123456'")
+    expect(condicionIdSecop2('LP-006-2025')).not.toContain('documento_proveedor')
   })
 })

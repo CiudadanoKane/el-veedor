@@ -14,6 +14,7 @@ import { useBusquedaAproximada } from '../hooks/useBusquedaAproximada'
 import { palabrasClave } from '../lib/busquedaAproximada'
 import { useDirectorioEntidades, filtrarEntidades } from '../hooks/useDirectorioEntidades'
 import { useBusqueda, hayBusqueda, ORDENES, LIMITE, esIdentificador, segmentoValido } from '../hooks/useBusqueda'
+import { extraerIdentificador } from '../lib/busquedaId'
 import { nombreSegmento } from '../lib/unspsc'
 import { useQueryClient } from '@tanstack/react-query'
 import { useGeo, esperarCatalogoGeo } from '../hooks/useGeoOptions'
@@ -568,8 +569,12 @@ export function Buscar() {
     const limpio = texto.trim()
     // Cada envío nuevo arranca de cero la ampliación semántica: si no la vuelve
     // a poblar la IA, no debe arrastrar los sinónimos del intento anterior.
-    if (!limpio || esIdentificador(limpio)) {
-      actualizar({ texto: limpio, terminos: [], ...SIN_INTERPRETACION })
+    // Un número de contrato o proceso escrito a mano ("contrato 4600098664",
+    // "sa 015 2024 barranquilla") va directo a la búsqueda por identificador:
+    // la IA lo trataba como texto y lo perdía (ver extraerIdentificador).
+    const id = limpio && (esIdentificador(limpio) ? limpio : extraerIdentificador(limpio))
+    if (!limpio || id) {
+      actualizar({ texto: id || limpio, terminos: [], ...SIN_INTERPRETACION })
       if (limpio) llevarAResultados()
       return
     }

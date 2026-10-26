@@ -78,8 +78,11 @@ export function segmentoValido(seg) {
 // "LP-024-2024" o un código SECOP como "CO1.PCCNTR.7491513": sin espacios, con
 // dígitos y con puntos, guiones o barras. Se buscan por código (ver
 // lib/busquedaId.js), no con búsqueda de texto, que sobre estos campos no sirve.
+// Un número solo también, si tiene 6 cifras o más ("4600098664"): con menos
+// sería cualquier cosa ("105", "2024").
 export function esIdentificador(texto) {
   const t = (texto || '').trim()
+  if (/^\d{6,}$/.test(t)) return true
   return /^[A-Za-z0-9._\-/]+$/.test(t) && /\d/.test(t) && /[.\-/]/.test(t) && t.length >= 5
 }
 
