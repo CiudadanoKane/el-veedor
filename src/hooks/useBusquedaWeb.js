@@ -13,8 +13,9 @@ export function useBusquedaWeb(consulta) {
     retry: false,
     // `v`: cambia la clave del CDN cuando cambia la forma de la respuesta. La
     // 2 trae el resumen de conjunto; sin ella, las búsquedas guardadas antes
-    // seguirían doce horas sin él.
-    queryFn: () => pedir(new URLSearchParams({ web: '1', v: '2', q })),
+    // seguirían doce horas sin él. La 3 dice si la obra podría no tener
+    // contrato (convenio con un privado, cargas urbanísticas, APP).
+    queryFn: () => pedir(new URLSearchParams({ web: '1', v: '3', q })),
   })
 }
 

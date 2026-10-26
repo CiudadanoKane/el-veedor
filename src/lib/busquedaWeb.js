@@ -61,7 +61,10 @@ export function promptWeb() {
     'palabras y en español sencillo lo que dicen esas fuentes en conjunto sobre lo que busca la ' +
     'persona: qué se contrató, quién, por cuánto y qué ha pasado. Nombra entre paréntesis el medio ' +
     'de cada dato, p. ej. "(El Heraldo)". Solo lo que dicen las fuentes: no acuses ni concluyas, y ' +
-    'si se contradicen, dilo.\n' +
+    'si se contradicen, dilo. Si según las fuentes la obra no es un contrato público corriente —un ' +
+    'convenio o alianza con una empresa privada, obras por cargas urbanísticas o valorización, una ' +
+    'APP o concesión—, o si apenas está anunciada o en licitación, dilo: explica por qué podría no ' +
+    'haber todavía un contrato.\n' +
     'Si no encuentras nada relevante, devuelve [] y ningún resumen.'
   )
 }
