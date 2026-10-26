@@ -650,6 +650,53 @@ Cómo se eligió, medido con 8 consultas reales:
   misma búsqueda repetida no vuelve a costar—, con el mismo tope por IP.
 - Las pruebas costaron US$1,96 en total (casi todo, Opus en la primera ronda).
 
+### Búsquedas sugeridas, validadas con datos reales (oct 2026)
+
+"Prueba también", bajo la caja del Buscador (commit `112ae820`): variantes
+más amplias de lo buscado que SECOP confirma con un conteo, y el nombre oficial
+de la obra, el contratista y los números de proceso que dan las noticias. Se
+escribió el 25 de octubre con el dataset de contratos degradado (jbjy-vk9h tenía
+1.000 filas durante una recarga de datos.gov.co) y quedó "pendiente de validar
+con datos reales". Validado el 26, con 5,66 millones de filas de vuelta:
+
+- "arroyo 85" en Barranquilla sugiere «arroyo» (930 contratos), **Consorcio
+  Arroyo 85** (contratista, según la prensa) y «Canalización y reconstrucción
+  vial» (nombre oficial). La prensa y el puente tardan 8 y 15 s; las de SECOP
+  salen al instante.
+- Las dos primeras llevaban a contratos. **La tercera llevaba a cero**, y el
+  componente promete mostrar "solo lo que lleva a algo".
+
+**No era un fallo de las sugerencias sino del Buscador desde el principio.**
+`variantesDeFrase` prueba todas las combinaciones de tildes, pero si pasan de 24
+variaba solo la palabra más larga y dejaba las demás SIN tilde, aunque la
+persona la hubiera escrito. La búsqueda exige la tilde exacta, así que una
+frase larga bien escrita no se buscaba nunca. Medido contra la API, en todo el
+país:
+
+| Frase bien escrita | encontraba | existen al menos |
+|---|---|---|
+| canalización y reconstrucción vial | 0 | 15 |
+| mantenimiento de vías terciarias | 185 | 533 |
+| construcción de la institución educativa | 8 | 45 |
+
+Ahora se distingue qué palabras tienen escritura conocida —la tilde escrita, o
+la regla de -ión (canalización, construcción, gestión, región)— y cuáles no.
+Las conocidas se prueban bien escritas y sin tilde; solo la más larga incierta
+se prueba con la tilde en cada vocal. Se suman la frase sin ninguna tilde y
+las mezclas (una palabra tildada y las demás no). La frase bien escrita va
+siempre, y se lanzan las mismas consultas que antes o menos: "canalización y
+reconstrucción vial" pasó de 9 a 8, porque ya no se prueban "réconstruccion",
+"recónstruccion"…
+
+Límite que queda: sin tildes escritas y sin la regla de -ión, una tilde en una
+palabra que no es la más larga sigue sin probarse ("mantenimiento de vias
+terciarias" no encuentra "VÍAS"). No hay regla segura para -ía.
+
+**Ojo al medir en desarrollo:** sin el caché de producción, la página lanza tres
+consultas de catálogo de ~50 s al cargar, que saturan la cola de Socrata y
+hacen que cada búsqueda parezca tardar 5 s. En producción la misma búsqueda
+tarda 0,3 s por consulta.
+
 ### Modo oscuro automático (oct 2026)
 
 Decisión: el tema principal sigue siendo claro —la plataforma es lectura
