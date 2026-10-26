@@ -1272,11 +1272,16 @@ export function Buscar() {
                         {noticiasPrensa} noticia{noticiasPrensa === 1 ? '' : 's'} en la prensa ↓
                       </button>
                     )}
-                    <Segmented
-                      value={criterios.orden}
-                      onChange={(v) => actualizar({ orden: v })}
-                      options={Object.entries(ORDENES).map(([v, o]) => ({ value: v, label: o.label }))}
-                    />
+                    {/* Sin encoger: con el botón de la prensa al lado, la fila
+                        lo apretaba y el control mostraba su barra de
+                        desplazamiento horizontal. Mejor que la fila salte. */}
+                    <div className="shrink-0">
+                      <Segmented
+                        value={criterios.orden}
+                        onChange={(v) => actualizar({ orden: v })}
+                        options={Object.entries(ORDENES).map(([v, o]) => ({ value: v, label: o.label }))}
+                      />
+                    </div>
                   </div>
                 </div>
 
