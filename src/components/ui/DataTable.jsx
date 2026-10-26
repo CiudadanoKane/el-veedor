@@ -95,6 +95,10 @@ export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', rend
                 <Fragment key={key}>
                   <tr
                     ref={registrar(key)}
+                    // El id de la fila, a la vista en el DOM: con él la
+                    // medición del Buscador (scripts/medir-buscador) reconoce
+                    // qué contratos salieron, sin leer el texto.
+                    data-fila={row[keyField]}
                     onClick={expandable ? () => toggle(key) : undefined}
                     className={`group border-b border-border/60 last:border-0 ${
                       expandable ? 'cursor-pointer' : ''
@@ -189,6 +193,7 @@ function Tarjetas({ columns, rows, keyField, renderDetail, openKey, toggle, regi
           <li
             key={key}
             ref={registrar(key)}
+            data-fila={row[keyField]}
             className={`border ${isOpen ? 'border-textPrimary bg-muted' : 'border-textPrimary/25 bg-bg'}`}
           >
             <div

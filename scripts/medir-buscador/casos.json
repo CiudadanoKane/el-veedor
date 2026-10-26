@@ -1,0 +1,42 @@
+{
+  "descripcion": "Búsquedas reales de un ciudadano, cada una con el contrato que debería encontrar (id_contrato de SECOP II, comprobado en jbjy-vk9h el 26 oct 2026). Tipos: prensa = la obra como la nombran las noticias; descripcion = lo que alguien escribiría sin conocer el objeto del contrato (sin tildes, con sinónimos, con el lugar de la obra y no el de la entidad); datos = un dato parcial (contratista, número de proceso). 'dudoso': la verdad no está confirmada, solo es la más probable.",
+  "casos": [
+    { "id": "P1", "tipo": "prensa", "consulta": "obras del arroyo de la 85 en barranquilla", "contratos": ["CO1.PCCNTR.6880374"], "nota": "Canalización y reconstrucción vial del arroyo de la calle 85, Consorcio Arroyo 85, $117.038 M" },
+    { "id": "P2", "tipo": "prensa", "consulta": "la gran via atlantico", "contratos": ["CO1.PCCNTR.3823761"], "nota": "Mejoramiento del corredor vial Circunvalar-Puerto Colombia, tramo 1 Corredor Universitario, Gobernación del Atlántico" },
+    { "id": "P3", "tipo": "prensa", "consulta": "PAE de sincelejo", "contratos": ["CO1.PCCNTR.6047716"], "nota": "Convenio 001-2024 con Consorcio PAE Universal 2024-2027, $273.458 M" },
+    { "id": "P4", "tipo": "prensa", "consulta": "tunel peatonal de caribe verde barranquilla", "contratos": ["CO1.PCCNTR.7906163", "CO1.PCCNTR.7906558", "CO1.PCCNTR.8750221"], "dudoso": true, "nota": "Sin contrato propio en SECOP II; lo más probable es un contrato marco del Distrito (LP-006-2025 grupos 1 y 2, LP-015-2025)" },
+    { "id": "P5", "tipo": "prensa", "consulta": "obras contra las inundaciones en bocagrande", "contratos": ["CO1.PCCNTR.8708615"], "nota": "Prevención y control de inundaciones en Bocagrande y Castillogrande, $164.863 M" },
+    { "id": "P6", "tipo": "prensa", "consulta": "intercambiador de ternera", "contratos": ["CO1.PCCNTR.8473627"], "nota": "Consorcio ME Ternera, $80.041 M" },
+    { "id": "P7", "tipo": "prensa", "consulta": "nuevo chambacu cartagena", "contratos": ["CO1.PCCNTR.6518754"], "nota": "Complejo deportivo Nuevo Chambacú, $64.330 M" },
+    { "id": "P8", "tipo": "prensa", "consulta": "alcantarillado de bayunca y pontezuela", "contratos": ["CO1.PCCNTR.7989906"], "nota": "Consorcio Redes CCC, $114.617 M" },
+    { "id": "P9", "tipo": "prensa", "consulta": "contrato de malla vial de quintero en medellin", "contratos": ["CO1.PCCNTR.5106298"], "nota": "4600098664 de 2023, Consorcio Mecamed 2023, anulado por el Consejo de Estado" },
+
+    { "id": "D1", "tipo": "descripcion", "consulta": "mejoramiento de vivienda en monteria 2025", "contratos": ["CO1.PCCNTR.7998897"] },
+    { "id": "D2", "tipo": "descripcion", "consulta": "escenario deportivo la apartada cordoba", "contratos": ["CO1.PCCNTR.7978635"], "nota": "Lo contrata la Gobernación de Córdoba, con ciudad Montería" },
+    { "id": "D3", "tipo": "descripcion", "consulta": "puesto de salud de el plateado en argelia cauca", "contratos": ["CO1.PCCNTR.7725570"], "nota": "Lo contrata la ESE Suroccidente, con ciudad Patía" },
+    { "id": "D4", "tipo": "descripcion", "consulta": "centro de vida del adulto mayor en santa marta", "contratos": ["CO1.PCCNTR.7982070"] },
+    { "id": "D5", "tipo": "descripcion", "consulta": "pavimentacion de la calle 18 de taganga", "contratos": ["CO1.PCCNTR.7954826"] },
+    { "id": "D6", "tipo": "descripcion", "consulta": "parque de la virgen del carmen en valledupar", "contratos": ["CO1.PCCNTR.7740719"] },
+    { "id": "D7", "tipo": "descripcion", "consulta": "andenes en envigado", "contratos": ["CO1.PCCNTR.8004573"] },
+    { "id": "D8", "tipo": "descripcion", "consulta": "alcantarillado del barrio san cristobal en piedecuesta", "contratos": ["CO1.PCCNTR.7976250"] },
+    { "id": "D9", "tipo": "descripcion", "consulta": "obras de mitigacion en cristal bajo bucaramanga", "contratos": ["CO1.PCCNTR.7858061"] },
+    { "id": "D10", "tipo": "descripcion", "consulta": "pavimentacion de calles en fresno tolima", "contratos": ["CO1.PCCNTR.7881528"], "nota": "Lo contrata la Gobernación del Tolima, con ciudad No Definido" },
+    { "id": "D11", "tipo": "descripcion", "consulta": "pavimentacion de vias en honda", "contratos": ["CO1.PCCNTR.7848195"], "nota": "Gobernación del Tolima, ciudad No Definido" },
+    { "id": "D12", "tipo": "descripcion", "consulta": "construccion del hospital de mongui", "contratos": ["CO1.PCCNTR.7718402"] },
+    { "id": "D13", "tipo": "descripcion", "consulta": "via varsovia el delirio", "contratos": ["CO1.PCCNTR.7671467"] },
+    { "id": "D14", "tipo": "descripcion", "consulta": "arreglo del parque principal de tolu", "contratos": ["CO1.PCCNTR.7184018"], "nota": "SECOP dice 'parque central' y 'Santiago de Tolú'; lo contrata Indersucre, con ciudad Sincelejo" },
+    { "id": "D15", "tipo": "descripcion", "consulta": "cancha sintetica en mingueo", "contratos": ["CO1.PCCNTR.7977620"] },
+    { "id": "D16", "tipo": "descripcion", "consulta": "recorrido de la salsa en cali", "contratos": ["CO1.PCCNTR.7737312"] },
+    { "id": "D17", "tipo": "descripcion", "consulta": "via tarqui maito quituro", "contratos": ["CO1.PCCNTR.6438213"] },
+    { "id": "D18", "tipo": "descripcion", "consulta": "ciclorruta de paipa", "contratos": ["CO1.PCCNTR.7707832"], "nota": "Gobernación de Boyacá, con ciudad Tunja" },
+    { "id": "D19", "tipo": "descripcion", "consulta": "aguas lluvias barrio mayalitos hatonuevo", "contratos": ["CO1.PCCNTR.7963075"] },
+    { "id": "D20", "tipo": "descripcion", "consulta": "polideportivo de guanabanal palmira", "contratos": ["CO1.PCCNTR.7963203"], "nota": "SECOP dice 'complejo deportivo'" },
+
+    { "id": "C1", "tipo": "datos", "consulta": "consorcio vial el delirio", "contratos": ["CO1.PCCNTR.7671467"] },
+    { "id": "C2", "tipo": "datos", "consulta": "consorcio redes ccc", "contratos": ["CO1.PCCNTR.7989906"] },
+    { "id": "C3", "tipo": "datos", "consulta": "LP-SIM-011-2025", "contratos": ["CO1.PCCNTR.7998897"] },
+    { "id": "C4", "tipo": "datos", "consulta": "sa 015 2024 barranquilla", "contratos": ["CO1.PCCNTR.6880374"] },
+    { "id": "C5", "tipo": "datos", "consulta": "contrato 4600098664", "contratos": ["CO1.PCCNTR.5106298"] },
+    { "id": "C6", "tipo": "datos", "consulta": "quien construye el colegio normal superior maria auxiliadora de santa marta", "contratos": ["CO1.PCCNTR.7828907"], "nota": "SECOP: reparación estructural de la IED Escuela Normal Superior María Auxiliadora, EDUS" }
+  ]
+}
