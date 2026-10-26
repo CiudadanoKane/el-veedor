@@ -15,7 +15,8 @@ import { palabrasClave } from '../lib/busquedaAproximada'
 import { useDirectorioEntidades, filtrarEntidades } from '../hooks/useDirectorioEntidades'
 import { useBusqueda, hayBusqueda, ORDENES, LIMITE, esIdentificador, segmentoValido } from '../hooks/useBusqueda'
 import { nombreSegmento } from '../lib/unspsc'
-import { useGeo } from '../hooks/useGeoOptions'
+import { useQueryClient } from '@tanstack/react-query'
+import { useGeo, esperarCatalogoGeo } from '../hooks/useGeoOptions'
 import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO, etiquetaEstado } from '../lib/catalogos'
 import { ESTADOS_SOLO_SECOP1 } from '../lib/catalogosSecop1'
 import { sinTildes, pluralDeFrase } from '../lib/acentos'
@@ -478,6 +479,7 @@ export function Buscar() {
   // Catálogo geográfico (ya lo cargó la barra de filtro): la búsqueda con IA valida
   // contra él el lugar que extrae de la frase, para no inventar un municipio.
   const geo = useGeo()
+  const queryClient = useQueryClient()
 
   const criterios = useMemo(() => ({
     texto: params.get('q') || '',
@@ -610,7 +612,11 @@ export function Buscar() {
         tema: TEMAS[filtros.tema] ? filtros.tema : '',
       }
       // El lugar se valida contra el catálogo real (no se inventa un municipio).
-      const lugar = resolverLugar(geo.data, {
+      // El catálogo puede no haber llegado todavía: al entrar con ia=1, la
+      // interpretación arranca con la página. Sin esperarlo, "pavimentación de
+      // calles en Fresno, Tolima" perdía el lugar y buscaba en todo el país
+      // (oct 2026; también "en Soledad, Atlántico").
+      const lugar = resolverLugar(geo.data ?? await esperarCatalogoGeo(queryClient), {
         departamento: filtros.departamento,
         ciudad: filtros.ciudad,
       })

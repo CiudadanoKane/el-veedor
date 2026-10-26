@@ -8,18 +8,32 @@ const DS = DATASETS.CONTRATOS
 // En desarrollo va directo a Socrata; en producción sale de /api/geo,
 // cacheado 24h y refrescado por cron — se usa en la barra de filtro, que se
 // renderiza en todas las páginas del sitio.
+// La consulta, aparte, para poder esperarla fuera de un componente: la
+// búsqueda con IA necesita el catálogo para validar el lugar, y al llegar con
+// ia=1 la interpretación responde antes de que el catálogo haya cargado (ver
+// esperarCatalogoGeo).
+export const consultaGeo = {
+  queryKey: ['geo', 'todo'],
+  staleTime: Infinity,
+  queryFn: async () => {
+    if (import.meta.env.DEV) return socrataQuery(DS, soqlGeo())
+    const res = await fetch('/api/geo')
+    if (!res.ok) throw new Error(`Geo error ${res.status}`)
+    return res.json()
+  },
+}
+
 function useGeoRaw() {
-  return useQuery({
-    queryKey: ['geo', 'todo'],
-    staleTime: Infinity,
-    queryFn: async () => {
-      if (import.meta.env.DEV) return socrataQuery(DS, soqlGeo())
-      const res = await fetch('/api/geo')
-      if (!res.ok) throw new Error(`Geo error ${res.status}`)
-      return res.json()
-    },
-    select: adaptarGeo,
-  })
+  return useQuery({ ...consultaGeo, select: adaptarGeo })
+}
+
+// El catálogo ya adaptado, esperándolo si todavía no llegó; null si falla.
+export async function esperarCatalogoGeo(queryClient) {
+  try {
+    return adaptarGeo(await queryClient.ensureQueryData(consultaGeo))
+  } catch {
+    return null
+  }
 }
 
 // Payload geográfico completo (departamentos + ciudades por departamento).
