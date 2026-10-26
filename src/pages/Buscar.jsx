@@ -1009,7 +1009,12 @@ export function Buscar() {
             {/* Búsquedas sugeridas, siempre: que haya contratos no quiere decir
                 que sean los buscados (ver SugerenciasBusqueda). */}
             {criterios.texto && !esIdentificador(criterios.texto) && (
-              <SugerenciasBusqueda texto={criterios.texto} consultaPrensa={consultaPrensa} filtrosGeo={filters} />
+              <SugerenciasBusqueda
+                texto={criterios.texto}
+                consultaPrensa={consultaPrensa}
+                filtrosGeo={filters}
+                pocos={!queryContratos.isLoading && !buscandoDocs && (resultados.length <= 3 || sinLoBuscado)}
+              />
             )}
 
             {!avanzados && <FiltrosAplicados criterios={criterios} actualizar={actualizar} />}
@@ -1205,7 +1210,7 @@ export function Buscar() {
                             Buscando también en los documentos anexos del proceso…
                           </p>
                         ) : (
-                          <div className="py-6 max-w-2xl">
+                          <div className="py-3 max-w-2xl">
                             {porId ? (
                               <p className="text-lectura text-textPrimary leading-relaxed">
                                 Ningún contrato tiene ese identificador. Verifica el número, o busca
@@ -1220,11 +1225,16 @@ export function Buscar() {
                                 .
                               </p>
                             ) : (
-                              <>
-                                <p className="text-lectura text-textPrimary leading-relaxed">
-                                  Ningún contrato coincide con esa búsqueda —ni en su objeto ni en
-                                  sus documentos anexos—. Antes de rendirte:
-                                </p>
+                              // Una línea y los consejos plegados: la página entera
+                              // diciendo que no hay nada empujaba fuera de la
+                              // pantalla lo que sí sirve, que es la prensa y las
+                              // búsquedas sugeridas, ya arriba (SugerenciasBusqueda).
+                              <details>
+                                <summary className="cursor-pointer text-lectura text-textPrimary leading-relaxed">
+                                  Ningún contrato de SECOP coincide —ni en su objeto ni en sus
+                                  documentos anexos—.{' '}
+                                  <span className="text-cuerpo text-primary font-semibold">¿Qué más probar?</span>
+                                </summary>
                                 <ul className="mt-3 space-y-2 text-lectura text-textPrimary leading-relaxed">
                                   <li>
                                     Si buscas a una empresa, usa la pestaña{' '}
@@ -1242,7 +1252,7 @@ export function Buscar() {
                                     tienes.
                                   </li>
                                 </ul>
-                              </>
+                              </details>
                             )}
                           </div>
                         )

@@ -7,7 +7,7 @@ import { condicionProcesosPorReferencia } from '../src/lib/busquedaId.js'
 import {
   MODELO_WEB, DOMINIOS_WEB, promptWeb, extraerArreglo, resultadosReales,
   limpiarResultados, separarResumen, variantesProceso, coincideEntidad, promptPuente, extraerObjeto, pistasDelPuente, recortesDeObra, busquedaFallida,
-  consultasPorPista,
+  consultasPorPista, busquedasDelPuente, consultasConteo,
 } from '../src/lib/busquedaWeb.js'
 
 const client = new Anthropic()
@@ -446,6 +446,8 @@ async function puenteAlContrato(req, res) {
     })
 
   const pistas = pistasDelPuente(puente, consulta)
+  // Las búsquedas sugeridas se cuentan a la vez que se buscan las pistas.
+  const busquedasContadas = contarBusquedas(busquedasDelPuente(puente, consulta), lugar, inicio, consulta)
   const obras = (await Promise.all(pistas.map(async (pista) => {
     try {
       // El nombre de una obra, entero y recortado por los bordes, todo a la
@@ -483,7 +485,7 @@ async function puenteAlContrato(req, res) {
   }))).filter(Boolean)
   // Las pistas van también en la respuesta: lo que se buscó en SECOP, aunque
   // no diera nada, para poder revisar por qué un puente falló.
-  return responderWeb(res, { obras, fuentes, pistas })
+  return responderWeb(res, { obras, fuentes, pistas, busquedas: await busquedasContadas })
 }
 
 // Los contratos de una pista: una consulta por escritura (con y sin tildes),
@@ -509,6 +511,35 @@ async function contratosPorPista(pista, lugar, inicio) {
   } catch {
     return null
   }
+}
+
+// Las búsquedas que sugiere el puente, con cuántos contratos del lugar
+// encuentran. Solo las que encuentran algo: una sugerencia que lleva a cero es
+// peor que ninguna. Mismo tope de tiempo que las pistas.
+async function contarBusquedas(frases, lugar, inicio, consulta) {
+  const contar = async (frase) => {
+    const restante = TOPE_PUENTE_MS - (Date.now() - inicio)
+    if (restante <= 0) return 0
+    const todas = Promise.all(consultasConteo(frase, lugar).map((c) => socrataBusqueda(DS_CONTRATOS, c)))
+    const tope = new Promise((resolve) => setTimeout(() => resolve(null), restante))
+    try {
+      const filas = await Promise.race([todas, tope])
+      // Con y sin tildes son conjuntos distintos (la API distingue): se suman.
+      return filas ? filas.reduce((t, f) => t + (Number(f?.[0]?.n) || 0), 0) : 0
+    } catch {
+      return 0
+    }
+  }
+  // Cada frase entera y sus recortes a la vez (ver recortesDeObra): gana la
+  // más larga que encuentre algo.
+  const contadas = await Promise.all(frases.map(async (frase) => {
+    const candidatas = [frase, ...recortesDeObra(frase, consulta)]
+    const ns = await Promise.all(candidatas.map(contar))
+    const k = ns.findIndex((n) => n > 0)
+    return k < 0 ? null : { frase: candidatas[k], n: ns[k] }
+  }))
+  const vistas = new Set()
+  return contadas.filter((c) => c && !vistas.has(c.frase.toLowerCase()) && vistas.add(c.frase.toLowerCase()))
 }
 
 // El número de proceso que menciona una noticia, comprobado en SECOP. Un número

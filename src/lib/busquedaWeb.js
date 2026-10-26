@@ -88,7 +88,12 @@ export function promptPuente() {
     'Devuelve SOLO un objeto JSON, sin texto alrededor:\n' +
     '{"obras": [hasta 2 nombres oficiales de 2 a 6 palabras; nunca el apodo ni una frase que lo ' +
     'contenga], "contratistas": [hasta 2 nombres tal como los escribe la fuente], "entidad": la ' +
-    'entidad contratante o null, "fuentes": [las URL exactas de los resultados de búsqueda donde lo ' +
+    'entidad contratante o null, "busquedas": [hasta 3 frases cortas, de 2 a 4 palabras, que ' +
+    'aparecerían tal cual, palabra por palabra, en el objeto del contrato en SECOP: la palabra ' +
+    'técnica común del tipo de obra y, si cabe, la vía o el sector como lo escribiría una entidad ' +
+    '(p. ej. "puente peatonal", "retorno vehicular", "canalización del arroyo", "avenida ' +
+    'circunvalar"); sin nombres de empresas ni de urbanizaciones privadas, y distintas de lo que ' +
+    'escribió la persona], "fuentes": [las URL exactas de los resultados de búsqueda donde lo ' +
     'encontraste]}\n' +
     'Solo lo que digan las fuentes; si no lo encuentras, listas vacías.'
   )
@@ -361,6 +366,44 @@ export function recortesDeObra(frase, consulta = '', max = 3) {
     salida.push(...delLargo)
   }
   return salida.slice(0, max)
+}
+
+// Búsquedas completas que sugiere el puente: no el nombre oficial (eso son
+// las obras) sino cómo la entidad pudo haber escrito el objeto. Caso que las
+// motivó (oct 2026): "intercambiador vial puerta dorada" en Barranquilla. La
+// prensa traía el proyecto, pero el modelo solo dio el apodo (descartado, ver
+// repiteLaConsulta) y una empresa sin obra (descartada): ninguna sugerencia, y
+// la persona frente a "ningún contrato coincide".
+//
+// Aquí no se descarta lo que comparta palabras con la consulta —"retorno
+// vehicular avenida circunvalar" puede llevar "circunvalar"—, solo lo que la
+// repita entera o quepa dentro de ella, que no amplía nada.
+const SOLO_PALABRAS = (t) => plano(t).replace(/[^a-z0-9ñ ]+/g, ' ').replace(/\s+/g, ' ').trim()
+export function busquedasDelPuente(puente, consulta, max = 3) {
+  const c = SOLO_PALABRAS(consulta)
+  const vistas = new Set()
+  const salida = []
+  for (const b of puente?.busquedas || []) {
+    if (typeof b !== 'string') continue
+    const frase = b.replace(/\s+/g, ' ').trim()
+    const n = frase.split(' ').length
+    if (frase.length < 6 || frase.length > 60 || n < 2 || n > 6) continue
+    const p = SOLO_PALABRAS(frase)
+    if (!p || c.includes(p) || vistas.has(p)) continue
+    vistas.add(p)
+    salida.push(frase)
+  }
+  return salida.slice(0, max)
+}
+
+// Cuántos contratos del lugar nombran la frase en el objeto: una consulta por
+// escritura, con el índice, como consultasPorPista.
+export function consultasConteo(frase, lugar = {}) {
+  return [...new Set([String(frase).toLowerCase(), plano(frase)])].map((v) => ({
+    q: v,
+    select: 'count(*) as n',
+    where: `${soloContratosValidos()} AND caseless_contains(objeto_del_contrato, '${esc(v)}')${condicionLugar(lugar)}`,
+  }))
 }
 
 // Los contratos que nombran la pista, los de mayor valor primero, y solo del

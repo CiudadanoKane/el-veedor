@@ -164,16 +164,8 @@ const CAJA = 'mb-5 border-l-4 border-primary bg-textPrimary/[0.04] px-4 py-3 max
 function PuentePrensa({ consulta, lugar }) {
   const query = usePuentePrensa(consulta, lugar)
 
-  // Tarda (razona y busca en la web): mejor decir qué se está haciendo que
-  // dejar un hueco que aparece de golpe.
-  if (query.isLoading) {
-    return (
-      <p className={`${CAJA} flex items-center gap-2 text-nota text-textSecondary`}>
-        <span className="h-3 w-3 shrink-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-        Buscando en la prensa cómo se llama oficialmente lo que buscas…
-      </p>
-    )
-  }
+  // Mientras busca, el aviso va arriba, en SugerenciasBusqueda: con dos
+  // avisos iguales en pantalla parecía que buscaba dos veces.
   if (!query.isSuccess) return null
 
   const obras = query.data?.obras ?? []
