@@ -673,11 +673,12 @@ persona la hubiera escrito. La búsqueda exige la tilde exacta, así que una
 frase larga bien escrita no se buscaba nunca. Medido contra la API, en todo el
 país:
 
-| Frase bien escrita | encontraba | existen al menos |
-|---|---|---|
-| canalización y reconstrucción vial | 0 | 15 |
-| mantenimiento de vías terciarias | 185 | 533 |
-| construcción de la institución educativa | 8 | 45 |
+| Frase | encontraba | encuentra ahora | existen (bien escrita o sin tildes) |
+|---|---|---|---|
+| canalización y reconstrucción vial | 0 | 15 | 15 |
+| mantenimiento de vías terciarias | 185 | 533 | 533 |
+| construcción de la institución educativa | 8 | 48 | 45 (+3 con tildes a medias) |
+| canalizacion y reconstruccion vial (sin tildes) | 0 | 15 | — |
 
 Ahora se distingue qué palabras tienen escritura conocida —la tilde escrita, o
 la regla de -ión (canalización, construcción, gestión, región)— y cuáles no.
