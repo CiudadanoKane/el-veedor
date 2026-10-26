@@ -90,7 +90,7 @@ export function RetratoDeLugar({ lugar, generales }) {
       <Seccion titulo={`Seguir revisando ${lugar}`}>
         <div className="grid gap-3 sm:grid-cols-2 max-w-3xl">
           {[
-            ['/noticias', 'Noticias', 'Lo que la plataforma observó hoy en este ámbito.'],
+            ['/senales', 'Señales del día', 'Lo que la plataforma observó hoy en este ámbito.'],
             // El texto de cada una dice su unidad, no solo su tema: son las dos
             // que se confunden entre sí, y aquí van pegadas una debajo de otra.
             ['/alertas', 'Alertas (contratos)', 'Contratos concretos que revisar: vencidos, obras paradas y adiciones.'],

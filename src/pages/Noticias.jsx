@@ -319,8 +319,8 @@ export function Noticias() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Noticias"
-        subtitle="Observaciones que la plataforma genera automáticamente a partir de los datos de SECOP de hoy. Cada una enlaza a la evidencia para que la verifiques. Son descripciones de hechos, no juicios."
+        title="Señales del día"
+        subtitle="Observaciones que la plataforma genera automáticamente a partir de los datos de SECOP de hoy, no noticias de prensa. Cada una enlaza a la evidencia para que la verifiques. Son descripciones de hechos, no juicios."
       />
 
       {notas.length === 0 && !algoCargando ? (

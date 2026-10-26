@@ -16,7 +16,7 @@ import { SelectorTema } from './SelectorTema'
 // municipio activo en la barra de arriba.
 const NAV = [
   { to: '/', label: 'Panorama', end: true },
-  { to: '/noticias', label: 'Noticias' },
+  { to: '/senales', label: 'Señales del día' },
   { to: '/buscar', label: 'Buscador inteligente' },
   // El calificativo dice de qué está hecha cada lista: Alertas son contratos
   // uno por uno, Rankings compara actores (entidades y contratistas). Las dos
@@ -101,7 +101,7 @@ export function Sidebar({ abierto, onCerrar }) {
               to={rutaConAmbito(item.to)}
               end={item.end}
               onClick={onCerrar}
-              data-tour={item.to === '/noticias' ? 'noticias' : undefined}
+              data-tour={item.to === '/senales' ? 'senales' : undefined}
               className={({ isActive }) =>
                 `block -ml-7 pl-7 pr-3 py-2 text-cuerpo border-l-2 ${
                   isActive

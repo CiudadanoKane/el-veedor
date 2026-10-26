@@ -36,7 +36,7 @@ describe('describirRuta', () => {
     for (const [ruta, qs] of [
       ['/', ''], ['/', 'departamento=Meta'], ['/rankings', 't=ejecucion'], ['/alertas', ''],
       ['/errores', 't=fechas'], ['/buscar', 'q=vías'], ['/buscar', ''], ['/entidad/ART'],
-      ['/contratista/123'], ['/noticias'], ['/aprender'], ['/no-existe'],
+      ['/contratista/123'], ['/senales'], ['/aprender'], ['/no-existe'],
     ]) {
       const { imagen } = describirRuta(ruta, p(qs || ''))
       expect(imagen?.principal, `${ruta}?${qs || ''}`).toBeTruthy()

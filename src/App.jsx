@@ -49,7 +49,11 @@ function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
-            <Route path="noticias" element={<Noticias />} />
+            {/* "Señales del día" se llamaba "Noticias", y con la búsqueda en la
+                prensa el nombre se confundía con noticias de verdad (oct 2026).
+                La ruta vieja redirige, para no romper enlaces compartidos. */}
+            <Route path="senales" element={<Noticias />} />
+            <Route path="noticias" element={<Redirigir a="/senales" />} />
             <Route path="buscar" element={<Buscar />} />
             <Route path="alertas" element={<Alertas />} />
             <Route path="errores" element={<Errores />} />

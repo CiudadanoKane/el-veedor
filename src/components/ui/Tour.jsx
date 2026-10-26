@@ -31,7 +31,7 @@ const PASOS = [
     cuerpo: (
       <ul className="space-y-1.5">
         <li><strong className="text-textPrimary">Panorama</strong>: el resumen del país —y de tu municipio, si eliges uno arriba.</li>
-        <li><strong className="text-textPrimary">Noticias</strong>: las señales del día, ya explicadas.</li>
+        <li><strong className="text-textPrimary">Señales del día</strong>: lo que la plataforma observó hoy en los datos, ya explicado.</li>
         {/* Las dos van seguidas y con el mismo aspecto de tabla, así que la
             guía dice de qué está hecha cada una: en Alertas cada fila es un
             contrato, en Rankings cada fila es un actor. Un mismo tema
@@ -42,10 +42,10 @@ const PASOS = [
     ),
   },
   {
-    target: '[data-tour="noticias"]',
+    target: '[data-tour="senales"]',
     titulo: 'Empieza por aquí',
     cuerpo:
-      'Noticias reúne las señales más llamativas del momento, ya masticadas y con enlace a la evidencia. Es la puerta de entrada más rápida.',
+      'Señales del día reúne lo más llamativo que la plataforma observó hoy en los datos de SECOP, ya masticado y con enlace a la evidencia. Es la puerta de entrada más rápida.',
   },
   {
     // Sin "a la izquierda / al lado": eso describía el escritorio, donde

@@ -24,7 +24,9 @@ import { useFilters } from '../../context/FiltersContext'
 // más aire cada una en los 375 px de un móvil estrecho.
 const ITEMS = [
   { to: '/', label: 'Panorama', icono: 'dashboard', end: true },
-  { to: '/noticias', label: 'Noticias', icono: 'noticias' },
+  // "Señales" y no "Señales del día": la barra del teléfono no tiene ancho.
+  // El ícono de periódico quedó para la prensa, en el Buscador.
+  { to: '/senales', label: 'Señales', icono: 'calendario' },
   { to: '/alertas', label: 'Alertas', icono: 'alerta' },
   { to: '/rankings', label: 'Rankings', icono: 'rankings' },
 ]
@@ -49,7 +51,7 @@ export function NavInferior() {
             end={item.end}
             // Ancla del tour: en móvil este es el enlace visible a Noticias,
             // porque el de la barra lateral está oculto.
-            data-tour={item.to === '/noticias' ? 'noticias' : undefined}
+            data-tour={item.to === '/senales' ? 'senales' : undefined}
             className={({ isActive }) =>
               `flex-1 flex flex-col items-center gap-1 py-2 leading-none
                ${isActive ? 'text-sideActive' : 'text-sideSoft'}`

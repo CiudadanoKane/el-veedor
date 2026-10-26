@@ -63,8 +63,8 @@ const SECCIONES = {
 }
 
 const PAGINAS = {
-  '/noticias': {
-    titulo: 'Noticias de la contratación',
+  '/senales': {
+    titulo: 'Señales del día en la contratación',
     descripcion: 'Las señales más llamativas del momento en la contratación pública, explicadas y con enlace a la evidencia.',
   },
   '/aprender': {
