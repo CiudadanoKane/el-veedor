@@ -184,6 +184,19 @@ async function buscarPorVariantes(dataset, { frases, where, campoId, campos, ord
   return { filas: combinadas.slice(0, LIMITE + 1), hayMas: combinadas.length > LIMITE }
 }
 
+// $where de SECOP II: el filtro de estado (el elegido a mano, o el de
+// "contratos válidos" por defecto), más los filtros de lista y los
+// geográficos. Lo comparte la búsqueda aproximada (useBusquedaAproximada).
+export function whereSecop2(criterios, filtrosGeo) {
+  const partes2 = [condicionEstado(criterios.estados), ...rangosSecop2(criterios)]
+  for (const [clave, campo] of Object.entries(CAMPOS_LISTA)) {
+    if (criterios[clave]) partes2.push(`${campo} = '${esc(criterios[clave])}'`)
+  }
+  const segmento = segmentoValido(criterios.segmento)
+  if (segmento) partes2.push(`codigo_de_categoria_principal LIKE 'V1.${segmento}%'`)
+  return whereFromFilters(filtrosGeo, partes2).join(' AND ')
+}
+
 // Búsqueda de contratos por texto, en paralelo contra SECOP II y SECOP I.
 //
 // Usa $q, el índice de texto completo de Socrata, y NO caseless_contains. La
@@ -304,15 +317,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
         }
       }
 
-      // $where de SECOP II: el filtro de estado (el elegido a mano, o el de
-      // "contratos válidos" por defecto), más los filtros de lista y los
-      // geográficos.
-      const partes2 = [condicionEstado(criterios.estados), ...rangosSecop2(criterios)]
-      for (const [clave, campo] of Object.entries(CAMPOS_LISTA)) {
-        if (criterios[clave]) partes2.push(`${campo} = '${esc(criterios[clave])}'`)
-      }
-      if (segmento) partes2.push(`codigo_de_categoria_principal LIKE 'V1.${segmento}%'`)
-      const where2 = whereFromFilters(filtrosGeo, partes2).join(' AND ')
+      const where2 = whereSecop2(criterios, filtrosGeo)
 
       // El mismo filtro de estado/modalidad/tipo, traducido al vocabulario de
       // SECOP I (ver catalogosSecop1.js) — solo llega aquí cuando incluirSecop1

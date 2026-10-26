@@ -10,6 +10,8 @@ import { useFilters } from '../context/FiltersContext'
 import { BuscadorContratista } from '../components/ui/BuscadorContratista'
 import { BuscadorEntidad } from '../components/ui/BuscadorEntidad'
 import { useBusquedaDocumentos } from '../hooks/useBusquedaDocumentos'
+import { useBusquedaAproximada } from '../hooks/useBusquedaAproximada'
+import { palabrasClave } from '../lib/busquedaAproximada'
 import { useDirectorioEntidades, filtrarEntidades } from '../hooks/useDirectorioEntidades'
 import { useBusqueda, hayBusqueda, ORDENES, LIMITE, esIdentificador, segmentoValido } from '../hooks/useBusqueda'
 import { nombreSegmento } from '../lib/unspsc'
@@ -798,6 +800,18 @@ export function Buscar() {
     docUnicos.length === 0 && !resultados.some((r) => contieneFrase(r, criterios.texto))
   const hayMas = queryContratos.data?.hayMas || queryDocumentos.data?.hayMas
 
+  // Con todas las palabras, aunque no juntas (ver lib/busquedaAproximada.js),
+  // cuando la frase exacta encontró poco: menos de 5 contratos que la digan.
+  // Una persona describe la obra con sus palabras y no con las del contrato
+  // ("centro de vida DEL adulto mayor" / "PARA EL"), y la frase exacta la
+  // dejaba sin nada. Va aparte y rotulado: no es lo que escribió, tal cual.
+  const conLaFrase = resultados.filter((r) => contieneFrase(r, criterios.texto)).length
+  const pedirAproximada = !porId && !criterios.contratista && !cargandoContratos && !buscandoDocs &&
+    palabrasClave(criterios.texto).length >= 2 && conLaFrase < 5
+  const queryAproximada = useBusquedaAproximada(criterios, filters, pedirAproximada)
+  const idsResultados = new Set(resultados.map((r) => r.id))
+  const aproximados = (queryAproximada.data?.contratos ?? []).filter((c) => !idsResultados.has(c.id))
+
   const columns = [
     {
       key: 'entityName',
@@ -1269,8 +1283,8 @@ export function Buscar() {
                               // búsquedas sugeridas, ya arriba (SugerenciasBusqueda).
                               <details>
                                 <summary className="cursor-pointer text-lectura text-textPrimary leading-relaxed">
-                                  Ningún contrato de SECOP coincide —ni en su objeto ni en sus
-                                  documentos anexos—.{' '}
+                                  Ningún contrato de SECOP dice esa frase tal cual —ni en su objeto
+                                  ni en sus documentos anexos—.{' '}
                                   <span className="text-cuerpo text-primary font-semibold">¿Qué más probar?</span>
                                 </summary>
                                 <ul className="mt-3 space-y-2 text-lectura text-textPrimary leading-relaxed">
@@ -1336,6 +1350,34 @@ export function Buscar() {
                     }
                   </QueryState>
                 </div>
+
+                {pedirAproximada && (queryAproximada.isLoading || aproximados.length > 0) && (
+                  <section className="mt-6" aria-live="polite">
+                    <h3 className="text-titulo-3 font-display font-extrabold tracking-[-0.02em]">
+                      {queryAproximada.data?.todas === false
+                        ? 'Con casi todas las palabras'
+                        : 'Con todas las palabras, aunque no juntas'}
+                    </h3>
+                    <p className="mt-1 mb-3 text-nota text-textSecondary max-w-2xl leading-snug">
+                      No dicen «{criterios.texto}» tal cual, pero tienen{' '}
+                      {queryAproximada.data?.todas === false ? 'casi todas sus palabras' : 'todas sus palabras'} en
+                      el objeto o la descripción, en otro orden o con otras en medio. Revisa cuál es el que buscas.
+                    </p>
+                    {queryAproximada.isLoading ? (
+                      <p className="flex items-center gap-2 text-nota text-textSecondary">
+                        <span className="h-3 w-3 shrink-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                        Buscando contratos con todas las palabras…
+                      </p>
+                    ) : (
+                      <DataTable
+                        columns={columns}
+                        rows={aproximados}
+                        keyField="id"
+                        renderDetail={(row) => <ContractDetail contract={row} />}
+                      />
+                    )}
+                  </section>
+                )}
 
                 {bloquePrensa}
                 </div>
