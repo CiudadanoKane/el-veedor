@@ -1013,7 +1013,11 @@ export function Buscar() {
                 texto={criterios.texto}
                 consultaPrensa={consultaPrensa}
                 filtrosGeo={filters}
-                pocos={!queryContratos.isLoading && !buscandoDocs && (resultados.length <= 3 || sinLoBuscado)}
+                // La prensa entera arriba mientras no se sepa que hay muchos
+                // contratos: SECOP puede tardar más de un minuto (medido oct
+                // 2026, "intercambiador vial puerta dorada": 72 consultas, 70 s),
+                // y la prensa llega en 8.
+                pocos={!(resultados.length > 3 && !sinLoBuscado)}
               />
             )}
 
