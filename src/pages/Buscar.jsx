@@ -1186,7 +1186,12 @@ export function Buscar() {
                   al indicador de Alertas que más se acerca. Cuando lo
                   buscado es un concepto, la IA también <strong>amplía a términos relacionados</strong>{' '}
                   («puente» además de «viaducto»), que aparecen como etiquetas quitables bajo la
-                  caja. Se muestran hasta <strong>{LIMITE}</strong> resultados.{' '}
+                  caja. Con una <strong>ciudad</strong> elegida salen también los contratos del
+                  departamento que la nombran en su objeto: SECOP registra la ciudad de la entidad, no
+                  la de la obra, y una gobernación contrata para sus municipios desde la capital. Si la
+                  frase exacta encuentra poco, debajo van los contratos que tienen{' '}
+                  <strong>todas las palabras, aunque no juntas</strong>. Se muestran hasta{' '}
+                  <strong>{LIMITE}</strong> resultados.{' '}
                   <strong>Pulsa un contrato</strong> para ver el detalle.
                   <br />
                   <br />

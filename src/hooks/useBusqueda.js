@@ -6,7 +6,7 @@ import {
   soloContratosValidosSecop1, valorCoherenteConElPresupuestoSecop1, cuantiaPosibleSecop1, condicionEstadoSecop1, whereFromFiltrosSecop1,
   rangoNumerico, rangoValorSecop1, rangoFecha,
 } from '../lib/soql'
-import { variantesDeFrase, variantesReducidas, tieneTextoBuscable, palabrasDeFrase, pluralDeFrase } from '../lib/acentos'
+import { variantesDeFrase, variantesReducidas, tieneTextoBuscable, palabrasDeFrase, pluralDeFrase, sinTildes } from '../lib/acentos'
 import { adaptList as adaptListSecop2 } from '../adapters/secop2Adapter'
 import { adaptList as adaptListSecop1 } from '../adapters/secop1Adapter'
 import { MODALIDAD_A_SECOP1, TIPO_A_SECOP1, ESTADO_A_SECOP1 } from '../lib/catalogosSecop1'
@@ -187,14 +187,38 @@ async function buscarPorVariantes(dataset, { frases, where, campoId, campos, ord
 // $where de SECOP II: el filtro de estado (el elegido a mano, o el de
 // "contratos válidos" por defecto), más los filtros de lista y los
 // geográficos. Lo comparte la búsqueda aproximada (useBusquedaAproximada).
-export function whereSecop2(criterios, filtrosGeo) {
+//
+// `conTexto`: hay algo escrito que buscar, y entonces la ciudad elegida vale
+// como lugar de la OBRA y no solo de la entidad (ver condicionLugarDeLaObra).
+export function whereSecop2(criterios, filtrosGeo, { conTexto = false } = {}) {
   const partes2 = [condicionEstado(criterios.estados), ...rangosSecop2(criterios)]
   for (const [clave, campo] of Object.entries(CAMPOS_LISTA)) {
     if (criterios[clave]) partes2.push(`${campo} = '${esc(criterios[clave])}'`)
   }
   const segmento = segmentoValido(criterios.segmento)
   if (segmento) partes2.push(`codigo_de_categoria_principal LIKE 'V1.${segmento}%'`)
+  if (conTexto && filtrosGeo.city) {
+    return [
+      ...whereFromFilters({ ...filtrosGeo, city: '' }, partes2),
+      condicionLugarDeLaObra(filtrosGeo.city),
+    ].join(' AND ')
+  }
   return whereFromFilters(filtrosGeo, partes2).join(' AND ')
+}
+
+// La ciudad de un contrato en SECOP es la de la ENTIDAD, no la de la obra. Una
+// gobernación contrata para sus municipios desde la capital (o con ciudad "No
+// Definido"): la pavimentación de Fresno la firmó la Gobernación del Tolima, y
+// buscar "pavimentación en Fresno" con ciudad = Fresno no la encontraba (oct
+// 2026; igual Honda, Paipa, La Apartada). Con texto, la ciudad elegida admite
+// también los contratos del departamento que la nombran en el objeto. El
+// departamento sí se exige: hay municipios homónimos en varios ("Argelia").
+// Sin costo medible: el filtro corre sobre lo que ya acotó el índice de texto
+// (0,3-0,7 s, medido).
+function condicionLugarDeLaObra(ciudad) {
+  const nombre = ciudad.toLowerCase()
+  const nombres = [...new Set([nombre, sinTildes(nombre)])]
+  return `(ciudad = '${esc(ciudad)}' OR ${nombres.map((n) => `caseless_contains(objeto_del_contrato, '${esc(n)}')`).join(' OR ')})`
 }
 
 // Búsqueda de contratos por texto, en paralelo contra SECOP II y SECOP I.
@@ -317,7 +341,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
         }
       }
 
-      const where2 = whereSecop2(criterios, filtrosGeo)
+      const where2 = whereSecop2(criterios, filtrosGeo, { conTexto: frases.length > 0 })
 
       // El mismo filtro de estado/modalidad/tipo, traducido al vocabulario de
       // SECOP I (ver catalogosSecop1.js) — solo llega aquí cuando incluirSecop1

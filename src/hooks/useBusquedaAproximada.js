@@ -22,7 +22,7 @@ export function useBusquedaAproximada(criterios = {}, filtrosGeo = {}, activa = 
     queryKey: ['busqueda-aproximada', criterios, filtrosGeo],
     staleTime: 30 * 60 * 1000,
     queryFn: async () => {
-      const where = whereSecop2(criterios, filtrosGeo)
+      const where = whereSecop2(criterios, filtrosGeo, { conTexto: true })
       const opciones = { select: CONTRACT_FIELDS, order: orden, limit: LIMITE + 1 }
       const pedir = (consultas) => Promise.all(consultas.map((c) => socrataBusqueda(DATASETS.CONTRATOS, c)))
       const unir = (listas) => [...new Map(listas.flat().map((f) => [f.id_contrato, f])).values()]
