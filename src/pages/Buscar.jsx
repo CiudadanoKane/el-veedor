@@ -926,9 +926,13 @@ export function Buscar() {
               Encontrado en: {r.coincideEn}
             </div>
           )}
+          {/* Un solo archivo, en una línea: los nombres de los anexos son
+              largos ("QUILLA-2026-0307080. Sec. Gral cambio de supervisor…"),
+              y con dos o tres la tarjeta se volvía un párrafo de ruido. */}
           {r.documentos?.length > 0 && (
-            <div className="mt-1 text-micro text-primary">
-              Encontrado en: {r.documentos.join(' · ')}
+            <div className="mt-1 text-micro text-primary truncate" title={r.documentos.join(' · ')}>
+              Encontrado en: {r.documentos[0]}
+              {r.documentos.length > 1 && ` y ${r.documentos.length - 1} archivo${r.documentos.length > 2 ? 's' : ''} más`}
             </div>
           )}
         </div>
