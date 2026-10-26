@@ -3,7 +3,7 @@ import {
   extraerArreglo, resultadosReales, limpiarResultados, fechaDeAntiguedad, pareceProceso,
   variantesProceso, coincideEntidad, pareceTitular, sinMedioAlFinal,
   pareceNombreObra, pistasDelPuente, busquedaFallida, nucleoDeContratista, extraerObjeto, soqlContratosPorPista,
-  separarResumen,
+  separarResumen, recortesDeObra,
 } from './busquedaWeb'
 
 const bloques = [
@@ -169,5 +169,22 @@ describe('separarResumen', () => {
   it('sin marca, o con un resumen vacío, no hay resumen', () => {
     expect(separarResumen('[{"url":"u"}]')).toEqual({ resto: '[{"url":"u"}]', resumen: null })
     expect(separarResumen('[]\n**RESUMEN:** ').resumen).toBeNull()
+  })
+})
+
+describe('recortesDeObra', () => {
+  it('recorta por los bordes el nombre que resumió la prensa, el más largo primero', () => {
+    // SECOP: "CANALIZACIÓN Y RECONSTRUCCIÓN VIAL DEL ARROYO DE LA CALLE 85".
+    expect(recortesDeObra('Canalización arroyo de la calle 85', 'arroyo 85 Barranquilla')[0]).toBe('arroyo de la calle 85')
+  })
+
+  it('no deja pedazos que ya no nombran la obra', () => {
+    expect(recortesDeObra('Mejoramiento de la Gran Vía de Barranquilla', 'la gran vía')).toEqual([])
+    expect(recortesDeObra('Corredor Universitario')).toEqual([])
+  })
+
+  it('no vuelve al apodo que ya se buscó', () => {
+    expect(recortesDeObra('construcción del túnel peatonal de Caribe Verde', 'túnel peatonal')
+      .some((r) => r.toLowerCase().includes('túnel peatonal'))).toBe(false)
   })
 })

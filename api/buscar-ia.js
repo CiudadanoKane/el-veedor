@@ -6,7 +6,7 @@ import { socrataQuery } from '../src/lib/socrataClient.js'
 import { condicionProcesosPorReferencia } from '../src/lib/busquedaId.js'
 import {
   MODELO_WEB, DOMINIOS_WEB, promptWeb, extraerArreglo, resultadosReales,
-  limpiarResultados, separarResumen, variantesProceso, coincideEntidad, promptPuente, extraerObjeto, pistasDelPuente, busquedaFallida,
+  limpiarResultados, separarResumen, variantesProceso, coincideEntidad, promptPuente, extraerObjeto, pistasDelPuente, recortesDeObra, busquedaFallida,
   soqlContratosPorPista,
 } from '../src/lib/busquedaWeb.js'
 
@@ -447,10 +447,20 @@ async function puenteAlContrato(req, res) {
   const pistas = pistasDelPuente(puente, consulta)
   const obras = (await Promise.all(pistas.map(async (pista) => {
     try {
-      const filas = await socrataQuery(DS_CONTRATOS, soqlContratosPorPista(pista, LIMITE_OBRA, lugar))
-      if (!filas.length) return null
+      // El nombre de una obra, entero y recortado por los bordes, todo a la
+      // vez: cada consulta tarda hasta 10 s sin caché, y en serie no cabrían
+      // en los 30 s. Gana el más largo que SECOP tenga (ver recortesDeObra).
+      const frases = pista.tipo === 'obra' ? [pista.frase, ...recortesDeObra(pista.frase, consulta)] : [pista.frase]
+      const intentos = await Promise.all(frases.map((frase) =>
+        socrataQuery(DS_CONTRATOS, soqlContratosPorPista({ ...pista, frase }, LIMITE_OBRA, lugar)).catch(() => []),
+      ))
+      const k = intentos.findIndex((f) => f.length)
+      if (k < 0) return null
+      const filas = intentos[k]
       return {
         ...pista,
+        frase: frases[k],
+        ...(k > 0 && { recorteDe: pista.frase }),
         hayMas: filas.length > LIMITE_OBRA,
         contratos: filas.slice(0, LIMITE_OBRA).map((f) => ({
           id: f.id_contrato,

@@ -325,6 +325,44 @@ export function pistasDelPuente(puente, consulta, max = 3) {
   return salida.slice(0, max)
 }
 
+// La prensa resume el nombre oficial y se come palabras: "Canalización arroyo
+// de la calle 85" es, en SECOP, "CANALIZACIÓN Y RECONSTRUCCIÓN VIAL DEL ARROYO
+// DE LA CALLE 85". La frase entera no aparece, y la pista se perdía (oct
+// 2026). Si no aparece, se prueban recortes por los bordes, del más largo al
+// más corto: quitar palabras de un extremo conserva el orden del resto, que es
+// lo que tiene que coincidir. Sin conectores en las puntas ("de la calle 85" →
+// "calle 85"), con al menos tres palabras y dos que no sean conectores: más
+// corto ya no es un nombre sino una palabra clave. Y que conserve dos tercios
+// de las palabras con contenido: "Mejoramiento de la Gran Vía de Barranquilla"
+// no puede quedar en "Vía de Barranquilla", que nombra a cualquier obra. Ante
+// igual largo, primero el que conserva un número, que distingue una obra de
+// otra.
+const PUNTAS = new Set([...VACIAS, 'sobre', 'entre', 'desde', 'hasta', 'hacia', 'sector'])
+export function recortesDeObra(frase, consulta = '', max = 3) {
+  const palabras = String(frase || '').trim().split(/\s+/).filter(Boolean)
+  const vacia = (p) => PUNTAS.has(plano(p))
+  const conContenido = (ps) => ps.filter((p) => !vacia(p)).length
+  const minimo = Math.max(2, Math.ceil((conContenido(palabras) * 2) / 3))
+  const salida = []
+  for (let quitar = 1; quitar <= palabras.length - 3; quitar++) {
+    const delLargo = []
+    for (let inicio = 0; inicio <= quitar; inicio++) {
+      let tramo = palabras.slice(inicio, palabras.length - (quitar - inicio))
+      while (tramo.length && vacia(tramo[0])) tramo = tramo.slice(1)
+      while (tramo.length && vacia(tramo[tramo.length - 1])) tramo = tramo.slice(0, -1)
+      if (tramo.length < 3 || conContenido(tramo) < minimo) continue
+      const t = tramo.join(' ')
+      // Un recorte que vuelve al apodo ("Gran Vía de Barranquilla") no sirve:
+      // eso ya se buscó.
+      if (repiteLaConsulta(t, consulta)) continue
+      if (!salida.includes(t) && !delLargo.includes(t)) delLargo.push(t)
+    }
+    delLargo.sort((a, b) => b.split(' ').length - a.split(' ').length || /\d/.test(b) - /\d/.test(a))
+    salida.push(...delLargo)
+  }
+  return salida.slice(0, max)
+}
+
 // Los contratos que nombran la pista, los de mayor valor primero, y solo del
 // lugar que se está mirando: sin eso, "alimentación escolar en Cali" traía el
 // PAE de Boyacá y de Bogotá, de cientos de miles de millones, como "lo que

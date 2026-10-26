@@ -53,7 +53,9 @@ export function SugerenciasBusqueda({ consultaPrensa, texto, filtrosGeo }) {
       agregar({
         clave: o.frase,
         etiqueta: `«${o.frase}»`,
-        detalle: `nombre oficial ${segun} · ${cuantos(o)}`,
+        // Si la frase entera no estaba en SECOP, lo que se encontró es un
+        // recorte suyo (ver recortesDeObra): se dice.
+        detalle: `${o.recorteDe ? 'parte del nombre oficial' : 'nombre oficial'} ${segun} · ${cuantos(o)}`,
         href: `/buscar?${conLugar(new URLSearchParams({ q: o.frase }))}`,
       })
     } else {

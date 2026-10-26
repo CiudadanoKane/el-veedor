@@ -719,6 +719,19 @@ que dicen las fuentes, dijeron lo que no informan ("no informan sobre el avance
 actual") y señalaron contradicciones (la longitud del túnel, 200 o 270 m). Sin
 resultados reales no se devuelve resumen.
 
+**El nombre que da la prensa, recortado si hace falta (26 oct).** En la
+verificación, "arroyo 85" no sugirió la obra: la prensa la llamó
+«Canalización arroyo de la calle 85», resumiendo el nombre que SECOP registra
+como "CANALIZACIÓN Y RECONSTRUCCIÓN VIAL DEL ARROYO DE LA CALLE 85". La frase
+entera no aparece, y la pista se descartaba. Ahora el puente prueba también
+recortes por los bordes (`recortesDeObra`), que conservan al menos dos tercios
+de las palabras con contenido y no vuelven al apodo, y se queda con el más
+largo que SECOP tenga: «arroyo de la calle 85», 5 o más contratos. Van en
+paralelo con la frase entera porque cada consulta tarda hasta 10 s sin caché
+(medido: 10,4 s las tres juntas, 9,0 s la frase sola). La sugerencia dice
+"parte del nombre oficial". Límite: el puente ya rozaba los 30 s en el peor
+caso (24 s del modelo más la consulta), y esto no lo mejora.
+
 ### Modo oscuro automático (oct 2026)
 
 Decisión: el tema principal sigue siendo claro —la plataforma es lectura
