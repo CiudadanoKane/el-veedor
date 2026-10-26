@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   extraerArreglo, resultadosReales, limpiarResultados, fechaDeAntiguedad, pareceProceso,
   variantesProceso, coincideEntidad, pareceTitular, sinMedioAlFinal,
-  pareceNombreObra, pistasDelPuente, busquedaFallida, nucleoDeContratista, extraerObjeto, soqlContratosPorPista,
+  pareceNombreObra, pistasDelPuente, busquedaFallida, nucleoDeContratista, extraerObjeto, consultasPorPista,
   separarResumen, recortesDeObra,
 } from './busquedaWeb'
 
@@ -111,9 +111,10 @@ describe('el puente del apodo al contrato', () => {
     expect(conObra[0]).toEqual({
       tipo: 'empresa', frase: 'construcciones el condor', nombre: 'Construcciones El Cóndor', obra: 'Túnel Guillermo Gaviria',
     })
-    const q = soqlContratosPorPista(conObra[0])
-    expect(q).toContain("caseless_contains(proveedor_adjudicado, 'construcciones el condor')")
-    expect(q).toContain("caseless_contains(objeto_del_contrato, 'tunel guillermo gaviria')")
+    const consultas = consultasPorPista(conObra[0])
+    expect(consultas.map((c) => c.q)).toEqual(['túnel guillermo gaviria', 'tunel guillermo gaviria'])
+    expect(consultas[1].where).toContain("caseless_contains(proveedor_adjudicado, 'construcciones el condor')")
+    expect(consultas[1].where).toContain("caseless_contains(objeto_del_contrato, 'tunel guillermo gaviria')")
   })
 
   it('tolera texto alrededor del objeto', () => {
@@ -121,21 +122,27 @@ describe('el puente del apodo al contrato', () => {
     expect(extraerObjeto('nada')).toEqual({})
   })
 
-  it('busca la obra en el objeto y el contratista en el proveedor, con y sin tildes', () => {
-    const obra = soqlContratosPorPista({ tipo: 'obra', frase: 'Vía al Mar' })
-    expect(obra).toContain("caseless_contains(objeto_del_contrato, 'vía al mar')")
-    expect(obra).toContain("caseless_contains(objeto_del_contrato, 'via al mar')")
-    const consorcio = soqlContratosPorPista({ tipo: 'contratista', frase: "d'vial" })
-    expect(consorcio).toContain("caseless_starts_with(proveedor_adjudicado, 'consorcio d''vial')")
-    expect(consorcio).toContain("caseless_starts_with(proveedor_adjudicado, 'ut d''vial')")
-    expect(consorcio).not.toContain('caseless_contains(proveedor_adjudicado')
+  it('busca la obra en el objeto, con el índice y con y sin tildes', () => {
+    const obra = consultasPorPista({ tipo: 'obra', frase: 'Vía al Mar' })
+    expect(obra.map((c) => c.q)).toEqual(['vía al mar', 'via al mar'])
+    expect(obra[0].where).toContain("caseless_contains(objeto_del_contrato, 'vía al mar')")
+    expect(obra[1].where).toContain("caseless_contains(objeto_del_contrato, 'via al mar')")
+  })
+
+  it('busca el consorcio por el comienzo del nombre, sin índice de texto', () => {
+    const [consorcio] = consultasPorPista({ tipo: 'contratista', frase: "d'vial" })
+    expect(consorcio.q).toBeUndefined()
+    expect(consorcio.where).toContain("caseless_starts_with(proveedor_adjudicado, 'consorcio d''vial')")
+    expect(consorcio.where).toContain("caseless_starts_with(proveedor_adjudicado, 'ut d''vial')")
+    expect(consorcio.where).not.toContain('caseless_contains(proveedor_adjudicado')
   })
 
   it('se limita al lugar que se está mirando', () => {
-    const q = soqlContratosPorPista({ tipo: 'obra', frase: 'alimentación escolar' }, 4, {
+    const [q] = consultasPorPista({ tipo: 'obra', frase: 'alimentación escolar' }, 4, {
       departamento: 'Valle del Cauca', ciudad: 'Cali',
     })
-    expect(q).toContain("AND departamento = 'Valle del Cauca' AND ciudad = 'Cali'")
+    expect(q.where).toContain("AND departamento = 'Valle del Cauca' AND ciudad = 'Cali'")
+    expect(q.limit).toBe(5)
   })
 })
 

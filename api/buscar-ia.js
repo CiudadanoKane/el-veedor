@@ -2,12 +2,12 @@ import Anthropic from '@anthropic-ai/sdk'
 import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO } from '../src/lib/catalogos.js'
 import { mencionaTipo, mencionaModalidad } from '../src/lib/mencionesIA.js'
 import { excedeLimite } from '../src/lib/limiteTasa.js'
-import { socrataQuery } from '../src/lib/socrataClient.js'
+import { socrataQuery, socrataBusqueda } from '../src/lib/socrataClient.js'
 import { condicionProcesosPorReferencia } from '../src/lib/busquedaId.js'
 import {
   MODELO_WEB, DOMINIOS_WEB, promptWeb, extraerArreglo, resultadosReales,
   limpiarResultados, separarResumen, variantesProceso, coincideEntidad, promptPuente, extraerObjeto, pistasDelPuente, recortesDeObra, busquedaFallida,
-  soqlContratosPorPista,
+  consultasPorPista,
 } from '../src/lib/busquedaWeb.js'
 
 const client = new Anthropic()
@@ -452,8 +452,7 @@ async function puenteAlContrato(req, res) {
       // vez: cada consulta tarda hasta 10 s sin caché, y en serie no cabrían
       // en los 30 s. Gana el más largo que SECOP tenga (ver recortesDeObra).
       const frases = pista.tipo === 'obra' ? [pista.frase, ...recortesDeObra(pista.frase, consulta)] : [pista.frase]
-      const buscar = (frase) =>
-        socrataQuery(DS_CONTRATOS, soqlContratosPorPista({ ...pista, frase }, LIMITE_OBRA, lugar)).catch(() => null)
+      const buscar = (frase) => contratosPorPista({ ...pista, frase }, lugar, inicio)
       const intentos = await Promise.all(frases.map(buscar))
       // Una consulta que falló no es una que no encontró: en la verificación,
       // la frase entera falló, el recorte ganó, y se sugirió «Canalización y
@@ -485,6 +484,31 @@ async function puenteAlContrato(req, res) {
   // Las pistas van también en la respuesta: lo que se buscó en SECOP, aunque
   // no diera nada, para poder revisar por qué un puente falló.
   return responderWeb(res, { obras, fuentes, pistas })
+}
+
+// Los contratos de una pista: una consulta por escritura (con y sin tildes),
+// juntas y ordenadas por valor. null si falló, que no es lo mismo que [] (no
+// encontró). Con tope: lo que no llegue antes de los 28 s de la función cuenta
+// como fallido, para responder con lo que haya en vez de que Vercel corte a los
+// 30 s y la persona no reciba nada (medido oct 2026: 3 de 4 puentes con 504).
+const TOPE_PUENTE_MS = 28_000
+async function contratosPorPista(pista, lugar, inicio) {
+  const restante = TOPE_PUENTE_MS - (Date.now() - inicio)
+  if (restante <= 0) return null
+  const consultas = consultasPorPista(pista, LIMITE_OBRA, lugar)
+  const todas = Promise.all(consultas.map((c) => socrataBusqueda(DS_CONTRATOS, c)))
+  const tope = new Promise((resolve) => setTimeout(() => resolve(null), restante))
+  try {
+    const listas = await Promise.race([todas, tope])
+    if (!listas) return null
+    const porId = new Map()
+    for (const f of listas.flat()) porId.set(f.id_contrato, f)
+    return [...porId.values()]
+      .sort((a, b) => (Number(b.valor_del_contrato) || 0) - (Number(a.valor_del_contrato) || 0))
+      .slice(0, LIMITE_OBRA + 1)
+  } catch {
+    return null
+  }
 }
 
 // El número de proceso que menciona una noticia, comprobado en SECOP. Un número

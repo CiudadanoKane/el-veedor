@@ -373,20 +373,30 @@ export function recortesDeObra(frase, consulta = '', max = 3) {
 // barranquilla" en cualquier parte traía también al "CONSORCIO DESARROLLO VIAL
 // BARRANQUILLA", que es otra obra.
 const FIGURAS = ['consorcio ', 'union temporal ', 'unión temporal ', 'ut ', 'u.t. ']
-export function soqlContratosPorPista({ tipo, frase, obra }, limite = 4, lugar = {}) {
-  let texto
-  if (tipo === 'obra') texto = contiene('objeto_del_contrato', frase)
-  else if (tipo === 'contratista') {
-    texto = [...new Set([String(frase).toLowerCase(), plano(frase)])]
+
+// Con el índice de texto ($q) como prefiltro, como el Buscador: con
+// caseless_contains solo, cada consulta tardaba hasta 10 s sin caché, y en la
+// medición de oct 2026 el puente pasó de los 30 s de la función en 3 de 4
+// búsquedas (504). Con $q, 0,2-0,3 s y los mismos contratos. $q distingue
+// tildes como caseless_contains, así que va una consulta por escritura.
+const CAMPOS_PISTA = 'id_contrato, referencia_del_contrato, nombre_entidad, proveedor_adjudicado, objeto_del_contrato, valor_del_contrato, fecha_de_firma'
+export function consultasPorPista({ tipo, frase, obra }, limite = 4, lugar = {}) {
+  const base = { select: CAMPOS_PISTA, order: 'valor_del_contrato DESC', limit: limite + 1 }
+  const donde = (texto) => `${soloContratosValidos()} AND (${texto})${condicionLugar(lugar)}`
+  const escrituras = (t) => [...new Set([String(t).toLowerCase(), plano(t)])]
+  if (tipo === 'contratista') {
+    // caseless_starts_with ya usa el índice del campo: no necesita $q.
+    const texto = escrituras(frase)
       .flatMap((v) => FIGURAS.map((f) => `caseless_starts_with(proveedor_adjudicado, '${esc(f + v)}')`))
       .join(' OR ')
-  } else {
-    texto = `(${contiene('proveedor_adjudicado', frase)}) AND (${contiene('objeto_del_contrato', obra)})`
+    return [{ ...base, where: donde(texto) }]
   }
-  return `SELECT id_contrato, referencia_del_contrato, nombre_entidad, proveedor_adjudicado,
-    objeto_del_contrato, valor_del_contrato, fecha_de_firma
-    WHERE ${soloContratosValidos()} AND (${texto})${condicionLugar(lugar)}
-    ORDER BY valor_del_contrato DESC LIMIT ${limite + 1}`
+  const proveedor = tipo === 'empresa' ? `(${contiene('proveedor_adjudicado', frase)}) AND ` : ''
+  return escrituras(tipo === 'obra' ? frase : obra).map((v) => ({
+    ...base,
+    q: v,
+    where: donde(`${proveedor}caseless_contains(objeto_del_contrato, '${esc(v)}')`),
+  }))
 }
 
 function contiene(campo, frase) {

@@ -17,7 +17,6 @@
 // avance queda en `window.__medicion` (y en localStorage), y al terminar,
 // `resumenMedicion(window.__medicion)` da la tabla.
 
-/* eslint-disable no-undef */
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const OCUPADO = /Interpretando…|Buscando|Cargando|Revisando también/
