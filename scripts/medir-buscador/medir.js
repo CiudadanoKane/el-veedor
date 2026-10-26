@@ -44,8 +44,18 @@ async function medirCaso(caso, { maxMs = 90_000 } = {}) {
     if (estable >= 2) break
   }
 
+  // La lista va de a 10 (ver DataTable): se despliega entera para saber en
+  // qué puesto quedó el contrato, aunque no esté entre los primeros. "En los
+  // 10 primeros" es lo que se ve sin pulsar nada.
   const d = iframe.contentDocument
   const w = iframe.contentWindow
+  const visiblesSinPulsar = [...d.querySelectorAll('[data-fila]')].map((e) => e.dataset.fila)
+  for (let i = 0; i < 12; i++) {
+    const boton = [...d.querySelectorAll('button')].find((b) => /^Ver \d+ más/.test(b.textContent.trim()))
+    if (!boton) break
+    boton.click()
+    await dormir(300)
+  }
   const texto = d.body.innerText
   const filas = [...new Set([...d.querySelectorAll('[data-fila]')].map((e) => e.dataset.fila))]
   const posiciones = caso.contratos.map((c) => filas.indexOf(c)).filter((i) => i >= 0)
@@ -73,6 +83,7 @@ async function medirCaso(caso, { maxMs = 90_000 } = {}) {
     posicion,
     total: filas.length,
     porPrensa,
+    aLaVista: caso.contratos.some((c) => visiblesSinPulsar.includes(c)),
     segundosHastaAcierto: primeraVez === null ? null : Math.round(primeraVez / 1000),
     segundosTotal: Math.round((performance.now() - t0) / 1000),
     interpretacion: params,

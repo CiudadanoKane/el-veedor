@@ -25,10 +25,12 @@ import { useContratosMarco } from '../hooks/useContratosMarco'
 import { AdjudicadosSinContrato } from '../components/ui/AdjudicadosSinContrato'
 import { SugerenciasBusqueda } from '../components/ui/SugerenciasBusqueda'
 import { PanelPrensa } from '../components/ui/PanelPrensa'
+import { useBusquedaWeb } from '../hooks/useBusquedaWeb'
+import { Icon } from '../components/ui/Icon'
 import { resolverLugar } from '../lib/geoResolver'
 import { formatCOP, formatDate } from '../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
-import { ResultadosWeb, ResumenPrensa } from '../components/ui/ResultadosWeb'
+import { ResultadosWeb, ResumenPrensa, ID_PRENSA } from '../components/ui/ResultadosWeb'
 import { esMovilAhora } from '../hooks/useEsMovil'
 import { PESTANAS_ALERTAS } from '../lib/pestanas'
 
@@ -793,6 +795,11 @@ export function Buscar() {
       ].filter(Boolean).join(' ')
     : ''
   const lugarPrensa = { departamento: filters.department, ciudad: filters.city }
+  // Cuántas noticias hay, para el acceso junto al título de los resultados (la
+  // misma consulta que la sección de prensa: no cuesta otra llamada).
+  const noticiasPrensa = useBusquedaWeb(consultaPrensa).data?.resultados?.length ?? 0
+  const irAPrensa = () =>
+    document.getElementById(ID_PRENSA)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   const bloquePrensa = consultaPrensa && <ResultadosWeb consulta={consultaPrensa} />
   const hayLocales = resultados.some((r) => (r.prioridadLugar ?? 2) < 2)
   // Contratos marco entre los resultados (ver lib/contratoMarco.js): un solo
@@ -1203,11 +1210,27 @@ export function Buscar() {
                   <h2 className="font-display font-extrabold text-titulo-3 tracking-[-0.02em]">
                     {entidadPendiente ? `Mientras eliges: todo ${lugarFiltro || 'el país'}` : 'Resultados'}
                   </h2>
-                  <Segmented
-                    value={criterios.orden}
-                    onChange={(v) => actualizar({ orden: v })}
-                    options={Object.entries(ORDENES).map(([v, o]) => ({ value: v, label: o.label }))}
-                  />
+                  <div className="flex flex-wrap items-center gap-3">
+                    {/* La sección de prensa va al final de la lista, y con
+                        muchos contratos nadie llegaba a ella ("contrato arroyo
+                        85 barranquilla", oct 2026): un acceso a la vista. */}
+                    {noticiasPrensa > 0 && (
+                      <button
+                        type="button"
+                        onClick={irAPrensa}
+                        className="toque inline-flex items-center gap-1.5 border border-primary px-3 py-1.5
+                                   text-nota font-semibold text-primary hover:bg-primary hover:text-bg transition-colors"
+                      >
+                        <Icon name="noticias" className="h-4 w-4" />
+                        {noticiasPrensa} noticia{noticiasPrensa === 1 ? '' : 's'} en la prensa ↓
+                      </button>
+                    )}
+                    <Segmented
+                      value={criterios.orden}
+                      onChange={(v) => actualizar({ orden: v })}
+                      options={Object.entries(ORDENES).map(([v, o]) => ({ value: v, label: o.label }))}
+                    />
+                  </div>
                 </div>
 
                 <Methodology>
@@ -1392,10 +1415,14 @@ export function Buscar() {
                               todas sus palabras, aunque no juntas; después, los de términos relacionados.
                             </p>
                           )}
+                          {/* De a 10: con 100 contratos, la prensa quedaba a 30
+                              pantallas, y casi siempre el que se busca está entre
+                              los primeros (ver el orden por niveles en `lista`). */}
                           <DataTable
                             columns={columns}
                             rows={lista}
                             keyField="id"
+                            tanda={10}
                             renderDetail={(row) => <ContractDetail contract={row} />}
                           />
                           {buscandoAproximados && (

@@ -17,8 +17,11 @@ function normalizarColumna(c) {
   return { ...c, className: `${c.className} whitespace-nowrap` }
 }
 
-export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', renderDetail }) {
+// `tanda`: en escritorio, mostrar de a tantas filas, con un botón para ver
+// más (en el teléfono las tarjetas ya van de a TANDA). Sin ella, todas.
+export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', renderDetail, tanda }) {
   const [openKey, setOpenKey] = useState(null)
+  const [filasVisibles, quedanEnTabla, verMasEnTabla] = useTanda(rows, keyField, tanda ?? Infinity)
   const esMovil = useEsMovil()
   const columns = columnasCrudas.map(normalizarColumna)
   const expandable = typeof renderDetail === 'function'
@@ -87,7 +90,7 @@ export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', rend
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, i) => {
+            {filasVisibles.map((row, i) => {
               // Clave garantizada única (evita colisiones si el dato se repite)
               const key = `${row[keyField] ?? 'row'}-${i}`
               const isOpen = openKey === key
@@ -147,6 +150,7 @@ export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', rend
           </tbody>
         </table>
       </div>
+      {quedanEnTabla > 0 && <BotonVerMas quedan={quedanEnTabla} tanda={tanda} onClick={verMasEnTabla} />}
     </div>
   )
 }
@@ -168,16 +172,10 @@ function Tarjetas({ columns, rows, keyField, renderDetail, openKey, toggle, regi
   const [titulo, ...resto] = datos
   const celda = (c, row) => (c.render ? c.render(row) : row[c.key] ?? '—')
 
-  // De a TANDA tarjetas. Una tarjeta ocupa lo que tres filas de tabla: los 140
-  // resultados de una búsqueda medían 38.000 px, unas 45 pantallas de
-  // pulgar. Una lista nueva (otra búsqueda, otra pestaña) vuelve a empezar.
-  // Se compara por firma y no por referencia: varias páginas rearman `rows`
-  // en cada render, y con [rows] cualquier re-render del padre devolvería la
-  // lista a 20 justo después de pedir más.
-  const [visibles, setVisibles] = useState(TANDA)
-  const firma = `${rows.length}|${rows[0]?.[keyField] ?? ''}`
-  useEffect(() => setVisibles(TANDA), [firma])
-  const quedan = rows.length - visibles
+  // De a TANDA tarjetas (ver useTanda). Una tarjeta ocupa lo que tres filas
+  // de tabla: los 140 resultados de una búsqueda medían 38.000 px, unas 45
+  // pantallas de pulgar.
+  const [visiblesRows, quedan, verMas] = useTanda(rows, keyField, TANDA)
 
   return (
     <>
@@ -186,7 +184,7 @@ function Tarjetas({ columns, rows, keyField, renderDetail, openKey, toggle, regi
         teléfono no se distinguía dónde terminaba un contrato y empezaba el
         siguiente: sin columnas alineadas, la línea sola no arma lectura. */}
     <ul className="space-y-3">
-      {rows.slice(0, visibles).map((row, i) => {
+      {visiblesRows.map((row, i) => {
         const key = `${row[keyField] ?? 'row'}-${i}`
         const isOpen = openKey === key
         return (
@@ -269,16 +267,7 @@ function Tarjetas({ columns, rows, keyField, renderDetail, openKey, toggle, regi
         )
       })}
     </ul>
-    {quedan > 0 && (
-      <button
-        type="button"
-        onClick={() => setVisibles((v) => v + TANDA)}
-        className="mt-4 w-full min-h-[44px] border border-textPrimary text-cuerpo font-semibold
-                   hover:bg-textPrimary hover:text-bg transition-colors"
-      >
-        Ver {Math.min(TANDA, quedan)} más · quedan {quedan.toLocaleString('es-CO')}
-      </button>
-    )}
+    {quedan > 0 && <BotonVerMas quedan={quedan} tanda={TANDA} onClick={verMas} />}
     </>
   )
 }
@@ -286,6 +275,30 @@ function Tarjetas({ columns, rows, keyField, renderDetail, openKey, toggle, regi
 // 10 y no 20: una tarjeta mide 280-320 px, así que 20 eran unas 8 pantallas
 // antes de llegar al botón.
 const TANDA = 10
+
+// De a `tanda` filas. Una lista nueva (otra búsqueda, otra pestaña) vuelve a
+// empezar. Se compara por firma y no por referencia: varias páginas rearman
+// `rows` en cada render, y con [rows] cualquier re-render del padre devolvería
+// la lista al comienzo justo después de pedir más.
+function useTanda(rows, keyField, tanda) {
+  const [visibles, setVisibles] = useState(tanda)
+  const firma = `${rows.length}|${rows[0]?.[keyField] ?? ''}`
+  useEffect(() => setVisibles(tanda), [firma, tanda])
+  return [rows.slice(0, visibles), Math.max(0, rows.length - visibles), () => setVisibles((v) => v + tanda)]
+}
+
+function BotonVerMas({ quedan, tanda, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="mt-4 w-full min-h-[44px] border border-textPrimary text-cuerpo font-semibold
+                 hover:bg-textPrimary hover:text-bg transition-colors"
+    >
+      Ver {Math.min(tanda, quedan)} más · quedan {quedan.toLocaleString('es-CO')}
+    </button>
+  )
+}
 
 // Al final de cada detalle desplegado (ver cerrarYVolver en DataTable).
 function BotonOcultar({ onClick }) {
