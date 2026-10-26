@@ -212,7 +212,9 @@ async function buscarPorVariantes(dataset, { frases, where, campoId, campos, ord
 // ofertas" o "Acuerdo Marco"; estado "En ejecución" o "Modificado", que no
 // existen en SECOP I— esa fuente se omite de esa búsqueda concreta, para no
 // devolver ceros falsos ni resultados mal filtrados. Ver ROADMAP.md sección 8.
-export function useBusqueda(criterios = {}, filtrosGeo = {}) {
+// `pausada`: no buscar todavía. La usa el Buscador mientras la IA interpreta
+// la frase (ver PARAM_IA en pages/Buscar.jsx).
+export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false } = {}) {
   const { texto = '', orden = 'valor' } = criterios
   // Frase principal + ampliación semántica (sinónimos), todas buscables: es el
   // OR de conceptos que amplía el alcance sin perder la precisión de frase.
@@ -248,7 +250,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}) {
   return useQuery({
     // Solo consulta cuando hay algo que buscar: sin criterios devolvería los 100
     // contratos más caros del país, que no es lo que nadie pidió.
-    enabled: activa,
+    enabled: activa && !pausada,
     queryKey: ['busqueda', criterios, filtrosGeo],
     queryFn: async () => {
       // Identificador: sin filtros de estado. Si alguien pega el número de un

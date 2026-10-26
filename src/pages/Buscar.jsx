@@ -645,12 +645,27 @@ export function Buscar() {
   // coincide con nada. El ref evita repetirlo: buscarConTexto reescribe la URL
   // y el efecto volvería a entrar.
   const yaInterpretado = useRef(null)
+  const interpretando = useRef(false)
   useEffect(() => {
     const pendiente = params.get(PARAM_IA)
     const texto = params.get('q') || ''
-    if (!pendiente || !texto || yaInterpretado.current === texto) return
+    if (!pendiente || !texto) return
+    if (yaInterpretado.current === texto) {
+      // Ya interpretado en esta visita y sin interpretación en curso (volver
+      // atrás a la misma URL): se quita la marca, o la búsqueda quedaría en
+      // pausa esperando una IA que no viene (ver pendienteIA).
+      if (!interpretando.current) {
+        setParams((prev) => {
+          const next = new URLSearchParams(prev)
+          next.delete(PARAM_IA)
+          return next
+        }, { replace: true })
+      }
+      return
+    }
     yaInterpretado.current = texto
-    buscarConTexto(texto)
+    interpretando.current = true
+    buscarConTexto(texto).finally(() => { interpretando.current = false })
   }, [params]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // "Limpiar búsqueda" borra la búsqueda, no la ubicación: para eso está
@@ -666,8 +681,14 @@ export function Buscar() {
   // Dos búsquedas en paralelo: la del registro del contrato (el objeto) y la de
   // los documentos anexos, que corre sola. Ambas rápidas por separado; sus
   // resultados se juntan en una sola lista.
-  const queryContratos = useBusqueda(criterios, filters)
-  const queryDocumentos = useBusquedaDocumentos(criterios, filters)
+  // Mientras la IA interpreta la frase (`ia=1` en la URL), no se busca nada:
+  // se buscaba el texto crudo ("pavimentacion de calles en soledad atlantico"),
+  // que casi nunca coincide, y esa tanda —22 consultas en la medición de oct
+  // 2026— se quedaba en la cola de Socrata delante de la búsqueda de verdad.
+  const pendienteIA = !!params.get(PARAM_IA)
+  const queryContratos = useBusqueda(criterios, filters, { pausada: pendienteIA })
+  const queryDocumentos = useBusquedaDocumentos(criterios, filters, { pausada: pendienteIA })
+  const cargandoContratos = pendienteIA || queryContratos.isLoading
   const activa = hayBusqueda(criterios)
   // Elegir la entidad que nombró la persona. Si su nombre no lleva el lugar
   // elegido (INVÍAS, con sede en Bogotá, para "INVÍAS en Nariño"), el filtro de
@@ -739,7 +760,7 @@ export function Buscar() {
       ? new Date(b.signDate || 0) - new Date(a.signDate || 0)
       : (b.contractValue ?? 0) - (a.contractValue ?? 0)),
   )
-  const buscandoDocs = queryDocumentos.isLoading
+  const buscandoDocs = pendienteIA || queryDocumentos.isLoading
   const porId = queryContratos.data?.porId
   const entidadesId = queryContratos.data?.entidades ?? 0
   const lugarFiltro = filters.city || filters.department
@@ -767,7 +788,7 @@ export function Buscar() {
   // Si ningún resultado nombra lo buscado y no hay contratos marco en la lista,
   // se buscan los del lugar (ver MarcosDelLugar).
   const buscarMarcosDelLugar = hayPregunta && !criterios.contratista && !!lugarFiltro && !!criterios.texto && cuantosMarco === 0 &&
-    !queryContratos.isLoading && !buscandoDocs && !resultados.some((r) => contieneFrase(r, criterios.texto))
+    !cargandoContratos && !buscandoDocs && !resultados.some((r) => contieneFrase(r, criterios.texto))
   // ¿Todo lo que se ve llegó por las palabras relacionadas, y nada por lo que
   // se buscó? Entonces la lista no responde la pregunta, por larga que sea, y
   // vale la pena pedirle a la prensa el nombre oficial (ver ResumenPrensa).
@@ -1198,7 +1219,7 @@ export function Buscar() {
                     contrato si hay pocos contratos, o dos titulares si hay
                     muchos. Ver ResumenPrensa. */}
                 <div className="mt-4">
-                  {!queryContratos.isLoading && !buscandoDocs && (
+                  {!cargandoContratos && !buscandoDocs && (
                     <ResumenPrensa
                       consulta={consultaPrensa}
                       lugar={lugarPrensa}
@@ -1206,7 +1227,7 @@ export function Buscar() {
                       sinLoBuscado={sinLoBuscado}
                     />
                   )}
-                  <QueryState query={queryContratos}>
+                  <QueryState query={pendienteIA ? { isLoading: true } : queryContratos}>
                     {() =>
                       resultados.length === 0 ? (
                         buscandoDocs ? (

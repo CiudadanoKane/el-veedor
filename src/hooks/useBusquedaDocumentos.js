@@ -32,7 +32,7 @@ const MAX_IDS = 200
 //
 // El flujo es en dos pasos: primero encontrar los archivos cuyo nombre coincide,
 // que traen el id del contrato o del proceso; luego recuperar esos contratos.
-export function useBusquedaDocumentos(criterios = {}, filtrosGeo = {}) {
+export function useBusquedaDocumentos(criterios = {}, filtrosGeo = {}, { pausada = false } = {}) {
   const { texto = '', orden = 'valor' } = criterios
   // Se apaga para identificadores: un código de proceso lo resuelve mejor la
   // coincidencia exacta de useBusqueda, y buscarlo aquí solo repetiría el
@@ -43,7 +43,7 @@ export function useBusquedaDocumentos(criterios = {}, filtrosGeo = {}) {
   const activa = tieneTextoBuscable(texto) && !esIdentificador(texto) && !soloContratista
 
   return useQuery({
-    enabled: activa,
+    enabled: activa && !pausada,
     queryKey: [
       'busqueda-docs', texto, orden, criterios.estados, filtrosGeo,
       criterios.valorMin, criterios.valorMax, criterios.fechaDesde, criterios.fechaHasta,

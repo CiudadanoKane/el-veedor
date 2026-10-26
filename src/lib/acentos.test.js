@@ -26,16 +26,23 @@ describe('variantesDeFrase con frases largas', () => {
 
   it('no pasa del tope de variantes, y no repite', () => {
     const v = variantesDeFrase('construcción de la institución educativa departamental')
-    expect(v.length).toBeLessThanOrEqual(24)
+    expect(v.length).toBeLessThanOrEqual(16)
     expect(new Set(v).size).toBe(v.length)
   })
 
-  it('las frases cortas siguen con todas las combinaciones, como antes', () => {
-    // vias: 3 escrituras (sin tilde, í, á) × terciarias: 6 (sin tilde y una por vocal).
-    const v = variantesDeFrase('vías terciarias')
-    expect(v).toHaveLength(18)
-    expect(v).toContain('vías terciarias')
-    expect(v).toContain('vias terciarias')
+  it('las frases con pocas combinaciones las prueban todas', () => {
+    // pavimentacion: 4 escrituras × de: 1 (no lleva tilde) × calles: 2.
+    expect(variantesDeFrase('pavimentacion de calles')).toHaveLength(8)
+  })
+
+  it('con muchas, prueba la tilde en cada palabra, no solo en la más larga', () => {
+    // La más larga es "nacional"; la tilde está en "policía". Así se perdían
+    // tres de cada cuatro contratos.
+    expect(variantesDeFrase('policia nacional')).toContain('policía nacional')
+    const v = variantesDeFrase('mantenimiento de vias terciarias')
+    expect(v).toContain('mantenimiento de vías terciarias')
+    expect(v).toContain('mantenimiento de vias terciarias')
+    expect(v.length).toBeLessThanOrEqual(16)
   })
 
   it('el plural en -iones no recibe tilde', () => {
@@ -44,11 +51,35 @@ describe('variantesDeFrase con frases largas', () => {
   })
 })
 
+// Solo donde el español admite la tilde (ver posicionesDeTilde): menos
+// consultas, sin perder palabras reales.
+describe('variantesConTilde sigue las reglas de acentuación', () => {
+  const REALES = (
+    'vía vías día país maíz raíz policía garantía batería montería tecnología energía construcción ' +
+    'educación institución gestión región acción público pública técnico técnica básico eléctrico ' +
+    'hidráulico físico médico jurídico económico ecológico logística metálico plástico cúcuta bogotá ' +
+    'popayán ibagué medellín chocó tolú quibdó césar fácil útil móvil cárcel lápiz árbol césped jardín ' +
+    'camión avión según también además después inglés régimen análisis diagnóstico tráfico línea área ' +
+    'aérea aéreo océano periódico ingeniería consultoría interventoría auditoría secretaría alcaldía ' +
+    'gobernación perú sincé sahagún vértice'
+  ).split(' ')
+
+  it('cubre las palabras reales con tilde', () => {
+    expect(REALES.filter((w) => !variantesConTilde(w).includes(w))).toEqual([])
+  })
+
+  it('no prueba sílabas imposibles', () => {
+    expect(variantesConTilde('calles')).toEqual(['calles', 'callés'])
+    expect(variantesConTilde('atlantico')).toEqual(['atlantico', 'atlántico', 'atlanticó'])
+    expect(variantesConTilde('intercambiador')).not.toContain('íntercambiador')
+  })
+})
+
 describe('la ñ no es una tilde', () => {
   it('se conserva, y se prueba también sin ella', () => {
     // Con la ñ convertida en n, "Nariño" encontraba 9 contratos del INVÍAS en
     // vez de 636.
-    expect(variantesConTilde('Nariño')).toEqual(['nariño', 'náriño', 'naríño', 'nariñó', 'narino'])
+    expect(variantesConTilde('Nariño')).toEqual(['nariño', 'náriño', 'nariñó', 'narino'])
     expect(palabrasDeFrase('Niños del PAE')).toEqual(['niños', 'del', 'pae'])
   })
   it('las demás tildes se siguen quitando', () => {

@@ -20,9 +20,13 @@ import { esc } from './soql.js'
 
 const TILDES = { a: 'á', e: 'é', i: 'í', o: 'ó', u: 'ú' }
 
-// Tope de variantes de la frase. El producto crece rápido: dos palabras de
-// cinco vocales dan 36 combinaciones, tres dan cientos.
-const MAX_VARIANTES = 24
+// Hasta cuántas combinaciones se prueban todas. El producto crece rápido, y
+// cada combinación es una consulta: Socrata las atiende en fila, así que más
+// consultas es más espera para todos (oct 2026: 56 consultas, 70 s con carga).
+// Pasado este número, cada palabra dudosa se prueba por separado (ver abajo).
+const MAX_COMBINACIONES = 15
+// Tope de consultas de una frase larga.
+const MAX_VARIANTES = 16
 
 export function sinTildes(texto) {
   return String(texto)
@@ -58,16 +62,81 @@ export function tieneTextoBuscable(texto) {
   return palabrasDeFrase(texto).join('').length >= 3
 }
 
-// Todas las escrituras plausibles de una palabra: sin tilde, y con tilde en
-// cada vocal. "vias" → vias, vías, viás (la última no existe, y no estorba).
+// Las escrituras plausibles de una palabra: sin tilde, y con tilde donde las
+// reglas del español la permiten. "vias" → vias, vías, viás.
 // Con ñ, también la escritura sin ella: hay registros que escriben "NARINO".
+//
+// Hasta oct 2026 se probaba la tilde en CADA vocal: "calles" daba "cálles" y
+// "callés", "atlantico" daba cuatro. Las que no son palabras no coinciden con
+// nada, pero cada una es una consulta más, y Socrata las atiende en fila: una
+// búsqueda llegaba a 56 consultas y, con carga, a 70 s. La acentuación del
+// español solo admite la tilde en (1) la última sílaba si la palabra termina en
+// vocal, n o s (camión, Bogotá, Tolú); (2) la penúltima si termina en otra
+// consonante (cárcel, fácil, César); (3) la antepenúltima (público,
+// Cúcuta); y (4) una í/ú junto a otra vocal, el hiato (vía, policía, país).
+// Se prueba solo ahí. Las sílabas se cuentan por núcleos vocálicos: a, e y o
+// seguidas son sílabas distintas; con i o u forman una sola (diptongo), salvo
+// el hiato del punto 4.
+const FUERTES = 'aeo'
+function nucleos(base) {
+  const salida = []
+  let grupo = []
+  const cerrar = () => {
+    if (!grupo.length) return
+    let actual = [grupo[0]]
+    for (let k = 1; k < grupo.length; k++) {
+      if (FUERTES.includes(base[grupo[k - 1]]) && FUERTES.includes(base[grupo[k]])) {
+        salida.push(actual)
+        actual = [grupo[k]]
+      } else actual.push(grupo[k])
+    }
+    salida.push(actual)
+    grupo = []
+  }
+  for (let i = 0; i < base.length; i++) {
+    // La u de "que", "qui", "gue", "gui" no suena: no es vocal.
+    const muda = base[i] === 'u' && /[qg]/.test(base[i - 1] || '') && /[ei]/.test(base[i + 1] || '')
+    if (TILDES[base[i]] && !muda) grupo.push(i)
+    else cerrar()
+  }
+  cerrar()
+  return salida
+}
+// En una sílaba de diptongo la tilde va en la vocal fuerte (camión, acción);
+// entre dos débiles, en la segunda (construí).
+const vocalDeLaSilaba = (base, nucleo) => nucleo.find((i) => FUERTES.includes(base[i])) ?? nucleo[nucleo.length - 1]
+
+function posicionesDeTilde(base) {
+  const silabas = nucleos(base)
+  const n = silabas.length
+  // Monosílabos y palabras sin vocales: todas, como antes (son pocas).
+  if (n <= 1) return silabas.flat()
+  const posiciones = new Set()
+  posiciones.add(vocalDeLaSilaba(base, /[aeiouns]$/.test(base) ? silabas[n - 1] : silabas[n - 2]))
+  if (n >= 3) posiciones.add(vocalDeLaSilaba(base, silabas[n - 3]))
+  for (const silaba of silabas.slice(-3)) {
+    if (silaba.length < 2 || !silaba.some((i) => FUERTES.includes(base[i]))) continue
+    for (const i of silaba) if (!FUERTES.includes(base[i])) posiciones.add(i)
+  }
+  return [...posiciones].sort((a, b) => a - b)
+}
+
+// Preposiciones, artículos y conectores: en el objeto de un contrato nunca
+// llevan tilde. Probar "dé" o "entré" multiplicaba las consultas de toda frase
+// que los tuviera ("pavimentacion de calles": el doble).
+const SIN_TILDE = new Set([
+  'a', 'al', 'de', 'del', 'e', 'en', 'o', 'u', 'y', 'la', 'las', 'lo', 'los', 'le', 'les', 'un',
+  'una', 'unos', 'unas', 'su', 'sus', 'por', 'para', 'con', 'sin', 'entre', 'sobre', 'hasta', 'desde',
+  'hacia', 'ante', 'bajo', 'tras',
+])
+
 export function variantesConTilde(palabra) {
   const base = sinTildesConEnie(palabra)
   if (!base) return []
+  if (SIN_TILDE.has(base)) return [base]
   const variantes = [base]
-  for (let i = 0; i < base.length; i++) {
-    const acentuada = TILDES[base[i]]
-    if (acentuada) variantes.push(base.slice(0, i) + acentuada + base.slice(i + 1))
+  for (const i of posicionesDeTilde(base)) {
+    variantes.push(base.slice(0, i) + TILDES[base[i]] + base.slice(i + 1))
   }
   if (base.includes('ñ')) variantes.push(base.replace(/ñ/g, 'n'))
   return variantes
@@ -110,11 +179,11 @@ export function variantesDeFrase(texto) {
 
   const porPalabra = palabras.map(variantesConTilde)
   const total = porPalabra.reduce((n, v) => n * v.length, 1)
-  if (total <= MAX_VARIANTES) {
+  if (total <= MAX_COMBINACIONES) {
     // La frase tal cual va siempre: el cartesiano no cubre letras como la ü
     // ("pingüino"), que variantesConTilde no genera.
     const unicas = new Set([...(talCual ? [talCual.join(' ')] : []), ...cartesiano(porPalabra)])
-    return [...unicas].slice(0, MAX_VARIANTES + 1)
+    return [...unicas]
   }
 
   // Demasiadas combinaciones para probarlas todas. Hasta oct 2026 se variaba
@@ -127,10 +196,12 @@ export function variantesDeFrase(texto) {
   //
   // Ahora se distingue qué palabras ya tienen una escritura conocida —la tilde
   // que escribió la persona, o la regla de -ión— y cuáles no. Las conocidas se
-  // prueban en dos formas, bien escritas y sin tilde. Solo la palabra más larga
-  // SIN escritura conocida se prueba con la tilde en cada vocal. Así la frase
-  // bien escrita va siempre, y además se lanzan menos consultas que antes con
-  // las palabras en -ión (no se prueban "réconstruccion", "recónstruccion"…).
+  // prueban en dos formas, bien escritas y sin tilde. Las que no, cada una por
+  // separado, con las demás en su escritura probable: así se cubre la tilde
+  // en cualquier palabra ("policía nacional": con solo la más larga variada,
+  // 5.868 contratos en vez de 23.457), sumando variantes en vez de
+  // multiplicarlas. Lo que no se cubre son dos palabras dudosas tildadas a la
+  // vez; con la regla de -ión y las tildes que escriba la persona, es raro.
   const conocida = palabras.map((p, i) => {
     if (talCual && talCual[i] !== p) return talCual[i]
     const regla = escrituraProbable(p)
@@ -138,15 +209,16 @@ export function variantesDeFrase(texto) {
   })
   const probable = palabras.map((p, i) => conocida[i] ?? p)
 
-  let incierta = -1
-  palabras.forEach((p, i) => {
-    if (conocida[i] == null && /[aeiou]/.test(p) && (incierta < 0 || p.length > palabras[incierta].length)) incierta = i
-  })
+  // Las dudosas, de la más larga a la más corta: si se llega al tope, lo que
+  // queda fuera son las variantes de las palabras cortas.
+  const inciertas = palabras
+    .map((p, i) => i)
+    .filter((i) => conocida[i] == null && porPalabra[i].length > 1)
+    .sort((a, b) => palabras[b].length - palabras[a].length)
 
   const unicas = new Set()
-  // 1. La escritura más probable, probando la tilde en la palabra incierta.
-  const opciones = incierta >= 0 ? variantesConTilde(palabras[incierta]) : [null]
-  for (const v of opciones) unicas.add(probable.map((w, i) => (i === incierta ? v : w)).join(' '))
+  // 1. La escritura más probable.
+  unicas.add(probable.join(' '))
   // 2. Sin ninguna tilde: los registros escritos todo en mayúscula sin tildes.
   unicas.add(palabras.join(' '))
   // 3. A medias: una sola de las palabras conocidas con su tilde, para los
@@ -155,6 +227,10 @@ export function variantesDeFrase(texto) {
     conocida.forEach((c, i) => {
       if (c) unicas.add(palabras.map((w, j) => (j === i ? c : w)).join(' '))
     })
+  }
+  // 4. Cada palabra dudosa con su tilde posible, una a la vez.
+  for (const k of inciertas) {
+    for (const v of porPalabra[k]) unicas.add(probable.map((w, i) => (i === k ? v : w)).join(' '))
   }
   return [...unicas].slice(0, MAX_VARIANTES)
 }
