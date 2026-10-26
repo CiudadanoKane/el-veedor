@@ -880,18 +880,23 @@ export function Buscar() {
         <BuscadorEntidad />
       ) : (
         <>
+          {/* Con una búsqueda hecha, la zona de la caja se aprieta: lo que
+              importa son los resultados, y la etiqueta, la pista del número de
+              proceso y los controles en líneas sueltas ocupaban media pantalla. */}
           <form
             onSubmit={(e) => { e.preventDefault(); buscarConTexto(borrador) }}
-            className="border-b border-border pb-7"
+            className={activa || hayPregunta ? 'pb-4' : 'border-b border-border pb-7'}
           >
-            <div className="flex flex-wrap items-end gap-4">
-              <div className="flex flex-col gap-1 flex-1 min-w-[260px]">
-                <label
-                  htmlFor="busqueda"
-                  className="text-micro uppercase tracking-label text-textSecondary font-semibold"
-                >
-                  ¿Qué quieres saber?
-                </label>
+            <label
+              htmlFor="busqueda"
+              className={`text-micro uppercase tracking-label text-textSecondary font-semibold ${
+                activa || hayPregunta ? 'sr-only' : 'block mb-1'
+              }`}
+            >
+              ¿Qué quieres saber?
+            </label>
+            <div className="flex flex-wrap items-stretch gap-x-4 gap-y-2">
+              <div className="flex flex-col flex-1 min-w-[260px]">
                 {/* Es la acción principal de toda la página, así que lleva una caja
                     propia (fondo + borde completo) en vez del subrayado que usan los
                     demás campos —ese estilo mínimo se perdía en el blanco de fondo y
@@ -925,21 +930,22 @@ export function Buscar() {
                                focus:outline-none"
                   />
                 </div>
-                <span className="text-nota text-textSecondary mt-1">
-                  ¿Tienes el número del proceso o el código SECOP? Pégalo y va directo al
-                  contrato.
-                </span>
               </div>
               <button
                 type="submit"
                 disabled={cargandoIA}
-                className="bg-textPrimary text-bg px-6 py-2 text-cuerpo font-semibold
+                className="bg-textPrimary text-bg px-6 py-2 text-cuerpo font-semibold max-sm:self-start
                            hover:bg-primary transition-colors disabled:opacity-60
                            disabled:cursor-not-allowed"
               >
                 {cargandoIA ? 'Interpretando…' : 'Buscar'}
               </button>
             </div>
+            {!(activa || hayPregunta) && (
+              <p className="mt-1.5 text-nota text-textSecondary">
+                ¿Tienes el número del proceso o el código SECOP? Pégalo y va directo al contrato.
+              </p>
+            )}
             {errorIA && (
               <p className="mt-2 text-nota text-textSecondary">{errorIA}</p>
             )}
@@ -1039,15 +1045,26 @@ export function Buscar() {
             {/* Filtros avanzados: modalidad y tipo, plegados por defecto. Son de
                 uso experto y ensucian el flujo del ciudadano común, así que no
                 están a la vista salvo que alguien los pida. */}
-            <div className="mt-5">
-              <button
-                type="button"
-                onClick={() => setAvanzados((v) => !v)}
-                className="toque text-micro uppercase tracking-label font-semibold text-textSecondary
-                           hover:text-textPrimary transition-colors"
-              >
-                {avanzados ? '– Filtros avanzados' : '+ Filtros avanzados'}
-              </button>
+            <div className="mt-3">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
+                <button
+                  type="button"
+                  onClick={() => setAvanzados((v) => !v)}
+                  className="toque text-micro uppercase tracking-label font-semibold text-textSecondary
+                             hover:text-textPrimary transition-colors"
+                >
+                  {avanzados ? '– Filtros avanzados' : '+ Filtros avanzados'}
+                </button>
+                {(criterios.texto || hayFiltros) && (
+                  <button
+                    type="button"
+                    onClick={limpiarBusqueda}
+                    className="toque text-nota text-textSecondary hover:text-textPrimary underline"
+                  >
+                    Limpiar búsqueda
+                  </button>
+                )}
+              </div>
               {avanzados && (
                 <div className="mt-4 space-y-4">
                   <div className="flex flex-wrap items-end gap-5">
@@ -1077,15 +1094,6 @@ export function Buscar() {
               )}
             </div>
 
-            {(criterios.texto || hayFiltros) && (
-              <button
-                type="button"
-                onClick={limpiarBusqueda}
-                className="toque mt-4 text-cuerpo text-textSecondary hover:text-textPrimary underline"
-              >
-                Limpiar búsqueda
-              </button>
-            )}
           </form>
 
           <div className="pb-8">
@@ -1131,8 +1139,8 @@ export function Buscar() {
                   </div>
                 )}
                 <div className="min-w-0">
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                  <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                  <h2 className="font-display font-extrabold text-titulo-3 tracking-[-0.02em]">
                     {entidadPendiente ? `Mientras eliges: todo ${lugarFiltro || 'el país'}` : 'Resultados'}
                   </h2>
                   <Segmented

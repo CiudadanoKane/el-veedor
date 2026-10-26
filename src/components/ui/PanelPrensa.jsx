@@ -51,10 +51,22 @@ export function PanelPrensa({ consulta }) {
         <p className="mt-2 text-nota text-textSecondary">No encontramos noticias sobre esta búsqueda.</p>
       )}
 
+      {/* "Leer más" pegado al texto que corta: al pie del panel, debajo de
+          los titulares, no se veía como la continuación del resumen. */}
       {resumen && (
-        <p className={`mt-1.5 text-cuerpo text-textPrimary leading-relaxed ${abierto ? '' : 'line-clamp-3 xl:line-clamp-6'}`}>
-          {resumen}
-        </p>
+        <>
+          <p className={`mt-1.5 text-cuerpo text-textPrimary leading-relaxed ${abierto ? '' : 'line-clamp-3 xl:line-clamp-6'}`}>
+            {resumen}
+          </p>
+          <button
+            type="button"
+            onClick={() => setAbierto((v) => !v)}
+            aria-expanded={abierto}
+            className="toque mt-0.5 text-nota font-semibold text-primary enlace-sutil"
+          >
+            {abierto ? 'Ver menos' : 'Leer más'}
+          </button>
+        </>
       )}
 
       {/* En una sola columna, los titulares van plegados con el resumen. */}
@@ -79,21 +91,14 @@ export function PanelPrensa({ consulta }) {
         </ul>
       )}
 
-      {(resumen || resultados.length > 0) && (
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-nota">
-          <button
-            type="button"
-            onClick={() => setAbierto((v) => !v)}
-            className="toque font-semibold text-primary enlace-sutil"
-          >
-            {abierto ? 'Ver menos' : 'Leer todo'}
-          </button>
-          {resultados.length > 0 && (
-            <button type="button" onClick={verNoticias} className="toque font-semibold text-primary enlace-sutil">
-              Las {resultados.length} noticias ↓
-            </button>
-          )}
-        </div>
+      {resultados.length > 0 && (
+        <button
+          type="button"
+          onClick={verNoticias}
+          className="toque mt-2 block text-nota font-semibold text-primary enlace-sutil"
+        >
+          Las {resultados.length} noticias, con su resumen ↓
+        </button>
       )}
       {resumen && (
         <p className="mt-2 text-micro text-textSecondary">Resumen escrito por IA a partir de las noticias.</p>
