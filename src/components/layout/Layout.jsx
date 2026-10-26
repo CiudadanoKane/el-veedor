@@ -247,8 +247,10 @@ export function PageHeader({ title, subtitle, compacto = false }) {
     // Más apretado en el teléfono (margen y subtítulo un escalón abajo): ahí
     // cada línea de cabecera empuja la primera cifra fuera de la pantalla.
     // `compacto`: cuando la página ya está en uso (el Buscador con una
-    // búsqueda hecha), el título grande solo empuja lo que importa.
-    <header className={compacto ? 'mb-4' : 'mb-6 sm:mb-10'}>
+    // búsqueda hecha), el título grande solo empuja lo que importa. En el
+    // teléfono ni siquiera se ve (queda para lectores de pantalla): ahí el
+    // título más chico seguía ocupando dos líneas antes de la caja.
+    <header className={compacto ? 'mb-4 max-md:sr-only' : 'mb-6 sm:mb-10'}>
       <h1
         className={`font-display text-titulo-1 font-extrabold text-textPrimary leading-[1.02] tracking-[-0.04em] ${
           compacto ? '' : 'md:text-hero'
