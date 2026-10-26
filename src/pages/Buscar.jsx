@@ -115,6 +115,13 @@ function coincidenciaVisible(contrato, textos) {
   return 'otro campo del registro — ábrelo para ver el detalle'
 }
 
+// El término relacionado (la ampliación de la IA) que está en la fila, si la
+// fila no dice lo buscado: así se rotula por qué apareció ("afirmado" en una
+// búsqueda de "pavimentación de calles").
+function terminoQueCoincide(contrato, terminos) {
+  return terminos.find((t) => contieneFrase(contrato, t)) ?? null
+}
+
 // Parámetros de URL que le pertenecen al buscador. Todo lo demás en la URL es
 // de otro módulo (hoy, los filtros geográficos) y no se toca desde aquí.
 const PARAMS_BUSQUEDA = ['q', 'amplia', 'modalidad', 'tipo', 'segmento', 'estado', 'orden', 'modo', 'valorMin', 'valorMax', 'desde', 'hasta', 'pregunta', 'quien', 'contratista', 'tema']
@@ -810,13 +817,38 @@ export function Buscar() {
   // cuando la frase exacta encontró poco: menos de 5 contratos que la digan.
   // Una persona describe la obra con sus palabras y no con las del contrato
   // ("centro de vida DEL adulto mayor" / "PARA EL"), y la frase exacta la
-  // dejaba sin nada. Va aparte y rotulado: no es lo que escribió, tal cual.
+  // dejaba sin nada. Va en la misma lista, después de lo que dice la frase y
+  // rotulado: no es lo que escribió, tal cual (ver `lista`).
   const conLaFrase = resultados.filter((r) => contieneFrase(r, criterios.texto)).length
   const pedirAproximada = !porId && !criterios.contratista && !cargandoContratos && !buscandoDocs &&
     palabrasClave(criterios.texto).length >= 2 && conLaFrase < 5
   const queryAproximada = useBusquedaAproximada(criterios, filters, pedirAproximada)
   const idsResultados = new Set(resultados.map((r) => r.id))
-  const aproximados = (queryAproximada.data?.contratos ?? []).filter((c) => !idsResultados.has(c.id))
+  const casiTodas = queryAproximada.data?.todas === false
+  const aproximados = (queryAproximada.data?.contratos ?? [])
+    .filter((c) => !idsResultados.has(c.id))
+    .map((c) => ({ ...c, aproximado: casiTodas ? 'casi todas' : 'todas' }))
+    .sort((a, b) => (criterios.orden === 'reciente'
+      ? new Date(b.signDate || 0) - new Date(a.signDate || 0)
+      : (b.contractValue ?? 0) - (a.contractValue ?? 0)))
+  const buscandoAproximados = pedirAproximada && queryAproximada.isLoading
+
+  // El orden, por niveles, y dentro de cada uno el elegido (valor o fecha):
+  // 1. los que dicen lo buscado tal cual;
+  // 2. los que tienen todas sus palabras, aunque no juntas;
+  // 3. los que llegaron por un término relacionado o por un documento anexo.
+  // Ordenar todo junto por valor ponía delante cualquier contrato grande que
+  // dijera "afirmado" o "mejoramiento de vías", y el de "pavimentación… de
+  // Fresno" quedaba en el puesto 18 de 19 (oct 2026).
+  const nivel = (r) => (contieneFrase(r, criterios.texto) ? 0 : r.aproximado ? 1 : 2)
+  const lista = porId || !criterios.texto
+    ? resultados
+    : [...resultados, ...aproximados]
+      .map((r, i) => ({ r, i, n: nivel(r) }))
+      .sort((a, b) => a.n - b.n || a.i - b.i)
+      .map(({ r, n }) => (n === 2 && !r.documentos?.length
+        ? { ...r, porTermino: terminoQueCoincide(r, criterios.terminos) }
+        : r))
 
   const columns = [
     {
@@ -848,7 +880,15 @@ export function Buscar() {
           {/* Misma etiqueta y color para toda pista de "por qué apareció esta
               fila", venga de un campo del registro o de un documento anexo: es
               la misma promesa —explicar la coincidencia— sin importar la fuente. */}
-          {r.coincideEn && (
+          {r.aproximado ? (
+            <div className="mt-1 text-micro text-primary">
+              Tiene {r.aproximado} las palabras, no juntas
+            </div>
+          ) : r.porTermino ? (
+            <div className="mt-1 text-micro text-primary">
+              Por el término relacionado «{r.porTermino}»
+            </div>
+          ) : r.coincideEn && (
             <div className="mt-1 text-micro text-primary">
               Encontrado en: {r.coincideEn}
             </div>
@@ -1195,8 +1235,11 @@ export function Buscar() {
                   caja. Con una <strong>ciudad</strong> elegida salen también los contratos del
                   departamento que la nombran en su objeto: SECOP registra la ciudad de la entidad, no
                   la de la obra, y una gobernación contrata para sus municipios desde la capital. Si la
-                  frase exacta encuentra poco, debajo van los contratos que tienen{' '}
-                  <strong>todas las palabras, aunque no juntas</strong>. Se muestran hasta{' '}
+                  frase exacta encuentra poco, se suman los contratos que tienen{' '}
+                  <strong>todas las palabras, aunque no juntas</strong>. El orden va por niveles: primero
+                  los que dicen lo buscado tal cual, luego los de todas las palabras, y al final los de
+                  términos relacionados o documentos anexos; dentro de cada nivel, el orden elegido. Se
+                  muestran hasta{' '}
                   <strong>{LIMITE}</strong> resultados.{' '}
                   <strong>Pulsa un contrato</strong> para ver el detalle.
                   <br />
@@ -1267,10 +1310,12 @@ export function Buscar() {
                   )}
                   <QueryState query={pendienteIA ? { isLoading: true } : queryContratos}>
                     {() =>
-                      resultados.length === 0 ? (
-                        buscandoDocs ? (
+                      lista.length === 0 ? (
+                        buscandoDocs || buscandoAproximados ? (
                           <p className="py-6 text-cuerpo text-textSecondary">
-                            Buscando también en los documentos anexos del proceso…
+                            {buscandoDocs
+                              ? 'Buscando también en los documentos anexos del proceso…'
+                              : 'Ningún contrato dice esa frase tal cual. Buscando los que tienen todas sus palabras…'}
                           </p>
                         ) : (
                           <div className="py-3 max-w-2xl">
@@ -1339,12 +1384,26 @@ export function Buscar() {
                                   : ` Ninguno es de ${lugarFiltro}, el lugar que estás viendo.`}
                             </p>
                           )}
+                          {/* Si nada dice la frase tal cual, se avisa antes de la
+                              lista: las filas son aproximaciones, no la respuesta. */}
+                          {!porId && criterios.texto && !lista.some((r) => contieneFrase(r, criterios.texto)) && (
+                            <p className="mb-3 text-nota text-textSecondary max-w-2xl leading-relaxed">
+                              Ningún contrato dice «{criterios.texto}» tal cual. Primero van los que tienen
+                              todas sus palabras, aunque no juntas; después, los de términos relacionados.
+                            </p>
+                          )}
                           <DataTable
                             columns={columns}
-                            rows={resultados}
+                            rows={lista}
                             keyField="id"
                             renderDetail={(row) => <ContractDetail contract={row} />}
                           />
+                          {buscandoAproximados && (
+                            <p className="mt-3 flex items-center gap-2 text-nota text-textSecondary">
+                              <span className="h-3 w-3 shrink-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                              Buscando también contratos con todas las palabras, aunque no juntas…
+                            </p>
+                          )}
                           {buscandoDocs && (
                             <p className="mt-3 text-nota text-textSecondary">
                               Revisando también los documentos anexos del proceso…
@@ -1361,34 +1420,6 @@ export function Buscar() {
                     }
                   </QueryState>
                 </div>
-
-                {pedirAproximada && (queryAproximada.isLoading || aproximados.length > 0) && (
-                  <section className="mt-6" aria-live="polite">
-                    <h3 className="text-titulo-3 font-display font-extrabold tracking-[-0.02em]">
-                      {queryAproximada.data?.todas === false
-                        ? 'Con casi todas las palabras'
-                        : 'Con todas las palabras, aunque no juntas'}
-                    </h3>
-                    <p className="mt-1 mb-3 text-nota text-textSecondary max-w-2xl leading-snug">
-                      No dicen «{criterios.texto}» tal cual, pero tienen{' '}
-                      {queryAproximada.data?.todas === false ? 'casi todas sus palabras' : 'todas sus palabras'} en
-                      el objeto o la descripción, en otro orden o con otras en medio. Revisa cuál es el que buscas.
-                    </p>
-                    {queryAproximada.isLoading ? (
-                      <p className="flex items-center gap-2 text-nota text-textSecondary">
-                        <span className="h-3 w-3 shrink-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                        Buscando contratos con todas las palabras…
-                      </p>
-                    ) : (
-                      <DataTable
-                        columns={columns}
-                        rows={aproximados}
-                        keyField="id"
-                        renderDetail={(row) => <ContractDetail contract={row} />}
-                      />
-                    )}
-                  </section>
-                )}
 
                 {bloquePrensa}
                 </div>
