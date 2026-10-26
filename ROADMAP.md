@@ -732,6 +732,48 @@ paralelo con la frase entera porque cada consulta tarda hasta 10 s sin caché
 "parte del nombre oficial". Límite: el puente ya rozaba los 30 s en el peor
 caso (24 s del modelo más la consulta), y esto no lo mejora.
 
+### Medición del Buscador con búsquedas reales (26 oct 2026)
+
+¿Llega un ciudadano al contrato que busca? 35 búsquedas escritas como las
+escribiría alguien que no conoce el objeto del contrato, cada una con su
+contrato correcto comprobado en SECOP (`scripts/medir-buscador/`): 9 obras
+como las nombra la prensa, 20 descripciones (sin tildes, con sinónimos, con el
+lugar de la obra) y 6 con un dato parcial (contratista, número de proceso).
+Corre en producción, como si se escribiera en la caja.
+
+**Primera corrida** (`resultados/2026-10-26-corrida-1.json`). Ojo: durante la
+corrida se publicaron arreglos, así que mezcla versiones; la comparación limpia
+es la segunda.
+
+| Tipo | En la lista (en los 5 primeros) | Solo por la prensa | Nada |
+|---|---|---|---|
+| Prensa (9) | 6 (6) | 2 | 1 |
+| Descripción (20) | 6 (5) | 0 | 14 |
+| Datos (6) | 3 (3) | 0 | 3 |
+| **Total (35)** | **15 (14)** | **2** | **18** |
+
+Por qué fallaron los 18, y qué se hizo:
+
+- **Frase exacta** (6: centro de vida, Taganga, Virgen del Carmen, San
+  Cristóbal, vivienda, Monguí). La persona describe con sus palabras. → Con poco
+  por la frase, se suman los contratos con todas las palabras aunque no juntas
+  (`lib/busquedaAproximada.js`), rotulados y en segundo nivel.
+- **Lugar de la entidad, no de la obra** (4: La Apartada, Argelia, Fresno,
+  Honda). → La ciudad admite los contratos del departamento que la nombran en el
+  objeto; `resolverLugar` respeta el departamento ("Argelia, Cauca"); y con
+  `ia=1` se espera el catálogo de lugares, que se perdía.
+- **La IA cambia o inventa** (4): "Ternera" → "intercambiador de calor";
+  "vía Varsovia el delirio" → Barranquilla (es Sincelejo); "cancha sintética en
+  Mingueo" → Medellín (es Dibulla); "Guanabanal" → "Guanabana". Pendiente.
+- **Identificadores** (2): "sa 015 2024" (número con espacios) y "contrato
+  4600098664" (la IA dejó el texto vacío). Pendiente.
+- **Sinónimos** (1: parque principal / central; y Guanabanal: polideportivo /
+  complejo deportivo). Sin arreglo por ahora.
+- **El puente se cortaba** con 504 (la Gran Vía). → Consultas con índice y tope.
+- **Colegio Normal Superior** (C6): la búsqueda por palabras sueltas no trajo
+  nada en producción, aunque contra la API sí lo encuentra 2.º. A revisar en
+  la segunda corrida.
+
 ### Modo oscuro automático (oct 2026)
 
 Decisión: el tema principal sigue siendo claro —la plataforma es lectura

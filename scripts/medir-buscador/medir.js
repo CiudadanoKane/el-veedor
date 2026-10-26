@@ -60,11 +60,13 @@ async function medirCaso(caso, { maxMs = 90_000 } = {}) {
   const filas = [...new Set([...d.querySelectorAll('[data-fila]')].map((e) => e.dataset.fila))]
   const posiciones = caso.contratos.map((c) => filas.indexOf(c)).filter((i) => i >= 0)
   const posicion = posiciones.length ? Math.min(...posiciones) + 1 : null
-  // La caja de la prensa enlaza cada contrato que encontró con /buscar?q=<id>.
-  const porPrensa = caso.contratos.some((c) => d.querySelector(`a[href*="${c}"]`))
-  const tituloSug = [...d.querySelectorAll('p')].find((p) => /prueba también/i.test(p.textContent))
+  // Los contratos que nombra la prensa van en la lista con la etiqueta "Lo
+  // nombra la prensa" (ver idsPuente en pages/Buscar.jsx).
+  const porPrensa = caso.contratos.some((c) =>
+    [...d.querySelectorAll(`[data-fila="${c}"]`)].some((e) => /Lo nombra la prensa/.test(e.innerText)))
+  const tituloSug = [...d.querySelectorAll('span')].find((p) => /^prueba también$/i.test(p.textContent.trim()))
   const sugerencias = tituloSug
-    ? [...(tituloSug.parentElement.querySelectorAll('li a') || [])].map((a) => a.innerText.replace(/\s+/g, ' ').trim())
+    ? [...tituloSug.parentElement.querySelectorAll('a')].map((a) => a.innerText.replace(/\s+/g, ' ').trim())
     : []
   const api = w.performance.getEntriesByType('resource')
     .filter((e) => e.name.includes('/api/buscar-ia'))
