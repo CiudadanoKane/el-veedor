@@ -1,6 +1,7 @@
 import { useModificaciones } from '../../hooks/useModificaciones'
 import { formatCOP, formatDate, formatPct } from '../../lib/formatters'
 import { enMs, diasEntre } from '../../lib/adiciones'
+import { Methodology } from './Methodology'
 
 // Línea de tiempo de modificaciones (adiciones de dinero y prórrogas) de un contrato.
 // Se consulta de forma perezosa: solo cuando el desplegable del contrato está abierto.
@@ -156,19 +157,21 @@ export function ModificationHistory({
         ))}
       </ol>
 
-      <p className="mt-3 text-micro text-textSecondary/70 italic">
-        Fuente: SECOP II — Modificaciones a contratos. "Valor del contrato" es el valor
-        total acumulado tras cada modificación, no el monto individual adicionado. Los
-        porcentajes se calculan sobre bases distintas: el de dinero, sobre el valor que
-        tenía el contrato justo antes de esa modificación; el de plazo, sobre el plazo
-        original. Del total de dinero no se da porcentaje porque este dataset no trae el
-        valor anterior a la primera modificación. Los días de cada fila tampoco son lo que
-        declara SECOP para esa modificación: son la diferencia real contra la fecha de fin
-        que el contrato ya tenía —se dice el valor declarado aparte cuando difiere, y las
-        que no movieron la fecha van marcadas como "no amplió el plazo"—. Sumadas dan
-        exactamente el total de arriba, que es el mismo dato reconstruido que usan el
+      {/* La fuente, en una línea; cómo leer la tabla, plegado. Era un
+          párrafo de once líneas al final de cada detalle de contrato. */}
+      <p className="mt-3 text-micro text-textSecondary">Fuente: SECOP II, modificaciones a contratos.</p>
+      <Methodology>
+        <strong>Valor del contrato</strong> es el total acumulado tras cada modificación, no lo
+        adicionado en ella. El porcentaje de dinero se calcula sobre el valor que tenía el contrato
+        justo antes; el de plazo, sobre el plazo original. Del total de dinero no se da porcentaje:
+        este dataset no trae el valor anterior a la primera modificación.
+        <br />
+        <br />
+        Los <strong>días</strong> de cada fila no son los que declara SECOP, sino lo que de verdad
+        se movió la fecha de fin (si el declarado es distinto, se dice aparte, y las que no la
+        movieron dicen «no amplió el plazo»). Sumados dan el total de arriba, el mismo que usan el
         resumen y la ficha.
-      </p>
+      </Methodology>
     </div>
   )
 }
