@@ -29,7 +29,7 @@ import { PanelPrensa } from '../components/ui/PanelPrensa'
 import { useBusquedaWeb, usePuentePrensa } from '../hooks/useBusquedaWeb'
 import { useContratosPorId } from '../hooks/useContratosPorId'
 import { Icon } from '../components/ui/Icon'
-import { resolverLugar } from '../lib/geoResolver'
+import { resolverLugar, soloLugaresNombrados } from '../lib/geoResolver'
 import { formatCOP, formatDate } from '../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
 import { ResultadosWeb, ID_PRENSA } from '../components/ui/ResultadosWeb'
@@ -633,10 +633,12 @@ export function Buscar() {
       // interpretación arranca con la página. Sin esperarlo, "pavimentación de
       // calles en Fresno, Tolima" perdía el lugar y buscaba en todo el país
       // (oct 2026; también "en Soledad, Atlántico").
-      const lugar = resolverLugar(geo.data ?? await esperarCatalogoGeo(queryClient), {
-        departamento: filtros.departamento,
-        ciudad: filtros.ciudad,
-      })
+      // Y solo el lugar que la frase nombra: la IA a veces lo adivinaba, y
+      // mal (ver soloLugaresNombrados).
+      const lugar = resolverLugar(
+        geo.data ?? await esperarCatalogoGeo(queryClient),
+        soloLugaresNombrados(limpio, filtros),
+      )
 
       const huboAvanzados =
         sig.modalidad || sig.tipo || sig.estados.length ||

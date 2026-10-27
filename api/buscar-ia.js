@@ -43,7 +43,12 @@ export const ESQUEMA = {
       description:
         'Frase corta con las palabras que MÁS probablemente aparecen tal cual en el objeto de un ' +
         'contrato real —normalmente el nombre propio de una obra, un lugar o un programa—. Corrige ' +
-        'errores de ortografía a la forma estándar en español (p. ej. "cirvuncalar" → "circunvalar"). ' +
+        'solo errores evidentes en palabras comunes del español (p. ej. "cirvuncalar" → "circunvalar", ' +
+        '"pavimentasion" → "pavimentación"). Los NOMBRES PROPIOS —barrios, veredas, corregimientos, ' +
+        'sectores, vías, obras, empresas— van exactamente como los escribió la persona: nunca los ' +
+        'cambies por otra palabra parecida aunque no los reconozcas ("intercambiador de Ternera" ' +
+        'sigue diciendo "Ternera", nunca "calor"; "Guanabanal" no se recorta a "Guanabana"). Ante una ' +
+        'palabra que no conoces, déjala tal cual. ' +
         'Descarta palabras genéricas de tarea que casi nunca aparecen junto al nombre específico ' +
         '—"pintura", "arreglo", "contrato de", "mejoramiento"—: para "contrato de pintura de la avenida ' +
         'circunvalar" el resultado correcto es "avenida circunvalar", no la frase completa. La búsqueda ' +
@@ -115,22 +120,22 @@ export const ESQUEMA = {
     departamento: {
       type: 'string',
       description:
-        'Departamento de Colombia mencionado, en su nombre estándar (p. ej. "Valle del Cauca", ' +
-        '"Atlántico", "Norte de Santander"), corrigiendo errores de tipeo. Si la persona solo nombra ' +
-        'una ciudad y no el departamento, deja esto vacío —la app deduce el departamento a partir de ' +
-        'la ciudad—. Vacío si no se menciona ningún lugar.',
+        'Departamento de Colombia que la persona NOMBRA, en su nombre estándar (p. ej. "Valle del ' +
+        'Cauca", "Atlántico", "Norte de Santander"), corrigiendo errores de tipeo. Si la persona solo ' +
+        'nombra una ciudad y no el departamento, deja esto vacío —la app deduce el departamento a ' +
+        'partir de la ciudad—. Nunca lo deduzcas de un barrio, vereda o vía. Vacío si no se nombra.',
     },
     ciudad: {
       type: 'string',
       description:
         'Ciudad o municipio de Colombia mencionado, en su nombre estándar y corrigiendo errores de ' +
-        'tipeo (p. ej. "barranqilla" → "Barranquilla", "medallo" → "Medellín"). Un barrio, una ' +
-        'comuna o una urbanización NUNCA van aquí ("Caribe Verde" no es una ciudad). Pero si la ' +
-        'persona nombra un barrio, una vía o un sitio que pertenece sin ambigüedad a una sola ciudad ' +
-        '—"Caribe Verde" o "la Circunvalar a la altura de Caribe Verde" → Barranquilla, "El Poblado" ' +
-        '→ Medellín—, pon esa ciudad: sin ella la búsqueda queda en todo el país. Si el nombre ' +
-        'existe en varias ciudades ("la Circunvalar" sola, "El Bosque"), déjalo vacío. Vacío si no ' +
-        'se menciona ningún lugar.',
+        'tipeo (p. ej. "barranqilla" → "Barranquilla", "medallo" → "Medellín"). SOLO si la persona ' +
+        'la NOMBRA: nunca la deduzcas de un barrio, una vereda, un corregimiento, una vía o una obra, ' +
+        'por conocido que te parezca. Un lugar adivinado y equivocado deja la búsqueda sin ' +
+        'resultados: "vía Varsovia El Delirio" se puso en Barranquilla y es de Sincelejo, y ' +
+        '"cancha sintética en Mingueo" en Medellín y es de Dibulla. Un barrio, una comuna o un ' +
+        'corregimiento NUNCA van aquí ("Caribe Verde" no es una ciudad). Vacío si no se nombra una ' +
+        'ciudad o municipio.',
     },
     entidad: {
       type: 'string',

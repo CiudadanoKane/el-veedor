@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolverLugar } from './geoResolver'
+import { resolverLugar, soloLugaresNombrados } from './geoResolver'
 import { whereSecop2 } from '../hooks/useBusqueda'
 
 const GEO = {
@@ -37,5 +37,30 @@ describe('whereSecop2 y el lugar de la obra', () => {
   it('prueba el nombre con y sin tilde', () => {
     expect(whereSecop2({}, { department: 'Boyacá', city: 'Monguí' }, { conTexto: true }))
       .toContain("caseless_contains(objeto_del_contrato, 'monguí') OR caseless_contains(objeto_del_contrato, 'mongui')")
+  })
+})
+
+describe('soloLugaresNombrados: el lugar de la IA, solo si la frase lo dice', () => {
+  it('descarta un lugar adivinado', () => {
+    expect(soloLugaresNombrados('via varsovia el delirio', { departamento: 'Atlántico', ciudad: 'Barranquilla' }))
+      .toEqual({ departamento: '', ciudad: '' })
+    expect(soloLugaresNombrados('cancha sintetica en mingueo', { departamento: 'Antioquia', ciudad: 'Medellín' }))
+      .toEqual({ departamento: '', ciudad: '' })
+  })
+  it('acepta el nombrado, con erratas, tildes y apodos', () => {
+    expect(soloLugaresNombrados('pavimentacion de calles en fresno tolima', { departamento: 'Tolima', ciudad: 'Fresno' }))
+      .toEqual({ departamento: 'Tolima', ciudad: 'Fresno' })
+    expect(soloLugaresNombrados('contratos en barranqilla', { ciudad: 'Barranquilla' }).ciudad).toBe('Barranquilla')
+    expect(soloLugaresNombrados('obras en medallo', { ciudad: 'Medellín' }).ciudad).toBe('Medellín')
+    expect(soloLugaresNombrados('vias en bogota', { departamento: 'Distrito Capital de Bogotá' }).departamento)
+      .toBe('Distrito Capital de Bogotá')
+  })
+  it('acepta el lugar que viene en la entidad nombrada', () => {
+    expect(soloLugaresNombrados('contratos a dedo', { departamento: 'Atlántico', entidad: 'Gobernación del Atlántico' }).departamento)
+      .toBe('Atlántico')
+  })
+  it('quita el departamento deducido y deja la ciudad nombrada', () => {
+    expect(soloLugaresNombrados('PAE de sincelejo', { departamento: 'Sucre', ciudad: 'Sincelejo' }))
+      .toEqual({ departamento: '', ciudad: 'Sincelejo' })
   })
 })

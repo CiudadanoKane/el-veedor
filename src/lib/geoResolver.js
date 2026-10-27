@@ -41,3 +41,52 @@ export function resolverLugar(geo, { departamento = '', ciudad = '' } = {}) {
 
   return vacio
 }
+
+// El lugar que dio la IA, solo si la frase lo nombra. En la medición de oct
+// 2026 la IA adivinó dos lugares que la frase no decía, y los dos mal: "vía
+// Varsovia el delirio" → Barranquilla (es Sincelejo), "cancha sintética en
+// Mingueo" → Medellín (es Dibulla). Un lugar equivocado deja la búsqueda en
+// cero; sin lugar, al menos busca en todo el país. Se toleran erratas
+// ("barranqilla"), apodos comunes ("medallo") y que el lugar venga en la
+// entidad nombrada ("Gobernación del Atlántico").
+const APODOS = {
+  medallo: 'medellin', curramba: 'barranquilla', bquilla: 'barranquilla', quilla: 'barranquilla',
+  bogota: 'distrito capital de bogota', cali: 'santiago de cali', cartagena: 'cartagena de indias',
+}
+const PALABRAS_DE_RELLENO = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'san', 'santa', 'norte', 'sur'])
+
+function distancia(a, b) {
+  if (Math.abs(a.length - b.length) > 2) return 3
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i])
+  for (let j = 1; j <= b.length; j++) d[0][j] = j
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1))
+    }
+  }
+  return d[a.length][b.length]
+}
+
+export function lugarNombrado(texto, lugar) {
+  const t = norm(texto)
+  const l = norm(lugar)
+  if (!t || !l) return false
+  if (t.includes(l)) return true
+  const palabrasTexto = t.split(/[^a-z0-9ñ]+/).filter(Boolean)
+  // Un apodo o una forma corta del nombre ("bogota" por "distrito capital
+  // de bogota").
+  if (palabrasTexto.some((p) => APODOS[p] && (APODOS[p] === l || l.includes(APODOS[p]) || APODOS[p].includes(l)))) return true
+  // Cada palabra del nombre (las que distinguen) presente, aunque con una o
+  // dos letras de diferencia: "barranqilla" es Barranquilla.
+  const delLugar = l.split(/[^a-z0-9ñ]+/).filter((p) => p.length >= 4 && !PALABRAS_DE_RELLENO.has(p))
+  if (!delLugar.length) return false
+  return delLugar.every((p) => palabrasTexto.some((q) => q === p || (p.length >= 5 && distancia(p, q) <= 2)))
+}
+
+export function soloLugaresNombrados(texto, { departamento = '', ciudad = '', entidad = '' } = {}) {
+  const fuente = `${texto} ${entidad}`
+  return {
+    departamento: departamento && lugarNombrado(fuente, departamento) ? departamento : '',
+    ciudad: ciudad && lugarNombrado(fuente, ciudad) ? ciudad : '',
+  }
+}
