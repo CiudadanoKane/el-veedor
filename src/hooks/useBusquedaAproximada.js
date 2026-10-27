@@ -3,7 +3,7 @@ import { socrataBusqueda } from '../lib/socrataClient'
 import { DATASETS, CONTRACT_FIELDS } from '../lib/constants'
 import { consultasAproximadas, consultasRelajadas } from '../lib/busquedaAproximada'
 import { adaptList } from '../adapters/secop2Adapter'
-import { ORDENES, whereSecop2 } from './useBusqueda'
+import { ORDENES, whereSecop2, TOPE_CONSULTA_MS } from './useBusqueda'
 
 // Los contratos con todas las palabras de lo buscado, aunque no juntas (ver
 // lib/busquedaAproximada.js). Solo SECOP II, con los mismos filtros que la
@@ -26,7 +26,7 @@ export function useBusquedaAproximada(criterios = {}, filtrosGeo = {}, activa = 
       const opciones = { select: CONTRACT_FIELDS, order: orden, limit: LIMITE + 1 }
       // Lo que llegue: una consulta caída no tumba las demás (ver
       // buscarPorVariantes en useBusqueda).
-      const pedir = async (consultas) => (await Promise.allSettled(consultas.map((c) => socrataBusqueda(DATASETS.CONTRATOS, c))))
+      const pedir = async (consultas) => (await Promise.allSettled(consultas.map((c) => socrataBusqueda(DATASETS.CONTRATOS, { ...c, tiempoMaximo: TOPE_CONSULTA_MS }))))
         .filter((r) => r.status === 'fulfilled').map((r) => r.value)
       const unir = (listas) => [...new Map(listas.flat().map((f) => [f.id_contrato, f])).values()]
 

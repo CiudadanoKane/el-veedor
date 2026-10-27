@@ -8,9 +8,15 @@ const nodeEnv = (typeof process !== 'undefined' && process.env) || {}
 const BASE = env.VITE_SOCRATA_BASE || nodeEnv.SOCRATA_BASE || nodeEnv.VITE_SOCRATA_BASE
 const TOKEN = env.VITE_SOCRATA_TOKEN || nodeEnv.SOCRATA_TOKEN
 
-async function pedir(url) {
+// `tiempoMaximo` (ms): abandonar la consulta si no responde. Sin él, se
+// espera lo que tarde.
+async function pedir(url, tiempoMaximo) {
   const res = await fetch(url, {
     headers: TOKEN ? { 'X-App-Token': TOKEN } : {},
+    ...(tiempoMaximo && { signal: AbortSignal.timeout(tiempoMaximo) }),
+  }).catch((err) => {
+    if (err?.name === 'TimeoutError') throw new Error(`Socrata no respondió en ${tiempoMaximo / 1000} s`)
+    throw err
   })
   if (!res.ok) {
     throw new Error(`Socrata error ${res.status}: ${await res.text()}`)
@@ -27,7 +33,7 @@ export async function socrataQuery(datasetId, soql) {
 // Búsqueda de texto completo ($q). Va por parámetros separados porque $q no se
 // puede mezclar con $query, y usa el índice de texto de Socrata, mucho más
 // rápido que caseless_contains sobre campos de texto largo.
-export async function socrataBusqueda(datasetId, { q, where, select, group, order, limit }) {
+export async function socrataBusqueda(datasetId, { q, where, select, group, order, limit, tiempoMaximo }) {
   const params = new URLSearchParams()
   if (q) params.set('$q', q)
   if (where) params.set('$where', where)
@@ -35,5 +41,5 @@ export async function socrataBusqueda(datasetId, { q, where, select, group, orde
   if (group) params.set('$group', group)
   if (order) params.set('$order', order)
   if (limit) params.set('$limit', String(limit))
-  return pedir(`${BASE}/${datasetId}.json?${params}`)
+  return pedir(`${BASE}/${datasetId}.json?${params}`, tiempoMaximo)
 }

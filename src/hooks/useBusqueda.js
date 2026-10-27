@@ -54,6 +54,13 @@ const ORDENES_SECOP1 = {
   reciente: 'fecha_de_firma_del_contrato DESC',
 }
 
+// Cuánto se espera cada consulta de la búsqueda. datos.gov.co a veces tarda
+// más de un minuto en responder (oct 2026), y la lista entera esperaba a la
+// más lenta. Con el tope, la que no llega cuenta como caída: se muestra lo que
+// llegó y se avisa que puede haber más (ver buscarPorVariantes). Una consulta
+// sana de la búsqueda tarda 0,2-5 s.
+export const TOPE_CONSULTA_MS = 20_000
+
 // Tope de resultados. Se pide uno de más para saber si hay más sin contarlos:
 // contar las coincidencias reales sobre 5,3 millones de registros toma 14
 // segundos, y una cifra exacta no vale esa espera.
@@ -160,6 +167,7 @@ export async function buscarPorVariantes(dataset, { frases, where, campoId, camp
     for (const v of variantes) {
       consultas.push(
         socrataBusqueda(dataset, {
+          tiempoMaximo: TOPE_CONSULTA_MS,
           q: v,
           // Una sola palabra va por el índice de texto, que mira todos los
           // campos; con exigirCampo (un contratista: "Sacyr") se exige además
@@ -443,7 +451,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
             // GRAMA sintética… corregimiento de Mingueo".
             const listas = await Promise.all(
               consultasAproximadas(texto, whereSector, { select: CONTRACT_FIELDS, order: orderBy, limit: LIMITE + 1 }, { confiable })
-                .map((c) => socrataBusqueda(DS, c)),
+                .map((c) => socrataBusqueda(DS, { ...c, tiempoMaximo: TOPE_CONSULTA_MS })),
             )
             const filas = [...new Map(listas.flat().map((f) => [f.id_contrato, f])).values()]
             return { filas, hayMas: false, aproximadas: filas.map((f) => f.id_contrato) }
