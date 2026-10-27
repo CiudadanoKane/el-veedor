@@ -815,8 +815,13 @@ export function Buscar() {
   // que lo que quedó para SECOP, a veces nada), y con el lugar elegido si no lo
   // nombra, porque la prensa no tiene filtro de departamento. No con un número
   // de proceso: ese ya se buscó tal cual arriba.
+  //
+  // Y no mientras la IA interpreta la frase: el lugar llega con ella, y el
+  // puente (que lo lleva en su consulta) se pedía dos veces, la primera sin
+  // lugar y a la basura —en la medición de oct 2026, 11 de 16 búsquedas—. Cada
+  // llamada cuesta y gasta el tope de 40 por hora e IP.
   const basePrensa = (criterios.pregunta || criterios.texto).trim()
-  const consultaPrensa = !esIdentificador(basePrensa) && basePrensa.length >= 3
+  const consultaPrensa = !pendienteIA && !esIdentificador(basePrensa) && basePrensa.length >= 3
     ? [
         basePrensa,
         lugarFiltro && !sinTildes(basePrensa).includes(sinTildes(lugarFiltro)) ? lugarFiltro : '',
