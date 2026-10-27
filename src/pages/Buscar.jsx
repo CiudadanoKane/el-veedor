@@ -1518,6 +1518,19 @@ export function Buscar() {
                             onAbrir={abrirContrato}
                             renderDetail={(row) => <ContractDetail contract={row} />}
                           />
+                          {queryContratos.data?.incompleta && (
+                            <p className="mt-3 text-nota text-textSecondary">
+                              Algunas consultas a SECOP no respondieron, así que puede haber más
+                              contratos.{' '}
+                              <button
+                                type="button"
+                                onClick={() => queryContratos.refetch()}
+                                className="toque font-semibold text-primary enlace-sutil"
+                              >
+                                Volver a intentar
+                              </button>
+                            </p>
+                          )}
                           {buscandoAproximados && (
                             <p className="mt-3 flex items-center gap-2 text-nota text-textSecondary">
                               <span className="h-3 w-3 shrink-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />

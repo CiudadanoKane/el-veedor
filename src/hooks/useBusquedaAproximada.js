@@ -24,7 +24,10 @@ export function useBusquedaAproximada(criterios = {}, filtrosGeo = {}, activa = 
     queryFn: async () => {
       const where = whereSecop2(criterios, filtrosGeo, { conTexto: true })
       const opciones = { select: CONTRACT_FIELDS, order: orden, limit: LIMITE + 1 }
-      const pedir = (consultas) => Promise.all(consultas.map((c) => socrataBusqueda(DATASETS.CONTRATOS, c)))
+      // Lo que llegue: una consulta caída no tumba las demás (ver
+      // buscarPorVariantes en useBusqueda).
+      const pedir = async (consultas) => (await Promise.allSettled(consultas.map((c) => socrataBusqueda(DATASETS.CONTRATOS, c))))
+        .filter((r) => r.status === 'fulfilled').map((r) => r.value)
       const unir = (listas) => [...new Map(listas.flat().map((f) => [f.id_contrato, f])).values()]
 
       // Con texto de la IA (hay pregunta), sus tildes valen (ver escrituras).

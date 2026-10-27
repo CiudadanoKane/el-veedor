@@ -143,7 +143,7 @@ function compararAdaptados(orden) {
 // prefiltro de $q; con una sola palabra $q ya es preciso y se deja amplio para
 // que "hospital" alcance también a la entidad. Todas las consultas corren en
 // paralelo y se fusionan por id.
-async function buscarPorVariantes(dataset, { frases, where, campoId, campos, orderBy, camposFrase, exigirCampo = false, confiable = false }) {
+export async function buscarPorVariantes(dataset, { frases, where, campoId, campos, orderBy, camposFrase, exigirCampo = false, confiable = false }) {
   const fraseEn = (v) =>
     '(' + camposFrase.map((c) => `caseless_contains(${c}, '${esc(v)}')`).join(' OR ') + ')'
 
@@ -179,13 +179,23 @@ async function buscarPorVariantes(dataset, { frases, where, campoId, campos, ord
     return { filas, hayMas: filas.length > LIMITE }
   }
 
-  const respuestas = await Promise.all(consultas)
+  // Una consulta que falla no tumba las demás: datos.gov.co devuelve a ratos
+  // 500 o 503 (oct 2026), y con Promise.all una sola variante caída dejaba a la
+  // persona frente a "Error al consultar" aunque las otras trajeran contratos.
+  // Solo si fallan todas, falla la búsqueda. `fallidas` dice cuántas faltaron.
+  const respuestas = await Promise.allSettled(consultas)
+  const buenas = respuestas.filter((r) => r.status === 'fulfilled').map((r) => r.value)
+  if (!buenas.length) throw respuestas[0].reason
   const unicos = new Map()
-  for (const filas of respuestas) {
+  for (const filas of buenas) {
     for (const f of filas) unicos.set(f[campoId], f)
   }
   const combinadas = [...unicos.values()]
-  return { filas: combinadas.slice(0, LIMITE + 1), hayMas: combinadas.length > LIMITE }
+  return {
+    filas: combinadas.slice(0, LIMITE + 1),
+    hayMas: combinadas.length > LIMITE,
+    fallidas: respuestas.length - buenas.length,
+  }
 }
 
 // $where de SECOP II: el filtro de estado (el elegido a mano, o el de
@@ -343,11 +353,15 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
           socrataQuery(DS, `SELECT ${CONTRACT_FIELDS} WHERE ${w} ORDER BY ${orderBy} LIMIT ${LIMITE + 1}`)
         const pedir1 = (w) =>
           socrataQuery(DS1, `SELECT ${CONTRACT_FIELDS_SECOP1} WHERE ${w} ORDER BY ${orderBySecop1} LIMIT ${LIMITE + 1}`)
+        // SECOP I y la pasada local, sin tumbar la búsqueda si fallan (ver
+        // buscarPorVariantes).
+        let fallos = 0
+        const opcional = (p) => p.catch(() => { fallos++; return [] })
         const [pais2, pais1, local2, local1] = await Promise.all([
           pedir2(cond2),
-          pedir1(cond1),
-          geo2.length ? pedir2([cond2, ...geo2].join(' AND ')) : Promise.resolve([]),
-          geo1.length ? pedir1([cond1, ...geo1].join(' AND ')) : Promise.resolve([]),
+          opcional(pedir1(cond1)),
+          geo2.length ? opcional(pedir2([cond2, ...geo2].join(' AND '))) : Promise.resolve([]),
+          geo1.length ? opcional(pedir1([cond1, ...geo1].join(' AND '))) : Promise.resolve([]),
         ])
         const unir = (locales, resto, campo) => {
           const vistos = new Map()
@@ -359,6 +373,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
           filas1: unir(local1, pais1, 'uid'),
           hayMas: pais2.length > LIMITE || pais1.length > LIMITE,
           porId: true,
+          incompleta: fallos > 0,
         }
       }
 
@@ -435,7 +450,12 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
           })().catch(() => ({ filas: [], hayMas: false, aproximadas: [] }))
         : Promise.resolve({ filas: [], hayMas: false, aproximadas: [] })
 
-      const [r2, r1, rs] = await Promise.all([consultaSecop2, consultaSecop1, consultaSector])
+      // SECOP I es un complemento: si falla, sigue SECOP II.
+      const [r2, r1, rs] = await Promise.all([
+        consultaSecop2,
+        consultaSecop1.catch(() => ({ filas: [], hayMas: false, fallidas: 1 })),
+        consultaSector,
+      ])
       if (rs.filas.length) {
         const vistos = new Set(rs.filas.map((f) => f.id_contrato))
         r2.filas = [...rs.filas, ...r2.filas.filter((f) => !vistos.has(f.id_contrato))]
@@ -445,6 +465,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
         hayMas: r2.hayMas || r1.hayMas,
         porId: false,
         aproximadasSector: rs.aproximadas,
+        incompleta: (r2.fallidas || 0) + (r1.fallidas || 0) > 0,
       }
     },
     select: (r) => {
@@ -479,7 +500,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
       // como las de la búsqueda aproximada (ver Buscar).
       const sueltas = new Set(r.aproximadasSector ?? [])
       const marcados = sueltas.size ? contratos.map((c) => (sueltas.has(c.id) ? { ...c, aproximado: 'todas' } : c)) : contratos
-      return { contratos: marcados, hayMas: r.hayMas, porId: r.porId, entidades }
+      return { contratos: marcados, hayMas: r.hayMas, porId: r.porId, entidades, incompleta: !!r.incompleta }
     },
   })
 }
