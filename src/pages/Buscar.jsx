@@ -13,7 +13,7 @@ import { useBusquedaDocumentos } from '../hooks/useBusquedaDocumentos'
 import { useBusquedaAproximada } from '../hooks/useBusquedaAproximada'
 import { palabrasClave } from '../lib/busquedaAproximada'
 import { useDirectorioEntidades, filtrarEntidades } from '../hooks/useDirectorioEntidades'
-import { useBusqueda, hayBusqueda, ORDENES, LIMITE, esIdentificador, segmentoValido } from '../hooks/useBusqueda'
+import { useBusqueda, hayBusqueda, ORDENES, LIMITE, esIdentificador, segmentoValido, sinArticulo } from '../hooks/useBusqueda'
 import { extraerIdentificador } from '../lib/busquedaId'
 import { nombreSegmento } from '../lib/unspsc'
 import { useQueryClient } from '@tanstack/react-query'
@@ -893,7 +893,7 @@ export function Buscar() {
   // Y dentro de cada nivel, primero los que nombran el barrio o sector
   // ("San Cristóbal", "Cristal Bajo"): con "alcantarillado" solo, en
   // Piedecuesta, el buscado quedaba 14.º de 100 (oct 2026).
-  const sectorN = norm(criterios.sector)
+  const sectorN = norm(sinArticulo(criterios.sector))
   const nombraSector = (r) => !sectorN || norm(r.description).includes(sectorN)
   // Lo que nombra el barrio pesa más que el nivel de coincidencia: la
   // consulta que lo trae ya exige también las palabras buscadas.

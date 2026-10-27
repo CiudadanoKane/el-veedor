@@ -227,8 +227,13 @@ function condicionLugarDeLaObra(ciudad) {
 
 // Que el contrato nombre el barrio o sector (criterios.sector), en el objeto o
 // la descripción, con y sin tildes.
+// Sin artículo inicial: "El Plateado" es, en SECOP, "corregimiento de
+// PLATEADO".
+export function sinArticulo(sector) {
+  return String(sector || '').trim().replace(/^(el|la|los|las)\s+/i, '')
+}
 export function condicionSector(sector) {
-  const s = String(sector || '').toLowerCase().trim()
+  const s = sinArticulo(sector).toLowerCase()
   if (!s) return null
   const variantes = [...new Set([s, sinTildes(s)])]
   return '(' + variantes.flatMap((v) => [
@@ -410,8 +415,11 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
       const consultaSector = conSector
         ? (async () => {
             const whereSector = `${where2} AND ${conSector}`
+            // Con lo buscado y también con sus términos relacionados: el
+            // "polideportivo" de Guanabanal es, en SECOP, su "complejo
+            // deportivo", y la IA suele traerlo entre los términos.
             const porFrase = await buscarPorVariantes(DS, {
-              frases: [texto || criterios.sector], where: whereSector, campoId: 'id_contrato',
+              frases: texto ? frases : [criterios.sector], where: whereSector, campoId: 'id_contrato',
               campos: CONTRACT_FIELDS, orderBy, camposFrase: CAMPOS_FRASE, confiable,
             })
             if (porFrase.filas.length || !texto) return { ...porFrase, aproximadas: [] }

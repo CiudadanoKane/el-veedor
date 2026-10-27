@@ -47,3 +47,26 @@ describe('consultasRelajadas', () => {
     expect(consultasRelajadas('parque virgen carmen', '')).toEqual([])
   })
 })
+
+describe('sinónimos de la obra pública', () => {
+  it('una palabra acepta sus sinónimos en el objeto', () => {
+    const [c] = consultasAproximadas('parque principal tolú', '')
+    expect(c.where).toContain("caseless_contains(objeto_del_contrato, 'central')")
+  })
+  it('al índice va una palabra sin sinónimos, si la hay', () => {
+    const consultas = consultasAproximadas('polideportivo guanabanal', '')
+    expect(consultas.every((c) => /guanabanal/.test(c.q.normalize('NFD').replace(/[̀-ͯ]/g, '')))).toBe(true)
+    expect(consultas[0].where).toContain("caseless_contains(objeto_del_contrato, 'complejo deportivo')")
+  })
+  it('si todas tienen sinónimos, el índice prueba cada forma', () => {
+    const qs = consultasAproximadas('pavimentación calles', '').map((c) => c.q)
+    expect(qs).toEqual(expect.arrayContaining(['calles', 'vías urbanas']))
+  })
+})
+
+describe('consultasRelajadas con ciudad', () => {
+  it('con una ciudad elegida, también con 3 palabras', () => {
+    expect(consultasRelajadas('parque principal tolu', '', {}, { conCiudad: true })).toHaveLength(3)
+    expect(consultasRelajadas('parque principal tolu', '')).toEqual([])
+  })
+})

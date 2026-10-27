@@ -31,7 +31,7 @@ export function useBusquedaAproximada(criterios = {}, filtrosGeo = {}, activa = 
       let todas = true
       // Con todas las palabras, nada: todas menos una (ver consultasRelajadas).
       if (!filas.length) {
-        filas = unir(await pedir(consultasRelajadas(texto, where, opciones).flat()))
+        filas = unir(await pedir(consultasRelajadas(texto, where, opciones, { conCiudad: !!filtrosGeo.city }).flat()))
         todas = false
       }
       return { contratos: adaptList(filas.slice(0, LIMITE)), todas }

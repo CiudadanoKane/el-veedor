@@ -71,6 +71,31 @@ export function raiz(palabra) {
   return null
 }
 
+// Sinónimos de la obra pública: cómo dice la gente y cómo escribe la entidad.
+// Pocos y seguros, sacados de la medición de oct 2026, donde cada uno dejaba
+// un contrato sin encontrar:
+//   "parque principal de Tolú"     → "parque CENTRAL del municipio de… Tolú"
+//   "polideportivo de Guanabanal"  → "COMPLEJO DEPORTIVO Guanabanal"
+//   "pavimentación de calles"      → "pavimentación de… VÍAS URBANAS"
+//   "puesto de salud"              → "UNIDAD DE ATENCIÓN EN salud"
+// Solo en la búsqueda por palabras sueltas, que ya va rotulada como
+// aproximada: la frase exacta sigue siendo la frase exacta.
+const SINONIMOS = {
+  principal: ['central'],
+  central: ['principal'],
+  polideportivo: ['complejo deportivo', 'coliseo', 'escenario deportivo', 'unidad deportiva'],
+  coliseo: ['polideportivo', 'complejo deportivo'],
+  calles: ['vías urbanas', 'vías', 'malla vial'],
+  arreglo: ['mejoramiento', 'adecuación', 'rehabilitación', 'reparación', 'mantenimiento'],
+  reparacion: ['mejoramiento', 'adecuación', 'rehabilitación', 'mantenimiento'],
+  colegio: ['institución educativa', 'escuela', 'ied'],
+  escuela: ['institución educativa', 'colegio', 'sede educativa'],
+  puesto: ['centro', 'unidad', 'ips'],
+  andenes: ['aceras', 'espacio público'],
+  puente: ['viaducto', 'pontón'],
+}
+const sinonimosDe = (palabra) => SINONIMOS[sinTildes(palabra)] ?? []
+
 const CAMPOS = ['objeto_del_contrato', 'descripcion_del_proceso']
 // Las escrituras de una palabra: la raíz tal cual y sin tildes, o la palabra
 // en cada escritura de tilde posible (más la escrita, si traía una letra que
@@ -80,8 +105,12 @@ function escrituras(palabra) {
   if (r) return [...new Set([r, sinTildes(r)])]
   return [...new Set([palabra, ...variantesConTilde(palabra)])]
 }
+// Y con sus sinónimos, con y sin tildes.
+function escriturasConSinonimos(palabra) {
+  return [...new Set([...escrituras(palabra), ...sinonimosDe(palabra).flatMap((s) => [s, sinTildes(s)])])]
+}
 function exigir(palabra) {
-  return '(' + escrituras(palabra).flatMap((v) => CAMPOS.map((c) => `caseless_contains(${c}, '${esc(v)}')`)).join(' OR ') + ')'
+  return '(' + escriturasConSinonimos(palabra).flatMap((v) => CAMPOS.map((c) => `caseless_contains(${c}, '${esc(v)}')`)).join(' OR ') + ')'
 }
 
 // Las consultas ($q + $where) para un conjunto de palabras, o [] si no se
@@ -91,9 +120,12 @@ function consultasPara(palabras, where, opciones) {
   if (palabras.length < 2) return []
   const enteras = palabras.filter((p) => !raiz(p))
   if (!enteras.length) return []
-  const clave = enteras.reduce((a, b) => (b.length > a.length ? b : a))
+  // Al índice, mejor una palabra sin sinónimos: con uno, el índice tiene que
+  // probar cada forma. Si todas los tienen, la más larga, en todas sus formas.
+  const sinSin = enteras.filter((p) => !sinonimosDe(p).length)
+  const clave = (sinSin.length ? sinSin : enteras).reduce((a, b) => (b.length > a.length ? b : a))
   const whereTotal = [where, ...palabras.filter((p) => p !== clave).map(exigir)].filter(Boolean).join(' AND ')
-  return escrituras(clave).map((q) => ({ q, where: whereTotal, ...opciones }))
+  return escriturasConSinonimos(clave).map((q) => ({ q, where: whereTotal, ...opciones }))
 }
 
 export function consultasAproximadas(texto, where, opciones = {}) {
@@ -103,9 +135,12 @@ export function consultasAproximadas(texto, where, opciones = {}) {
 // Si con todas no sale nada: todas menos una, por turnos. "colegio normal
 // superior maria auxiliadora" es, en SECOP, la "IED Escuela Normal Superior
 // María Auxiliadora": la palabra que sobra es la que la persona puso de más.
-// Solo con 4 palabras o más; con menos, quitar una deja la búsqueda en casi nada.
-export function consultasRelajadas(texto, where, opciones = {}) {
+// Con 4 palabras o más; con 2 o 3, solo si hay una ciudad elegida
+// (`conCiudad`), que ya acota: "pavimentación de calles" en Fresno puede
+// quedarse en "pavimentación", que en Fresno son pocos contratos; en todo el
+// país, quitar una palabra deja la búsqueda en casi nada.
+export function consultasRelajadas(texto, where, opciones = {}, { conCiudad = false } = {}) {
   const palabras = palabrasClave(texto)
-  if (palabras.length < 4) return []
+  if (palabras.length < (conCiudad ? 2 : 4)) return []
   return palabras.map((_, i) => consultasPara(palabras.filter((__, j) => j !== i), where, opciones))
 }
