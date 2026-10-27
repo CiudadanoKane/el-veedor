@@ -38,8 +38,13 @@ export function Segmented({ options, value, onChange, envolver = false }) {
   const borde = envolver
     ? 'border border-textPrimary/30'
     : 'border border-textPrimary/30 sm:border-0 sm:border-r sm:border-border sm:last:border-r-0'
+  // Sin el par margen negativo + relleno que tenía: con max-w-full, cuando el
+  // control queda en una fila que se ajusta a su contenido, el relleno no
+  // cabía y sobraban 4 px —224 de contenido en 220 de caja—, y Windows
+  // mostraba una barra de desplazamiento vacía debajo de "Mayor valor / Más
+  // reciente" (oct 2026, el Buscador).
   return (
-    <div className={`${envolver ? '' : 'sm:overflow-x-auto sm:-mx-1 sm:px-1'} min-w-0 max-w-full`}>
+    <div className={`${envolver ? '' : 'sm:overflow-x-auto'} min-w-0 max-w-full`}>
       <div className={grupo}>
         {options.map((o) => {
           const activo = value === o.value

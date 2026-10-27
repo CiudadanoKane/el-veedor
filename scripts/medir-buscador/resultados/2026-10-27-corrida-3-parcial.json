@@ -1,0 +1,22 @@
+{
+  "descripcion": "Tercera corrida, interrumpida en el caso 16 de 35 porque se cerró el navegador (27 oct). Midió la versión con el arreglo de la IA, los filtros rápidos y el barrio aparte (129b83f2), sin los sinónimos ni los demás cambios que se publicaron después. 'posicion' es el puesto en la lista desplegada entera; 'aLaVista', si estaba entre los 5 que se ven sin pulsar nada; 'porPrensa', si llevaba la etiqueta 'Lo nombra la prensa'.",
+  "casos": [
+    { "id": "P1", "posicion": 1, "aLaVista": true, "porPrensa": true, "segundos": 18 },
+    { "id": "P2", "posicion": 2, "aLaVista": true, "porPrensa": true, "segundos": 12 },
+    { "id": "P3", "posicion": 1, "aLaVista": true, "segundos": 8 },
+    { "id": "P4", "posicion": null },
+    { "id": "P5", "posicion": 1, "aLaVista": true, "porPrensa": true, "segundos": 8 },
+    { "id": "P6", "posicion": 1, "aLaVista": true, "porPrensa": true, "segundos": 6 },
+    { "id": "P7", "posicion": 1, "aLaVista": true, "segundos": 8 },
+    { "id": "P8", "posicion": 1, "aLaVista": true, "segundos": 12 },
+    { "id": "P9", "posicion": 3, "aLaVista": true, "segundos": 6 },
+    { "id": "D1", "posicion": 1, "aLaVista": true, "segundos": 16 },
+    { "id": "D2", "posicion": 1, "aLaVista": true, "segundos": 8 },
+    { "id": "D3", "posicion": null },
+    { "id": "D4", "posicion": 12, "aLaVista": false },
+    { "id": "D5", "posicion": 1, "aLaVista": true, "segundos": 9 },
+    { "id": "D6", "posicion": 1, "aLaVista": true, "segundos": 44 },
+    { "id": "D7", "posicion": 2, "aLaVista": true, "segundos": 8 }
+  ],
+  "nota": "En 11 de los 16 casos el puente de la prensa se llamó dos veces (la primera sin lugar, antes de que la IA terminara): arreglado en c52dd5e3."
+}
