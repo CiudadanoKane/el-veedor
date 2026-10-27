@@ -802,6 +802,17 @@ Lo que queda, por causa:
 - **Ambiguo** (1, D4, cuenta como encontrado pero 12.º): el centro de vida;
   con el filtro rápido "EDUS" queda 1.º de 2.
 
+**Después de la segunda corrida (27 oct)**, caso por caso en producción (no es
+una corrida completa):
+
+- La IA ya no cambia nombres propios ni adivina lugares: "intercambiador de
+  Ternera" y "vía Varsovia El Delirio" sin lugar inventado.
+- El barrio o sector va aparte (`sector`) y lo que lo nombra va primero:
+  San Cristóbal 14.º → **1.º**, Cristal Bajo 14.º → **1.º**, Mingueo (no
+  aparecía) → **2.º**, los tres a la vista.
+- Con esto, la cuenta estimada pasa a 28 de 35 en la lista y 27 a la vista.
+  Falta una tercera corrida completa que lo confirme.
+
 ### Modo oscuro automático (oct 2026)
 
 Decisión: el tema principal sigue siendo claro —la plataforma es lectura
