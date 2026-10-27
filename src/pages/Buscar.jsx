@@ -26,6 +26,8 @@ import { useContratosMarco } from '../hooks/useContratosMarco'
 import { AdjudicadosSinContrato } from '../components/ui/AdjudicadosSinContrato'
 import { SugerenciasBusqueda } from '../components/ui/SugerenciasBusqueda'
 import { PanelPrensa } from '../components/ui/PanelPrensa'
+import { FiltrosRapidos } from '../components/ui/FiltrosRapidos'
+import { facetas, aplicarFacetas } from '../lib/facetas'
 import { useBusquedaWeb, usePuentePrensa } from '../hooks/useBusquedaWeb'
 import { useContratosPorId } from '../hooks/useContratosPorId'
 import { Icon } from '../components/ui/Icon'
@@ -892,6 +894,14 @@ export function Buscar() {
       .map(({ r, n }) => (n === 2 && !r.documentos?.length
         ? { ...r, porTermino: terminoQueCoincide(r, criterios.terminos) }
         : r))
+  // Filtros rápidos (ver lib/facetas.js): acotan la lista ya cargada, sin
+  // consultar. Vuelven a cero con cada búsqueda nueva.
+  const [refino, setRefino] = useState({ tipo: '', entidad: '' })
+  const firmaBusqueda = JSON.stringify([criterios, filters])
+  useEffect(() => setRefino({ tipo: '', entidad: '' }), [firmaBusqueda])
+  const facetasLista = facetas(lista)
+  const listaVisible = aplicarFacetas(lista, refino)
+
   // Los contratos marco del lugar, solo como último recurso: si la lista ya
   // trae algo con todas las palabras o algo que nombra la prensa, el aviso de
   // "ningún contrato nombra…" era falso ("arroyo calle 85", oct 2026).
@@ -1464,9 +1474,16 @@ export function Buscar() {
                               los primeros (ver el orden por niveles en `lista`).
                               Con 10, en el teléfono seguían siendo varias
                               pantallas antes de las noticias. */}
+                          <FiltrosRapidos
+                            facetas={facetasLista}
+                            refino={refino}
+                            onCambiar={setRefino}
+                            visibles={listaVisible.length}
+                            total={lista.length}
+                          />
                           <DataTable
                             columns={columns}
-                            rows={lista}
+                            rows={listaVisible}
                             keyField="id"
                             tanda={5}
                             abierto={params.get('abierto')}
