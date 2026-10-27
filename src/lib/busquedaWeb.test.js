@@ -185,6 +185,12 @@ describe('recortesDeObra', () => {
     expect(recortesDeObra('Canalización arroyo de la calle 85', 'arroyo 85 Barranquilla')[0]).toBe('arroyo de la calle 85')
   })
 
+  it('prueba primero el nombre sin la acción del comienzo', () => {
+    // SECOP: "...TRAMO 1: CORREDOR UNIVERSITARIO". El recorte por el borde
+    // daba "Ampliación del Corredor", que encuentra cualquier corredor.
+    expect(recortesDeObra('Ampliación del Corredor Universitario', 'la gran via atlantico')[0]).toBe('Corredor Universitario')
+  })
+
   it('no deja pedazos que ya no nombran la obra', () => {
     expect(recortesDeObra('Mejoramiento de la Gran Vía de Barranquilla', 'la gran vía')).toEqual([])
     expect(recortesDeObra('Corredor Universitario')).toEqual([])

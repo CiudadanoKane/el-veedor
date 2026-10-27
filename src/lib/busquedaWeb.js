@@ -346,12 +346,30 @@ export function pistasDelPuente(puente, consulta, max = 3) {
 // igual largo, primero el que conserva un número, que distingue una obra de
 // otra.
 const PUNTAS = new Set([...VACIAS, 'sobre', 'entre', 'desde', 'hasta', 'hacia', 'sector'])
+// Palabras de la ACCIÓN, no del nombre: la prensa dice "Ampliación del
+// Corredor Universitario" y SECOP "Mejoramiento del corredor vial… tramo 1:
+// CORREDOR UNIVERSITARIO". El nombre propio es lo que coincide; la acción
+// cambia de una fuente a otra. Recortar por el borde dejaba "Ampliación del
+// Corredor", que encuentra cualquier corredor (oct 2026, la Gran Vía: el
+// puente acertaba solo cuando además nombraba al contratista).
+const ACCIONES = new Set([
+  'ampliacion', 'construccion', 'mejoramiento', 'mantenimiento', 'rehabilitacion', 'adecuacion',
+  'reparacion', 'recuperacion', 'modernizacion', 'remodelacion', 'intervencion', 'optimizacion',
+  'obra', 'obras', 'proyecto', 'nuevo', 'nueva',
+])
 export function recortesDeObra(frase, consulta = '', max = 3) {
   const palabras = String(frase || '').trim().split(/\s+/).filter(Boolean)
   const vacia = (p) => PUNTAS.has(plano(p))
   const conContenido = (ps) => ps.filter((p) => !vacia(p)).length
   const minimo = Math.max(2, Math.ceil((conContenido(palabras) * 2) / 3))
   const salida = []
+  // Primero, el nombre sin la acción del comienzo ("Corredor Universitario"),
+  // si le quedan al menos dos palabras.
+  let sinAccion = palabras
+  while (sinAccion.length && (ACCIONES.has(plano(sinAccion[0])) || vacia(sinAccion[0]))) sinAccion = sinAccion.slice(1)
+  if (sinAccion.length >= 2 && sinAccion.length < palabras.length && !repiteLaConsulta(sinAccion.join(' '), consulta)) {
+    salida.push(sinAccion.join(' '))
+  }
   for (let quitar = 1; quitar <= palabras.length - 3; quitar++) {
     const delLargo = []
     for (let inicio = 0; inicio <= quitar; inicio++) {
