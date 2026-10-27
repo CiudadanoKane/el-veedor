@@ -70,3 +70,11 @@ describe('consultasRelajadas con ciudad', () => {
     expect(consultasRelajadas('parque principal tolu', '')).toEqual([])
   })
 })
+
+describe('con texto de la IA', () => {
+  it('no prueba tildes que la IA no puso', () => {
+    const qs = consultasAproximadas('construcción hospital Monguí', '', {}, { confiable: true }).map((c) => c.q)
+    expect(qs).toEqual(['hospital'])
+    expect(consultasAproximadas('construcción hospital Monguí', '').length).toBeGreaterThan(1)
+  })
+})

@@ -27,11 +27,13 @@ export function useBusquedaAproximada(criterios = {}, filtrosGeo = {}, activa = 
       const pedir = (consultas) => Promise.all(consultas.map((c) => socrataBusqueda(DATASETS.CONTRATOS, c)))
       const unir = (listas) => [...new Map(listas.flat().map((f) => [f.id_contrato, f])).values()]
 
-      let filas = unir(await pedir(consultasAproximadas(texto, where, opciones)))
+      // Con texto de la IA (hay pregunta), sus tildes valen (ver escrituras).
+      const confiable = !!criterios.pregunta
+      let filas = unir(await pedir(consultasAproximadas(texto, where, opciones, { confiable })))
       let todas = true
       // Con todas las palabras, nada: todas menos una (ver consultasRelajadas).
       if (!filas.length) {
-        filas = unir(await pedir(consultasRelajadas(texto, where, opciones, { conCiudad: !!filtrosGeo.city }).flat()))
+        filas = unir(await pedir(consultasRelajadas(texto, where, opciones, { conCiudad: !!filtrosGeo.city, confiable }).flat()))
         todas = false
       }
       return { contratos: adaptList(filas.slice(0, LIMITE)), todas }

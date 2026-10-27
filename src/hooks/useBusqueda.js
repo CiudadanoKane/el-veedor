@@ -427,7 +427,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
             // barrio. "cancha sintética" en Mingueo es, en SECOP, "cancha EN
             // GRAMA sintética… corregimiento de Mingueo".
             const listas = await Promise.all(
-              consultasAproximadas(texto, whereSector, { select: CONTRACT_FIELDS, order: orderBy, limit: LIMITE + 1 })
+              consultasAproximadas(texto, whereSector, { select: CONTRACT_FIELDS, order: orderBy, limit: LIMITE + 1 }, { confiable })
                 .map((c) => socrataBusqueda(DS, c)),
             )
             const filas = [...new Map(listas.flat().map((f) => [f.id_contrato, f])).values()]

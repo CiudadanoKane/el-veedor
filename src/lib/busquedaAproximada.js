@@ -100,23 +100,28 @@ const CAMPOS = ['objeto_del_contrato', 'descripcion_del_proceso']
 // Las escrituras de una palabra: la raíz tal cual y sin tildes, o la palabra
 // en cada escritura de tilde posible (más la escrita, si traía una letra que
 // variantesConTilde no genera, como la ü).
-function escrituras(palabra) {
+// `confiable`: el texto lo escribió la IA, en ortografía estándar (ver
+// variantesDeFrase): basta la palabra tal cual y sin tildes. Sin eso,
+// "hospital" se buscaba también como "hóspital" y "hospítal", una consulta más
+// por cada una sobre el índice.
+function escrituras(palabra, confiable = false) {
   const r = raiz(palabra)
   if (r) return [...new Set([r, sinTildes(r)])]
+  if (confiable) return [...new Set([palabra, sinTildes(palabra)])]
   return [...new Set([palabra, ...variantesConTilde(palabra)])]
 }
 // Y con sus sinónimos, con y sin tildes.
-function escriturasConSinonimos(palabra) {
-  return [...new Set([...escrituras(palabra), ...sinonimosDe(palabra).flatMap((s) => [s, sinTildes(s)])])]
+function escriturasConSinonimos(palabra, confiable) {
+  return [...new Set([...escrituras(palabra, confiable), ...sinonimosDe(palabra).flatMap((s) => [s, sinTildes(s)])])]
 }
-function exigir(palabra) {
-  return '(' + escriturasConSinonimos(palabra).flatMap((v) => CAMPOS.map((c) => `caseless_contains(${c}, '${esc(v)}')`)).join(' OR ') + ')'
+function exigir(palabra, confiable) {
+  return '(' + escriturasConSinonimos(palabra, confiable).flatMap((v) => CAMPOS.map((c) => `caseless_contains(${c}, '${esc(v)}')`)).join(' OR ') + ')'
 }
 
 // Las consultas ($q + $where) para un conjunto de palabras, o [] si no se
 // puede: hace falta al menos una palabra entera para el índice, y al menos dos
 // palabras en total (con una sola, la búsqueda principal ya es esta misma).
-function consultasPara(palabras, where, opciones) {
+function consultasPara(palabras, where, opciones, confiable = false) {
   if (palabras.length < 2) return []
   const enteras = palabras.filter((p) => !raiz(p))
   if (!enteras.length) return []
@@ -124,12 +129,12 @@ function consultasPara(palabras, where, opciones) {
   // probar cada forma. Si todas los tienen, la más larga, en todas sus formas.
   const sinSin = enteras.filter((p) => !sinonimosDe(p).length)
   const clave = (sinSin.length ? sinSin : enteras).reduce((a, b) => (b.length > a.length ? b : a))
-  const whereTotal = [where, ...palabras.filter((p) => p !== clave).map(exigir)].filter(Boolean).join(' AND ')
-  return escriturasConSinonimos(clave).map((q) => ({ q, where: whereTotal, ...opciones }))
+  const whereTotal = [where, ...palabras.filter((p) => p !== clave).map((p) => exigir(p, confiable))].filter(Boolean).join(' AND ')
+  return escriturasConSinonimos(clave, confiable).map((q) => ({ q, where: whereTotal, ...opciones }))
 }
 
-export function consultasAproximadas(texto, where, opciones = {}) {
-  return consultasPara(palabrasClave(texto), where, opciones)
+export function consultasAproximadas(texto, where, opciones = {}, { confiable = false } = {}) {
+  return consultasPara(palabrasClave(texto), where, opciones, confiable)
 }
 
 // Si con todas no sale nada: todas menos una, por turnos. "colegio normal
@@ -139,8 +144,8 @@ export function consultasAproximadas(texto, where, opciones = {}) {
 // (`conCiudad`), que ya acota: "pavimentación de calles" en Fresno puede
 // quedarse en "pavimentación", que en Fresno son pocos contratos; en todo el
 // país, quitar una palabra deja la búsqueda en casi nada.
-export function consultasRelajadas(texto, where, opciones = {}, { conCiudad = false } = {}) {
+export function consultasRelajadas(texto, where, opciones = {}, { conCiudad = false, confiable = false } = {}) {
   const palabras = palabrasClave(texto)
   if (palabras.length < (conCiudad ? 2 : 4)) return []
-  return palabras.map((_, i) => consultasPara(palabras.filter((__, j) => j !== i), where, opciones))
+  return palabras.map((_, i) => consultasPara(palabras.filter((__, j) => j !== i), where, opciones, confiable))
 }
