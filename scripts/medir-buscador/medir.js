@@ -34,7 +34,10 @@ async function medirCaso(caso, { maxMs = 90_000 } = {}) {
   while (performance.now() - t0 < maxMs) {
     await dormir(3000)
     const d = iframe.contentDocument
-    if (!d?.body) continue
+    // Solo cuenta cuando la página del buscador cargó de verdad: un iframe
+    // todavía en blanco se veía "estable" y daba casos vacíos en 9 s.
+    if (!d?.body || iframe.contentWindow.location.pathname !== '/buscar' ||
+      !/Contratos en SECOP|Ningún contrato|Interpretando|Cargando/.test(d.body.innerText)) continue
     const filas = [...d.querySelectorAll('[data-fila]')].map((e) => e.dataset.fila)
     if (primeraVez === null && caso.contratos.some((c) => filas.includes(c))) primeraVez = performance.now() - t0
     const texto = d.body.innerText

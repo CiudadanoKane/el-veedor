@@ -1,0 +1,21 @@
+{
+  "descripcion": "Segunda corrida, en producción, con los arreglos del 26 oct publicados (puente con índice, tildes, palabras sueltas, lugar de la obra, niveles, lista de a 5, números escritos a mano) y SIN el arreglo de la IA ni los filtros rápidos (981cc163, d6581da9), que se publicaron al terminar. Se hizo en dos tramos: 16 casos el 26 oct desde las 22:40 UTC y los 19 restantes el 27 oct, porque se cerró el navegador; entre tramos no hubo publicaciones. 'posicion' es el puesto en la lista desplegada entera; 'aLaVista', si estaba entre los 5 que se ven sin pulsar nada; 'porPrensa', si llevaba la etiqueta 'Lo nombra la prensa'.",
+  "casos": [
+    { "id": "P1", "posicion": 1, "aLaVista": true, "porPrensa": true, "segundos": 6 },
+    { "id": "P2", "posicion": null, "nota": "22 contratos, ninguno el buscado; el puente no lo trajo esta vez" },
+    { "id": "P3", "posicion": 1, "aLaVista": true, "segundos": 8 },
+    { "id": "P4", "posicion": null, "nota": "dudoso; el puente no trajo contrato esta vez" },
+    { "id": "P5", "posicion": 1, "aLaVista": true, "porPrensa": true, "segundos": 25 },
+    { "id": "P6", "posicion": 1, "aLaVista": true, "porPrensa": true, "nota": "la IA aún decía 'intercambiador de calor'; lo trajo el puente" },
+    { "id": "P7", "posicion": 1, "aLaVista": true },
+    { "id": "P8", "posicion": 1, "aLaVista": true, "porPrensa": true },
+    { "id": "P9", "posicion": 3, "aLaVista": true },
+    { "id": "D1", "posicion": null },
+    { "id": "D2", "posicion": 1, "aLaVista": true },
+    { "id": "D3", "posicion": null },
+    { "id": "D4", "posicion": 12, "aLaVista": false, "nota": "ambiguo: 80 contratos de centros de vida en Santa Marta; con el filtro rápido 'EDUS' queda 1.º de 2" },
+    { "id": "D5", "posicion": 1, "aLaVista": true },
+    { "id": "D6", "posicion": 3, "aLaVista": true },
+    { "id": "D7", "posicion": 2, "aLaVista": true }
+  ]
+}
