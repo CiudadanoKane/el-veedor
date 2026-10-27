@@ -774,6 +774,34 @@ Por qué fallaron los 18, y qué se hizo:
   nada en producción, aunque contra la API sí lo encuentra 2.º. A revisar en
   la segunda corrida.
 
+**Segunda corrida** (`resultados/2026-10-26-corrida-2.json`), con todos los
+arreglos de arriba salvo el de la IA y los filtros rápidos, que se publicaron
+al terminar. datos.gov.co se cayó a mitad de camino (503); los casos de la
+caída se repitieron.
+
+| Tipo | En la lista | En los 5 que se ven | Solo por la prensa | Nada |
+|---|---|---|---|---|
+| Prensa (9) | 7 | 7 | 0 | 2 |
+| Descripción (20) | 14 | 11 | 0 | 6 |
+| Datos (6) | 6 | 6 | 0 | 0 |
+| **Total (35)** | **27** (antes 15) | **24** (antes 14) | 0 (antes 2) | **8** (antes 18) |
+
+Lo que queda, por causa:
+
+- **La IA quita el barrio o el sector** (3): "barrio San Cristóbal",
+  "Cristal Bajo", "Mingueo". Lo hace porque se le pide no encadenar la obra con
+  el lugar (la búsqueda exige la frase junta). Pero ese nombre es justo lo que
+  distingue el contrato: con "mitigación" sola en Bucaramanga, el buscado queda
+  14.º. Idea: que la IA lo devuelva aparte y la búsqueda lo exija como palabra
+  suelta en el objeto.
+- **Sinónimos** (3): parque principal / central, polideportivo / complejo
+  deportivo, calles / vías urbanas.
+- **El puente de la prensa no es estable** (2): la Gran Vía y Caribe Verde
+  salen unas veces sí y otras no.
+- **Sin explicar todavía** (2): vivienda en Montería y El Plateado.
+- **Ambiguo** (1, D4, cuenta como encontrado pero 12.º): el centro de vida;
+  con el filtro rápido "EDUS" queda 1.º de 2.
+
 ### Modo oscuro automático (oct 2026)
 
 Decisión: el tema principal sigue siendo claro —la plataforma es lectura
