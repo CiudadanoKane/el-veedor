@@ -130,7 +130,7 @@ function terminoQueCoincide(contrato, terminos) {
 
 // Parámetros de URL que le pertenecen al buscador. Todo lo demás en la URL es
 // de otro módulo (hoy, los filtros geográficos) y no se toca desde aquí.
-const PARAMS_BUSQUEDA = ['q', 'amplia', 'modalidad', 'tipo', 'segmento', 'estado', 'orden', 'modo', 'valorMin', 'valorMax', 'desde', 'hasta', 'pregunta', 'quien', 'contratista', 'tema', 'abierto']
+const PARAMS_BUSQUEDA = ['q', 'amplia', 'modalidad', 'tipo', 'segmento', 'estado', 'orden', 'modo', 'valorMin', 'valorMax', 'desde', 'hasta', 'pregunta', 'quien', 'contratista', 'tema', 'sector', 'abierto']
 
 // Separador de la ampliación semántica en la URL. Barra vertical: no aparece
 // en nombres de contratos, así que no choca con los términos.
@@ -169,6 +169,7 @@ function escribirBusqueda(next, sig) {
     quien: sig.quien || '',
     contratista: sig.contratista || '',
     tema: sig.tema || '',
+    sector: sig.sector || '',
   }
   for (const [k, v] of Object.entries(propios)) {
     if (v) next.set(k, v)
@@ -193,7 +194,7 @@ const MODOS = [
 // plataforma es que alguien sin saber qué buscar encuentre por dónde empezar.
 // Lo que deja la IA cuando interpreta, y que una búsqueda sin IA (un número de
 // proceso, un fallo de la IA) debe borrar para no arrastrar lo de la anterior.
-const SIN_INTERPRETACION = { pregunta: '', quien: '', contratista: '', tema: '' }
+const SIN_INTERPRETACION = { pregunta: '', quien: '', contratista: '', tema: '', sector: '' }
 
 // Preguntas de juicio que SECOP no registra como texto —nadie escribe
 // "sobrecosto" en el objeto de su contrato— y el indicador de Alertas que más
@@ -511,6 +512,7 @@ export function Buscar() {
     pregunta: params.get('pregunta') || '',
     quien: params.get('quien') || '',
     contratista: params.get('contratista') || '',
+    sector: params.get('sector') || '',
     tema: TEMAS[params.get('tema')] ? params.get('tema') : '',
   }), [params])
 
@@ -628,6 +630,10 @@ export function Buscar() {
         pregunta: limpio,
         quien: filtros.entidad || '',
         contratista: filtros.contratista || '',
+        // El barrio o sector que nombró la persona: no va en "texto" (la
+        // búsqueda exige la frase junta) pero distingue el contrato. Va
+        // primero en la lista lo que lo nombra (ver useBusqueda).
+        sector: filtros.sector || '',
         tema: TEMAS[filtros.tema] ? filtros.tema : '',
       }
       // El lugar se valida contra el catálogo real (no se inventa un municipio).
@@ -884,14 +890,22 @@ export function Buscar() {
   const queryPrensaPorId = useContratosPorId(idsPuente.filter((id) => !idsVistos.has(id)))
   const dePrensa = new Set(idsPuente)
 
-  const nivel = (r) => (dePrensa.has(r.id) ? -1 : contieneFrase(r, criterios.texto) ? 0 : r.aproximado ? 1 : 2)
+  // Y dentro de cada nivel, primero los que nombran el barrio o sector
+  // ("San Cristóbal", "Cristal Bajo"): con "alcantarillado" solo, en
+  // Piedecuesta, el buscado quedaba 14.º de 100 (oct 2026).
+  const sectorN = norm(criterios.sector)
+  const nombraSector = (r) => !sectorN || norm(r.description).includes(sectorN)
+  // Lo que nombra el barrio pesa más que el nivel de coincidencia: la
+  // consulta que lo trae ya exige también las palabras buscadas.
+  const nivel = (r) => (dePrensa.has(r.id) ? 0 : 100) + (nombraSector(r) ? 0 : 10) +
+    (contieneFrase(r, criterios.texto) ? 0 : r.aproximado ? 1 : 2)
   const lista = porId || !criterios.texto
     ? resultados
     : [...resultados, ...aproximados, ...(queryPrensaPorId.data ?? [])]
       .map((r) => (dePrensa.has(r.id) ? { ...r, porPrensa: medioPuente } : r))
       .map((r, i) => ({ r, i, n: nivel(r) }))
       .sort((a, b) => a.n - b.n || a.i - b.i)
-      .map(({ r, n }) => (n === 2 && !r.documentos?.length
+      .map(({ r, n }) => (n % 10 === 2 && !r.documentos?.length
         ? { ...r, porTermino: terminoQueCoincide(r, criterios.terminos) }
         : r))
   // Filtros rápidos (ver lib/facetas.js): acotan la lista ya cargada, sin
@@ -1108,6 +1122,20 @@ export function Buscar() {
             {criterios.pregunta && criterios.texto && (
               <p className="mt-4 text-nota text-textSecondary">
                 Buscamos las palabras <strong className="text-textPrimary">«{criterios.texto}»</strong>
+                {criterios.sector && (
+                  <>
+                    , primero los que nombran <strong className="text-textPrimary">«{criterios.sector}»</strong>
+                    <button
+                      type="button"
+                      onClick={() => actualizar({ sector: '' })}
+                      aria-label={`Quitar «${criterios.sector}»`}
+                      title="Quitar"
+                      className="toque ml-1 text-textSecondary hover:text-textPrimary"
+                    >
+                      ×
+                    </button>
+                  </>
+                )}
                 {criterios.terminos.length > 0 ? ' y también:' : '.'}
               </p>
             )}

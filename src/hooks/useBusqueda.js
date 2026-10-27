@@ -8,6 +8,7 @@ import {
 } from '../lib/soql'
 import { variantesDeFrase, variantesReducidas, tieneTextoBuscable, palabrasDeFrase, pluralDeFrase, sinTildes } from '../lib/acentos'
 import { adaptList as adaptListSecop2 } from '../adapters/secop2Adapter'
+import { consultasAproximadas } from '../lib/busquedaAproximada'
 import { adaptList as adaptListSecop1 } from '../adapters/secop1Adapter'
 import { MODALIDAD_A_SECOP1, TIPO_A_SECOP1, ESTADO_A_SECOP1 } from '../lib/catalogosSecop1'
 import {
@@ -224,6 +225,18 @@ function condicionLugarDeLaObra(ciudad) {
   return `(ciudad = '${esc(ciudad)}' OR ${nombres.map((n) => `caseless_contains(objeto_del_contrato, '${esc(n)}')`).join(' OR ')})`
 }
 
+// Que el contrato nombre el barrio o sector (criterios.sector), en el objeto o
+// la descripción, con y sin tildes.
+export function condicionSector(sector) {
+  const s = String(sector || '').toLowerCase().trim()
+  if (!s) return null
+  const variantes = [...new Set([s, sinTildes(s)])]
+  return '(' + variantes.flatMap((v) => [
+    `caseless_contains(objeto_del_contrato, '${esc(v)}')`,
+    `caseless_contains(descripcion_del_proceso, '${esc(v)}')`,
+  ]).join(' OR ') + ')'
+}
+
 // Búsqueda de contratos por texto, en paralelo contra SECOP II y SECOP I.
 //
 // Usa $q, el índice de texto completo de Socrata, y NO caseless_contains. La
@@ -387,11 +400,43 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
                 .then((filas) => ({ filas, hayMas: filas.length > LIMITE })))
         : Promise.resolve({ filas: [], hayMas: false })
 
-      const [r2, r1] = await Promise.all([consultaSecop2, consultaSecop1])
+      // El barrio o sector que nombró la persona ("alcantarillado" en el
+      // barrio San Cristóbal): una consulta más que lo exige, para que esos
+      // contratos lleguen aunque la frase sola traiga cientos. No es un filtro:
+      // el contrato puede no nombrar el barrio (un contrato marco no dice
+      // "Caribe Verde"), y entonces la lista sigue con los demás. El Buscador
+      // pone primero los que lo nombran.
+      const conSector = condicionSector(criterios.sector)
+      const consultaSector = conSector
+        ? (async () => {
+            const whereSector = `${where2} AND ${conSector}`
+            const porFrase = await buscarPorVariantes(DS, {
+              frases: [texto || criterios.sector], where: whereSector, campoId: 'id_contrato',
+              campos: CONTRACT_FIELDS, orderBy, camposFrase: CAMPOS_FRASE, confiable,
+            })
+            if (porFrase.filas.length || !texto) return { ...porFrase, aproximadas: [] }
+            // Con la frase junta, nada: con todas sus palabras sueltas, y el
+            // barrio. "cancha sintética" en Mingueo es, en SECOP, "cancha EN
+            // GRAMA sintética… corregimiento de Mingueo".
+            const listas = await Promise.all(
+              consultasAproximadas(texto, whereSector, { select: CONTRACT_FIELDS, order: orderBy, limit: LIMITE + 1 })
+                .map((c) => socrataBusqueda(DS, c)),
+            )
+            const filas = [...new Map(listas.flat().map((f) => [f.id_contrato, f])).values()]
+            return { filas, hayMas: false, aproximadas: filas.map((f) => f.id_contrato) }
+          })().catch(() => ({ filas: [], hayMas: false, aproximadas: [] }))
+        : Promise.resolve({ filas: [], hayMas: false, aproximadas: [] })
+
+      const [r2, r1, rs] = await Promise.all([consultaSecop2, consultaSecop1, consultaSector])
+      if (rs.filas.length) {
+        const vistos = new Set(rs.filas.map((f) => f.id_contrato))
+        r2.filas = [...rs.filas, ...r2.filas.filter((f) => !vistos.has(f.id_contrato))]
+      }
       return {
         filas2: r2.filas, filas1: r1.filas,
         hayMas: r2.hayMas || r1.hayMas,
         porId: false,
+        aproximadasSector: rs.aproximadas,
       }
     },
     select: (r) => {
@@ -422,7 +467,11 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
       // Cuántas entidades distintas comparten el número: la UI lo dice, porque
       // "LP-006-2025" a secas no identifica un contrato sino a decenas.
       const entidades = r.porId ? new Set(contratos.map((c) => c.entityName)).size : 0
-      return { contratos, hayMas: r.hayMas, porId: r.porId, entidades }
+      // Las que trajo la búsqueda con el barrio por palabras sueltas, marcadas
+      // como las de la búsqueda aproximada (ver Buscar).
+      const sueltas = new Set(r.aproximadasSector ?? [])
+      const marcados = sueltas.size ? contratos.map((c) => (sueltas.has(c.id) ? { ...c, aproximado: 'todas' } : c)) : contratos
+      return { contratos: marcados, hayMas: r.hayMas, porId: r.porId, entidades }
     },
   })
 }

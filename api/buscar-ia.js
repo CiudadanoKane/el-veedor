@@ -62,7 +62,7 @@ export const ESQUEMA = {
         'con un barrio: el objeto de un contrato casi nunca los trae juntos y en ese orden, y la ' +
         'búsqueda los exige así. Para "túnel peatonal en la circunvalar a la altura de Caribe Verde" ' +
         'el resultado correcto es texto="túnel peatonal", no "túnel peatonal circunvalar Caribe ' +
-        'Verde". Si la consulta ' +
+        'Verde" (el barrio va en "sector"). Si la consulta ' +
         'no tiene ningún otro filtro que extraer, "texto" es lo que quede tras corregir y depurar ' +
         '(nunca vacío solo por ser corta). ' +
         'CUANDO LA PERSONA NOMBRA UN SECTOR, TEMA O ÁREA —"sector transporte", "contratos de salud", ' +
@@ -73,6 +73,17 @@ export const ESQUEMA = {
         'que la persona pidió. En estos casos "terminos" es especialmente importante. ' +
         'Vacío únicamente si, tras quitar todo lo anterior, no sobra ' +
         'ninguna palabra específica sobre qué se contrata.',
+    },
+    sector: {
+      type: 'string',
+      description:
+        'El nombre propio del barrio, vereda, corregimiento, sector, urbanización o sitio que la ' +
+        'persona nombra junto a la obra, tal como lo escribe (p. ej. "San Cristóbal", "Cristal Bajo", ' +
+        '"Mingueo", "Caribe Verde", "Ternera"). Es lo que distingue el contrato de los demás del ' +
+        'mismo tipo en la ciudad, así que no lo pierdas. No es la ciudad ni el departamento (van en ' +
+        'sus campos), ni una palabra genérica ("barrio", "sector", "zona rural"). Si ya quedó dentro ' +
+        'de "texto" porque no hay otra cosa que buscar ("Rebolo"), déjalo vacío. Vacío si no nombra ' +
+        'uno.',
     },
     terminos: {
       type: 'array',
@@ -173,7 +184,7 @@ export const ESQUEMA = {
     fechaDesde: { type: 'string', description: 'Fecha de firma desde, formato YYYY-MM-DD. Cadena vacía si no se menciona.' },
     fechaHasta: { type: 'string', description: 'Fecha de firma hasta, formato YYYY-MM-DD. Cadena vacía si no se menciona.' },
   },
-  required: ['texto', 'terminos', 'modalidad', 'tipo', 'estados', 'departamento', 'ciudad', 'entidad', 'contratista', 'tema', 'valorMin', 'valorMax', 'fechaDesde', 'fechaHasta'],
+  required: ['texto', 'sector', 'terminos', 'modalidad', 'tipo', 'estados', 'departamento', 'ciudad', 'entidad', 'contratista', 'tema', 'valorMin', 'valorMax', 'fechaDesde', 'fechaHasta'],
   additionalProperties: false,
 }
 
