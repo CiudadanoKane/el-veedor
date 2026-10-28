@@ -585,11 +585,12 @@ export function Buscar() {
     setCargandoIA(true)
     setErrorIA('')
     try {
-      const res = await fetch('/api/buscar-ia', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ consulta: limpio }),
-      })
+      // Por GET, para que el CDN guarde la interpretación: la misma frase el
+      // mismo día (un enlace compartido, volver a la búsqueda, la medición) no
+      // vuelve a costar ni gasta el tope. La fecha va en la llave porque las
+      // fechas relativas ("este año") dependen de hoy.
+      const hoy = new Date().toLocaleDateString('sv-SE')
+      const res = await fetch(`/api/buscar-ia?${new URLSearchParams({ interpretar: '1', q: limpio, d: hoy })}`)
       // 429: el endpoint tiene un tope de peticiones porque cada llamada
       // cuesta dinero. Se distingue del resto de fallos —decir "no se pudo
       // interpretar" cuando en realidad hay que esperar un momento manda a la

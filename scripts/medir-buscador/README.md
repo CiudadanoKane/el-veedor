@@ -16,6 +16,15 @@ cambio al Buscador mejora o empeora.
 
 ## Cómo correrla
 
+**En GitHub Actions** (lo normal): el flujo «Medir el Buscador» corre solo los
+lunes y se puede lanzar a mano desde la pestaña Actions, con la opción de medir
+solo algunos casos (`P1,D2`). Usa `correr.mjs` con Playwright y commitea los
+resultados en `resultados/<fecha>-ci.json`. Desde la terminal:
+`gh workflow run medir-buscador.yml -f casos=P1,D2`.
+
+**En el navegador**, con `medir.js` (lo de abajo): sirve para mirar un caso de
+cerca, pero una corrida entera dura horas y se corta si se cierra la ventana.
+
 1. Abrir https://el-veedor.vercel.app en el navegador.
 2. Pegar `medir.js` en la consola y llamar `medirBuscador(casos)`, con el
    arreglo `casos` de `casos.json`.

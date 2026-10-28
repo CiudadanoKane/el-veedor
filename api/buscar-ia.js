@@ -203,12 +203,18 @@ export default async function handler(req, res) {
   // promptPuente en src/lib/busquedaWeb.js.
   if (req.method === 'GET' && req.query?.puente === '1') return puenteAlContrato(req, res)
 
-  if (req.method !== 'POST') {
+  // La interpretación, también por GET, para que el CDN la guarde: la misma
+  // frase el mismo día no vuelve a costar ni a gastar el tope por IP. El
+  // cliente manda la fecha (`d`) solo para que la llave cambie cada día: las
+  // fechas relativas ("este año") dependen de hoy. POST queda por
+  // compatibilidad con pestañas abiertas antes del cambio.
+  const porGet = req.method === 'GET' && req.query?.interpretar === '1'
+  if (req.method !== 'POST' && !porGet) {
     res.status(405).json({ error: 'method not allowed' })
     return
   }
 
-  const consulta = (req.body?.consulta || '').trim()
+  const consulta = String((porGet ? req.query.q : req.body?.consulta) || '').trim()
   if (!consulta) {
     res.status(400).json({ error: 'falta "consulta"' })
     return
@@ -306,6 +312,7 @@ export default async function handler(req, res) {
       })
       .slice(0, 6)
 
+    if (porGet) res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=3600')
     res.status(200).json(filtros)
   } catch (err) {
     res.status(502).json({ error: err.message })
