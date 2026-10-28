@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useBusquedaWeb } from '../../hooks/useBusquedaWeb'
+import { contarFuentes, esFuenteOficial } from '../../lib/busquedaWeb'
 import { formatDate } from '../../lib/formatters'
 import { ID_PRENSA } from './ResultadosWeb'
 import { Icon } from './Icon'
@@ -90,6 +91,7 @@ export function PanelPrensa({ consulta }) {
                 {r.titulo} <span aria-hidden>↗</span>
               </a>
               <span className="block text-micro text-textSecondary">
+                {esFuenteOficial(r.dominio) && 'Fuente oficial · '}
                 {r.fuente}
                 {r.fecha && <> · {formatDate(r.fecha)}</>}
               </span>
@@ -104,11 +106,11 @@ export function PanelPrensa({ consulta }) {
           onClick={verNoticias}
           className="toque mt-2 block text-nota font-semibold text-primary enlace-sutil"
         >
-          Las {resultados.length} noticias, con su resumen ↓
+          {resultados.length === 1 ? 'La fuente' : `Las ${contarFuentes(resultados)}`}, con su resumen ↓
         </button>
       )}
       {resumen && (
-        <p className="mt-2 text-micro text-textSecondary">A partir de las noticias: ábrelas para leer el original.</p>
+        <p className="mt-2 text-micro text-textSecondary">A partir de las fuentes: ábrelas para leer el original.</p>
       )}
     </aside>
   )

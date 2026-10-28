@@ -23,12 +23,37 @@ export const MODELO_WEB = 'claude-haiku-5-5'
 // Medios nacionales y regionales, y sitios públicos. Caracol bloquea al
 // buscador de Anthropic, y un solo dominio bloqueado hace fallar la búsqueda
 // entera, así que no está. Cambiar esta lista: probarla primero.
+//
+// "gov.co" cubre todo el Estado: SECOP, Contraloría y Procuraduría (antes,
+// cada una en la lista) y también alcaldías y gobernaciones. Hasta oct 2026
+// no estaban, y "túnel peatonal Caribe Verde" no traía lo que la Alcaldía de
+// Barranquilla publicó de la obra (el cierre vial, los barrios que conecta).
+// Lo de una entidad es su propia versión: se rotula "Fuente oficial" y no
+// "Noticia" (ver esFuenteOficial). Redes sociales no: casi todas bloquean al
+// buscador o piden iniciar sesión, y lo del alcalde en sus redes suele estar,
+// en versión oficial, en la página de la alcaldía.
 export const DOMINIOS_WEB = [
   'eltiempo.com', 'elespectador.com', 'semana.com', 'elheraldo.co', 'eluniversal.com.co',
   'elcolombiano.com', 'vanguardia.com', 'elpais.com.co', 'laopinion.com.co', 'larepublica.co',
   'portafolio.co', 'lasillavacia.com', 'rcnradio.com', 'infobae.com',
-  'secop.gov.co', 'colombiacompra.gov.co', 'contraloria.gov.co', 'procuraduria.gov.co', 'fiscalia.gov.co',
+  'gov.co',
 ]
+
+// Una página del Estado (alcaldía, gobernación, ente de control), no de la
+// prensa.
+export function esFuenteOficial(dominio) {
+  return /(^|\.)gov\.co$/i.test(String(dominio || ''))
+}
+
+// "3 noticias y 2 fuentes oficiales", para los accesos a la sección.
+export function contarFuentes(resultados = []) {
+  const oficiales = resultados.filter((r) => esFuenteOficial(r.dominio)).length
+  const noticias = resultados.length - oficiales
+  const partes = []
+  if (noticias) partes.push(`${noticias} noticia${noticias === 1 ? '' : 's'}`)
+  if (oficiales) partes.push(`${oficiales} fuente${oficiales === 1 ? '' : 's'} oficial${oficiales === 1 ? '' : 'es'}`)
+  return partes.join(' y ')
+}
 
 export const MAX_RESULTADOS_WEB = 5
 
@@ -49,7 +74,8 @@ export function promptWeb() {
     `hasta ${MAX_RESULTADOS_WEB} resultados relevantes sobre contratación pública. Cada uno con:\n` +
     '- "url": exactamente la URL del resultado de búsqueda, sin modificarla.\n' +
     '- "titulo": el titular o nombre del documento, en pocas palabras.\n' +
-    '- "fuente": nombre del medio o sitio.\n' +
+    '- "fuente": nombre del medio o sitio; si es la página de una entidad pública (.gov.co), el ' +
+    'nombre de la entidad (p. ej. "Alcaldía de Barranquilla").\n' +
     '- "fecha": AAAA-MM-DD si la fuente la indica; si no, null.\n' +
     '- "resumen": una frase de máximo 30 palabras, en español sencillo, con lo que dice la fuente ' +
     'sobre el contrato o la obra. Solo lo que la fuente dice: no acuses ni concluyas más allá.\n' +
@@ -60,7 +86,9 @@ export function promptWeb() {
     'Después del arreglo, en una línea aparte que empiece con "RESUMEN:", escribe en máximo 60 ' +
     'palabras y en español sencillo lo que dicen esas fuentes en conjunto sobre lo que busca la ' +
     'persona: qué se contrató, quién, por cuánto y qué ha pasado. Nombra entre paréntesis el medio ' +
-    'de cada dato, p. ej. "(El Heraldo)". Solo lo que dicen las fuentes: no acuses ni concluyas, y ' +
+    'de cada dato, p. ej. "(El Heraldo)". Lo que viene de la página de una entidad pública es la ' +
+    'versión de esa entidad: atribúyelo, p. ej. "según la Alcaldía de Barranquilla". Solo lo que ' +
+    'dicen las fuentes: no acuses ni concluyas, y ' +
     'si se contradicen, dilo. Si según las fuentes la obra no es un contrato público corriente —un ' +
     'convenio o alianza con una empresa privada, obras por cargas urbanísticas o valorización, una ' +
     'APP o concesión—, o si apenas está anunciada o en licitación, dilo: explica por qué podría no ' +

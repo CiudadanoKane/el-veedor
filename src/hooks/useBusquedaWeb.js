@@ -14,8 +14,9 @@ export function useBusquedaWeb(consulta) {
     // `v`: cambia la clave del CDN cuando cambia la forma de la respuesta. La
     // 2 trae el resumen de conjunto; sin ella, las búsquedas guardadas antes
     // seguirían doce horas sin él. La 3 dice si la obra podría no tener
-    // contrato (convenio con un privado, cargas urbanísticas, APP).
-    queryFn: () => pedir(new URLSearchParams({ web: '1', v: '3', q })),
+    // contrato (convenio con un privado, cargas urbanísticas, APP). La 5
+    // busca también en las páginas oficiales (gov.co).
+    queryFn: () => pedir(new URLSearchParams({ web: '1', v: '5', q })),
   })
 }
 
@@ -30,8 +31,9 @@ export function usePuentePrensa(consulta, { departamento = '', ciudad = '' } = {
     staleTime: 60 * 60 * 1000,
     retry: false,
     queryFn: () => {
-      // `v`: como en useBusquedaWeb. La 4 trae las búsquedas sugeridas.
-      const params = new URLSearchParams({ puente: '1', v: '4', q })
+      // `v`: como en useBusquedaWeb. La 4 trae las búsquedas sugeridas; la 5
+      // busca también en gov.co.
+      const params = new URLSearchParams({ puente: '1', v: '5', q })
       if (departamento) params.set('departamento', departamento)
       if (ciudad) params.set('ciudad', ciudad)
       return pedir(params)

@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom'
 import { useBusquedaWeb } from '../../hooks/useBusquedaWeb'
+import { esFuenteOficial } from '../../lib/busquedaWeb'
 import { formatDate } from '../../lib/formatters'
 import { Icon } from './Icon'
 
-// "En las noticias y fuentes públicas": lo que la prensa y los órganos de
-// control dicen sobre lo que se busca, debajo de los contratos de SECOP.
+// "En las noticias y fuentes públicas": lo que la prensa, las entidades y los
+// órganos de control dicen sobre lo que se busca, debajo de los contratos de
+// SECOP.
 //
 // La pieza que más vale es el puente: si una noticia menciona el número de un
 // proceso, ya se comprobó en SECOP (api/buscar-ia.js) y la tarjeta lleva a ese
@@ -27,7 +29,7 @@ export function ResultadosWeb({ consulta }) {
         En las noticias y fuentes públicas
       </h2>
       <p className="mt-1 text-cuerpo text-textSecondary max-w-2xl leading-snug">
-        Lo que dicen la prensa, la Contraloría y la Procuraduría sobre «{consulta}». Los resúmenes
+        Lo que dicen la prensa y las páginas oficiales (alcaldías, gobernaciones, Contraloría) sobre «{consulta}». Los resúmenes
         los escribe una IA a partir de cada fuente: ábrela para leer el original.
       </p>
 
@@ -57,8 +59,10 @@ export function ResultadosWeb({ consulta }) {
             // recuadros (en el teléfono, tarjetas), y una noticia con la misma
             // forma se confundía con un contrato.
             <li key={r.url} className="border-l-2 border-textSecondary/50 pl-4 py-1">
+              {/* "Fuente oficial": lo que publica una alcaldía de su propia
+                  obra es su versión, no la de la prensa. */}
               <div className="text-micro uppercase tracking-label text-textSecondary">
-                Noticia · <span className="font-semibold text-textPrimary">{r.fuente}</span>
+                {esFuenteOficial(r.dominio) ? 'Fuente oficial' : 'Noticia'} · <span className="font-semibold text-textPrimary">{r.fuente}</span>
                 {r.fecha && <> · {formatDate(r.fecha)}</>}
               </div>
               <a

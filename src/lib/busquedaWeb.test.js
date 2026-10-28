@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  esFuenteOficial, contarFuentes,
   extraerArreglo, resultadosReales, limpiarResultados, fechaDeAntiguedad, pareceProceso,
   variantesProceso, coincideEntidad, pareceTitular, sinMedioAlFinal,
   pareceNombreObra, pistasDelPuente, busquedaFallida, nucleoDeContratista, extraerObjeto, consultasPorPista,
@@ -199,5 +200,20 @@ describe('recortesDeObra', () => {
   it('no vuelve al apodo que ya se buscó', () => {
     expect(recortesDeObra('construcción del túnel peatonal de Caribe Verde', 'túnel peatonal')
       .some((r) => r.toLowerCase().includes('túnel peatonal'))).toBe(false)
+  })
+})
+
+describe('fuentes oficiales', () => {
+  it('una página del Estado es fuente oficial; la prensa, no', () => {
+    expect(esFuenteOficial('barranquilla.gov.co')).toBe(true)
+    expect(esFuenteOficial('956fm.boyaca.gov.co')).toBe(true)
+    expect(esFuenteOficial('elheraldo.co')).toBe(false)
+    expect(esFuenteOficial('notgov.co')).toBe(false)
+  })
+  it('cuenta noticias y fuentes oficiales por separado', () => {
+    const r = (dominio) => ({ dominio })
+    expect(contarFuentes([r('eltiempo.com'), r('elheraldo.co'), r('barranquilla.gov.co')])).toBe('2 noticias y 1 fuente oficial')
+    expect(contarFuentes([r('boyaca.gov.co'), r('presidencia.gov.co')])).toBe('2 fuentes oficiales')
+    expect(contarFuentes([r('eltiempo.com')])).toBe('1 noticia')
   })
 })

@@ -29,6 +29,7 @@ import { PanelPrensa } from '../components/ui/PanelPrensa'
 import { FiltrosRapidos } from '../components/ui/FiltrosRapidos'
 import { facetas, aplicarFacetas } from '../lib/facetas'
 import { useBusquedaWeb, usePuentePrensa } from '../hooks/useBusquedaWeb'
+import { contarFuentes } from '../lib/busquedaWeb'
 import { useContratosPorId } from '../hooks/useContratosPorId'
 import { Icon } from '../components/ui/Icon'
 import { lugarAlFinal, lugarNombrado, municipioUnico, resolverLugar, soloLugaresNombrados } from '../lib/geoResolver'
@@ -847,7 +848,8 @@ export function Buscar() {
   const lugarPrensa = { departamento: filters.department, ciudad: filters.city }
   // Cuántas noticias hay, para el acceso junto al título de los resultados (la
   // misma consulta que la sección de prensa: no cuesta otra llamada).
-  const noticiasPrensa = useBusquedaWeb(consultaPrensa).data?.resultados?.length ?? 0
+  const resultadosPrensa = useBusquedaWeb(consultaPrensa).data?.resultados
+  const noticiasPrensa = resultadosPrensa?.length ?? 0
   const irAPrensa = () =>
     document.getElementById(ID_PRENSA)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   const bloquePrensa = consultaPrensa && <ResultadosWeb consulta={consultaPrensa} />
@@ -1331,7 +1333,7 @@ export function Buscar() {
                                    text-nota font-semibold text-primary hover:bg-primary hover:text-bg transition-colors"
                       >
                         <Icon name="noticias" className="h-4 w-4" />
-                        {noticiasPrensa} noticia{noticiasPrensa === 1 ? '' : 's'} en la prensa ↓
+                        {contarFuentes(resultadosPrensa)} ↓
                       </button>
                     )}
                     {/* Sin encoger: con el botón de la prensa al lado, la fila
