@@ -813,6 +813,26 @@ una corrida completa):
 - Con esto, la cuenta estimada pasa a 28 de 35 en la lista y 27 a la vista.
   Falta una tercera corrida completa que lo confirme.
 
+**Cuarta corrida, en GitHub Actions (28 oct)** (`resultados/2026-10-28-ci-40612329341.json`),
+con todo publicado: sinónimos, el barrio aparte, la IA que no cambia nombres ni
+adivina lugares, el puente con el nombre sin la acción, y la búsqueda que
+resiste consultas caídas.
+
+| | 1.ª | 2.ª | **4.ª** |
+|---|---|---|---|
+| En la lista | 15 | 27 | **33 de 35** |
+| En los 5 que se ven | 14 | 24 | **31** |
+| Nada | 18 | 8 | **2** |
+
+Las dos que no aparecen: Caribe Verde (dudoso, sin contrato propio en SECOP) y
+el parque principal de Tolú (en la API, con los sinónimos, sí sale 1.º: falta
+ver qué hace la IA con esa frase). Y dos que bajaron: el hospital de Monguí
+(2.º → 16.º) y la vía Varsovia (1.º → 5.º).
+
+Desde esta corrida la medición vive en GitHub Actions (flujo "Medir el
+Buscador", los lunes y a mano): en el navegador de un PC duraba 2 h 40 min y se
+cortaba al cerrar la ventana o apagar el equipo.
+
 ### Modo oscuro automático (oct 2026)
 
 Decisión: el tema principal sigue siendo claro —la plataforma es lectura

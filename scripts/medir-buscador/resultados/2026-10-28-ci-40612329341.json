@@ -1,0 +1,23 @@
+{
+  "descripcion": "Cuarta corrida completa, en GitHub Actions (corrida 40612329341, 28 oct 01:00-03:41 UTC), con todo lo publicado hasta 038e6d88. Se recuperó del registro del paso 'Medir': el archivo no se pudo commitear porque la prueba de 2 casos de esa noche había escrito el mismo nombre (arreglado en correr.mjs). Por eso solo trae el puesto y si estaba a la vista.",
+  "casos": [
+    { "id": "P1", "posicion": 1, "aLaVista": true }, { "id": "P2", "posicion": 1, "aLaVista": true },
+    { "id": "P3", "posicion": 1, "aLaVista": true }, { "id": "P4", "posicion": null },
+    { "id": "P5", "posicion": 1, "aLaVista": true }, { "id": "P6", "posicion": 1, "aLaVista": true },
+    { "id": "P7", "posicion": 1, "aLaVista": true }, { "id": "P8", "posicion": 1, "aLaVista": true },
+    { "id": "P9", "posicion": 3, "aLaVista": true },
+    { "id": "D1", "posicion": 1, "aLaVista": true }, { "id": "D2", "posicion": 1, "aLaVista": true },
+    { "id": "D3", "posicion": 1, "aLaVista": true }, { "id": "D4", "posicion": 12, "aLaVista": false },
+    { "id": "D5", "posicion": 1, "aLaVista": true }, { "id": "D6", "posicion": 1, "aLaVista": true },
+    { "id": "D7", "posicion": 2, "aLaVista": true }, { "id": "D8", "posicion": 1, "aLaVista": true },
+    { "id": "D9", "posicion": 1, "aLaVista": true }, { "id": "D10", "posicion": 1, "aLaVista": true },
+    { "id": "D11", "posicion": 1, "aLaVista": true }, { "id": "D12", "posicion": 16, "aLaVista": false },
+    { "id": "D13", "posicion": 5, "aLaVista": true }, { "id": "D14", "posicion": null },
+    { "id": "D15", "posicion": 2, "aLaVista": true }, { "id": "D16", "posicion": 2, "aLaVista": true },
+    { "id": "D17", "posicion": 1, "aLaVista": true }, { "id": "D18", "posicion": 1, "aLaVista": true },
+    { "id": "D19", "posicion": 1, "aLaVista": true }, { "id": "D20", "posicion": 1, "aLaVista": true },
+    { "id": "C1", "posicion": 1, "aLaVista": true }, { "id": "C2", "posicion": 1, "aLaVista": true },
+    { "id": "C3", "posicion": 1, "aLaVista": true }, { "id": "C4", "posicion": 1, "aLaVista": true },
+    { "id": "C5", "posicion": 1, "aLaVista": true }, { "id": "C6", "posicion": 2, "aLaVista": true }
+  ]
+}

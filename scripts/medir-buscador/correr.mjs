@@ -27,7 +27,10 @@ const SITIO = process.env.SITIO || 'https://el-veedor.vercel.app'
 const PAUSA_MS = Number(process.env.PAUSA_MS ?? 276_000)
 const MAX_MS = 100_000
 const hoy = new Date().toISOString().slice(0, 10)
-const SALIDA = process.env.SALIDA || join(AQUI, 'resultados', `${hoy}-ci.json`)
+// Con el número de la corrida en el nombre: dos corridas el mismo día escribían
+// el mismo archivo y la segunda no se pudo guardar (oct 2026: una prueba de 2
+// casos y la corrida completa, lanzadas seguidas).
+const SALIDA = process.env.SALIDA || join(AQUI, 'resultados', `${hoy}-ci-${process.env.GITHUB_RUN_ID || Date.now()}.json`)
 const OCUPADO = /Interpretando…|Buscando|Cargando|Revisando también/
 
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms))
