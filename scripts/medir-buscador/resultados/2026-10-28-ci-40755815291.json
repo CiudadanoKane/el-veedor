@@ -1,0 +1,30 @@
+{
+  "sitio": "https://el-veedor.vercel.app",
+  "inicio": "2026-10-28T19:37:43.171Z",
+  "fin": "2026-10-28T19:38:08.578Z",
+  "hechos": [
+    {
+      "id": "D14",
+      "tipo": "descripcion",
+      "posicion": 4,
+      "total": 5,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "parque principal",
+        "pregunta": "arreglo del parque principal de tolu",
+        "departamento": "Sucre",
+        "ciudad": "Santiago De Tolú"
+      },
+      "segundosHastaAcierto": 9,
+      "segundosTotal": 24,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    }
+  ]
+}
