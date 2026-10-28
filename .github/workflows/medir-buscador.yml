@@ -1,0 +1,67 @@
+name: Medir el Buscador
+
+# ¿Llega un ciudadano al contrato que busca? 35 búsquedas reales, cada una con
+# su contrato correcto (scripts/medir-buscador/). Corre aquí y no en el
+# navegador de un PC: dura unas 2 h 40 min (cada búsqueda gasta hasta 3
+# llamadas a la IA y el tope es 40 por hora e IP), y en un PC se cortaba si se
+# cerraba la ventana o se apagaba el equipo.
+
+on:
+  schedule:
+    # Lunes 11:00 UTC = 06:00 en Colombia, después de los recálculos de datos.
+    - cron: '0 11 * * 1'
+  # Para medir a mano después de un cambio, desde la pestaña Actions.
+  workflow_dispatch:
+    inputs:
+      casos:
+        description: 'Ids separados por coma para medir solo esos (vacío = los 35)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: medir-buscador
+  cancel-in-progress: false
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    # 35 casos × 4,6 min = 2 h 40 min, más las esperas si datos.gov.co se cae.
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Instalar Playwright
+        # --no-save: solo lo usa este script, no va en package.json ni en el
+        # lockfile.
+        run: |
+          npm install --no-save playwright@1.48.2
+          npx playwright install --with-deps chromium
+
+      - name: Medir
+        env:
+          CASOS: ${{ github.event.inputs.casos }}
+        run: node scripts/medir-buscador/correr.mjs
+
+      - name: Commitear los resultados
+        if: always()
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/medir-buscador/resultados
+          if [ -z "$(git status --porcelain -- scripts/medir-buscador/resultados)" ]; then
+            echo 'Sin resultados nuevos.'
+            exit 0
+          fi
+          git commit -m 'Medición del Buscador: resultados'
+          for intento in 1 2 3; do
+            git pull --rebase --quiet && git push && exit 0
+            sleep $((intento * 5))
+          done
+          exit 1
