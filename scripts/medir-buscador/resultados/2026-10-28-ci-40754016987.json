@@ -1,0 +1,74 @@
+{
+  "sitio": "https://el-veedor.vercel.app",
+  "inicio": "2026-10-28T19:25:13.711Z",
+  "fin": "2026-10-28T19:34:55.710Z",
+  "hechos": [
+    {
+      "id": "D12",
+      "tipo": "descripcion",
+      "posicion": 2,
+      "total": 28,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "hospital",
+        "amplia": "construcción hospitalaria|edificación de hospital",
+        "pregunta": "construccion del hospital de mongui",
+        "departamento": "Boyacá",
+        "ciudad": "Monguí"
+      },
+      "segundosHastaAcierto": 8,
+      "segundosTotal": 21,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D13",
+      "tipo": "descripcion",
+      "posicion": 1,
+      "total": 4,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "vía Varsovia El Delirio",
+        "pregunta": "via varsovia el delirio"
+      },
+      "segundosHastaAcierto": 6,
+      "segundosTotal": 24,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D14",
+      "tipo": "descripcion",
+      "posicion": null,
+      "total": 129,
+      "aLaVista": false,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "parque principal",
+        "pregunta": "arreglo del parque principal de tolu",
+        "sector": "Tolú"
+      },
+      "segundosHastaAcierto": null,
+      "segundosTotal": 29,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    }
+  ]
+}
