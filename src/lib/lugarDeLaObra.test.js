@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { lugarAlFinal, resolverLugar, soloLugaresNombrados } from './geoResolver'
+import { lugarAlFinal, municipioUnico, resolverLugar, soloLugaresNombrados } from './geoResolver'
 import { whereSecop2 } from '../hooks/useBusqueda'
 
 const GEO = {
@@ -33,6 +33,11 @@ describe('nombres cortos y lugares al final del texto', () => {
   it('toma el municipio que la IA dejó al final del texto', () => {
     expect(lugarAlFinal(GEO, 'hospital de Mongui')).toEqual({ department: 'Boyacá', city: 'Monguí', texto: 'hospital' })
     expect(lugarAlFinal(GEO, 'parque principal en Tolú')).toEqual({ department: 'Sucre', city: 'Santiago De Tolú', texto: 'parque principal' })
+  })
+  it('el sector, si es un municipio único', () => {
+    expect(municipioUnico(GEO, 'Tolú')).toEqual({ department: 'Sucre', city: 'Santiago De Tolú' })
+    expect(municipioUnico(GEO, 'Argelia')).toBeNull()
+    expect(municipioUnico(GEO, 'Las Margaritas')).toBeNull()
   })
   it('no si el nombre es ambiguo o no es un municipio', () => {
     expect(lugarAlFinal(GEO, 'puesto de salud de Argelia')).toBeNull()

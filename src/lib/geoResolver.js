@@ -69,11 +69,21 @@ function porNombreCorto({ departamentos = [], ciudadesPorDepartamento = {} }, no
 // null.
 export function lugarAlFinal(geo, texto) {
   if (!geo || !texto) return null
-  const { departamentos = [], ciudadesPorDepartamento = {} } = geo
   const m = String(texto).match(/^(.*\S)\s+(?:de|del|en)\s+((?:\S+\s+)?\S+)$/i)
   if (!m) return null
   // Una o dos palabras: "de Monguí", "de San Gil".
-  const n = norm(m[2])
+  const lugar = municipioUnico(geo, m[2])
+  return lugar ? { ...lugar, texto: m[1] } : null
+}
+
+// El municipio con ese nombre (o nombre corto), si hay uno solo en el país.
+// También para el sector: la IA a veces pone ahí el municipio y deja la ciudad
+// vacía ("parque principal de Tolú" → sector "Tolú", sin lugar; medición del
+// 28 oct 2026 en GitHub Actions, donde el contrato no apareció).
+export function municipioUnico(geo, nombre) {
+  if (!geo || !nombre) return null
+  const { departamentos = [], ciudadesPorDepartamento = {} } = geo
+  const n = norm(nombre)
   if (n.length < 4) return null
   const hallados = []
   for (const dep of departamentos) {
@@ -81,8 +91,7 @@ export function lugarAlFinal(geo, texto) {
       if (norm(c) === n) hallados.push({ department: dep, city: c })
     }
   }
-  const lugar = hallados.length === 1 ? hallados[0] : hallados.length ? null : porNombreCorto(geo, n)
-  return lugar ? { ...lugar, texto: m[1] } : null
+  return hallados.length === 1 ? hallados[0] : hallados.length ? null : porNombreCorto(geo, n)
 }
 
 // El lugar que dio la IA, solo si la frase lo nombra. En la medición de oct

@@ -31,7 +31,7 @@ import { facetas, aplicarFacetas } from '../lib/facetas'
 import { useBusquedaWeb, usePuentePrensa } from '../hooks/useBusquedaWeb'
 import { useContratosPorId } from '../hooks/useContratosPorId'
 import { Icon } from '../components/ui/Icon'
-import { lugarAlFinal, resolverLugar, soloLugaresNombrados } from '../lib/geoResolver'
+import { lugarAlFinal, lugarNombrado, municipioUnico, resolverLugar, soloLugaresNombrados } from '../lib/geoResolver'
 import { formatCOP, formatDate } from '../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
 import { ResultadosWeb, ID_PRENSA } from '../components/ui/ResultadosWeb'
@@ -647,13 +647,18 @@ export function Buscar() {
       const catalogo = geo.data ?? await esperarCatalogoGeo(queryClient)
       const nombrados = soloLugaresNombrados(limpio, filtros)
       let lugar = resolverLugar(catalogo, nombrados)
-      // Sin lugar, el municipio pudo quedar al final del texto (ver
-      // lugarAlFinal).
+      // Sin lugar, el municipio pudo quedar al final del texto o como sector
+      // (ver lugarAlFinal y municipioUnico).
       if (!lugar.department && !nombrados.departamento && !nombrados.ciudad) {
         const alFinal = lugarAlFinal(catalogo, sig.texto)
+        const comoSector = !alFinal && sig.sector && lugarNombrado(limpio, sig.sector)
+          ? municipioUnico(catalogo, sig.sector)
+          : null
         if (alFinal) {
           lugar = alFinal
           sig.texto = alFinal.texto
+        } else if (comoSector) {
+          lugar = comoSector
         }
       }
       // La IA a veces repite el municipio como sector ("parque principal de
