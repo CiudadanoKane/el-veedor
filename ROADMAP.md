@@ -845,6 +845,11 @@ Probado en producción después del arreglo: Monguí sale 2.º (lo pasa un aport
 de la Gobernación al mismo hospital) y Tolú 4.º, entre 5 resultados que son
 todos de esa obra (el 1.º es el contrato que la junta con un parque de
 Sincelejo).
+En GitHub Actions, la IA respondió Tolú de otra forma: como sector, sin
+ciudad, y el contrato no apareció. Arreglado también: sin lugar, un sector
+que es un municipio único se toma como lugar. Remedido en Actions: Monguí
+2.º, Varsovia 1.º y Tolú 4.º, los tres a la vista. Con eso, de los 35
+casos solo queda sin aparecer Caribe Verde (34 de 35).
 
 Desde esta corrida la medición vive en GitHub Actions (flujo "Medir el
 Buscador", los lunes y a mano): en el navegador de un PC duraba 2 h 40 min y se
