@@ -829,6 +829,23 @@ el parque principal de Tolú (en la API, con los sinónimos, sí sale 1.º: falt
 ver qué hace la IA con esa frase). Y dos que bajaron: el hospital de Monguí
 (2.º → 16.º) y la vía Varsovia (1.º → 5.º).
 
+Revisadas el 28 oct, en producción:
+- **Tolú:** la IA da ciudad "Tolú", y el catálogo de SECOP la llama "Santiago
+  De Tolú" (y hay otro municipio, "Tolú Viejo"): el lugar se perdía y se
+  buscaba "parque principal" en todo el país. Ahora se acepta el nombre corto
+  de un municipio "X de <nombre>" cuando hay uno solo.
+- **Monguí:** la IA dejó el municipio en el texto ("hospital de Mongui") sin
+  ponerlo como ciudad, y sin tilde: copia los nombres como los escribe la
+  persona, y el buscador confiaba en la ortografía de la IA, así que nunca
+  buscó "Monguí". Ahora el municipio que queda al final del texto se toma como
+  lugar, y los nombres propios se prueban también con tilde.
+- **Varsovia:** hoy sale 1.º; el 5.º fue variación de esa corrida.
+
+Probado en producción después del arreglo: Monguí sale 2.º (lo pasa un aporte
+de la Gobernación al mismo hospital) y Tolú 4.º, entre 5 resultados que son
+todos de esa obra (el 1.º es el contrato que la junta con un parque de
+Sincelejo).
+
 Desde esta corrida la medición vive en GitHub Actions (flujo "Medir el
 Buscador", los lunes y a mano): en el navegador de un PC duraba 2 h 40 min y se
 cortaba al cerrar la ventana o apagar el equipo.
