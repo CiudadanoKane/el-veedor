@@ -855,6 +855,28 @@ Desde esta corrida la medición vive en GitHub Actions (flujo "Medir el
 Buscador", los lunes y a mano): en el navegador de un PC duraba 2 h 40 min y se
 cortaba al cerrar la ventana o apagar el equipo.
 
+### Fuentes oficiales en la búsqueda de prensa (28 oct 2026)
+
+La búsqueda en la web solo miraba 14 medios y 5 sitios nacionales; Google, en
+cambio, traía de "túnel peatonal Caribe Verde" lo que publicó la Alcaldía de
+Barranquilla. Ahora admite todo `gov.co` (alcaldías, gobernaciones, entes de
+control). Lo de una entidad es su versión: se rotula "Fuente oficial", no
+"Noticia", y el resumen lo atribuye ("según la Alcaldía de…"). Probado contra
+la API con 7 búsquedas reales, sin fallas por dominio bloqueado. Redes
+sociales no: bloquean al buscador o piden sesión, y lo del alcalde en sus
+redes suele estar en la página de la alcaldía.
+
+Revisado también colombialicita.com, buscador comercial de SECOP 1 y 2 (de
+pago, para proponentes): busca procesos por texto suelto y los ordena por
+fecha de detección, sin interpretar la frase, sin lugar y sin prensa. Con las
+búsquedas de la medición queda por debajo del nuestro ("parque principal tolu"
+trae combustible de Toluviejo; "hospital mongui", compras del hospital). Dos
+ideas que sí sirven: avisos de procesos nuevos por palabra (🔔) y mostrar
+procesos aún sin contrato (convocados). Y una pista para Caribe Verde: con
+"paso peatonal circunvalar" trae la licitación de Barranquilla de pasos a
+desnivel y arroyos (CO1.NTC.7973593, 172 mil millones, varios lotes); el túnel
+podría ir por uno de esos contratos, sin confirmar.
+
 ### Modo oscuro automático (oct 2026)
 
 Decisión: el tema principal sigue siendo claro —la plataforma es lectura
