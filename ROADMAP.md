@@ -877,6 +877,31 @@ procesos aún sin contrato (convocados). Y una pista para Caribe Verde: con
 desnivel y arroyos (CO1.NTC.7973593, 172 mil millones, varios lotes); el túnel
 podría ir por uno de esos contratos, sin confirmar.
 
+Investigada la pista (28 oct): en SECOP II no hay ningún contrato cuyo objeto
+nombre el túnel, Caribe Verde, "peatonal" o "deprimido" en el Atlántico desde
+jun 2025, ni uno propio por los "más de $5.900 millones" que anunció el
+alcalde. La Alcaldía y El Heraldo describen la obra con las palabras de los
+contratos de bolsa del Distrito ("paso a desnivel en box culverts
+prefabricados", con drenaje), así que lo más probable es que vaya como un
+frente de obra dentro de uno de ellos. Candidatos, por fecha (la obra arrancó
+el 15 jun 2026):
+- LP-015-2025, lote 3, Consorcio Arroyos Caribe, $32.100 M, inicio 25 may
+  2026 (CO1.PCCNTR.8750221): el que mejor encaja, tres semanas antes.
+- LP-006-2025, lotes 1 y 2, Consorcio ME Arroyos, $40.400 M y $37.900 M, en
+  ejecución desde oct 2025 (CO1.PCCNTR.7906163 y 7906558); interventoría
+  EDUBAR (CO1.PCCNTR.8309911).
+- LP-026-2024 "Barrios a la Obra", 6 lotes de vías, canales y box culvert
+  (may 2025).
+Qué lote cubre el suroccidente lo dicen los pliegos, no los datos abiertos, y
+el portal de SECOP pide captcha: queda para un derecho de petición a la
+Alcaldía (número de contrato y contratista del paso peatonal). P4 sigue
+dudoso en la medición.
+
+De paso, lo que muestra hoy El Veedor con esa búsqueda: como "Caribe Verde" es
+un barrio y la frase no dice la ciudad, busca "túnel peatonal" en todo el país
+y trae pasarelas de Leticia y hasta desfiles de moda ("pasarela" entre los
+términos de la IA). La prensa sí sabe que es Barranquilla.
+
 ### Modo oscuro automático (oct 2026)
 
 Decisión: el tema principal sigue siendo claro —la plataforma es lectura
