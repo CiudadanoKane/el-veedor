@@ -31,7 +31,7 @@ import { facetas, aplicarFacetas } from '../lib/facetas'
 import { useBusquedaWeb, usePuentePrensa } from '../hooks/useBusquedaWeb'
 import { useContratosPorId } from '../hooks/useContratosPorId'
 import { Icon } from '../components/ui/Icon'
-import { resolverLugar, soloLugaresNombrados } from '../lib/geoResolver'
+import { lugarAlFinal, resolverLugar, soloLugaresNombrados } from '../lib/geoResolver'
 import { formatCOP, formatDate } from '../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
 import { ResultadosWeb, ID_PRENSA } from '../components/ui/ResultadosWeb'
@@ -644,10 +644,21 @@ export function Buscar() {
       // (oct 2026; también "en Soledad, Atlántico").
       // Y solo el lugar que la frase nombra: la IA a veces lo adivinaba, y
       // mal (ver soloLugaresNombrados).
-      const lugar = resolverLugar(
-        geo.data ?? await esperarCatalogoGeo(queryClient),
-        soloLugaresNombrados(limpio, filtros),
-      )
+      const catalogo = geo.data ?? await esperarCatalogoGeo(queryClient)
+      const nombrados = soloLugaresNombrados(limpio, filtros)
+      let lugar = resolverLugar(catalogo, nombrados)
+      // Sin lugar, el municipio pudo quedar al final del texto (ver
+      // lugarAlFinal).
+      if (!lugar.department && !nombrados.departamento && !nombrados.ciudad) {
+        const alFinal = lugarAlFinal(catalogo, sig.texto)
+        if (alFinal) {
+          lugar = alFinal
+          sig.texto = alFinal.texto
+        }
+      }
+      // La IA a veces repite el municipio como sector ("parque principal de
+      // Tolú" → sector "Tolú"): ya está en el lugar.
+      if (sig.sector && lugar.city && norm(lugar.city).includes(norm(sig.sector))) sig.sector = ''
 
       const huboAvanzados =
         sig.modalidad || sig.tipo || sig.estados.length ||

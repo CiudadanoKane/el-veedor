@@ -48,6 +48,11 @@ describe('variantesDeFrase con frases largas', () => {
     ]))
   })
 
+  it('con texto de la IA, los nombres propios llevan la tilde de la persona', () => {
+    // La IA copia "Mongui" tal cual; el contrato dice "MONGUÍ".
+    expect(variantesDeFrase('hospital de Mongui', { confiable: true })).toEqual(['hospital de mongui', 'hospital de monguí'])
+  })
+
   it('con muchas, prueba la tilde en cada palabra, no solo en la más larga', () => {
     // La más larga es "nacional"; la tilde está en "policía". Así se perdían
     // tres de cada cuatro contratos.

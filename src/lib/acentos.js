@@ -142,6 +142,22 @@ export function variantesConTilde(palabra) {
   return variantes
 }
 
+// Los nombres propios de un texto escrito por la IA, sin tilde y en
+// minúsculas: las palabras que empiezan en mayúscula y no llevan tilde. A la
+// IA se le pide copiar los nombres tal cual los escribió la persona (ver
+// api/buscar-ia.js), así que su tilde es la de la persona, no la de la
+// ortografía: "hospital de mongui" llega como "hospital de Mongui", y como el
+// texto de la IA se creía bien escrito, nunca se buscaba "Monguí" (medición
+// de oct 2026: el contrato bajó del 2.º al 16.º puesto).
+export function nombresPropios(texto) {
+  const propios = String(texto)
+    .normalize('NFC')
+    .split(/[^A-Za-z0-9ÑñÁÉÍÓÚÜáéíóúü]+/)
+    .filter((p) => /^[A-ZÑ]/.test(p) && !/[áéíóúÁÉÍÓÚ]/.test(p))
+    .map((p) => p.toLowerCase())
+  return new Set(propios)
+}
+
 // Las palabras tal como se escribieron: en minúsculas, CON sus tildes. Mismo
 // corte que palabrasDeFrase, para que las dos listas queden alineadas; si algún
 // signo raro las desalinea, se devuelve null y no se usan.
@@ -189,14 +205,17 @@ const cartesiano = (porPalabra) =>
 // useBusqueda). Una palabra sin tilde es entonces una palabra sin tilde, y no
 // hay dudosas: "escenario deportivo" se buscaba en 12 escrituras de las que
 // solo una existe; ahora en 1. Medido con la API (oct 2026): mismos contratos.
+// Salvo los nombres propios (ver nombresPropios).
 export function variantesDeFrase(texto, { confiable = false } = {}) {
   const palabras = palabrasDeFrase(texto)
   if (!palabras.length) return []
   const talCual = palabrasTalCual(texto, palabras.length)
+  const propios = confiable ? nombresPropios(texto) : null
+  const fiable = (p) => confiable && !propios.has(p)
 
   const conocida = palabras.map((p, i) => {
     if (talCual && talCual[i] !== p) return talCual[i]
-    if (confiable) return null
+    if (fiable(p)) return null
     const regla = escrituraProbable(p)
     return regla !== p ? regla : null
   })
@@ -204,11 +223,9 @@ export function variantesDeFrase(texto, { confiable = false } = {}) {
   const conTilde = (i) => variantesConTilde(palabras[i])
   // Las dudosas, de la más larga a la más corta: si se llega al tope, lo que
   // queda fuera son las variantes de las palabras cortas.
-  const dudosas = confiable
-    ? []
-    : palabras
-      .map((_, i) => i)
-      .filter((i) => conocida[i] == null && conTilde(i).length > 1)
+  const dudosas = palabras
+    .map((_, i) => i)
+    .filter((i) => !fiable(palabras[i]) && conocida[i] == null && conTilde(i).length > 1)
       .sort((a, b) => palabras[b].length - palabras[a].length)
 
   const unicas = new Set()

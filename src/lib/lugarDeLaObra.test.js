@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { resolverLugar, soloLugaresNombrados } from './geoResolver'
+import { lugarAlFinal, resolverLugar, soloLugaresNombrados } from './geoResolver'
 import { whereSecop2 } from '../hooks/useBusqueda'
 
 const GEO = {
-  departamentos: ['Antioquia', 'Cauca', 'Tolima'],
+  departamentos: ['Antioquia', 'Boyacá', 'Cauca', 'Sucre', 'Tolima'],
   ciudadesPorDepartamento: {
     Antioquia: ['Argelia', 'Medellín'],
+    Boyacá: ['Monguí', 'Tunja'],
     Cauca: ['Argelia', 'Popayán'],
+    Sucre: ['Sincelejo', 'Santiago De Tolú', 'Tolú Viejo'],
     Tolima: ['Ibagué', 'Fresno'],
   },
 }
@@ -20,6 +22,23 @@ describe('resolverLugar con municipios homónimos', () => {
   })
   it('sin departamento, el primero que la tenga, como antes', () => {
     expect(resolverLugar(GEO, { ciudad: 'Fresno' })).toEqual({ department: 'Tolima', city: 'Fresno' })
+  })
+})
+
+describe('nombres cortos y lugares al final del texto', () => {
+  it('"Tolú" es "Santiago De Tolú", no "Tolú Viejo"', () => {
+    expect(resolverLugar(GEO, { ciudad: 'Tolú' })).toEqual({ department: 'Sucre', city: 'Santiago De Tolú' })
+    expect(resolverLugar(GEO, { departamento: 'Sucre', ciudad: 'Tolu' })).toEqual({ department: 'Sucre', city: 'Santiago De Tolú' })
+  })
+  it('toma el municipio que la IA dejó al final del texto', () => {
+    expect(lugarAlFinal(GEO, 'hospital de Mongui')).toEqual({ department: 'Boyacá', city: 'Monguí', texto: 'hospital' })
+    expect(lugarAlFinal(GEO, 'parque principal en Tolú')).toEqual({ department: 'Sucre', city: 'Santiago De Tolú', texto: 'parque principal' })
+  })
+  it('no si el nombre es ambiguo o no es un municipio', () => {
+    expect(lugarAlFinal(GEO, 'puesto de salud de Argelia')).toBeNull()
+    expect(lugarAlFinal(GEO, 'centro de vida')).toBeNull()
+    expect(lugarAlFinal(GEO, 'vía Varsovia El Delirio')).toBeNull()
+    expect(lugarAlFinal(GEO, 'Monguí')).toBeNull()
   })
 })
 

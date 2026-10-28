@@ -1,5 +1,5 @@
 import { esc } from './soql.js'
-import { sinTildes, variantesConTilde } from './acentos.js'
+import { nombresPropios, sinTildes, variantesConTilde } from './acentos.js'
 
 // Búsqueda aproximada: los contratos que tienen todas las palabras de lo
 // buscado, aunque no estén juntas ni en ese orden.
@@ -121,7 +121,7 @@ function exigir(palabra, confiable) {
 // Las consultas ($q + $where) para un conjunto de palabras, o [] si no se
 // puede: hace falta al menos una palabra entera para el índice, y al menos dos
 // palabras en total (con una sola, la búsqueda principal ya es esta misma).
-function consultasPara(palabras, where, opciones, confiable = false) {
+function consultasPara(palabras, where, opciones, fiable = () => false) {
   if (palabras.length < 2) return []
   const enteras = palabras.filter((p) => !raiz(p))
   if (!enteras.length) return []
@@ -129,12 +129,20 @@ function consultasPara(palabras, where, opciones, confiable = false) {
   // probar cada forma. Si todas los tienen, la más larga, en todas sus formas.
   const sinSin = enteras.filter((p) => !sinonimosDe(p).length)
   const clave = (sinSin.length ? sinSin : enteras).reduce((a, b) => (b.length > a.length ? b : a))
-  const whereTotal = [where, ...palabras.filter((p) => p !== clave).map((p) => exigir(p, confiable))].filter(Boolean).join(' AND ')
-  return escriturasConSinonimos(clave, confiable).map((q) => ({ q, where: whereTotal, ...opciones }))
+  const whereTotal = [where, ...palabras.filter((p) => p !== clave).map((p) => exigir(p, fiable(p)))].filter(Boolean).join(' AND ')
+  return escriturasConSinonimos(clave, fiable(clave)).map((q) => ({ q, where: whereTotal, ...opciones }))
+}
+
+// Con `confiable`, la palabra en las escrituras de la IA, salvo los nombres
+// propios, que vienen como los escribió la persona (ver nombresPropios).
+const confiables = (texto, confiable) => {
+  if (!confiable) return () => false
+  const propios = nombresPropios(texto)
+  return (p) => !propios.has(p)
 }
 
 export function consultasAproximadas(texto, where, opciones = {}, { confiable = false } = {}) {
-  return consultasPara(palabrasClave(texto), where, opciones, confiable)
+  return consultasPara(palabrasClave(texto), where, opciones, confiables(texto, confiable))
 }
 
 // Si con todas no sale nada: todas menos una, por turnos. "colegio normal
@@ -147,5 +155,6 @@ export function consultasAproximadas(texto, where, opciones = {}, { confiable = 
 export function consultasRelajadas(texto, where, opciones = {}, { conCiudad = false, confiable = false } = {}) {
   const palabras = palabrasClave(texto)
   if (palabras.length < (conCiudad ? 2 : 4)) return []
-  return palabras.map((_, i) => consultasPara(palabras.filter((__, j) => j !== i), where, opciones, confiable))
+  const fiable = confiables(texto, confiable)
+  return palabras.map((_, i) => consultasPara(palabras.filter((__, j) => j !== i), where, opciones, fiable))
 }

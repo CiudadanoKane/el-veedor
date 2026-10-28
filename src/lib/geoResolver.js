@@ -32,6 +32,8 @@ export function resolverLugar(geo, { departamento = '', ciudad = '' } = {}) {
       const match = (ciudadesPorDepartamento[dep] || []).find((c) => norm(c) === ciudadN)
       if (match) return { department: dep, city: match }
     }
+    const corta = porNombreCorto(geo, ciudadN, elDado)
+    if (corta) return corta
   }
 
   if (depN) {
@@ -40,6 +42,47 @@ export function resolverLugar(geo, { departamento = '', ciudad = '' } = {}) {
   }
 
   return vacio
+}
+
+// El nombre corto de un municipio cuyo nombre oficial es "X de <nombre>":
+// "Tolú" es "Santiago De Tolú" en el catálogo de SECOP, y no coincidía con
+// nada; "parque principal de Tolú" se buscaba en todo el país y no aparecía
+// (medición de oct 2026). Solo si hay uno: "Tolú Viejo" no cuenta (no termina
+// en "de Tolú"), pero dos municipios "X de <nombre>" serían una adivinanza.
+function porNombreCorto({ departamentos = [], ciudadesPorDepartamento = {} }, nombreN, elDado) {
+  if (nombreN.length < 4) return null
+  const hallados = []
+  for (const dep of elDado ? [elDado] : departamentos) {
+    for (const c of ciudadesPorDepartamento[dep] || []) {
+      if (norm(c).endsWith(` de ${nombreN}`)) hallados.push({ department: dep, city: c })
+    }
+  }
+  return hallados.length === 1 ? hallados[0] : null
+}
+
+// El municipio que la IA dejó al final del texto, cuando no lo puso como
+// ciudad: "construcción del hospital de Monguí" llegó una vez como texto
+// "hospital de Mongui", sin ciudad, y el contrato bajó del 2.º al 16.º puesto
+// entre hospitales de todo el país (medición de oct 2026). Se toma solo si va
+// tras "de" o "en" y es un único municipio del catálogo ("Bolívar" o "Caldas",
+// que hay en varios departamentos, no). Devuelve el lugar y el texto sin él, o
+// null.
+export function lugarAlFinal(geo, texto) {
+  if (!geo || !texto) return null
+  const { departamentos = [], ciudadesPorDepartamento = {} } = geo
+  const m = String(texto).match(/^(.*\S)\s+(?:de|del|en)\s+((?:\S+\s+)?\S+)$/i)
+  if (!m) return null
+  // Una o dos palabras: "de Monguí", "de San Gil".
+  const n = norm(m[2])
+  if (n.length < 4) return null
+  const hallados = []
+  for (const dep of departamentos) {
+    for (const c of ciudadesPorDepartamento[dep] || []) {
+      if (norm(c) === n) hallados.push({ department: dep, city: c })
+    }
+  }
+  const lugar = hallados.length === 1 ? hallados[0] : hallados.length ? null : porNombreCorto(geo, n)
+  return lugar ? { ...lugar, texto: m[1] } : null
 }
 
 // El lugar que dio la IA, solo si la frase lo nombra. En la medición de oct
