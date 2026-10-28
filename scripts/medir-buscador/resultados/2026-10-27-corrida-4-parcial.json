@@ -1,0 +1,11 @@
+{
+  "descripcion": "Cuarta corrida (27 oct, 22:19 UTC), con todo publicado hasta c0eab9d3 (sinónimos, puente sin la acción, prensa que espera a la IA, consultas caídas). Interrumpida en el caso 6 de 35: el panel del navegador se cierra al llegar un mensaje nuevo. El puente se llamó una sola vez por búsqueda (antes, dos en 11 de 16).",
+  "casos": [
+    { "id": "P1", "posicion": 1, "aLaVista": true, "porPrensa": true, "segundos": 15 },
+    { "id": "P2", "posicion": 1, "aLaVista": true, "porPrensa": true, "segundos": 32 },
+    { "id": "P3", "posicion": 1, "aLaVista": true },
+    { "id": "P4", "posicion": null },
+    { "id": "P5", "posicion": 1, "aLaVista": true, "porPrensa": true },
+    { "id": "P6", "posicion": 1, "aLaVista": true, "porPrensa": true }
+  ]
+}
