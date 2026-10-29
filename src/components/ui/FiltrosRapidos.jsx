@@ -32,7 +32,7 @@ export function FiltrosRapidos({ facetas, refino, onCambiar, visibles, total }) 
   return (
     <div
       className="mb-3 flex items-center gap-1.5 flex-wrap max-sm:flex-nowrap max-sm:overflow-x-auto
-                 max-sm:-mx-5 max-sm:px-5 max-sm:pb-1 [&>*]:shrink-0 [&>*]:whitespace-nowrap"
+                 max-sm:-mx-5 max-sm:px-5 sin-barra [&>*]:shrink-0 [&>*]:whitespace-nowrap"
       aria-label="Acotar la lista"
     >
       <span className="mr-1 text-micro uppercase tracking-label text-textSecondary font-semibold">Acotar</span>

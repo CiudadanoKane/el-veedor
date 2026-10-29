@@ -36,10 +36,10 @@ export function PanelPrensa({ consulta }) {
     document.getElementById(ID_PRENSA)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   // Lo que dice la línea plegada.
   const estado = query.isLoading
-    ? 'buscando…'
+    ? 'Buscando…'
     : query.isError
-      ? 'no disponible ahora'
-      : resultados.length ? contarFuentes(resultados) : 'sin noticias'
+      ? 'No disponible ahora'
+      : resultados.length ? contarFuentes(resultados) : 'Sin noticias sobre esta búsqueda'
 
   return (
     <aside
@@ -47,13 +47,13 @@ export function PanelPrensa({ consulta }) {
       className="border-l-4 border-primary bg-textPrimary/[0.04] px-4 py-3 xl:sticky xl:top-4"
     >
       <div className="flex items-center justify-between gap-3">
-        <h2 className="flex items-center gap-1.5 text-micro uppercase tracking-label text-textSecondary font-semibold">
-          <Icon name="noticias" className="h-4 w-4 shrink-0" />
-          En la prensa
-          {!desplegado && (
-            <span className="xl:hidden normal-case tracking-normal font-normal">· {estado}</span>
-          )}
-        </h2>
+        <div className="min-w-0">
+          <h2 className="flex items-center gap-1.5 whitespace-nowrap text-micro uppercase tracking-label text-textSecondary font-semibold">
+            <Icon name="noticias" className="h-4 w-4 shrink-0" />
+            En la prensa
+          </h2>
+          {!desplegado && <p className="xl:hidden mt-0.5 text-nota text-textPrimary">{estado}</p>}
+        </div>
         {resultados.length > 0 && (
           <button
             type="button"

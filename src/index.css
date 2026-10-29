@@ -177,6 +177,15 @@ code {
   background: rgb(var(--c-text-soft));
 }
 
+/* Una fila que se desliza con el dedo (los chips de Acotar en el teléfono):
+   el chip cortado en el borde ya dice que hay más; la barra sobra. */
+.sin-barra {
+  scrollbar-width: none;
+}
+.sin-barra::-webkit-scrollbar {
+  display: none;
+}
+
 /* Evita que el fondo se desplace con el menú móvil abierto */
 body.menu-abierto {
   overflow: hidden;
