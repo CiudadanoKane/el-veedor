@@ -967,19 +967,21 @@ export function Buscar() {
       header: 'Entidad y objeto',
       render: (r) => (
         <div className="max-w-[320px]">
-          <div className="text-textPrimary">
+          {/* En flex y no en línea: con margen a la izquierda, la etiqueta que
+              bajaba de línea quedaba con sangría (en el teléfono, siempre). */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-textPrimary">
             <EnlaceEntidad nombre={r.entityName} />
             {/* SECOP II es la fuente por defecto y la gran mayoría de los
                 resultados; solo se anota lo distinto de lo esperado. */}
             {r.source === 'SECOP I' && (
-              <span className="ml-2 inline-block whitespace-nowrap align-middle text-micro uppercase tracking-label
+              <span className="whitespace-nowrap text-micro uppercase tracking-label
                                  text-textSecondary border border-border px-1.5 py-0.5">
                 SECOP I
               </span>
             )}
             {esContratoMarco(r.description) && (
               <span
-                className="ml-2 inline-block whitespace-nowrap align-middle text-micro uppercase tracking-label
+                className="whitespace-nowrap text-micro uppercase tracking-label
                            text-textSecondary border border-border px-1.5 py-0.5"
                 title="Un solo contrato para muchas obras en todo el lugar"
               >

@@ -31,7 +31,14 @@ export function FiltrosRapidos({ facetas, refino, onCambiar, visibles, total }) 
     <div className="mb-3 flex flex-wrap items-center gap-1.5" aria-label="Acotar la lista">
       <span className="mr-1 text-micro uppercase tracking-label text-textSecondary font-semibold">Acotar</span>
       {tipos.map((t) => chip('tipo', t, t.valor))}
-      {tipos.length > 0 && entidades.length > 0 && <span className="mx-1 text-textSecondary/50" aria-hidden>|</span>}
+      {/* En el teléfono la barra quedaba sola al final de una línea: ahí las
+          entidades empiezan línea nueva. */}
+      {tipos.length > 0 && entidades.length > 0 && (
+        <>
+          <span className="hidden sm:inline mx-1 text-textSecondary/50" aria-hidden>|</span>
+          <span className="basis-full h-0 sm:hidden" aria-hidden />
+        </>
+      )}
       {entidades.map((e) => chip('entidad', e, nombreCorto(e.valor)))}
       {filtrando && (
         <button

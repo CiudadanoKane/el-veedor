@@ -115,11 +115,13 @@ export function SugerenciasBusqueda({ consultaPrensa, texto, filtrosGeo, activo 
           key={s.href}
           to={s.href}
           title={s.detalle}
-          className="inline-flex items-baseline gap-1.5 border border-border px-2.5 py-1 text-nota
+          // En línea y no en flex: en flex, una frase larga partía el conteo
+          // en una columna aparte ("· más de 4 / contratos") en el teléfono.
+          className="inline-block border border-border px-2.5 py-1 text-nota
                      text-textPrimary hover:border-textPrimary transition-colors"
         >
           {s.etiqueta}
-          {s.cuantos && <span className="text-micro text-textSecondary">· {s.cuantos}</span>}
+          {s.cuantos && <span className="ml-1.5 text-micro text-textSecondary whitespace-nowrap">· {s.cuantos}</span>}
         </Link>
       ))}
       {puente.isLoading && (
