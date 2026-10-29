@@ -24,7 +24,10 @@ function normalizarColumna(c) {
 // tabla. El Buscador lo guarda en la URL: al seguir un enlace del detalle
 // (el perfil de la entidad) y volver atrás, el detalle se había cerrado, y
 // había que buscar de nuevo el contrato en la lista.
-export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', renderDetail, tanda, abierto, onAbrir }) {
+// `anchoMinimo`: clase del ancho mínimo de la tabla. 760 px por defecto; el
+// Buscador, que comparte el ancho con el panel de prensa, pide menos y
+// junta columnas para caber sin barra horizontal.
+export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', renderDetail, tanda, abierto, onAbrir, anchoMinimo = 'min-w-[760px]' }) {
   const controlado = typeof onAbrir === 'function'
   const [openKeyInterno, setOpenKeyInterno] = useState(null)
   const indiceAbierto = controlado && abierto != null ? rows.findIndex((r) => r[keyField] === abierto) : -1
@@ -92,7 +95,7 @@ export function DataTable({ columns: columnasCrudas, rows, keyField = 'id', rend
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-cuerpo">
+        <table className={`w-full ${anchoMinimo} text-cuerpo`}>
           <thead>
             <tr>
               {cols.map((c) => (

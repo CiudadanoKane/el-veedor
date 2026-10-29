@@ -1023,14 +1023,23 @@ export function Buscar() {
       // que usan las tablas de Alertas y los rankings.
       render: (r) => <EnlaceContratista nombre={r.contractorName} documento={r.contractorId} />,
     },
+    // Valor, firma y departamento en una columna. Eran tres, y en escritorio
+    // —con el panel de la prensa al lado— la tabla no cabía: salía una barra
+    // horizontal y la fecha se partía letra a letra ("18 / jun / de / 202…",
+    // oct 2026). Cada línea va sin cortes; el departamento, que con un lugar
+    // elegido casi siempre se repite, queda en tercer plano.
     {
       key: 'contractValue',
-      header: 'Valor',
-      className: 'text-right tabular-nums',
-      render: (r) => formatCOP(r.contractValue),
+      header: 'Valor y firma',
+      className: 'text-right',
+      render: (r) => (
+        <div className="whitespace-nowrap">
+          <div className="tabular-nums text-textPrimary">{formatCOP(r.contractValue)}</div>
+          {r.signDate && <div className="text-nota text-textSecondary">{formatDate(r.signDate)}</div>}
+          {r.department && <div className="text-micro text-textSecondary">{r.department}</div>}
+        </div>
+      ),
     },
-    { key: 'department', header: 'Departamento', render: (r) => r.department || '—' },
-    { key: 'signDate', header: 'Firma', render: (r) => formatDate(r.signDate) },
   ]
 
   return (
@@ -1547,6 +1556,7 @@ export function Buscar() {
                             rows={listaVisible}
                             keyField="id"
                             tanda={5}
+                            anchoMinimo="min-w-[520px]"
                             abierto={params.get('abierto')}
                             onAbrir={abrirContrato}
                             renderDetail={(row) => <ContractDetail contract={row} />}
