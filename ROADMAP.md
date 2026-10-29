@@ -935,6 +935,13 @@ El grupo no se sabe por los datos: el plano se subió al proceso y no a un
 contrato, y el portal muestra los documentos del proceso en la página de
 ambos grupos.
 
+Medido en producción (28 oct), con iframes desde el navegador porque
+GitHub Actions no arrancó el job por un problema de cobro de la cuenta:
+- P4 sale 1.º, con su frase y con "contrato tunel peatonal caribe verde",
+  esta sin ciudad.
+- Los casos con barrio no cambian: P5, P8, D3, D5, D8, D9, D19 y D20 salen
+  1.º, y D15 sale 2.º, como antes.
+
 De paso, lo que muestra hoy El Veedor con esa búsqueda: como "Caribe Verde" es
 un barrio y la frase no dice la ciudad, busca "túnel peatonal" en todo el país
 y trae pasarelas de Leticia y hasta desfiles de moda ("pasarela" entre los
