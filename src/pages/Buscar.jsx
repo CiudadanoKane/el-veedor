@@ -966,14 +966,14 @@ export function Buscar() {
             {/* SECOP II es la fuente por defecto y la gran mayoría de los
                 resultados; solo se anota lo distinto de lo esperado. */}
             {r.source === 'SECOP I' && (
-              <span className="ml-2 align-middle text-micro uppercase tracking-label
+              <span className="ml-2 inline-block whitespace-nowrap align-middle text-micro uppercase tracking-label
                                  text-textSecondary border border-border px-1.5 py-0.5">
                 SECOP I
               </span>
             )}
             {esContratoMarco(r.description) && (
               <span
-                className="ml-2 align-middle text-micro uppercase tracking-label
+                className="ml-2 inline-block whitespace-nowrap align-middle text-micro uppercase tracking-label
                            text-textSecondary border border-border px-1.5 py-0.5"
                 title="Un solo contrato para muchas obras en todo el lugar"
               >
