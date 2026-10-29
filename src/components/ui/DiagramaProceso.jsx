@@ -1,5 +1,3 @@
-import { useEsMovil } from '../../hooks/useEsMovil'
-
 // Diagrama del recorrido de un contrato, con la bifurcación en el centro.
 //
 // La bifurcación es el punto del diagrama: todo lo demás es una secuencia, pero
@@ -127,10 +125,18 @@ function DiagramaVertical() {
   )
 }
 
+// Horizontal solo desde xl: mide 950 px, y con el menú lateral del sitio no
+// cabía en tabletas ni en portátiles pequeños (de 640 a ~1.240 px), donde
+// quedaba detrás de una barra de desplazamiento lateral. En El Veedor no se
+// desplaza nada de lado: más angosto, el vertical. Con clases y no con
+// useEsMovil: el diagrama no consulta nada, montar los dos no cuesta.
 export function DiagramaProceso() {
-  const esMovil = useEsMovil()
-  if (esMovil) return <DiagramaVertical />
-  return <DiagramaHorizontal />
+  return (
+    <>
+      <div className="xl:hidden"><DiagramaVertical /></div>
+      <div className="hidden xl:block"><DiagramaHorizontal /></div>
+    </>
+  )
 }
 
 function DiagramaHorizontal() {
@@ -150,13 +156,13 @@ function DiagramaHorizontal() {
   const ALTO_RAMA = 38
 
   return (
-    <figure className="overflow-x-auto -mx-1 px-1">
+    <figure>
       <svg
         viewBox={`0 0 ${ancho} 206`}
         role="img"
         aria-label="Las seis etapas de un contrato público: planeación, presupuesto, selección, firma, ejecución y cierre. En la selección el proceso se bifurca entre concurso abierto, que es el 8% de los contratos, y adjudicación directa o de régimen especial, que es el 92%."
         className="w-full"
-        style={{ minWidth: `${ancho}px` }}
+        style={{ maxWidth: `${ancho}px` }}
       >
         {ETAPAS.map((t, i) => (
           <g key={t}>
