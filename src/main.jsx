@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Analytics } from '@vercel/analytics/react'
 import './index.css'
 import App from './App.jsx'
 import { aplicarTema, seguirAlSistema } from './lib/tema.js'
@@ -26,5 +27,7 @@ createRoot(document.getElementById('root')).render(
     <QueryClientProvider client={queryClient}>
       <App />
     </QueryClientProvider>
+    {/* Vercel Web Analytics: cuenta visitas y páginas, sin cookies. */}
+    <Analytics />
   </StrictMode>,
 )
