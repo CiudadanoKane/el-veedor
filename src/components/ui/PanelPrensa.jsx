@@ -12,33 +12,61 @@ import { Icon } from './Icon'
 // puerta dorada" y "calle 72"). A la derecha se ven las dos cosas a la vez, en
 // el ancho que la lista de contratos no usa. Solo desde 1.280 px: con el menú
 // lateral del sitio, a 1.024 px la lista quedaba en 314 px. Más angosto (y en
-// el teléfono), va encima de los contratos, plegada a tres líneas.
+// el teléfono), va encima de los contratos, plegada.
 //
 // Lleva el resumen de lo que dicen las fuentes (lo escribe la IA, ver
 // promptWeb), los primeros titulares y el enlace a la sección completa, abajo.
 // La misma consulta que esa sección: no cuesta una llamada más.
 const TITULARES = 3
 
+//
+// Encima, una sola línea hasta que se abre: plegado a tres líneas de resumen,
+// más el resto del panel, ocupaba unos 240 px, y con eso el primer contrato
+// quedaba fuera de la pantalla del teléfono aun después de bajar a los
+// resultados (oct 2026, "contrato arroyo 85 barranquilla").
 export function PanelPrensa({ consulta }) {
   const query = useBusquedaWeb(consulta)
   const [abierto, setAbierto] = useState(false)
+  const [desplegado, setDesplegado] = useState(false)
   if (!import.meta.env.PROD || !consulta) return null
 
   const resultados = query.data?.resultados ?? []
   const resumen = query.data?.resumen
   const verNoticias = () =>
     document.getElementById(ID_PRENSA)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  // Lo que dice la línea plegada.
+  const estado = query.isLoading
+    ? 'buscando…'
+    : query.isError
+      ? 'no disponible ahora'
+      : resultados.length ? contarFuentes(resultados) : 'sin noticias'
 
   return (
     <aside
       aria-live="polite"
       className="border-l-4 border-primary bg-textPrimary/[0.04] px-4 py-3 xl:sticky xl:top-4"
     >
-      <h2 className="flex items-center gap-1.5 text-micro uppercase tracking-label text-textSecondary font-semibold">
-        <Icon name="noticias" className="h-4 w-4" />
-        En la prensa
-      </h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-1.5 text-micro uppercase tracking-label text-textSecondary font-semibold">
+          <Icon name="noticias" className="h-4 w-4 shrink-0" />
+          En la prensa
+          {!desplegado && (
+            <span className="xl:hidden normal-case tracking-normal font-normal">· {estado}</span>
+          )}
+        </h2>
+        {resultados.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setDesplegado((v) => !v)}
+            aria-expanded={desplegado}
+            className="toque xl:hidden shrink-0 text-nota font-semibold text-primary enlace-sutil"
+          >
+            {desplegado ? 'Ocultar' : 'Ver resumen'}
+          </button>
+        )}
+      </div>
 
+      <div className={desplegado ? '' : 'max-xl:hidden'}>
       {query.isLoading && (
         <p className="mt-2 flex items-center gap-2 text-nota text-textSecondary">
           <span className="h-3 w-3 shrink-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -112,6 +140,7 @@ export function PanelPrensa({ consulta }) {
       {resumen && (
         <p className="mt-2 text-micro text-textSecondary">A partir de las fuentes: ábrelas para leer el original.</p>
       )}
+      </div>
     </aside>
   )
 }

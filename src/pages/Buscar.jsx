@@ -1351,11 +1351,13 @@ export function Buscar() {
                     {/* La sección de prensa va al final de la lista, y con
                         muchos contratos nadie llegaba a ella ("contrato arroyo
                         85 barranquilla", oct 2026): un acceso a la vista. */}
+                    {/* Más angosto que xl no: ahí la línea de la prensa va
+                        justo encima y dice lo mismo (ver PanelPrensa). */}
                     {noticiasPrensa > 0 && (
                       <button
                         type="button"
                         onClick={irAPrensa}
-                        className="toque inline-flex items-center gap-1.5 border border-primary px-3 py-1.5
+                        className="toque max-xl:hidden inline-flex items-center gap-1.5 border border-primary px-3 py-1.5
                                    text-nota font-semibold text-primary hover:bg-primary hover:text-bg transition-colors"
                       >
                         <Icon name="noticias" className="h-4 w-4" />

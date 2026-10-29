@@ -27,18 +27,17 @@ export function FiltrosRapidos({ facetas, refino, onCambiar, visibles, total }) 
   }
   const filtrando = refino.tipo || refino.entidad
 
+  // En el teléfono, una sola fila que se desliza: en varias filas ocupaba
+  // 220 px y empujaba el primer contrato fuera de la pantalla (oct 2026).
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-1.5" aria-label="Acotar la lista">
+    <div
+      className="mb-3 flex items-center gap-1.5 flex-wrap max-sm:flex-nowrap max-sm:overflow-x-auto
+                 max-sm:-mx-5 max-sm:px-5 max-sm:pb-1 [&>*]:shrink-0 [&>*]:whitespace-nowrap"
+      aria-label="Acotar la lista"
+    >
       <span className="mr-1 text-micro uppercase tracking-label text-textSecondary font-semibold">Acotar</span>
       {tipos.map((t) => chip('tipo', t, t.valor))}
-      {/* En el teléfono la barra quedaba sola al final de una línea: ahí las
-          entidades empiezan línea nueva. */}
-      {tipos.length > 0 && entidades.length > 0 && (
-        <>
-          <span className="hidden sm:inline mx-1 text-textSecondary/50" aria-hidden>|</span>
-          <span className="basis-full h-0 sm:hidden" aria-hidden />
-        </>
-      )}
+      {tipos.length > 0 && entidades.length > 0 && <span className="mx-1 text-textSecondary/50" aria-hidden>|</span>}
       {entidades.map((e) => chip('entidad', e, nombreCorto(e.valor)))}
       {filtrando && (
         <button
