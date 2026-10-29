@@ -897,6 +897,27 @@ el portal de SECOP pide captcha: queda para un derecho de petición a la
 Alcaldía (número de contrato y contratista del paso peatonal). P4 sigue
 dudoso en la medición.
 
+**Resuelto (28 oct), por un usuario: es LP-006-2025.** Entre los anexos del
+proceso (CO1.BDOS.7769130) está "ARQUITECTONICO PRELIMINAR CARIBE VERDE
+DEPRIMIDO 22.pdf", y además "ES PASO PEATONAL CIRCUNVALAR-ES1…ES4.pdf",
+subidos el 8 abr 2025 con los pliegos. LP-015-2025, el que mejor encajaba por
+fecha, no era. De ese proceso salieron dos contratos con el Consorcio ME
+Arroyos: grupo 1 (CO1.PCCNTR.7906163, $40.400 M) y grupo 2
+(CO1.PCCNTR.7906558, $37.900 M). Los planos son del proceso, no de un
+contrato, así que el lote aún no está claro. Lo diría
+"PRESUPUESTO ARROYOS GRUPO 1/2 - ADENDA.pdf" (anexos del mismo proceso).
+
+La lección para el Buscador: **los nombres de los anexos sí están en los datos
+abiertos**, en "SECOP II - Archivos Descarga Histórico" (un dataset por año,
+p. ej. h4m3-b4e2 de 2025 y dmgg-8hin de 2026). Cada archivo trae
+`nombre_archivo`, `proceso` (CO1.BDOS…), a veces `n_mero_de_contrato`,
+`entidad` y un enlace de descarga. Con `$q=caribe verde deprimido` sobre 2025
+lo encuentra en 0,6 s. Es un camino nuevo para obras que el objeto del
+contrato no nombra, como los contratos de bolsa:
+nombre del archivo → proceso → sus contratos. Hay que tener en cuenta que el
+índice parte por espacios, así que "PEATONAL CIRCUNVALAR-ES1" no sale con
+"paso peatonal circunvalar".
+
 De paso, lo que muestra hoy El Veedor con esa búsqueda: como "Caribe Verde" es
 un barrio y la frase no dice la ciudad, busca "túnel peatonal" en todo el país
 y trae pasarelas de Leticia y hasta desfiles de moda ("pasarela" entre los
