@@ -132,7 +132,7 @@ export function PanelPrensa({ consulta }) {
         <button
           type="button"
           onClick={verNoticias}
-          className="toque mt-2 block text-nota font-semibold text-primary enlace-sutil"
+          className="toque mt-2 block text-left text-nota font-semibold text-primary enlace-sutil"
         >
           {resultados.length === 1 ? 'La fuente' : `Las ${contarFuentes(resultados)}`}, con su resumen ↓
         </button>
