@@ -384,7 +384,7 @@ async function buscarEnLaWeb(req, res) {
     // Una negativa del modelo o una respuesta cortada no son un error para
     // quien busca: simplemente no hay resultados de prensa.
     if (response.stop_reason === 'refusal') {
-      return responderWeb(res, { resultados: [] })
+      return responderWeb(res, { resultados: [] }, { vacio: true })
     }
     if (busquedaFallida(response.content)) return fallaPasajera(res)
     const texto = response.content.filter((b) => b.type === 'text').map((b) => b.text).join('')
@@ -393,7 +393,7 @@ async function buscarEnLaWeb(req, res) {
     await Promise.all(resultados.map(verificarProceso))
     // Sin resultados reales no hay de qué haber resumido: un resumen solo
     // sería lo que el modelo cree saber.
-    return responderWeb(res, { resultados, resumen: resultados.length ? resumen : null })
+    return responderWeb(res, { resultados, resumen: resultados.length ? resumen : null }, { vacio: !resultados.length })
   } catch (err) {
     res.setHeader('Cache-Control', 'no-store')
     res.status(502).json({ error: err.message })
@@ -407,10 +407,15 @@ function fallaPasajera(res) {
   res.status(503).json({ error: 'la búsqueda en la web no respondió' })
 }
 
-function responderWeb(res, cuerpo) {
+function responderWeb(res, cuerpo, { vacio = false } = {}) {
   // Doce horas en el CDN: la prensa no cambia de un minuto a otro, y es lo que
-  // hace barato que muchos busquen lo mismo.
-  res.setHeader('Cache-Control', 'public, s-maxage=43200, stale-while-revalidate=86400')
+  // hace barato que muchos busquen lo mismo. Una respuesta vacía, solo media
+  // hora: a veces es un tropiezo del modelo y no falta de noticias. El 29 oct
+  // 2026 "contrato arroyo 85 barranquilla" dio cinco fuentes y, una hora
+  // después, ninguna, y así quedó guardada para todos durante doce horas.
+  res.setHeader('Cache-Control', vacio
+    ? 'public, s-maxage=1800'
+    : 'public, s-maxage=43200, stale-while-revalidate=86400')
   res.status(200).json(cuerpo)
 }
 
@@ -450,7 +455,7 @@ async function puenteAlContrato(req, res) {
     res.status(504).json({ error: err.message })
     return
   }
-  if (response.stop_reason === 'refusal') return responderWeb(res, { obras: [], fuentes: [] })
+  if (response.stop_reason === 'refusal') return responderWeb(res, { obras: [], fuentes: [] }, { vacio: true })
   if (busquedaFallida(response.content)) return fallaPasajera(res)
 
   const texto = response.content.filter((b) => b.type === 'text').map((b) => b.text).join('')
@@ -508,7 +513,8 @@ async function puenteAlContrato(req, res) {
   }))).filter(Boolean)
   // Las pistas van también en la respuesta: lo que se buscó en SECOP, aunque
   // no diera nada, para poder revisar por qué un puente falló.
-  return responderWeb(res, { obras, fuentes, pistas, busquedas: await busquedasContadas })
+  const busquedas = await busquedasContadas
+  return responderWeb(res, { obras, fuentes, pistas, busquedas }, { vacio: !obras.length && !busquedas.length })
 }
 
 // Los contratos de una pista: una consulta por escritura (con y sin tildes),
