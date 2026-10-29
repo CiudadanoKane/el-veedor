@@ -811,8 +811,15 @@ export function Buscar() {
     ...c,
     coincideEn: c.coincideId ?? coincidenciaVisible(c, [criterios.texto, ...criterios.terminos]),
   }))
+  // Si un anexo de un contrato ya listado nombra el barrio, la fila lo dice:
+  // es lo que la pone delante (ver nombraSector).
+  const contratosDocs = queryDocumentos.data?.contratos ?? []
+  const sectorEnDocs = new Map(contratosDocs.filter((c) => c.sectorEnDocumentos).map((c) => [c.id, c.documentos]))
+  for (const c of contratosMain) {
+    if (sectorEnDocs.has(c.id)) Object.assign(c, { sectorEnDocumentos: true, documentos: sectorEnDocs.get(c.id) })
+  }
   const idsMain = new Set(contratosMain.map((c) => c.id))
-  const docUnicos = (queryDocumentos.data?.contratos ?? []).filter((c) => !idsMain.has(c.id))
+  const docUnicos = contratosDocs.filter((c) => !idsMain.has(c.id))
   // prioridadLugar y noVigente solo vienen en las búsquedas por identificador
   // (ver useBusqueda): ahí lo del lugar filtrado va primero y los borradores al
   // final de su grupo, y reordenar solo por valor lo deshacía.
@@ -918,7 +925,9 @@ export function Buscar() {
   // ("San Cristóbal", "Cristal Bajo"): con "alcantarillado" solo, en
   // Piedecuesta, el buscado quedaba 14.º de 100 (oct 2026).
   const sectorN = norm(sinArticulo(criterios.sector))
-  const nombraSector = (r) => !sectorN || norm(r.description).includes(sectorN)
+  // Un anexo del proceso también cuenta: el plano "CARIBE VERDE DEPRIMIDO"
+  // de un contrato marco cuyo objeto no nombra ningún barrio.
+  const nombraSector = (r) => !sectorN || r.sectorEnDocumentos || norm(r.description).includes(sectorN)
   // Lo que nombra el barrio pesa más que el nivel de coincidencia: la
   // consulta que lo trae ya exige también las palabras buscadas.
   const nivel = (r) => (dePrensa.has(r.id) ? 0 : 100) + (nombraSector(r) ? 0 : 10) +

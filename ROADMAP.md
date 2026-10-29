@@ -918,6 +918,23 @@ nombre del archivo → proceso → sus contratos. Hay que tener en cuenta que el
 índice parte por espacios, así que "PEATONAL CIRCUNVALAR-ES1" no sale con
 "paso peatonal circunvalar".
 
+Corrección: el Buscador ya buscaba en los anexos (useBusquedaDocumentos).
+No lo encontraba por dos razones:
+- Faltaba el año 2025 entero. datos.gov.co lo pasó a "Histórico 2025"
+  (h4m3-b4e2), y dmgg-8hin, el de "desde 2025", quedó solo con 2026.
+- Solo buscaba el texto, "túnel peatonal", y ningún archivo dice eso.
+
+Ahora suma h4m3-b4e2, busca también el texto sin tildes y el barrio solo
+("Caribe Verde"). Lo hallado por el barrio cuenta como "nombra el sector" y
+va primero. Para no traer un colegio del mismo barrio, se exige que sea una
+obra de la misma familia que la buscada (afinidadConObra). Con "túnel
+peatonal" y sector "Caribe Verde", sin ciudad, LP-006-2025 grupos 1 y 2 salen
+1.º y 2.º, rotulados con el plano. Antes no aparecían.
+
+El grupo no se sabe por los datos: el plano se subió al proceso y no a un
+contrato, y el portal muestra los documentos del proceso en la página de
+ambos grupos.
+
 De paso, lo que muestra hoy El Veedor con esa búsqueda: como "Caribe Verde" es
 un barrio y la frase no dice la ciudad, busca "túnel peatonal" en todo el país
 y trae pasarelas de Leticia y hasta desfiles de moda ("pasarela" entre los

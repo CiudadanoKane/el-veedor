@@ -2,16 +2,17 @@ import { useQuery } from '@tanstack/react-query'
 import { socrataQuery, socrataBusqueda } from '../lib/socrataClient'
 import { DATASETS, DATASETS_ARCHIVOS, CONTRACT_FIELDS } from '../lib/constants'
 import { esc, whereFromFilters, buildWhere, condicionEstado, rangoNumerico, rangoFecha } from '../lib/soql'
-import { tieneTextoBuscable } from '../lib/acentos'
-import { esIdentificador } from './useBusqueda'
+import { sinTildes, tieneTextoBuscable } from '../lib/acentos'
+import { afinidadConObra, palabrasDeObra } from '../lib/contratoMarco'
+import { esIdentificador, sinArticulo } from './useBusqueda'
 import { adaptList } from '../adapters/secop2Adapter'
 
 const DS = DATASETS.CONTRATOS
 
 export const LIMITE = 40
 
-// Cuántos archivos pedir por dataset. Cinco años en paralelo con este tope dan
-// hasta 500 filas; más que suficiente para juntar los ids únicos sin que la
+// Cuántos archivos pedir por dataset y consulta. Seis años en paralelo con este
+// tope dan hasta 600 filas por consulta; más que suficiente para juntar los ids únicos sin que la
 // cláusula IN de la recuperación se vuelva una URL descomunal.
 const ARCHIVOS_POR_DATASET = 100
 
@@ -32,51 +33,76 @@ const MAX_IDS = 200
 //
 // El flujo es en dos pasos: primero encontrar los archivos cuyo nombre coincide,
 // que traen el id del contrato o del proceso; luego recuperar esos contratos.
+//
+// Qué se busca en los nombres de archivo: el texto, también sin tildes —los
+// nombres suelen ir en mayúsculas sin tildes ("TUNEL") y $q las distingue—, y
+// el barrio o sector, solo. El barrio es lo que más nombra un plano o un
+// presupuesto: "ARQUITECTONICO PRELIMINAR CARIBE VERDE DEPRIMIDO 22.pdf" es el
+// túnel peatonal de Caribe Verde, dentro del contrato marco LP-006-2025 de
+// Barranquilla, y ningún archivo dice "túnel peatonal" (oct 2026).
+export function consultasDeDocumentos(texto, sector) {
+  const t = String(texto || '').trim()
+  const s = sinArticulo(sector)
+  const consultas = []
+  if (tieneTextoBuscable(t)) {
+    consultas.push({ q: t, porSector: false })
+    if (sinTildes(t) !== t.toLowerCase()) consultas.push({ q: sinTildes(t), porSector: false })
+  }
+  if (s && !sinTildes(t).includes(sinTildes(s))) consultas.push({ q: s, porSector: true })
+  return consultas
+}
+
 export function useBusquedaDocumentos(criterios = {}, filtrosGeo = {}, { pausada = false } = {}) {
-  const { texto = '', orden = 'valor' } = criterios
+  const { texto = '', orden = 'valor', sector = '' } = criterios
   // Se apaga para identificadores: un código de proceso lo resuelve mejor la
   // coincidencia exacta de useBusqueda, y buscarlo aquí solo repetiría el
   // contrato que esa ya encuentra.
   // Ni con un contratista nombrado: un anexo que lo menciona no es un contrato
   // suyo (ver soloContratista en useBusqueda.js).
   const soloContratista = !!criterios.contratista && criterios.contratista.trim() === texto.trim()
-  const activa = tieneTextoBuscable(texto) && !esIdentificador(texto) && !soloContratista
+  const consultas = consultasDeDocumentos(texto, sector)
+  const activa = consultas.length > 0 && !esIdentificador(texto) && !soloContratista
 
   return useQuery({
     enabled: activa && !pausada,
     queryKey: [
-      'busqueda-docs', texto, orden, criterios.estados, filtrosGeo,
+      'busqueda-docs', texto, sector, orden, criterios.estados, filtrosGeo,
       criterios.valorMin, criterios.valorMax, criterios.fechaDesde, criterios.fechaHasta,
     ],
     queryFn: async () => {
-      // Paso 1: archivos cuyo nombre coincide, en los cinco datasets a la vez.
-      // $q hace AND entre palabras y busca sobre el nombre y la descripción del
-      // documento. allSettled para que un dataset caído no tumbe la búsqueda.
+      // Paso 1: archivos cuyo nombre coincide, en todos los datasets y con
+      // todas las consultas a la vez. $q hace AND entre palabras y busca sobre
+      // el nombre y la descripción del documento. allSettled para que un
+      // dataset caído no tumbe la búsqueda.
       const respuestas = await Promise.allSettled(
-        DATASETS_ARCHIVOS.map((id) =>
-          socrataBusqueda(id, {
-            q: texto.trim(),
-            select: 'n_mero_de_contrato, proceso, nombre_archivo',
-            limit: ARCHIVOS_POR_DATASET,
-          }),
+        consultas.flatMap(({ q, porSector }) =>
+          DATASETS_ARCHIVOS.map((id) =>
+            socrataBusqueda(id, {
+              q,
+              select: 'n_mero_de_contrato, proceso, nombre_archivo',
+              limit: ARCHIVOS_POR_DATASET,
+            }).then((filas) => filas.map((f) => ({ ...f, porSector }))),
+          ),
         ),
       )
       const archivos = respuestas.flatMap((r) => (r.status === 'fulfilled' ? r.value : []))
 
       // Un mismo contrato aparece en varios archivos, y algunos archivos traen
-      // solo el proceso. Se recogen ambas llaves y, por cada una, el nombre de
-      // archivo que la hizo coincidir (para mostrar el porqué).
+      // solo el proceso. Se recogen ambas llaves y, por cada una, los nombres
+      // de archivo que la hicieron coincidir (para mostrar el porqué) y si fue
+      // por el texto, por el barrio o por ambos.
       const porContrato = new Map()
       const porProceso = new Map()
       for (const a of archivos) {
-        const nombre = a.nombre_archivo
-        if (a.n_mero_de_contrato) {
-          if (!porContrato.has(a.n_mero_de_contrato)) porContrato.set(a.n_mero_de_contrato, new Set())
-          porContrato.get(a.n_mero_de_contrato).add(nombre)
-        } else if (a.proceso) {
-          if (!porProceso.has(a.proceso)) porProceso.set(a.proceso, new Set())
-          porProceso.get(a.proceso).add(nombre)
-        }
+        const [mapa, llave] = a.n_mero_de_contrato
+          ? [porContrato, a.n_mero_de_contrato]
+          : [porProceso, a.proceso]
+        if (!llave) continue
+        if (!mapa.has(llave)) mapa.set(llave, { nombres: new Set(), porTexto: false, porSector: false })
+        const e = mapa.get(llave)
+        e.nombres.add(a.nombre_archivo)
+        if (a.porSector) e.porSector = true
+        else e.porTexto = true
       }
 
       const idsContrato = [...porContrato.keys()].slice(0, MAX_IDS)
@@ -109,13 +135,26 @@ export function useBusquedaDocumentos(criterios = {}, filtrosGeo = {}, { pausada
         `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY ${orderBy} LIMIT ${LIMITE + 1}`,
       )
 
-      const contratos = adaptList(filas.slice(0, LIMITE)).map((c) => {
-        // El documento que hizo coincidir a este contrato: por su id, o por su
-        // proceso si el archivo no traía el número de contrato.
-        const nombres =
-          porContrato.get(c.id) || porProceso.get(c.processId) || new Set()
-        return { ...c, documentos: [...nombres].slice(0, 3) }
-      })
+      // Lo hallado solo por el barrio tiene que ser una obra de la misma
+      // familia que la buscada: un plano de "Caribe Verde" en el contrato de
+      // un colegio no responde "túnel peatonal" (ver afinidadConObra).
+      const obra = tieneTextoBuscable(texto) ? palabrasDeObra([texto]) : []
+      const contratos = adaptList(filas.slice(0, LIMITE))
+        .map((c) => {
+          // Los documentos que hicieron coincidir a este contrato: por su id,
+          // y por su proceso si el archivo no traía el número de contrato.
+          // Primero los del barrio, que son los que explican la fila.
+          const halladas = [porContrato.get(c.id), porProceso.get(c.processId)].filter(Boolean)
+          const deSector = halladas.filter((e) => e.porSector).flatMap((e) => [...e.nombres])
+          const nombres = new Set([...deSector, ...halladas.flatMap((e) => [...e.nombres])])
+          return {
+            ...c,
+            documentos: [...nombres].slice(0, 3),
+            sectorEnDocumentos: deSector.length > 0,
+            porTextoEnDocumentos: halladas.some((e) => e.porTexto),
+          }
+        })
+        .filter((c) => c.porTextoEnDocumentos || !obra.length || afinidadConObra(c.description, obra) > 0)
 
       return { contratos, hayMas: filas.length > LIMITE }
     },

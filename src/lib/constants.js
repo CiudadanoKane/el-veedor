@@ -23,11 +23,18 @@ export const DATASETS = {
 // obra ("calle 72") cuando el objeto oficial solo dice "malla vial".
 //
 // SECOP II los reparte en un dataset por año, todos con el mismo esquema
-// (nombre_archivo, n_mero_de_contrato, proceso). Se consultan los cinco en
+// (nombre_archivo, n_mero_de_contrato, proceso). Se consultan todos en
 // paralelo para cubrir de 2021 a hoy sin costar más tiempo que uno solo. Pre-2021
 // vive en SECOP I, con otro esquema incompatible, y queda fuera por ahora.
+//
+// Cada año, datos.gov.co pasa el dataset del año en curso a "Histórico" con
+// otro id y abre uno nuevo. En 2026 pasó con 2025 (h4m3-b4e2), y dmgg-8hin
+// —"Desde 2025"— quedó solo con 2026: el Buscador no veía ningún anexo de 2025,
+// entre ellos el plano del túnel de Caribe Verde (oct 2026). Al cambiar de año:
+// buscar "SECOP II - Archivos Descarga" en el catálogo y sumar el nuevo.
 export const DATASETS_ARCHIVOS = [
-  'dmgg-8hin', // Desde 2025 (en la práctica arranca 2024-12-31)
+  'dmgg-8hin', // 2026 (arranca 2025-12-31)
+  'h4m3-b4e2', // Histórico 2025
   'nbae-kzan', // Histórico 2024
   '3skv-9na7', // Histórico 2023
   'kgcd-kt7i', // Histórico 2022
