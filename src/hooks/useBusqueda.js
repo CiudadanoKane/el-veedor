@@ -237,6 +237,13 @@ export function whereSecop2(criterios, filtrosGeo, { conTexto = false } = {}) {
 // departamento sí se exige: hay municipios homónimos en varios ("Argelia").
 // Sin costo medible: el filtro corre sobre lo que ya acotó el índice de texto
 // (0,3-0,7 s, medido).
+// ¿El texto nombra la ciudad como palabra entera? Sin tildes a ambos lados.
+export function nombraLaCiudad(texto, ciudad) {
+  const n = sinTildes(ciudad || '').trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  if (!n) return false
+  return new RegExp(`(^|[^a-z0-9])${n}([^a-z0-9]|$)`).test(sinTildes(texto || ''))
+}
+
 function condicionLugarDeLaObra(ciudad) {
   const nombre = ciudad.toLowerCase()
   const nombres = [...new Set([nombre, sinTildes(nombre)])]
@@ -467,6 +474,14 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
       if (rs.filas.length) {
         const vistos = new Set(rs.filas.map((f) => f.id_contrato))
         r2.filas = [...rs.filas, ...r2.filas.filter((f) => !vistos.has(f.id_contrato))]
+      }
+      // condicionLugarDeLaObra deja entrar contratos de otro municipio cuyo
+      // objeto nombra la ciudad, pero la API solo sabe buscarla como trozo de
+      // texto: "cali" está en "CALIDAD" y "cota" en "MASCOTAS". Con "alimentación
+      // escolar" en Cali entraban 27 contratos del PAE de Jamundí y
+      // Buenaventura (oct 2026). Aquí se exige la palabra entera.
+      if (frases.length && filtrosGeo.city) {
+        r2.filas = r2.filas.filter((f) => f.ciudad === filtrosGeo.city || nombraLaCiudad(f.objeto_del_contrato, filtrosGeo.city))
       }
       return {
         filas2: r2.filas, filas1: r1.filas,
