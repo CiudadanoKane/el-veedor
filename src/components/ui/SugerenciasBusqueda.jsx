@@ -24,9 +24,12 @@ import { sinTildes } from '../../lib/acentos'
 // pantalla entera y los contratos quedaban fuera de vista (oct 2026, "calle 72").
 const MAX = 6
 
-export function SugerenciasBusqueda({ consultaPrensa, texto, filtrosGeo }) {
+// `filtrosGeo`: el lugar elegido o, sin él, el que nombra la frase (ver
+// lugarAlFinalDeLaFrase en Buscar). El mismo con que se pide el puente: así se
+// comparte la consulta, y los enlaces llevan el lugar donde se contaron.
+export function SugerenciasBusqueda({ consultaPrensa, texto, filtrosGeo, activo = true }) {
   const lugar = { departamento: filtrosGeo.department, ciudad: filtrosGeo.city }
-  const puente = usePuentePrensa(consultaPrensa, lugar, !!consultaPrensa)
+  const puente = usePuentePrensa(consultaPrensa, lugar, !!consultaPrensa && activo)
   const noticias = useBusquedaWeb(consultaPrensa)
   if (!import.meta.env.PROD || !consultaPrensa) return null
 

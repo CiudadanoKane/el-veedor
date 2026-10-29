@@ -76,6 +76,24 @@ export function lugarAlFinal(geo, texto) {
   return lugar ? { ...lugar, texto: m[1] } : null
 }
 
+// El municipio con que termina la frase, con o sin "de"/"en" delante:
+// "contrato arroyo 85 barranquilla". Para el puente de la prensa cuando se
+// entra por un enlace (?q=), que no pasa por la IA y no trae lugar: sin él, las
+// búsquedas sugeridas se contaban en todo el país (oct 2026: «canalización del
+// arroyo · 3 contratos», de Turbaná y Magdalena, por una obra de Barranquilla).
+// Dos palabras primero ("San Gil"), luego una. No tras un artículo ("parque la
+// soledad" es un parque) ni si la frase es solo el lugar.
+const ARTICULOS = new Set(['el', 'la', 'los', 'las'])
+export function lugarAlFinalDeLaFrase(geo, texto) {
+  const palabras = String(texto || '').trim().split(/\s+/)
+  for (const n of [2, 1]) {
+    if (palabras.length <= n || ARTICULOS.has(norm(palabras[palabras.length - n - 1]))) continue
+    const lugar = municipioUnico(geo, palabras.slice(-n).join(' '))
+    if (lugar) return lugar
+  }
+  return null
+}
+
 // El municipio con ese nombre (o nombre corto), si hay uno solo en el país.
 // También para el sector: la IA a veces pone ahí el municipio y deja la ciudad
 // vacía ("parque principal de Tolú" → sector "Tolú", sin lugar; medición del

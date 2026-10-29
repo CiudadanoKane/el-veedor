@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { lugarAlFinal, municipioUnico, resolverLugar, soloLugaresNombrados } from './geoResolver'
+import { lugarAlFinal, lugarAlFinalDeLaFrase, municipioUnico, resolverLugar, soloLugaresNombrados } from './geoResolver'
 import { whereSecop2 } from '../hooks/useBusqueda'
 
 const GEO = {
@@ -44,6 +44,20 @@ describe('nombres cortos y lugares al final del texto', () => {
     expect(lugarAlFinal(GEO, 'centro de vida')).toBeNull()
     expect(lugarAlFinal(GEO, 'vía Varsovia El Delirio')).toBeNull()
     expect(lugarAlFinal(GEO, 'Monguí')).toBeNull()
+  })
+})
+
+describe('lugarAlFinalDeLaFrase: el lugar de un enlace sin IA', () => {
+  it('el municipio al final, con o sin "de"/"en"', () => {
+    expect(lugarAlFinalDeLaFrase(GEO, 'contrato arroyo 85 fresno')).toEqual({ department: 'Tolima', city: 'Fresno' })
+    expect(lugarAlFinalDeLaFrase(GEO, 'parque principal en Tolú')).toEqual({ department: 'Sucre', city: 'Santiago De Tolú' })
+    expect(lugarAlFinalDeLaFrase(GEO, 'colegio tolu viejo')).toEqual({ department: 'Sucre', city: 'Tolú Viejo' })
+  })
+  it('no si es ambiguo, va tras un artículo o la frase es solo el lugar', () => {
+    expect(lugarAlFinalDeLaFrase(GEO, 'puesto de salud argelia')).toBeNull()
+    expect(lugarAlFinalDeLaFrase(GEO, 'barrio la fresno')).toBeNull()
+    expect(lugarAlFinalDeLaFrase(GEO, 'fresno')).toBeNull()
+    expect(lugarAlFinalDeLaFrase(GEO, 'arroyo 85')).toBeNull()
   })
 })
 

@@ -32,7 +32,7 @@ import { useBusquedaWeb, usePuentePrensa } from '../hooks/useBusquedaWeb'
 import { contarFuentes } from '../lib/busquedaWeb'
 import { useContratosPorId } from '../hooks/useContratosPorId'
 import { Icon } from '../components/ui/Icon'
-import { lugarAlFinal, lugarNombrado, municipioUnico, resolverLugar, soloLugaresNombrados } from '../lib/geoResolver'
+import { lugarAlFinal, lugarAlFinalDeLaFrase, lugarNombrado, municipioUnico, resolverLugar, soloLugaresNombrados } from '../lib/geoResolver'
 import { formatCOP, formatDate } from '../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
 import { ResultadosWeb, ID_PRENSA } from '../components/ui/ResultadosWeb'
@@ -852,7 +852,13 @@ export function Buscar() {
         lugarFiltro && !sinTildes(basePrensa).includes(sinTildes(lugarFiltro)) ? lugarFiltro : '',
       ].filter(Boolean).join(' ')
     : ''
-  const lugarPrensa = { departamento: filters.department, ciudad: filters.city }
+  // Sin lugar elegido, el que nombra la frase al final: un enlace ?q= no pasa
+  // por la IA (ver lugarAlFinalDeLaFrase). Hay que esperar el catálogo, o el
+  // puente se pediría dos veces, sin lugar y con él.
+  const lugarDeLaFrase = filters.department ? null : lugarAlFinalDeLaFrase(geo.data, basePrensa)
+  const lugarSugerencias = lugarDeLaFrase ?? { department: filters.department, city: filters.city }
+  const lugarPrensa = { departamento: lugarSugerencias.department, ciudad: lugarSugerencias.city }
+  const lugarListo = !!filters.department || !geo.isLoading
   // Cuántas noticias hay, para el acceso junto al título de los resultados (la
   // misma consulta que la sección de prensa: no cuesta otra llamada).
   const resultadosPrensa = useBusquedaWeb(consultaPrensa).data?.resultados
@@ -912,7 +918,7 @@ export function Buscar() {
   // marco: en el teléfono no se distinguía qué era contrato, qué noticia y qué
   // texto de la IA. Solo si la frase encontró poco, como la búsqueda
   // aproximada: con muchos, el puente repetía la lista o la contradecía.
-  const puente = usePuentePrensa(consultaPrensa, lugarPrensa, !!consultaPrensa)
+  const puente = usePuentePrensa(consultaPrensa, lugarPrensa, !!consultaPrensa && lugarListo)
   const medioPuente = puente.data?.fuentes?.[0]?.dominio || 'la prensa'
   const idsPuente = !porId && (conLaFrase < 5 || sinLoBuscado)
     ? [...new Set((puente.data?.obras ?? []).flatMap((o) => o.contratos.map((c) => c.id)))].slice(0, 6)
@@ -1233,7 +1239,7 @@ export function Buscar() {
             {/* Búsquedas sugeridas, siempre: que haya contratos no quiere decir
                 que sean los buscados (ver SugerenciasBusqueda). */}
             {criterios.texto && !esIdentificador(criterios.texto) && (
-              <SugerenciasBusqueda texto={criterios.texto} consultaPrensa={consultaPrensa} filtrosGeo={filters} />
+              <SugerenciasBusqueda texto={criterios.texto} consultaPrensa={consultaPrensa} filtrosGeo={lugarSugerencias} activo={lugarListo} />
             )}
 
             {!avanzados && <FiltrosAplicados criterios={criterios} actualizar={actualizar} />}
