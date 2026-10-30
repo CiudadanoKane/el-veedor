@@ -18,6 +18,7 @@ import { useDashboardStats } from '../hooks/useDashboard'
 import { useColumnas } from '../hooks/useColumnas'
 import { formatCOP, formatCOPCorto, formatCOPFull, pct, formatPct } from '../lib/formatters'
 import { SECTOR_COLORS } from '../lib/chartTheme'
+import { agruparSectores } from '../lib/sectores'
 import { Seccion, Subseccion } from '../components/ui/Seccion'
 
 // Bajo el total histórico, cuánto está realmente vivo. Dos cortes: "En
@@ -543,11 +544,15 @@ export function Dashboard() {
         }
         metodologia={
           <>
-            "Sector" corresponde a la estructura del gobierno <strong>nacional</strong>.
-            Las entidades <strong>territoriales</strong> (alcaldías y gobernaciones) no
-            pertenecen a un sector nacional, por lo que figuran como "No aplica/No
-            pertenece" — cerca del 87% de ese grupo. No es un dato faltante: buena
-            parte de la contratación pública ocurre a nivel municipal y departamental.
+            "Sector" corresponde a la estructura del gobierno <strong>nacional</strong> y
+            clasifica a la entidad, no a lo que contrata. Las entidades{' '}
+            <strong>territoriales</strong> (alcaldías y gobernaciones) no pertenecen a un
+            sector nacional: SECOP las registra como "Servicio Público" o "No aplica/No
+            pertenece", sea el contrato de salud, de vías o de educación. Por eso esos dos
+            valores van juntos y al final, en una sola fila. En todo el país, cerca del
+            90% de los contratos de esa fila son de entidades territoriales. No es un dato
+            faltante: buena parte de la contratación pública ocurre a nivel municipal y
+            departamental.
           </>
         }
       >
@@ -556,15 +561,17 @@ export function Dashboard() {
             <ListaBarra
               apilada
               colores={SECTOR_COLORS}
-              items={data.map((s) => ({
+              items={agruparSectores(data).map((s) => ({
                 clave: s.name,
                 label: s.name,
                 valor: s.value,
                 valorTexto: formatCOP(s.value),
+                // Gris y sin el color de la paleta: no es un tema más.
+                color: s.sinSector ? 'rgb(var(--c-text-soft))' : undefined,
                 // La categoría más confusa se explica en su propia fila,
                 // no en una nota al pie que nadie lee.
-                nota: /no aplica|no pertenece/i.test(s.name)
-                  ? 'No es un dato faltante: "sector" es una estructura del gobierno nacional, y las alcaldías y gobernaciones no pertenecen a ninguno. Cerca del 87% de este grupo son entidades territoriales.'
+                nota: s.sinSector
+                  ? 'Esta fila no es un tema de gasto. SECOP registra a alcaldías y gobernaciones como «Servicio Público» o «No aplica», sea el contrato de salud, de vías o de educación. Por eso va aparte y al final.'
                   : undefined,
               }))}
             />

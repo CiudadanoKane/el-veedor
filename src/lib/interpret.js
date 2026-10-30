@@ -1,5 +1,6 @@
 import { formatCOP, formatDate, humanDuration } from './formatters'
 import { ESTADO_ACTIVO } from './constants'
+import { esSectorTematico } from './sectores'
 
 // Estima el plazo original (días) restando las adiciones al plazo actual.
 function plazoOriginalDias(c) {
@@ -27,7 +28,7 @@ export function interpretContract(c) {
   let ident = `Contrato por ${formatCOP(c.contractValue)}`
   if (c.entityName) ident += ` de ${c.entityName}`
   if (c.contractorName) ident += ` con ${c.contractorName}`
-  if (c.sector) ident += `, en el sector ${c.sector}`
+  if (c.sector && esSectorTematico(c.sector)) ident += `, en el sector ${c.sector}`
   s.push(ident + '.')
 
   // 2. Objeto (qué se contrató)
