@@ -1,6 +1,7 @@
 // Precálculo diario de la agrupación por SECTOR (segmento UNSPSC): las seis
-// agregaciones que necesitan sus dos consumidores —Rankings → "Qué se contrata"
-// y Graficar → dimensión "Sector"—.
+// agregaciones que necesitan Rankings → "Qué se contrata" y Graficar → dimensión
+// "Tipo de bien o servicio", más la parte de SECOP I (contratos y valor) con la
+// que Panorama y Rankings cierran contra la tarjeta "Valor contratado".
 //
 // Por qué existe este script y no una consulta en vivo (ni un endpoint
 // cacheado):
@@ -26,6 +27,11 @@
 // barato: solo hay 57 segmentos, así que el Map es diminuto; lo que cuesta es
 // leer las páginas.
 //
+// SECOP I va en su propio barrido: trae el mismo catálogo en id_familia (cuatro
+// dígitos, los dos primeros son el segmento). Son unos 120 lotes más. Agruparlo
+// con un GROUP BY nacional tarda minutos y cuelga de una sola respuesta; el
+// keyset, si falla, reintenta solo la página.
+//
 // Uso:
 //   node scripts/calcular-sector.mjs
 //   node scripts/calcular-sector.mjs --paginas 2   # prueba corta
@@ -34,7 +40,10 @@ import { writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DATASETS } from '../src/lib/constants.js'
-import { esc, buildWhere, soloContratosValidos } from '../src/lib/soql.js'
+import {
+  esc, buildWhere, soloContratosValidos,
+  soloContratosValidosSecop1, cuantiaPosibleSecop1, valorCoherenteConElPresupuestoSecop1,
+} from '../src/lib/soql.js'
 import { leerAnterior, exigirCordura } from './guardas.mjs'
 
 const AQUI = dirname(fileURLToPath(import.meta.url))
@@ -149,7 +158,51 @@ async function escanear() {
   return { mapa, vistos }
 }
 
+// Mismo universo que la tarjeta del Panorama (soqlGeneralesSecop1), y el valor
+// es el mismo VALOR_SECOP1_SOQL: coalesce(valor_contrato_con_adiciones,
+// cuantia_contrato). El segmento se deja tal cual venga: "No Definido" o un
+// vacío son datos sin clasificar, y descartarlos rompería el cierre.
+async function escanearSecop1() {
+  const condicionesBase = [
+    soloContratosValidosSecop1(), cuantiaPosibleSecop1(), valorCoherenteConElPresupuestoSecop1(),
+  ]
+  const mapa = new Map()
+  let ultimo = ''
+  let paginas = 0
+  let vistos = 0
+
+  while (paginas < MAX_PAGINAS) {
+    const condiciones = [...condicionesBase, ultimo ? `uid > '${esc(ultimo)}'` : null]
+      .filter(Boolean)
+    const filas = await consultar(
+      DATASETS.PROCESOS_SECOP1,
+      `SELECT uid, id_familia, valor_contrato_con_adiciones, cuantia_contrato
+       ${buildWhere(condiciones)}
+       ORDER BY uid
+       LIMIT ${PAGINA}`,
+    )
+    if (!filas.length) break
+
+    for (const f of filas) {
+      const clave = String(f.id_familia ?? '').slice(0, 2)
+      const a = mapa.get(clave) || { n: 0, valor: 0 }
+      a.n++
+      a.valor += Number(f.valor_contrato_con_adiciones ?? f.cuantia_contrato) || 0
+      mapa.set(clave, a)
+    }
+
+    vistos += filas.length
+    ultimo = filas[filas.length - 1].uid
+    paginas++
+    process.stderr.write(`\r  SECOP I: ${vistos.toLocaleString('es-CO')} filas, ${mapa.size} segmentos`)
+    if (filas.length < PAGINA) break
+  }
+  process.stderr.write('\n')
+  return { mapa, vistos }
+}
+
 const { mapa, vistos } = await escanear()
+const { mapa: mapaSecop1, vistos: vistosSecop1 } = await escanearSecop1()
 
 // Se publica con los mismos nombres de campo que devolvía el SoQL (clave, n,
 // valor, directa, prorroga, en_ejecucion, vencidos) para que normalizarFilas()
@@ -158,10 +211,16 @@ const sector = [...mapa.entries()]
   .map(([clave, a]) => ({ clave, ...a }))
   .sort((a, b) => b.n - a.n)
 
+const secop1 = [...mapaSecop1.entries()]
+  .map(([clave, a]) => ({ clave, ...a }))
+  .sort((a, b) => b.n - a.n)
+
 const salida = {
   generado: new Date().toISOString(),
   contratos: vistos,
   sector,
+  contratosSecop1: vistosSecop1,
+  secop1,
 }
 
 // ¿Se parece a lo de ayer? Si Socrata devolvió a medias, es preferible dejar el
@@ -176,8 +235,15 @@ exigirCordura([
     ahora: sector.reduce((a, r) => a + r.valor, 0),
     antes: previo?.sector?.reduce((a, r) => a + r.valor, 0),
   },
+  { nombre: 'contratos de SECOP I', ahora: vistosSecop1, antes: previo?.contratosSecop1, minimo: 5_000_000 },
+  { nombre: 'segmentos de SECOP I', ahora: secop1.length, antes: previo?.secop1?.length, minimo: 40 },
+  {
+    nombre: 'valor de SECOP I',
+    ahora: secop1.reduce((a, r) => a + r.valor, 0),
+    antes: previo?.secop1?.reduce((a, r) => a + r.valor, 0),
+  },
 ], { saltar: MAX_PAGINAS !== Infinity || args.includes('--sin-guardas') })
 
 mkdirSync(dirname(SALIDA), { recursive: true })
 writeFileSync(SALIDA, JSON.stringify(salida))
-console.log(`\nsector.json: ${sector.length} segmentos, ${vistos.toLocaleString('es-CO')} contratos.`)
+console.log(`\nsector.json: ${sector.length} segmentos, ${vistos.toLocaleString('es-CO')} contratos; SECOP I: ${secop1.length} segmentos, ${vistosSecop1.toLocaleString('es-CO')} contratos.`)
