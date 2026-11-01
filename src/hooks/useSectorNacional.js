@@ -12,15 +12,14 @@ import { useQuery } from '@tanstack/react-query'
 // barre una vez al día en GitHub Actions (.github/workflows/sector.yml) y este
 // archivo estático se sirve instantáneo desde el CDN.
 //
-// Lo usan sus dos consumidores, que antes pedían la misma agrupación por
-// separado: Rankings → "Qué se contrata" (useCategorias) y Graficar →
-// dimensión "Sector" (useConstructorGraficos). Al compartir query key comparten
-// también la petición.
+// Lo usan Rankings → "Qué se contrata" y el Panorama (useCategorias, con las dos
+// fuentes) y Graficar (useConstructorGraficos, solo SECOP II). Al compartir query
+// key comparten también la petición.
 //
 // Solo el caso nacional: con un filtro geográfico activo el ámbito es mucho más
 // chico y cada consumidor consulta en vivo.
-export function useSectorNacional(enabled = true) {
-  return useQuery({
+function opciones(enabled) {
+  return {
     queryKey: ['sector-nacional'],
     enabled,
     // Es un archivo estático que cambia una vez al día: no tiene sentido
@@ -31,8 +30,18 @@ export function useSectorNacional(enabled = true) {
     queryFn: async () => {
       const res = await fetch('/sector.json')
       if (!res.ok) throw new Error(`No se pudo cargar sector.json (${res.status})`)
-      const payload = await res.json()
-      return payload.sector
+      return res.json()
     },
+  }
+}
+
+export function useSectorNacional(enabled = true) {
+  return useQuery({ ...opciones(enabled), select: (payload) => payload.sector })
+}
+
+export function useTiposNacional(enabled = true) {
+  return useQuery({
+    ...opciones(enabled),
+    select: (payload) => ({ secop2: payload.sector, secop1: payload.secop1 }),
   })
 }

@@ -18,7 +18,7 @@ import { useDashboardStats } from '../hooks/useDashboard'
 import { useColumnas } from '../hooks/useColumnas'
 import { formatCOP, formatCOPCorto, formatCOPFull, pct, formatPct } from '../lib/formatters'
 import { SECTOR_COLORS } from '../lib/chartTheme'
-import { agruparSectores } from '../lib/sectores'
+import { resumirTipos, SIN_CLASIFICAR } from '../lib/queSeContrata'
 import { Seccion, Subseccion } from '../components/ui/Seccion'
 
 // Bajo el total histórico, cuánto está realmente vivo. Dos cortes: "En
@@ -66,6 +66,22 @@ function SubVivo({ data, tipo, nota }) {
 // antes anidaba un h2 dentro de otro h2).
 const Detalle = Subseccion
 
+// Regla del Panorama: cada desglose suma lo que dice su tarjeta. Se escribe bajo
+// la lista para que quien lea no tenga que sumar para comprobarlo. La tarjeta se
+// guarda una vez al día y algunas listas se consultan en vivo, así que puede
+// haber una diferencia mínima, y se dice cuando la abreviatura la deja ver.
+function Cierre({ suma, total, formato }) {
+  if (total == null) return null
+  const a = formato(suma)
+  const b = formato(total)
+  return (
+    <p className="mt-3 text-micro text-textSecondary/80 leading-snug">
+      Las filas suman {a}. La tarjeta dice {b}.
+      {a !== b && ' La diferencia viene de que la tarjeta se actualiza una vez al día.'}
+    </p>
+  )
+}
+
 // Desglose que se puede leer por cantidad de contratos o por cuantía. Cada
 // item trae { clave, label, n, valor, nota? }. Reordena en el cliente según la
 // vista elegida, así la lista siempre queda en orden descendente de lo que se
@@ -94,6 +110,7 @@ function DesgloseConteoCuantia({ items, colores }) {
           clave: e.clave,
           label: e.label,
           nota: e.nota,
+          color: e.color,
           valor: porCuantia ? e.valor : e.n,
           valorTexto: porCuantia ? formatCOP(e.valor) : undefined,
           secundario: porCuantia
@@ -105,8 +122,16 @@ function DesgloseConteoCuantia({ items, colores }) {
   )
 }
 
+// Las filas que se leen mal sin una aclaración. Van en la fila y no en una nota
+// al pie que nadie lee.
+const NOTAS_TIPO = {
+  80: 'Categoría amplia: incluye contratistas de casi cualquier tema',
+  93: 'Incluye programas sociales y comunitarios, como los de primera infancia del ICBF',
+  [SIN_CLASIFICAR]: 'Contratos sin un código válido en SECOP',
+}
+
 export function Dashboard() {
-  const { filters, clearFilters } = useFilters()
+  const { filters, clearFilters, rutaConAmbito } = useFilters()
   // Acordeón: una sola cifra desplegada a la vez. Abrir otra cierra la anterior.
   const [activa, setActiva] = useState(null)
   const columnas = useColumnas()
@@ -120,7 +145,7 @@ export function Dashboard() {
 
   const {
     generales, entidadesActoras, contratistasActores, porEstado, mora,
-    ejecucionVencidos, porSector, entidadesMora, porModalidad, cierre, ejecucion,
+    ejecucionVencidos, queSeContrata, entidadesMora, porModalidad, cierre, ejecucion,
   } = useDashboardStats(filters, abiertas)
 
   // Con un departamento o municipio activo, la página deja de ser el panorama
@@ -200,6 +225,20 @@ export function Dashboard() {
     ]
   }, [g])
 
+  // La fila de SECOP I del desglose por estado, con el mismo criterio: sus
+  // estados no equivalen uno a uno a los de SECOP II, y sin esta fila la lista
+  // sumaba la mitad de la tarjeta en el total nacional.
+  const filaSecop1Estado = g?.tieneSecop1
+    ? [{
+        clave: 'secop1',
+        label: 'SECOP I: sin este desglose',
+        n: g.totalSecop1,
+        valor: g.valorSecop1,
+        color: 'rgb(var(--c-text-soft))',
+        nota: 'Sus estados son otros (celebrado, liquidado, terminado) y no equivalen uno a uno a los de SECOP II',
+      }]
+    : []
+
   // Las tarjetas van en una lista para poder intercalar el detalle en la
   // posición correcta. Las dos últimas no despliegan nada.
   // Primero los totales: qué hay. Después los indicadores: qué tan bien va.
@@ -256,7 +295,7 @@ export function Dashboard() {
           error={sinFuente}
           onToggle={() => alternar('valor')}
           abierta={abierta('valor')}
-          detalle="Ver por sector"
+          detalle="Ver qué se contrata"
           reservaPct={false}
         />
       ),
@@ -498,7 +537,7 @@ export function Dashboard() {
     contratos: (
       <Detalle
         titulo="¿En qué estado están esos contratos?"
-        intro="El total agrupa contratos en etapas distintas. Solo los que están en ejecución pueden tener el plazo vencido. Este desglose es solo de SECOP II: su vocabulario de estados no es el de SECOP I."
+        intro="El total agrupa contratos en etapas distintas. Solo los que están en ejecución pueden tener el plazo vencido. SECOP I va en una sola fila porque su vocabulario de estados es otro."
         metodologia={
           <>
             Quedan excluidos de todas las cifras los <strong>borradores</strong>,{' '}
@@ -515,66 +554,91 @@ export function Dashboard() {
         }
       >
         <QueryState query={porEstado} empty="Sin datos de estados.">
-          {(data) => (
-            <DesgloseConteoCuantia
-              colores={SECTOR_COLORS}
-              items={data.lista.map((e) => ({
+          {(data) => {
+            const items = [
+              ...data.lista.map((e) => ({
                 clave: e.estado,
                 label: e.estado,
                 n: e.n,
                 valor: e.valor,
-              }))}
-            />
-          )}
+              })),
+              ...filaSecop1Estado,
+            ]
+            return (
+              <>
+                <DesgloseConteoCuantia colores={SECTOR_COLORS} items={items} />
+                <Cierre
+                  suma={items.reduce((a, e) => a + e.n, 0)}
+                  total={g?.total}
+                  formato={(n) => `${n.toLocaleString('es-CO')} contratos`}
+                />
+              </>
+            )
+          }}
         </QueryState>
       </Detalle>
     ),
 
     valor: (
       <Detalle
-        titulo="Distribución de valor por sector"
+        titulo="¿Qué se contrata?"
         // La cifra exacta al peso vive aquí y no en la tarjeta: en la tarjeta
         // eran diecisiete dígitos que nadie procesa de un vistazo, y ese bloque
         // se lee de reojo. Pero no se pierde —la abreviatura "$1.638,8 B" no
         // debería ser lo único que el lector recibe—.
         intro={
           generales.data?.valor
-            ? `En qué áreas del Estado se concentra el dinero comprometido. El total histórico es ${formatCOPFull(generales.data.valor)}. Solo SECOP II: SECOP I no clasifica sus contratos por sector.`
-            : 'En qué áreas del Estado se concentra el dinero comprometido. Solo SECOP II: SECOP I no clasifica sus contratos por sector.'
+            ? `En qué se va el dinero, según el tipo de bien o servicio que declaró cada entidad. El total histórico es ${formatCOPFull(generales.data.valor)}, y las filas suman SECOP II y SECOP I.`
+            : 'En qué se va el dinero, según el tipo de bien o servicio que declaró cada entidad. Las filas suman SECOP II y SECOP I.'
         }
         metodologia={
           <>
-            "Sector" corresponde a la estructura del gobierno <strong>nacional</strong> y
-            clasifica a la entidad, no a lo que contrata. Las entidades{' '}
-            <strong>territoriales</strong> (alcaldías y gobernaciones) no pertenecen a un
-            sector nacional: SECOP las registra como "Servicio Público" o "No aplica/No
-            pertenece", sea el contrato de salud, de vías o de educación. Por eso esos dos
-            valores van juntos y al final, en una sola fila. En todo el país, cerca del
-            90% de los contratos de esa fila son de entidades territoriales. No es un dato
-            faltante: buena parte de la contratación pública ocurre a nivel municipal y
-            departamental.
+            Cada contrato trae un código <code>UNSPSC</code>, un estándar internacional de
+            bienes y servicios. Agrupamos por sus dos primeros dígitos, el segmento. Es la
+            clasificación que comparten SECOP II y SECOP I, y por eso estas filas suman lo
+            mismo que la tarjeta: los tipos pequeños se juntan en una fila y lo que no trae
+            un código válido queda en "Sin clasificar".
+            <br />
+            <br />
+            <strong>El código lo elige la entidad</strong> al registrar el contrato, así que
+            mide lo que declaró. "Servicios profesionales" es una categoría amplia: incluye
+            contratistas de casi cualquier tema.
+            <br />
+            <br />
+            SECOP II también trae un campo "sector", pero no lo usamos aquí: describe la
+            cuenta de la entidad y no el gasto, y SECOP I no lo tiene.
           </>
         }
       >
-        <QueryState query={porSector} empty="Sin datos de sector.">
+        <QueryState query={queSeContrata} empty="Sin datos de tipos de contrato.">
           {(data) => (
-            <ListaBarra
-              apilada
-              colores={SECTOR_COLORS}
-              items={agruparSectores(data).map((s) => ({
-                clave: s.name,
-                label: s.name,
-                valor: s.value,
-                valorTexto: formatCOP(s.value),
-                // Gris y sin el color de la paleta: no es un tema más.
-                color: s.sinSector ? 'rgb(var(--c-text-soft))' : undefined,
-                // La categoría más confusa se explica en su propia fila,
-                // no en una nota al pie que nadie lee.
-                nota: s.sinSector
-                  ? 'Esta fila no es un tema de gasto. SECOP registra a alcaldías y gobernaciones como «Servicio Público» o «No aplica», sea el contrato de salud, de vías o de educación. Por eso va aparte y al final.'
-                  : undefined,
-              }))}
-            />
+            <>
+              <ListaBarra
+                apilada
+                colores={SECTOR_COLORS}
+                total={g?.valor}
+                items={resumirTipos(data.list).map((t) => ({
+                  clave: t.segmento,
+                  label: t.nombre,
+                  valor: t.valor,
+                  valorTexto: formatCOP(t.valor),
+                  secundario: `${t.contratos.toLocaleString('es-CO')} contratos`,
+                  // Gris y sin el color de la paleta: no son un tipo más.
+                  color:
+                    t.segmento === SIN_CLASIFICAR || t.segmento === 'resto'
+                      ? 'rgb(var(--c-text-soft))'
+                      : undefined,
+                  nota: NOTAS_TIPO[t.segmento],
+                }))}
+              />
+              <Cierre suma={data.totalValor} total={g?.valor} formato={formatCOPCorto} />
+              <Link
+                to={rutaConAmbito('/rankings', { t: 'categorias' })}
+                className="mt-3 inline-block text-nota font-semibold text-primary enlace-sutil"
+              >
+                Ver todos los tipos y sus contratos →
+              </Link>
+            </>
           )}
         </QueryState>
       </Detalle>

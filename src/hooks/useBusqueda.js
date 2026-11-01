@@ -73,11 +73,12 @@ const CAMPOS_LISTA = {
   tipo: 'tipo_de_contrato',
 }
 
-// Sector (segmento UNSPSC, dos dígitos): los dos primeros del código de
-// categoría, que llega como "V1.80111600". Lo pone el enlace desde "Qué se
-// contrata" en Rankings, para pasar de "el Estado contrató tanto en servicios
-// de salud" a los contratos concretos. Se valida para no meter texto arbitrario
-// en la consulta. Medido: 0,3-0,9 s, con o sin departamento.
+// Tipo de bien o servicio (segmento UNSPSC, dos dígitos): los dos primeros del
+// código de categoría, que llega como "V1.80111600" en SECOP II y como "8011" en
+// el id_familia de SECOP I. Lo pone el enlace desde "Qué se contrata" en
+// Rankings, para pasar de "el Estado contrató tanto en servicios de salud" a los
+// contratos concretos. Se valida para no meter texto arbitrario en la consulta.
+// Medido: 0,3-0,9 s en SECOP II, 0,2-3,5 s en SECOP I, con o sin lugar.
 export function segmentoValido(seg) {
   return /^\d{2}$/.test(seg || '') ? seg : null
 }
@@ -325,10 +326,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
     ? [...new Set(criterios.estados.flatMap((e) => ESTADO_A_SECOP1[e] || []))]
     : null
   const segmento = segmentoValido(criterios.segmento)
-  // SECOP I no clasifica por UNSPSC (ver catalogosSecop1.js): con un sector
-  // elegido, esa fuente no participa en vez de devolver contratos sin filtrar.
   const incluirSecop1 =
-    !segmento &&
     (estadosSecop1 === null || estadosSecop1.length > 0) &&
     (!criterios.modalidad || modalidadSecop1) &&
     (!criterios.tipo || tipoSecop1)
@@ -412,6 +410,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
       ]
       if (modalidadSecop1) partes1.push(`modalidad_de_contratacion = '${esc(modalidadSecop1)}'`)
       if (tipoSecop1) partes1.push(`tipo_de_contrato = '${esc(tipoSecop1)}'`)
+      if (segmento) partes1.push(`id_familia LIKE '${segmento}%'`)
       const where1 = whereFromFiltrosSecop1(filtrosGeo, partes1).join(' AND ')
 
       const consultaSecop2 = frases.length

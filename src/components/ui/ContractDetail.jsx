@@ -150,7 +150,7 @@ export function ContractDetail({ contract: c }) {
         <Fact label="Estado" value={<TerminoConAyuda termino={c.status} texto={etiquetaEstado(c.status)} />} />
         <Fact label="Modalidad" value={<TerminoConAyuda termino={c.modality} />} />
         <Fact label="Tipo de contrato" value={<TerminoConAyuda termino={c.contractType} />} />
-        <Fact label="Sector" value={esSectorTematico(c.sector) ? c.sector : 'Sin sector'} />
+        <Fact label="Sector de la entidad" value={esSectorTematico(c.sector) ? c.sector : 'Sin sector'} />
         <Fact label="Fecha de firma" value={formatDate(c.signDate)} />
         <Fact label="Inicio" value={formatDate(c.startDate)} />
         <Fact

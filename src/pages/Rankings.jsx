@@ -560,7 +560,7 @@ function RankingCategorias({ filters }) {
   const copValor = formatCOPLista(sorted.map((r) => r.valor))
   // Cada sector lleva a sus contratos en el buscador, con el mismo lugar
   // elegido. La vista decía cuánto se gastó en "Servicios de salud" y no dejaba
-  // ver en qué. "Otros / Sin clasificar" no enlaza: no es un segmento.
+  // ver en qué. "Sin clasificar" no enlaza: no es un segmento.
   const { rutaConAmbito } = useFilters()
   const aSector = (r) =>
     r.segmento !== '—' ? rutaConAmbito('/buscar', { segmento: r.segmento }) : null
@@ -624,18 +624,18 @@ function RankingCategorias({ filters }) {
 
       <p className="text-lectura text-textSecondary font-light -mt-1 mb-4 max-w-2xl leading-relaxed">
         Qué compra el Estado, clasificado por tipo de bien o servicio con el estándar
-        internacional UNSPSC. A diferencia de los demás rankings, esta vista{' '}
-        <strong className="font-semibold text-textPrimary">sí responde</strong> al filtro
-        de departamento o ciudad.
+        internacional UNSPSC. Suma SECOP II y SECOP I. A diferencia de los demás rankings,
+        esta vista <strong className="font-semibold text-textPrimary">sí responde</strong>{' '}
+        al filtro de departamento o ciudad.
       </p>
 
       <Methodology>
-        A diferencia del "sector" (que solo aplica al gobierno nacional), esta vista usa
-        el código <code>UNSPSC</code> (<code>codigo_de_categoria_principal</code>), un
-        estándar internacional que clasifica <strong>qué se contrata</strong> — funciona
-        igual para una alcaldía que para un ministerio. Agrupamos por segmento (los
-        primeros 2 dígitos del código). Los códigos sin segmento válido se agrupan en
-        "Otros / Sin clasificar".
+        Esta vista usa el código <code>UNSPSC</code>, un estándar internacional que
+        clasifica <strong>qué se contrata</strong> — funciona igual para una alcaldía que
+        para un ministerio. SECOP II lo trae en <code>codigo_de_categoria_principal</code> y
+        SECOP I en <code>id_familia</code>. Agrupamos por segmento (los primeros 2 dígitos
+        del código). Los códigos sin segmento válido se agrupan en "Sin clasificar". El
+        código lo declara cada entidad al registrar el contrato.
       </Methodology>
 
       <div className="mt-4">

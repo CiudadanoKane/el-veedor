@@ -56,7 +56,7 @@ export const DIMENSIONES = {
     limit: 2500,
   },
   sector: {
-    label: 'Sector (UNSPSC)',
+    label: 'Tipo de bien o servicio (UNSPSC)',
     campo: 'substring(codigo_de_categoria_principal, 4, 2)',
     extraWhere: ['codigo_de_categoria_principal IS NOT NULL'],
     esUnspsc: true,

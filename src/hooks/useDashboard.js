@@ -3,6 +3,7 @@ import { socrataQuery } from '../lib/socrataClient'
 import { DATASETS, ESTADO_ACTIVO } from '../lib/constants'
 import { whereFromFilters, buildWhere, moraConditions, soloContratosValidos } from '../lib/soql'
 import { PANORAMA_SOQL, PANORAMA_SOQL_SECOP1, MODALIDADES_SIN_COMPETENCIA } from '../lib/dashboardQueries'
+import { useCategorias } from './useCategorias'
 
 const DS = DATASETS.CONTRATOS
 const DS1 = DATASETS.PROCESOS_SECOP1
@@ -241,22 +242,8 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
     }
   })
 
-  // Distribución de valor por sector
-  const porSector = useQuery({
-    queryKey: ['dash', 'sector', filters],
-    enabled: abiertas.has('valor'),
-    queryFn: () => {
-      const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
-      return socrataQuery(
-        DS,
-        `SELECT sector, sum(valor_del_contrato) as valor ${where} GROUP BY sector ORDER BY valor DESC LIMIT 12`,
-      )
-    },
-    select: (rows) =>
-      rows
-        .filter((r) => r.sector && r.valor)
-        .map((r) => ({ name: r.sector, value: parseFloat(r.valor) })),
-  })
+  // Qué se contrata — detalle de "Valor contratado", con las dos fuentes
+  const queSeContrata = useCategorias(filters, abiertas.has('valor'))
 
   // Top entidades con más contratos en mora
   const entidadesMora = useQuery({
@@ -329,6 +316,6 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
 
   return {
     generales, entidadesActoras, contratistasActores, porEstado, mora,
-    ejecucionVencidos, porSector, entidadesMora, porModalidad, cierre, ejecucion,
+    ejecucionVencidos, queSeContrata, entidadesMora, porModalidad, cierre, ejecucion,
   }
 }

@@ -104,8 +104,8 @@ export const PANORAMA_SOQL = {
 // el cron). NO se incluyen Contratistas ni Entidades: su count(distinct) sobre
 // los 5,8M tarda >2 min (no cabe en el cron) y además sumar distinct entre
 // fuentes sobrecontaría a quien aparece en ambas. El resto del Panorama —mora,
-// cierre, ejecución, por estado, por sector— depende de pago/estado/sector que
-// SECOP I no reporta, así que sigue siendo solo de SECOP II. Ver ROADMAP.md.
+// cierre, ejecución, por estado— depende de pago/estado que SECOP I no reporta,
+// así que sigue siendo solo de SECOP II. Ver ROADMAP.md.
 export function soqlGeneralesSecop1(filters) {
   const where = buildWhere(
     whereFromFiltrosSecop1(filters, [soloContratosValidosSecop1(), cuantiaPosibleSecop1(), valorCoherenteConElPresupuestoSecop1()]),

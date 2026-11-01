@@ -136,8 +136,7 @@ export function Transparencia() {
           Son <strong>dos sistemas, no uno</strong>. <strong>SECOP II</strong> es el
           actual, transaccional, y es la fuente principal de la plataforma.{' '}
           <strong>SECOP I</strong> es el anterior, de solo publicación: no registra
-          ejecución financiera ni clasifica por sector, y su campo de valor no tiene los
-          controles del actual. Por eso <strong>no siempre se pueden sumar</strong>, y
+          ejecución financiera, y su campo de valor no tiene los controles del actual. Por eso <strong>no siempre se pueden sumar</strong>, y
           cada cifra dice de cuál viene: las tarjetas del Panorama van rotuladas
           "SECOP II + I" o "solo SECOP II", y la evolución en el tiempo pinta dos líneas
           separadas en vez de una suma.
@@ -204,7 +203,7 @@ export function Transparencia() {
             hasta <strong>24 horas de antigüedad</strong>:
           </p>
           <ul className="list-disc pl-5 space-y-1.5 text-lectura text-textSecondary font-light">
-            <li>La agrupación por sector (clasificación UNSPSC) del Panorama.</li>
+            <li>El reparto nacional por tipo de bien o servicio (clasificación UNSPSC) del Panorama y de Rankings.</li>
             <li>Las adiciones de valor, que exigen cruzar contrato a contrato dos conjuntos de datos.</li>
             <li>El ranking nacional de contratistas.</li>
             <li>

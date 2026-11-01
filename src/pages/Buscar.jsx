@@ -1218,19 +1218,19 @@ export function Buscar() {
               </div>
             )}
 
-            {/* El sector llega desde "Qué se contrata" (Rankings) y no tiene
+            {/* El tipo llega desde "Qué se contrata" (Rankings) y no tiene
                 selector propio: se muestra como una etiqueta que se puede quitar,
                 para que quede claro que la lista de abajo está acotada a él. */}
             {criterios.segmento && (
               <div className="mt-4 inline-flex items-center gap-2 border border-textPrimary/30 px-3 py-1.5 text-cuerpo">
-                <span className="text-textSecondary">Sector:</span>
+                <span className="text-textSecondary">Tipo:</span>
                 <strong className="font-semibold">
                   {nombreSegmento(criterios.segmento) || `UNSPSC ${criterios.segmento}`}
                 </strong>
                 <button
                   type="button"
                   onClick={() => actualizar({ segmento: '' })}
-                  aria-label="Quitar el filtro de sector"
+                  aria-label="Quitar el filtro de tipo"
                   className="toque text-textSecondary hover:text-textPrimary text-base leading-none"
                 >
                   ×
