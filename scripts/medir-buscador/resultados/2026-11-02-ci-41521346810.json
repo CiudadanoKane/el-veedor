@@ -1,0 +1,800 @@
+{
+  "sitio": "https://el-veedor.vercel.app",
+  "inicio": "2026-11-02T20:40:54.906Z",
+  "fin": "2026-11-02T23:17:43.928Z",
+  "hechos": [
+    {
+      "id": "P1",
+      "tipo": "prensa",
+      "posicion": 1,
+      "total": 1,
+      "aLaVista": true,
+      "porPrensa": true,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "arroyo de la 85",
+        "tipo": "Obra",
+        "pregunta": "obras del arroyo de la 85 en barranquilla",
+        "departamento": "Atlántico",
+        "ciudad": "Barranquilla"
+      },
+      "segundosHastaAcierto": 19,
+      "segundosTotal": 28,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "P2",
+      "tipo": "prensa",
+      "posicion": 1,
+      "total": 21,
+      "aLaVista": true,
+      "porPrensa": true,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "gran vía atlántico",
+        "pregunta": "la gran via atlantico"
+      },
+      "segundosHastaAcierto": 6,
+      "segundosTotal": 34,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "P3",
+      "tipo": "prensa",
+      "posicion": 1,
+      "total": 101,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "PAE",
+        "pregunta": "PAE de sincelejo",
+        "departamento": "Sucre",
+        "ciudad": "Sincelejo"
+      },
+      "segundosHastaAcierto": 6,
+      "segundosTotal": 36,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "P4",
+      "tipo": "prensa",
+      "posicion": 1,
+      "total": 2,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "túnel peatonal",
+        "pregunta": "tunel peatonal de caribe verde barranquilla",
+        "sector": "Caribe Verde",
+        "departamento": "Atlántico",
+        "ciudad": "Barranquilla"
+      },
+      "segundosHastaAcierto": 9,
+      "segundosTotal": 18,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "P5",
+      "tipo": "prensa",
+      "posicion": 1,
+      "total": 130,
+      "aLaVista": true,
+      "porPrensa": true,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "obras contra las inundaciones",
+        "amplia": "drenaje|manejo de aguas|control de inundaciones|sistema de drenaje",
+        "pregunta": "obras contra las inundaciones en bocagrande",
+        "sector": "Bocagrande"
+      },
+      "segundosHastaAcierto": 12,
+      "segundosTotal": 29,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "P6",
+      "tipo": "prensa",
+      "posicion": 1,
+      "total": 2,
+      "aLaVista": true,
+      "porPrensa": true,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "intercambiador de Ternera",
+        "pregunta": "intercambiador de ternera"
+      },
+      "segundosHastaAcierto": 6,
+      "segundosTotal": 18,
+      "llamadasIA": [
+        "interpretacion 200",
+        "puente 200",
+        "prensa 200"
+      ]
+    },
+    {
+      "id": "P7",
+      "tipo": "prensa",
+      "posicion": 1,
+      "total": 118,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "Chambacu",
+        "pregunta": "nuevo chambacu cartagena",
+        "departamento": "Bolívar",
+        "ciudad": "Cartagena"
+      },
+      "segundosHastaAcierto": 6,
+      "segundosTotal": 31,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "P8",
+      "tipo": "prensa",
+      "posicion": 1,
+      "total": 130,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "alcantarillado",
+        "amplia": "sistema de alcantarillado|red de alcantarillado|saneamiento básico|colectores de aguas residuales",
+        "pregunta": "alcantarillado de bayunca y pontezuela",
+        "sector": "Bayunca Pontezuela"
+      },
+      "segundosHastaAcierto": 9,
+      "segundosTotal": 29,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "P9",
+      "tipo": "prensa",
+      "posicion": 3,
+      "total": 51,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "malla vial",
+        "pregunta": "contrato de malla vial de quintero en medellin",
+        "contratista": "Quintero",
+        "departamento": "Antioquia",
+        "ciudad": "Medellín"
+      },
+      "segundosHastaAcierto": 6,
+      "segundosTotal": 24,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D1",
+      "tipo": "descripcion",
+      "posicion": 5,
+      "total": 6,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "mejoramiento de vivienda",
+        "amplia": "construcción de vivienda|ampliación de vivienda|rehabilitación de vivienda|materiales de construcción",
+        "desde": "2025-01-01",
+        "hasta": "2025-12-31",
+        "pregunta": "mejoramiento de vivienda en monteria 2025",
+        "departamento": "Córdoba",
+        "ciudad": "Montería"
+      },
+      "segundosHastaAcierto": 12,
+      "segundosTotal": 22,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D2",
+      "tipo": "descripcion",
+      "posicion": 1,
+      "total": 103,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "escenario deportivo",
+        "pregunta": "escenario deportivo la apartada cordoba",
+        "sector": "La Apartada",
+        "departamento": "Córdoba"
+      },
+      "segundosHastaAcierto": 9,
+      "segundosTotal": 36,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D3",
+      "tipo": "descripcion",
+      "posicion": 1,
+      "total": 12,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "puesto de salud",
+        "amplia": "centro de salud|unidad de salud|consultorio",
+        "pregunta": "puesto de salud de el plateado en argelia cauca",
+        "sector": "El Plateado",
+        "departamento": "Cauca",
+        "ciudad": "Argelia"
+      },
+      "segundosHastaAcierto": 12,
+      "segundosTotal": 22,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D4",
+      "tipo": "descripcion",
+      "posicion": 15,
+      "total": 102,
+      "aLaVista": false,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "centro de vida del adulto mayor",
+        "amplia": "centro vida|adulto mayor|gerontología",
+        "pregunta": "centro de vida del adulto mayor en santa marta",
+        "departamento": "Magdalena",
+        "ciudad": "Santa Marta"
+      },
+      "segundosHastaAcierto": null,
+      "segundosTotal": 27,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D5",
+      "tipo": "descripcion",
+      "posicion": 1,
+      "total": 101,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "pavimentación calle 18 Taganga",
+        "amplia": "pavimentación vial|asfalto|adoquinado|estructura vial",
+        "pregunta": "pavimentacion de la calle 18 de taganga",
+        "sector": "Taganga"
+      },
+      "segundosHastaAcierto": 9,
+      "segundosTotal": 24,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D6",
+      "tipo": "descripcion",
+      "posicion": 1,
+      "total": 2,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "parque de la virgen del carmen",
+        "pregunta": "parque de la virgen del carmen en valledupar",
+        "departamento": "Cesar",
+        "ciudad": "Valledupar"
+      },
+      "segundosHastaAcierto": 12,
+      "segundosTotal": 24,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D7",
+      "tipo": "descripcion",
+      "posicion": 2,
+      "total": 73,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "andenes",
+        "pregunta": "andenes en envigado",
+        "departamento": "Antioquia",
+        "ciudad": "Envigado"
+      },
+      "segundosHastaAcierto": 6,
+      "segundosTotal": 31,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D8",
+      "tipo": "descripcion",
+      "posicion": 1,
+      "total": 100,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "alcantarillado",
+        "amplia": "sistema de alcantarillado|red de alcantarillado|colector de aguas residuales|canalización de aguas",
+        "pregunta": "alcantarillado del barrio san cristobal en piedecuesta",
+        "sector": "San Cristóbal",
+        "departamento": "Santander",
+        "ciudad": "Piedecuesta"
+      },
+      "segundosHastaAcierto": 6,
+      "segundosTotal": 27,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D9",
+      "tipo": "descripcion",
+      "posicion": 1,
+      "total": 51,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "mitigación",
+        "amplia": "obras de mitigación|mitigación de riesgos|estabilización de taludes|control de erosión|reducción de vulnerabilidad",
+        "tipo": "Obra",
+        "pregunta": "obras de mitigacion en cristal bajo bucaramanga",
+        "sector": "Cristal Bajo",
+        "departamento": "Santander",
+        "ciudad": "Bucaramanga"
+      },
+      "segundosHastaAcierto": 9,
+      "segundosTotal": 21,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D10",
+      "tipo": "descripcion",
+      "posicion": 1,
+      "total": 3,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "pavimentación de calles",
+        "amplia": "pavimentación vial|mejoramiento vial|asfalto|carpeta asfáltica",
+        "pregunta": "pavimentacion de calles en fresno tolima",
+        "departamento": "Tolima",
+        "ciudad": "Fresno"
+      },
+      "segundosHastaAcierto": 9,
+      "segundosTotal": 24,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D11",
+      "tipo": "descripcion",
+      "posicion": 1,
+      "total": 10,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "pavimentación de vías",
+        "amplia": "pavimento|asfalto|repavimentación|carpeta asfáltica",
+        "pregunta": "pavimentacion de vias en honda",
+        "departamento": "Tolima",
+        "ciudad": "Honda"
+      },
+      "segundosHastaAcierto": 6,
+      "segundosTotal": 19,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D12",
+      "tipo": "descripcion",
+      "posicion": 2,
+      "total": 13,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": true,
+      "limite": false,
+      "interpretacion": {
+        "q": "hospital de Monguí",
+        "amplia": "construcción hospitalaria|edificación hospitalaria",
+        "pregunta": "construccion del hospital de mongui",
+        "departamento": "Boyacá",
+        "ciudad": "Monguí"
+      },
+      "segundosHastaAcierto": 24,
+      "segundosTotal": 31,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D13",
+      "tipo": "descripcion",
+      "posicion": 1,
+      "total": 4,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "vía Varsovia El Delirio",
+        "pregunta": "via varsovia el delirio"
+      },
+      "segundosHastaAcierto": 6,
+      "segundosTotal": 18,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D14",
+      "tipo": "descripcion",
+      "posicion": 4,
+      "total": 5,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "parque principal",
+        "pregunta": "arreglo del parque principal de tolu",
+        "departamento": "Sucre",
+        "ciudad": "Santiago De Tolú"
+      },
+      "segundosHastaAcierto": 6,
+      "segundosTotal": 24,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D15",
+      "tipo": "descripcion",
+      "posicion": 2,
+      "total": 130,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "cancha sintética",
+        "pregunta": "cancha sintetica en mingueo",
+        "sector": "Mingueo"
+      },
+      "segundosHastaAcierto": 9,
+      "segundosTotal": 32,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D16",
+      "tipo": "descripcion",
+      "posicion": 1,
+      "total": 41,
+      "aLaVista": true,
+      "porPrensa": true,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "recorrido de la salsa",
+        "pregunta": "recorrido de la salsa en cali",
+        "departamento": "Valle del Cauca",
+        "ciudad": "Cali"
+      },
+      "segundosHastaAcierto": 12,
+      "segundosTotal": 27,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D17",
+      "tipo": "descripcion",
+      "posicion": 1,
+      "total": 4,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "vía Tarquí Maito Quituro",
+        "pregunta": "via tarqui maito quituro"
+      },
+      "segundosHastaAcierto": 9,
+      "segundosTotal": 21,
+      "llamadasIA": [
+        "interpretacion 200",
+        "puente 200",
+        "prensa 200"
+      ]
+    },
+    {
+      "id": "D18",
+      "tipo": "descripcion",
+      "posicion": 1,
+      "total": 2,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "ciclorruta",
+        "amplia": "ciclovía|carril bici",
+        "pregunta": "ciclorruta de paipa",
+        "departamento": "Boyacá",
+        "ciudad": "Paipa"
+      },
+      "segundosHastaAcierto": 6,
+      "segundosTotal": 21,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "D19",
+      "tipo": "descripcion",
+      "posicion": 1,
+      "total": 3,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "aguas lluvias",
+        "amplia": "drenaje pluvial|sistema de drenaje|alcantarillado pluvial|manejo de aguas lluvias",
+        "pregunta": "aguas lluvias barrio mayalitos hatonuevo",
+        "sector": "Mayalitos",
+        "departamento": "La Guajira",
+        "ciudad": "Hatonuevo"
+      },
+      "segundosHastaAcierto": 6,
+      "segundosTotal": 24,
+      "llamadasIA": [
+        "interpretacion 200",
+        "puente 200",
+        "prensa 200"
+      ]
+    },
+    {
+      "id": "D20",
+      "tipo": "descripcion",
+      "posicion": 1,
+      "total": 1,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "polideportivo Guanabanal",
+        "pregunta": "polideportivo de guanabanal palmira",
+        "departamento": "Valle del Cauca",
+        "ciudad": "Palmira"
+      },
+      "segundosHastaAcierto": 6,
+      "segundosTotal": 21,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "C1",
+      "tipo": "datos",
+      "posicion": 1,
+      "total": 1,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "Consorcio Vial El Delirio",
+        "pregunta": "consorcio vial el delirio",
+        "contratista": "Consorcio Vial El Delirio"
+      },
+      "segundosHastaAcierto": 6,
+      "segundosTotal": 21,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "C2",
+      "tipo": "datos",
+      "posicion": 1,
+      "total": 4,
+      "aLaVista": true,
+      "porPrensa": true,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "Consorcio Redes CCC",
+        "pregunta": "consorcio redes ccc",
+        "contratista": "Consorcio Redes CCC"
+      },
+      "segundosHastaAcierto": 6,
+      "segundosTotal": 18,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    },
+    {
+      "id": "C3",
+      "tipo": "datos",
+      "posicion": 1,
+      "total": 1,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "LP-SIM-011-2025"
+      },
+      "segundosHastaAcierto": 3,
+      "segundosTotal": 9,
+      "llamadasIA": []
+    },
+    {
+      "id": "C4",
+      "tipo": "datos",
+      "posicion": 1,
+      "total": 14,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "SA-015-2024"
+      },
+      "segundosHastaAcierto": 3,
+      "segundosTotal": 10,
+      "llamadasIA": []
+    },
+    {
+      "id": "C5",
+      "tipo": "datos",
+      "posicion": 1,
+      "total": 1,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "4600098664"
+      },
+      "segundosHastaAcierto": 3,
+      "segundosTotal": 9,
+      "llamadasIA": []
+    },
+    {
+      "id": "C6",
+      "tipo": "datos",
+      "posicion": 2,
+      "total": 3,
+      "aLaVista": true,
+      "porPrensa": false,
+      "incompleta": false,
+      "limite": false,
+      "interpretacion": {
+        "q": "colegio normal superior maria auxiliadora",
+        "pregunta": "quien construye el colegio normal superior maria auxiliadora de santa marta",
+        "departamento": "Magdalena",
+        "ciudad": "Santa Marta"
+      },
+      "segundosHastaAcierto": 9,
+      "segundosTotal": 21,
+      "llamadasIA": [
+        "interpretacion 200",
+        "prensa 200",
+        "puente 200"
+      ]
+    }
+  ]
+}
