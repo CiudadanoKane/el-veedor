@@ -49,8 +49,13 @@ export function soqlPorEstado(filters) {
 export function soqlMora(filters) {
   const where = buildWhere(whereFromFilters(filters, moraConditions()))
   const condicion = (rango) => RANGOS_VENCIMIENTO[rango].join(' AND ')
+  // El riesgo de la tarjeta es solo el de los recientes: dos tercios del
+  // pendiente total ($33 de $49 billones, nov 2026) son contratos vencidos hace
+  // más de un año, casi siempre registros que nadie cerró.
   return `SELECT count(id_contrato) as total,
                  sum(valor_pendiente_de_ejecucion) as riesgo,
+                 sum(case(${condicion('recientes')}, valor_pendiente_de_ejecucion, true, 0)) as riesgo_recientes,
+                 sum(case(${condicion('recientes')}, valor_del_contrato, true, 0)) as v_recientes,
                  sum(case(${condicion('recientes')}, 1, true, 0)) as recientes,
                  sum(case(${condicion('medios')}, 1, true, 0)) as medios,
                  sum(case(${condicion('antiguos')}, 1, true, 0)) as antiguos

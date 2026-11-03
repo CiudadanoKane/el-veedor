@@ -15,7 +15,7 @@ import {
 import { useAdicionesCosto } from '../../hooks/useAdiciones'
 import {
   useCuantiaImposible, useDigitacionFrenteAlPago, useDigitacionFrentePresupuestoSecop1, useValorDesproporcionado,
-  usePersonaConValorImposible,
+  usePersonaConValorImposible, useCerosDeMasFrenteAlProceso,
 } from '../../hooks/useCuantiaImposible'
 import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/formatters'
 import { EnlaceEntidad, EnlaceContratista } from '../ui/EnlacePerfil'
@@ -131,6 +131,7 @@ export function AlertaErrorDigitacion() {
   const pagoQuery = useDigitacionFrenteAlPago(filters)
   const presupuestoQuery = useDigitacionFrentePresupuestoSecop1(filters)
   const personaQuery = usePersonaConValorImposible(filters)
+  const procesoQuery = useCerosDeMasFrenteAlProceso(filters)
 
   // CUATRO detecciones del mismo problema —el valor registrado no es real— que se
   // muestran juntas y se distinguen en la columna "Motivo":
@@ -174,7 +175,16 @@ export function AlertaErrorDigitacion() {
   // los de SECOP I quedaban al final de la lista nacional, a 17 "Ver más" de
   // distancia, aunque varios valen más que los de arriba. Las imposibles siguen
   // saliendo primero, porque pasan de 50 billones.
-  const filas = [...imposibles, ...persona, ...frenteAlPago, ...frentePresupuesto, ...digitacion]
+  // Quinta: ceros de más frente al proceso con la adición encima (ver
+  // cerosDeMas.js). "Valor original" es el del proceso.
+  const frenteAlProceso = (procesoQuery.data ?? []).map((c) => ({
+    ...c,
+    valorOriginal: c.valorProceso,
+    motivo: 'Ceros de más frente al proceso',
+  }))
+  const filas = [
+    ...imposibles, ...persona, ...frenteAlPago, ...frenteAlProceso, ...frentePresupuesto, ...digitacion,
+  ]
     .sort((a, b) => (b.contractValue || 0) - (a.contractValue || 0))
 
   // QueryState acepta cualquier objeto con esta forma; se combinan las cuatro
@@ -196,9 +206,10 @@ export function AlertaErrorDigitacion() {
     // Si las tres rápidas no trajeron nada, se espera a la digitación antes de
     // decir "sin valores implausibles": sería falso mientras falte una parte.
     isLoading: imposiblesQuery.isLoading || pagoQuery.isLoading || personaQuery.isLoading
+      || procesoQuery.isLoading
       || ((digitacionPendiente || presupuestoPendiente) && filas.length === 0),
-    isError: imposiblesQuery.isError || pagoQuery.isError || personaQuery.isError,
-    error: imposiblesQuery.error || pagoQuery.error || personaQuery.error,
+    isError: imposiblesQuery.isError || pagoQuery.isError || personaQuery.isError || procesoQuery.isError,
+    error: imposiblesQuery.error || pagoQuery.error || personaQuery.error || procesoQuery.error,
     data: filas,
     refetch: () => {
       digitacionQuery.refetch()
@@ -206,6 +217,7 @@ export function AlertaErrorDigitacion() {
       pagoQuery.refetch()
       presupuestoQuery.refetch()
       personaQuery.refetch()
+      procesoQuery.refetch()
     },
   }
 
@@ -256,7 +268,7 @@ export function AlertaErrorDigitacion() {
       count={combinada.isLoading ? null : filas.length}
       methodology={
         <>
-          Seis patrones de valor que no puede ser real: (1) el valor es{' '}
+          Siete patrones de valor que no puede ser real: (1) el valor es{' '}
           <strong>exactamente ×100, ×1.000 o ×10.000</strong> el original del proceso — se
           digitó en unidades equivocadas (ej. un proceso de $450 millones registrado como
           $450.000 millones); (2) el valor creció <strong>más de 500%</strong>, cuando la
@@ -315,7 +327,19 @@ export function AlertaErrorDigitacion() {
           billones</strong>, entre ellos un sendero peatonal en San Antero con proceso de
           $851.588.321 registrado como $851.588.262.000, que encabezaba la búsqueda «obras en
           Córdoba». En la tabla, «valor original» es ese presupuesto.
-          Todos inflan las estadísticas públicas y se excluyen de los rankings por valor.{' '}
+          <br />
+          <br />
+          El último, añadido en nov 2026: el valor es el del proceso{' '}
+          <strong>×100, ×1.000 o ×10.000 más una adición de hasta el 50%</strong>, sin que
+          lo pagado ni lo facturado lleguen a la décima parte. La adición posterior sacaba
+          estos contratos del múltiplo exacto del primer patrón, y seguían sumando: un
+          mantenimiento de la Base Naval No. 6 con proceso de $2.400 millones, registrado en
+          $3,48 billones, hacía de su contratista el noveno del país. Son{' '}
+          <strong>48 contratos y $10,7 billones</strong>, revisados entre los de $2.000
+          millones o más.
+          {' '}Todos inflan las estadísticas públicas y se excluyen de las cifras y los
+          rankings, salvo los dos primeros patrones, que solo se apartan del cálculo de
+          adiciones.{' '}
           <strong>Pulsa un contrato</strong> para ver el detalle.
         </>
       }

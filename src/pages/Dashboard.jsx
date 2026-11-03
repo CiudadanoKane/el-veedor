@@ -169,9 +169,17 @@ export function Dashboard() {
   // figura activo ya pasó su plazo.
   const pctVencidosNum = pct(mora.data?.total, enEjecucion)
   const pctVencidos = pctVencidosNum != null ? formatPct(pctVencidosNum) : null
-  // El riesgo (valor_pendiente) es solo de SECOP II, así que se compara contra
-  // el valor de SECOP II, no el total combinado con SECOP I.
-  const pctRiesgoNum = pct(mora.data?.riesgo, generales.data?.valorSecop2)
+  // El riesgo es lo pendiente en los vencidos de los últimos 6 meses, sobre el
+  // valor de la misma base que la tarjeta de al lado: los contratos con plazo
+  // vigente más los recién vencidos, ambos de SECOP II (el pendiente solo existe
+  // ahí). Antes sumaba los vencidos de cualquier antigüedad y lo dividía entre
+  // todo lo contratado en la historia de SECOP II.
+  const riesgo = mora.data?.riesgoRecientes
+  const baseRiesgo =
+    ejecucion.data && mora.data?.valorRecientes != null
+      ? ejecucion.data.valorVigenteSecop2 + mora.data.valorRecientes
+      : null
+  const pctRiesgoNum = riesgo != null ? pct(riesgo, baseRiesgo) : null
   const pctRiesgo = pctRiesgoNum != null ? formatPct(pctRiesgoNum) : null
   // Solo SECOP II: la modalidad de SECOP I no permite compararlo. Ver la
   // consulta en soqlGeneralesSecop1.
@@ -358,17 +366,11 @@ export function Dashboard() {
         <StatCard
           label="Valor en riesgo"
           fuente={fuenteSolo2}
-          value={formatCOPCorto(mora.data?.riesgo)}
-          pct={pctRiesgo ? `${pctRiesgo} del comprometido` : null}
-          // La forma con la palabra completa va debajo: la abreviatura resuelve
-          // el ancho, pero no debería ser lo único que el lector recibe.
-          sub={
-            mora.data?.riesgo
-              ? `${formatCOP(mora.data.riesgo)} en contratos vencidos`
-              : 'Pendiente en contratos vencidos'
-          }
+          value={formatCOPCorto(riesgo)}
+          pct={pctRiesgo ? `${pctRiesgo} de lo activo o recién vencido` : null}
+          sub="Sin ejecutar en contratos vencidos en los últimos 6 meses"
           tone="warning"
-          loading={mora.isLoading || generales.isLoading}
+          loading={mora.isLoading || generales.isLoading || ejecucion.isLoading}
           error={sinFuente}
           onToggle={() => alternar('riesgo')}
           abierta={abierta('riesgo')}
@@ -753,7 +755,7 @@ export function Dashboard() {
                 clave: e.entidad,
                 label: e.entidad,
                 valor: e.n,
-                secundario: `${formatCOP(e.riesgo)} en riesgo`,
+                secundario: `${formatCOP(e.riesgo)} sin ejecutar`,
               }))}
             />
           )}
@@ -763,14 +765,16 @@ export function Dashboard() {
 
     riesgo: (
       <Detalle
-        titulo="¿Cuánto se ejecutó de los contratos vencidos?"
+        titulo="¿Cuánto se ejecutó de los contratos vencidos hace poco?"
         intro="El pago reportado es la mejor pista sobre si un contrato realmente avanzó."
         metodologia={
           <>
             Comparamos <code>valor_pagado</code> contra <code>valor_del_contrato</code>{' '}
-            en los contratos con plazo vencido. <strong>Advertencia importante:</strong>{' '}
-            este campo está muy incompleto en SECOP — incluso entre contratos en estado
-            "Cerrado", el <strong>34% reporta $0 pagado</strong>, lo cual es imposible
+            en los contratos que vencieron en los últimos 6 meses, los mismos de la
+            tarjeta. Los vencidos hace más tiempo quedan fuera: casi siempre son contratos
+            terminados cuyo registro nadie cerró. <strong>Advertencia importante:</strong>{' '}
+            el campo de pago está muy incompleto en SECOP — incluso entre contratos en estado
+            "Cerrado", <strong>uno de cada tres reporta $0 pagado</strong>, lo cual es imposible
             en la práctica. Por eso el tercer grupo se llama <em>"sin registro de
             pago"</em> y no <em>"no pagado"</em>: la ausencia de dato no es evidencia
             de que no hubo desembolso. Los contratos con el pago completo no aparecen:
@@ -905,7 +909,7 @@ export function Dashboard() {
       {!hayLugar && <MapaColombia />}
       {!hayLugar && <ComparacionCiudades />}
       <EvolucionMensual filters={filters} />
-      {hayLugar && <RetratoDeLugar lugar={lugar} generales={generales} />}
+      {hayLugar && <RetratoDeLugar lugar={lugar} />}
     </div>
   )
 }

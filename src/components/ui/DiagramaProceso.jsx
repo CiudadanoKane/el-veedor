@@ -114,7 +114,7 @@ function DiagramaVertical() {
               <Bajada />
               <div className="grid grid-cols-2 gap-2">
                 <Rama titulo="Concurso abierto" detalle="varios compiten · 8 de cada 100" tono="--c-success" />
-                <Rama titulo="Sin concurso" detalle="la entidad escoge · 92 de cada 100" tono="--c-warning" />
+                <Rama titulo="Contratación directa" detalle="la entidad escoge · 78 de cada 100" tono="--c-warning" />
               </div>
             </>
           )}
@@ -213,10 +213,10 @@ function DiagramaHorizontal() {
           strokeWidth="1.5"
         />
         <text x={xRama + 12} y={yAbajo + 16} fill="rgb(var(--c-text))" fontSize="12.5" fontWeight="700">
-          Sin concurso
+          Contratación directa
         </text>
         <text x={xRama + 12} y={yAbajo + 30} fill="rgb(var(--c-text-soft))" fontSize="11">
-          la entidad escoge · 92 de cada 100
+          la entidad escoge · 78 de cada 100
         </text>
 
         {/* Ambos caminos vuelven a subir hacia Firma */}

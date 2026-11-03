@@ -244,7 +244,7 @@ export function Noticias() {
       titular: (
         <>
           En {ambito}, <strong>{Math.round(d.pct)} de cada 100</strong> contratos de SECOP II se
-          adjudicó por contratación directa, sin abrir un concurso.
+          adjudicaron por contratación directa, sin abrir un concurso.
         </>
       ),
     }

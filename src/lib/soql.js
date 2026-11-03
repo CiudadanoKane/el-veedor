@@ -1,5 +1,6 @@
 import { ESTADO_ACTIVO, HOY, CUANTIA_IMPOSIBLE } from './constants.js'
 import { departamentoSecop1, municipiosSecop1 } from './lugaresSecop1.js'
+import { CEROS_DE_MAS_FRENTE_AL_PROCESO } from './cerosDeMas.js'
 
 // Escapa comillas simples para SoQL (se duplican)
 export function esc(value) {
@@ -165,8 +166,28 @@ export const ESTADOS_NO_VIGENTES = [
 // → Valores implausibles", que los busca con `cuantiaImposibleSecop2()` y no
 // pasa por esta función.
 export function soloContratosValidos() {
+  return `${soloContratosValidosSinListas()} AND ${sinCerosDeMasFrenteAlProceso()}`
+}
+
+// Las reglas, sin la lista de contratos con ceros de más. La usa el script que
+// genera esa lista, que no puede partir de un universo que ya la excluye.
+export function soloContratosValidosSinListas() {
   return `${soloEstadosVigentes()} AND ${cuantiaPosibleSecop2()} AND ${valorCoherenteConElPago()}
           AND ${valorPosibleParaUnaPersona()} AND ${honorariosPosiblesParaUnaPersona()}`
+}
+
+// Ver cerosDeMas.js. Una lista fija de ids y no una regla en SoQL: el valor del
+// proceso vive en otro dataset (p6dx-8zbt) y SoQL no cruza datasets. Medido el 3
+// nov 2026: la exclusión no encarece las consultas (15-23 s contra 24-48 s sin
+// ella en el total nacional; la fuente varía más que eso).
+const LISTA_CEROS_DE_MAS = CEROS_DE_MAS_FRENTE_AL_PROCESO.map(([id]) => `'${id}'`).join(', ')
+
+export function sinCerosDeMasFrenteAlProceso() {
+  return LISTA_CEROS_DE_MAS ? `id_contrato NOT IN (${LISTA_CEROS_DE_MAS})` : 'true'
+}
+
+export function conCerosDeMasFrenteAlProceso() {
+  return LISTA_CEROS_DE_MAS ? `id_contrato IN (${LISTA_CEROS_DE_MAS})` : 'false'
 }
 
 // Techo por encima del cual un contrato a nombre de UNA PERSONA no es creíble.

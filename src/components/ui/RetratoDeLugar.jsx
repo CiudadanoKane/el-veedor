@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { QueryState } from './QueryState'
 import { ListaBarra } from './ListaBarra'
 import { EnlaceContratista } from './EnlacePerfil'
@@ -6,6 +7,8 @@ import { useFilters } from '../../context/FiltersContext'
 import { useRankingContratistas } from '../../hooks/useRankings'
 import { formatCOPCorto, formatCOPLista } from '../../lib/formatters'
 import { Seccion } from './Seccion'
+import { socrataQuery } from '../../lib/socrataClient'
+import { DATASET_CONCENTRACION, soqlConcentracionTotal } from '../../lib/concentracionQueries'
 
 // Lo que el Panorama añade cuando hay un departamento o municipio activo:
 // quién recibe el dinero ahí, y por dónde seguir revisando ese lugar.
@@ -20,9 +23,18 @@ import { Seccion } from './Seccion'
 // resolverse desde la caché de React Query.
 const N = (x) => (x ?? 0).toLocaleString('es-CO')
 
-export function RetratoDeLugar({ lugar, generales }) {
+export function RetratoDeLugar({ lugar }) {
   const { filters, rutaConAmbito } = useFilters()
   const ranking = useRankingContratistas(filters)
+  // El ranking deja fuera los contratos sin contratista identificado, así que
+  // su porcentaje va sobre ese mismo universo: el total de Concentración. Antes
+  // se dividía entre todo SECOP II y el mismo contratista salía con dos cifras en
+  // la misma página (EDUBAR en Barranquilla: 10,1% arriba y 9,7% aquí).
+  const totalIdentificado = useQuery({
+    queryKey: ['concentracion', 'total', filters],
+    queryFn: () => socrataQuery(DATASET_CONCENTRACION, soqlConcentracionTotal(filters)),
+    select: (rows) => parseFloat(rows[0]?.v ?? 0),
+  })
 
   return (
     <>
@@ -48,11 +60,9 @@ export function RetratoDeLugar({ lugar, generales }) {
                   {/* El total va explícito: sin él, ListaBarra reparte los
                       porcentajes entre los cinco mostrados y el primero salía
                       con "81,4%", que cualquiera leería como el 81% de la
-                      contratación del municipio. Se compara contra el valor de
-                      SECOP II —no el combinado con SECOP I— porque es el
-                      universo del que sale este ranking. */}
+                      contratación del municipio. */}
                   <ListaBarra
-                    total={generales.data?.valorSecop2}
+                    total={totalIdentificado.data}
                     items={top.map((r, _, todos) => ({
                       clave: r.documento,
                       label: r.nombre,
@@ -67,11 +77,12 @@ export function RetratoDeLugar({ lugar, generales }) {
                     }))}
                   />
                   <p className="mt-3 text-micro text-textSecondary/80 leading-snug">
-                    El porcentaje es sobre el valor total contratado en {lugar} según SECOP II
-                    {generales.data?.valorSecop2 != null
-                      ? ` (${formatCOPCorto(generales.data.valorSecop2)})`
+                    El porcentaje es sobre lo contratado en {lugar} con contratista
+                    identificado, según SECOP II
+                    {totalIdentificado.data != null
+                      ? ` (${formatCOPCorto(totalIdentificado.data)})`
                       : ''}
-                    , no sobre la suma de estos cinco.
+                    : el mismo total de Concentración, no la suma de estos cinco.
                   </p>
                   <Link
                     to={rutaConAmbito('/rankings')}

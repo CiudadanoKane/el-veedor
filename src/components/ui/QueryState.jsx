@@ -29,6 +29,18 @@ export function QueryState({ query, empty = 'Sin resultados.', children }) {
     )
   }
 
+  // Sin conexión, React Query deja la consulta en pausa: no está cargando ni
+  // falló, y no trae datos. Antes caía en el mensaje de vacío, y una lista de
+  // Errores decía «No se detectaron contratos» con 2.077 casos contados arriba
+  // (nov 2026). En pausa no hubo respuesta, así que no se puede decir que no hay.
+  if (query.isPaused && query.data === undefined) {
+    return (
+      <div className="py-12 text-center text-textSecondary" role="status">
+        Sin conexión: la consulta se reanudará sola cuando vuelva internet.
+      </div>
+    )
+  }
+
   const data = query.data
   const isEmpty = !data || (Array.isArray(data) && data.length === 0)
   if (isEmpty) {

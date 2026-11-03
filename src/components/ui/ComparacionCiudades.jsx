@@ -240,9 +240,10 @@ export function ComparacionCiudades() {
         {territorial ? (
           <>
             Solo <strong>SECOP II</strong> y solo <strong>gobiernos locales</strong> (alcaldías y gobernaciones), donde la ciudad
-            ubica bien el gasto. Aun así, una <strong>gobernación</strong> tiene sede en la capital
-            del departamento pero contrata para todo el territorio, así que las capitales
-            departamentales quedan algo infladas. Al entrar a una ciudad verás una cifra mayor:
+            ubica bien el gasto. Aun así, una <strong>gobernación</strong> contrata para todo el
+            departamento y se cuenta en su sede, que suele ser la capital: esas ciudades quedan
+            algo infladas. No siempre es la capital: la Gobernación de Bolívar tiene su sede en
+            Turbaco, y por eso Turbaco aparece tan arriba. Al entrar a una ciudad verás una cifra mayor:
             allí se suman las entidades nacionales con sede en ella y SECOP I.
           </>
         ) : (

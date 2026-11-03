@@ -258,9 +258,10 @@ export function Aprender() {
         <div className="mt-8 border-l-2 border-textPrimary pl-4 py-1 max-w-3xl">
           <p className="text-lectura leading-relaxed text-textPrimary">
             <strong>
-              Solo 8 de cada 100 contratos se adjudican en un concurso abierto.
+              Solo 8 de cada 100 contratos se adjudican en un concurso abierto, y 78 por
+              contratación directa.
             </strong>{' '}
-            Eso no significa que los otros 92 sean irregulares. La enorme mayoría de la
+            Eso no significa que esos 78 sean irregulares. La enorme mayoría de la
             contratación directa son contratos de prestación de servicios: es la forma en
             que el Estado vincula a buena parte de quienes trabajan para él, y la ley lo
             permite expresamente.

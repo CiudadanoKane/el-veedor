@@ -7,8 +7,10 @@ import {
   cuantiaImposibleSecop2, cuantiaImposibleSecop1, VALOR_SECOP1_SOQL,
   valorIncoherenteConElPago, soloEstadosVigentes, soloContratosValidos,
   valorImposibleParaUnaPersona, honorariosImposiblesParaUnaPersona, cuantiaPosibleSecop2, valorCoherenteConElPago,
+  soloContratosValidosSinListas, conCerosDeMasFrenteAlProceso,
   esc as escSoql,
 } from '../lib/soql.js'
+import { CEROS_DE_MAS_FRENTE_AL_PROCESO } from '../lib/cerosDeMas.js'
 import { adaptList as adaptListSecop2 } from '../adapters/secop2Adapter.js'
 import { adaptList as adaptListSecop1 } from '../adapters/secop1Adapter.js'
 
@@ -202,6 +204,26 @@ export function usePersonaConValorImposible(filters = {}) {
         `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT 200`,
       )
       return adaptListSecop2(filas)
+    },
+  })
+}
+
+// Los de ceros de más frente al proceso (ver cerosDeMas.js): una lista fija que
+// soloContratosValidos excluye de todas las cifras, y que aquí se muestra. Parte
+// de las reglas sin la lista, así que no repite a quien otra regla ya saca.
+export function useCerosDeMasFrenteAlProceso(filters = {}) {
+  return useQuery({
+    queryKey: ['errores', 'ceros-de-mas-proceso', filters],
+    queryFn: async () => {
+      const where = buildWhere(
+        whereFromFilters(filters, [soloContratosValidosSinListas(), conCerosDeMasFrenteAlProceso()]),
+      )
+      const filas = await socrataQuery(
+        DS,
+        `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY valor_del_contrato DESC LIMIT 200`,
+      )
+      const proceso = new Map(CEROS_DE_MAS_FRENTE_AL_PROCESO)
+      return adaptListSecop2(filas).map((c) => ({ ...c, valorProceso: proceso.get(c.id) ?? null }))
     },
   })
 }

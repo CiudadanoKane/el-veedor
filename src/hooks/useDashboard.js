@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
 import { DATASETS, ESTADO_ACTIVO } from '../lib/constants'
-import { whereFromFilters, buildWhere, moraConditions, soloContratosValidos } from '../lib/soql'
+import {
+  whereFromFilters, buildWhere, moraConditions, soloContratosValidos, RANGOS_VENCIMIENTO,
+} from '../lib/soql'
 import { PANORAMA_SOQL, PANORAMA_SOQL_SECOP1, MODALIDADES_SIN_COMPETENCIA } from '../lib/dashboardQueries'
 import { repetidosDelAmbito } from '../lib/repetidosSecop1'
 import { useCategorias } from './useCategorias'
@@ -208,6 +210,8 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
         const where = buildWhere(
           whereFromFilters(filters, [
             ...moraConditions(),
+            // Los mismos de la tarjeta: vencidos en los últimos 6 meses.
+            ...RANGOS_VENCIMIENTO.recientes,
             'valor_del_contrato > 0',
             ...extra,
           ]),
@@ -239,6 +243,10 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
     return {
       total: n(r.total),
       riesgo: parseFloat(r.riesgo ?? 0),
+      // null y no 0 si la respuesta es de antes de estos campos (el Panorama
+      // nacional guardado): un 0 se leería como «nada en riesgo».
+      riesgoRecientes: r.riesgo_recientes != null ? parseFloat(r.riesgo_recientes) : null,
+      valorRecientes: r.v_recientes != null ? parseFloat(r.v_recientes) : null,
       recientes: n(r.recientes),
       medios: n(r.medios),
       antiguos: n(r.antiguos),
@@ -314,6 +322,7 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
       nVigente: i(r.n_vig) + i(g1.n_vig) - repetidos.filasVigentes,
       valorVigente: f(r.v_vig) + f(g1.v_vig) - repetidos.valorVigentes,
       nVigenteSecop2: i(r.n_vig),
+      valorVigenteSecop2: f(r.v_vig),
     }
   })
 

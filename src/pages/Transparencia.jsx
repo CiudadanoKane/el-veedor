@@ -138,7 +138,7 @@ export function Transparencia() {
           <strong>SECOP I</strong> es el anterior, de solo publicación: no registra
           ejecución financiera, y su campo de valor no tiene los controles del actual. Por eso <strong>no siempre se pueden sumar</strong>, y
           cada cifra dice de cuál viene: las tarjetas del Panorama van rotuladas
-          "SECOP II + I" o "solo SECOP II", y la evolución en el tiempo pinta dos líneas
+          "SECOP II y SECOP I" o "solo SECOP II", y la evolución en el tiempo pinta dos líneas
           separadas en vez de una suma.
         </p>
 
@@ -242,7 +242,7 @@ export function Transparencia() {
             </p>
             <p>
               <strong>Por qué importa:</strong> sumarlos contaría como contratado lo que
-              nunca llegó a firmarse, y haría ver más pequeño el valor en riesgo.
+              nunca llegó a firmarse.
             </p>
           </Regla>
 
@@ -268,7 +268,7 @@ export function Transparencia() {
             <p>
               Descartamos fechas de fin con año anterior a 2000 (hay registros con "año
               205" o "año 25") y aquellas anteriores a la fecha de inicio del propio
-              contrato. Estos últimos, unos 719, se muestran aparte como alerta.
+              contrato. Estos últimos, unos 700, se muestran aparte como alerta.
             </p>
           </Regla>
 
@@ -281,7 +281,7 @@ export function Transparencia() {
 
           <Regla titulo="El contratista &quot;No Definido&quot;">
             <p>
-              Cerca de 16 mil contratos no tienen NIT o cédula registrada y SECOP los agrupa
+              Unos 17 mil contratos no tienen NIT o cédula registrada y SECOP los agrupa
               bajo esa etiqueta. Al ordenar por contratista aparecían como un falso
               contratista gigante, así que los excluimos de ese ranking.
             </p>
@@ -298,6 +298,14 @@ export function Transparencia() {
               original del proceso, o cuando creció más de 500%, lo tratamos como error de
               digitación y no como adición. Estos casos se muestran aparte en Errores en
               SECOP.
+            </p>
+            <p>
+              Si además del múltiplo hubo una adición (el valor es ×100, ×1.000 o ×10.000 el
+              del proceso, más hasta un 50%) y lo pagado no llega a la décima parte, el
+              contrato sale también de todas las cifras: son 48 contratos y unos{' '}
+              <strong>$10,7 billones</strong> que no existen. Uno de ellos, un mantenimiento
+              de la Armada con proceso de $2.400 millones registrado en $3,48 billones,
+              ponía a su contratista entre los diez que más reciben del país.
             </p>
           </Regla>
 
@@ -338,6 +346,11 @@ export function Transparencia() {
               activos o recién vencidos: ellos mismos más los que tienen el plazo vigente.
               Es la misma en el Panorama, el mapa, las ciudades y Graficar.
             </p>
+            <p>
+              El <strong>valor en riesgo</strong> es lo que falta por ejecutar en esos vencidos
+              recientes, y su porcentaje se mide sobre el valor de la misma base: los
+              contratos con plazo vigente más los recién vencidos.
+            </p>
           </Regla>
 
           <Regla titulo="Contratos con plazo vigente">
@@ -346,14 +359,6 @@ export function Transparencia() {
               ejecución" porque la mayoría de esos contratos ya pasó su plazo, y SECOP I no lo
               tiene. Es el valor total de cada contrato, no lo que se gasta este año: una
               concesión a 30 años cuenta completa.
-            </p>
-          </Regla>
-
-          <Regla titulo="Sin competencia">
-            <p>
-              Se mide solo en SECOP II. Buena parte de SECOP I figura como "Régimen Especial",
-              que mezcla procesos con y sin competencia, y sumarla bajaría el porcentaje sin
-              que hubiera más concurso. Por eso SECOP I se muestra aparte y nunca se promedia.
             </p>
           </Regla>
 
@@ -394,6 +399,13 @@ export function Transparencia() {
               La "urgencia manifiesta" no aparece como modalidad propia en SECOP II: es
               una causal dentro de la contratación directa.
             </p>
+            <p>
+              Se mide solo en SECOP II. Buena parte de SECOP I figura como "Régimen Especial",
+              que mezcla procesos con y sin competencia, y sumarla bajaría el porcentaje sin
+              que hubiera más concurso. Por eso SECOP I se muestra aparte y nunca se promedia.
+              Por la misma razón el régimen especial de SECOP II (14 de cada 100 contratos)
+              no cuenta como contratación directa.
+            </p>
           </Regla>
 
           <Regla titulo="Rankings de contratistas">
@@ -404,11 +416,11 @@ export function Transparencia() {
             </p>
           </Regla>
 
-          <Regla titulo="Mapa de mora por departamento">
+          <Regla titulo="Mapa de plazo vencido por departamento">
             <p>
-              De los contratos en ejecución de cada departamento, qué proporción venció en
-              los últimos 6 meses. El mapa siempre muestra el país completo, sin recortarse
-              con el filtro geográfico.
+              La misma tasa de plazo vencido del Panorama, calculada para cada
+              departamento. El mapa siempre muestra el país completo, sin recortarse con el
+              filtro geográfico.
             </p>
           </Regla>
 
@@ -432,7 +444,7 @@ export function Transparencia() {
         <ul className="space-y-3 pt-1">
           {[
             ['Que un contrato sea corrupto.', 'Las alertas señalan patrones que merecen revisión, no delitos. Determinar responsabilidad es competencia de los órganos de control y la justicia.'],
-            ['Que no se pagó un contrato.', 'El campo de pagos está muy incompleto: incluso entre contratos "Cerrado", el 34% reporta $0 pagado, algo imposible en la práctica. Ausencia de dato no es evidencia de ausencia de pago.'],
+            ['Que no se pagó un contrato.', 'El campo de pagos está muy incompleto: incluso entre contratos "Cerrado", uno de cada tres reporta $0 pagado, algo imposible en la práctica. Ausencia de dato no es evidencia de ausencia de pago.'],
             ['Que una entidad contrata mal por tener contratación directa alta.', 'Depende de qué contrata. Una entidad cuyo trabajo es sobre todo profesional tendrá naturalmente más contratación directa.'],
             ['Que la contratación cayó en los últimos meses.', 'Los meses recientes están incompletos porque las entidades tardan en registrar en SECOP.'],
             ['Que un contrato vencido está paralizado.', 'Puede haber terminado y nadie actualizó el registro. Es, de hecho, el caso más frecuente.'],
@@ -498,7 +510,7 @@ export function Transparencia() {
       </Bloque>
 
       <p className="text-cuerpo text-textSecondary pt-2">
-        Última revisión de esta metodología: julio de 2026.
+        Última revisión de esta metodología: noviembre de 2026.
       </p>
     </div>
   )
