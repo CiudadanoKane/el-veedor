@@ -20,13 +20,14 @@ import { SIN_GEOGRAFIA } from '../lib/departamentos'
 // la capital (se advierte). Ver memoria secop2-geografia-es-sede.
 export function useComparacionCiudades() {
   return usePedazoGeo('ciudades', (rows) => {
-    const cero = () => ({ n: 0, valor: 0, directa: 0, prorroga: 0, enEjecucion: 0, vencidos: 0 })
+    const cero = () => ({ n: 0, valor: 0, directa: 0, prorroga: 0, enEjecucion: 0, vigentes: 0, vencidos: 0 })
     const acumular = (t, r) => {
       t.n += parseInt(r.n ?? 0, 10)
       t.valor += parseFloat(r.valor ?? 0)
       t.directa += parseInt(r.directa ?? 0, 10)
       t.prorroga += parseInt(r.prorroga ?? 0, 10)
       t.enEjecucion += parseInt(r.en_ejecucion ?? 0, 10)
+      t.vigentes += parseInt(r.vigentes ?? 0, 10)
       t.vencidos += parseInt(r.vencidos ?? 0, 10)
     }
     // Por (departamento, ciudad), dos agregados: `todas` (todos los órdenes) y

@@ -402,9 +402,31 @@ export function condicionEstado(estados) {
 // sección 8 para el resto de estados y por qué se excluyen.
 const ESTADOS_CONTRATO_SECOP1 = ['Celebrado', 'Liquidado', 'Terminado sin Liquidar']
 
+// Registros de prueba: la entidad "No Definido" son 1.301 filas y $25,6 billones
+// que pasan todos los filtros. Una sola vale $25 billones (contrato 9999, objeto
+// "PRUEBA", modalidad mínima cuantía); las demás dicen "ADSADSAD", "FFDS". Medido
+// el 2 nov 2026.
+export function sinRegistrosDePruebaSecop1() {
+  return `nombre_entidad != 'No Definido'`
+}
+
+// Convenios que no contratan a nadie. El de cofinanciación de la Línea 2 del
+// Metro de Bogotá ($34,9 billones) fija cuánto aportan la Nación y el Distrito, y
+// además viene en cuatro filas. Sumarlo no mide contratación: solo este registro
+// ponía $139,7 billones en la portada. Sigue visible en el Buscador.
+const UID_SIN_CONTRATACION_SECOP1 = ['22-22-40040-12277957']
+
+// Medido con el barrido de SECOP I y con la exclusión: Barranquilla 0,5 s,
+// Colombia 8,8 s. No encarece las consultas.
 export function soloContratosValidosSecop1() {
+  const uids = UID_SIN_CONTRATACION_SECOP1.map((u) => `'${esc(u)}'`).join(', ')
+  return `${contratosListablesSecop1()} AND uid NOT IN (${uids})`
+}
+
+// Lo que se puede mostrar en una lista: para sumar, soloContratosValidosSecop1.
+export function contratosListablesSecop1() {
   const lista = ESTADOS_CONTRATO_SECOP1.map((e) => `'${esc(e)}'`).join(', ')
-  return `estado_del_proceso IN (${lista})`
+  return `estado_del_proceso IN (${lista}) AND ${sinRegistrosDePruebaSecop1()}`
 }
 
 // Análogo de condicionEstado para SECOP I: recibe estados ya traducidos a su
@@ -412,7 +434,7 @@ export function soloContratosValidosSecop1() {
 // llamador solo la usa cuando la lista trae al menos un estado.
 export function condicionEstadoSecop1(estados) {
   const lista = estados.map((e) => `'${esc(e)}'`).join(', ')
-  return `estado_del_proceso IN (${lista})`
+  return `estado_del_proceso IN (${lista}) AND ${sinRegistrosDePruebaSecop1()}`
 }
 
 // Valor del contrato en SECOP I: cuantia_contrato es el valor inicial,
@@ -506,6 +528,7 @@ export function whereFromFiltrosSecop1(filters = {}, extra = []) {
 // fin >= inicio (fechas invertidas). Más el saneamiento de cuantías imposibles.
 export function moraConditionsSecop1() {
   return [
+    soloContratosValidosSecop1(),
     `estado_del_proceso = 'Celebrado'`,
     `fecha_fin_ejec_contrato >= '2000-01-01T00:00:00'`,
     `fecha_fin_ejec_contrato < '${HOY()}T00:00:00'`,

@@ -263,7 +263,7 @@ export function ConstructorGraficos() {
     <div className="space-y-6">
       <PageHeader
         title="Graficar"
-        subtitle="Elige una métrica y cómo agruparla. Todas las cifras usan las mismas fórmulas y exclusiones que el resto de la plataforma — nada se calcula distinto aquí."
+        subtitle="Elige una métrica y cómo agruparla. Las cifras son de SECOP II, con las mismas fórmulas y exclusiones del mapa y las ciudades. Por eso pueden ser menores que las tarjetas del Panorama, que suman SECOP I."
       />
 
       <div className="space-y-3">

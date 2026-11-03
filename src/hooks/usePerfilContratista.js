@@ -5,6 +5,7 @@ import { esc, soloContratosValidos, soloContratosValidosSecop1, cuantiaPosibleSe
 import { MODALIDADES_SIN_COMPETENCIA } from './useDashboard'
 import { SECOP1_A_MODALIDAD, MODALIDAD_SIN_COMPETENCIA_SECOP1 } from '../lib/catalogosSecop1'
 import { valorMasFrecuente } from '../lib/identidad'
+import { periodoValido, firmaSana } from '../lib/periodo'
 import { adaptList as adaptListSecop2 } from '../adapters/secop2Adapter'
 import { adaptList as adaptListSecop1 } from '../adapters/secop1Adapter'
 
@@ -89,10 +90,12 @@ function combinarModalidades(filas2, filas1) {
 // tiene ambigüedad de vocabulario entre fuentes.
 function combinarPorAnio(filas2, filas1) {
   const mapa = new Map()
+  const anioActual = new Date().getUTCFullYear()
   const agregar = (filas) => {
     for (const r of filas) {
       if (!r.anio) continue
       const anio = new Date(r.anio).getUTCFullYear()
+      if (anio < 2000 || anio > anioActual) continue
       const prev = mapa.get(anio) || { anio, n: 0, valor: 0 }
       prev.n += entero(r.n)
       prev.valor += numero(r.valor)
@@ -122,7 +125,7 @@ export function usePerfilContratista(documento) {
       // que llevan contratando con el Estado desde antes de 2014.
       const [
         resumen, nombres, entidades, modalidades, porAnio, contratos,
-        resumen1, nombres1, entidades1, modalidades1, porAnio1, contratos1,
+        resumen1, periodo1, nombres1, entidades1, modalidades1, porAnio1, contratos1,
       ] = await Promise.all([
         socrataQuery(
           DS,
@@ -171,9 +174,13 @@ export function usePerfilContratista(documento) {
           DS1,
           `SELECT count(uid) as n, sum(${VALOR_SECOP1}) as valor,
                   count(distinct nombre_entidad) as entidades,
-                  min(fecha_de_firma_del_contrato) as desde, max(fecha_de_firma_del_contrato) as hasta,
                   sum(case(modalidad_de_contratacion = '${esc(MODALIDAD_SIN_COMPETENCIA_SECOP1)}', 1, true, 0)) as sin_competencia
            WHERE ${F1}`,
+        ),
+        socrataQuery(
+          DS1,
+          `SELECT min(fecha_de_firma_del_contrato) as desde, max(fecha_de_firma_del_contrato) as hasta
+           WHERE ${F1} AND ${firmaSana('fecha_de_firma_del_contrato')}`,
         ),
         // Sin tipo_documento: SECOP I no distingue NIT de cédula en un campo
         // propio (ver secop1Adapter.js). Solo aporta nombre y conteo.
@@ -242,7 +249,9 @@ export function usePerfilContratista(documento) {
         .sort((a, b) => (b.contractValue || 0) - (a.contractValue || 0))
         .slice(0, 50)
 
-      const fechas = [g.desde, g1.desde, g.hasta, g1.hasta].filter(Boolean)
+      const p1 = periodo1[0] || {}
+      const { desde, hasta } = periodoValido([g.desde, p1.desde, g.hasta, p1.hasta])
+      const enSecop2 = entero(g.n)
 
       return {
         documento,
@@ -257,10 +266,17 @@ export function usePerfilContratista(documento) {
         valorPagado: numero(g.pagado),
         tieneSecop1: totalContratosSecop1 > 0,
         totalContratosSecop1,
-        entidades: entidadesCombinadas.length,
-        sinCompetencia: entero(g.sin_competencia) + entero(g1.sin_competencia),
-        desde: fechas.length ? fechas.reduce((a, b) => (a < b ? a : b)) : null,
-        hasta: fechas.length ? fechas.reduce((a, b) => (a > b ? a : b)) : null,
+        // Sin sumar fuentes: los nombres de entidad no coinciden entre ellas, y
+        // unirlos contaba dos veces a la misma entidad (Compensar: 315 con 199
+        // NIT distintos). Mismo criterio del perfil de entidad.
+        entidades: entero(enSecop2 ? g.entidades : g1.entidades),
+        entidadesSecop1: entero(g1.entidades),
+        enSecop2,
+        entidadesEnLista: entidadesCombinadas.length,
+        sinCompetencia: entero(enSecop2 ? g.sin_competencia : g1.sin_competencia),
+        baseCompetencia: enSecop2 || totalContratosSecop1,
+        desde,
+        hasta,
 
         nombres: listaNombres,
         // Si ningún nombre domina, el documento agrupa organizaciones

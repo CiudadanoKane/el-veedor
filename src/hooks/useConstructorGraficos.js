@@ -27,6 +27,7 @@ function desdeCacheGeo(mapaCache, soloLocales, filtrarCurado) {
       directa: base.directa,
       prorroga: base.prorroga,
       en_ejecucion: base.enEjecucion,
+      vigentes: base.vigentes,
       vencidos: base.vencidos,
       depto: cruda.depto,
     })

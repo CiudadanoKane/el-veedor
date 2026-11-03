@@ -9,7 +9,7 @@
 import { ESTADO_ACTIVO, DATASETS } from './constants.js'
 import { whereFromFilters, buildWhere, soloContratosValidos } from './soql.js'
 import { MODALIDADES_SIN_COMPETENCIA } from './dashboardQueries.js'
-import { condicionVencido } from './panoramaGeoQueries.js'
+import { condicionVencido, condicionVigente, tasaVencidos } from './panoramaGeoQueries.js'
 import { primerDiaAnio, primerDiaMes } from './evolucionQueries.js'
 import { nombreSegmento } from './unspsc.js'
 import { claveCiudad, poblacionCiudadDe } from './poblacionCiudades.js'
@@ -106,11 +106,10 @@ export const METRICAS = {
     label: '% con prórroga', tipo: 'porcentaje',
     calcular: (r) => (r.n >= MIN_MUESTRA ? (r.prorroga / r.n) * 100 : null),
   },
-  // Ojo: el denominador es en_ejecucion, NO n — mismo criterio que el Mapa.
-  // "Plazo vencido" solo tiene sentido sobre contratos que siguen en curso.
+  // Ojo: el denominador NO es n. Es el del Mapa, ver tasaVencidos.
   plazoVencido: {
     label: '% plazo vencido', tipo: 'porcentaje',
-    calcular: (r) => (r.en_ejecucion >= MIN_MUESTRA ? (r.vencidos / r.en_ejecucion) * 100 : null),
+    calcular: (r) => tasaVencidos(r, MIN_MUESTRA),
   },
   // No pasa por soqlConstructor: se resuelve en useConstructorGraficos.js
   // leyendo /adiciones.json. El dato de origen no tiene desglose por
@@ -182,6 +181,7 @@ export function soqlConstructor(dimensionKey, filters = {}) {
                 sum(case(${MODALIDADES_SIN_COMPETENCIA}, 1, true, 0)) as directa,
                 sum(case(dias_adicionados > 0 AND dias_adicionados <= 3650, 1, true, 0)) as prorroga,
                 sum(case(${ejec}, 1, true, 0)) as en_ejecucion,
+                sum(case(${condicionVigente(ejec)}, 1, true, 0)) as vigentes,
                 sum(case(${condicionVencido(ejec)}, 1, true, 0)) as vencidos
          ${where}
          GROUP BY clave${orden}
@@ -190,7 +190,7 @@ export function soqlConstructor(dimensionKey, filters = {}) {
 }
 
 function filaCero() {
-  return { n: 0, valor: 0, directa: 0, prorroga: 0, en_ejecucion: 0, vencidos: 0 }
+  return { n: 0, valor: 0, directa: 0, prorroga: 0, en_ejecucion: 0, vigentes: 0, vencidos: 0 }
 }
 
 function acumular(t, r) {
@@ -199,6 +199,7 @@ function acumular(t, r) {
   t.directa += parseInt(r.directa ?? 0, 10)
   t.prorroga += parseInt(r.prorroga ?? 0, 10)
   t.en_ejecucion += parseInt(r.en_ejecucion ?? 0, 10)
+  t.vigentes += parseInt(r.vigentes ?? 0, 10)
   t.vencidos += parseInt(r.vencidos ?? 0, 10)
 }
 

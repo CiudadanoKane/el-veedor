@@ -3,7 +3,9 @@ import { socrataQuery } from '../lib/socrataClient'
 import { DATASETS, ESTADO_ACTIVO } from '../lib/constants'
 import { whereFromFilters, buildWhere, moraConditions, soloContratosValidos } from '../lib/soql'
 import { PANORAMA_SOQL, PANORAMA_SOQL_SECOP1, MODALIDADES_SIN_COMPETENCIA } from '../lib/dashboardQueries'
+import { repetidosDelAmbito } from '../lib/repetidosSecop1'
 import { useCategorias } from './useCategorias'
+import { useRepetidosSecop1 } from './useSectorNacional'
 
 const DS = DATASETS.CONTRATOS
 const DS1 = DATASETS.PROCESOS_SECOP1
@@ -102,43 +104,47 @@ export function useSinCompetencia(filters = {}) {
 // Panorama carga más rápido y no gasta peticiones en lo que nadie mira.
 export function useDashboardStats(filters = {}, abiertas = new Set()) {
   const panorama = usePanoramaRaw(filters)
+  const archivoRepetidos = useRepetidosSecop1()
+  const repetidos = repetidosDelAmbito(archivoRepetidos.data, filters)
 
   // Cifras generales (solo contratos vigentes: sin borradores, cancelados ni
-  // los que están en trámite de aprobación). Contratos, Valor y Sin competencia
-  // se COMBINAN con SECOP I (generales1): son las únicas cifras de total que se
-  // pueden sumar limpio y rápido entre las dos fuentes. Se conservan aparte las
-  // de SECOP II (totalSecop2, valorSecop2) porque las tarjetas de calidad
-  // —Valor en riesgo, etc.— comparan contra el universo de SECOP II, no el
-  // combinado. tieneSecop1 avisa a la UI para rotular las cifras.
-  const generales = usarPedazo(panorama, 'generales', (rows, todo) => {
+  // los que están en trámite de aprobación). Contratos y Valor se COMBINAN con
+  // SECOP I (generales1), sin sus filas repetidas: son las únicas cifras de total
+  // que se pueden sumar limpio y rápido entre las dos fuentes. Se conservan aparte
+  // las de SECOP II (totalSecop2, valorSecop2) porque las tarjetas de calidad
+  // —Valor en riesgo, Sin competencia— miden solo ese universo. tieneSecop1 avisa
+  // a la UI para rotular las cifras.
+  const generalesCrudas = usarPedazo(panorama, 'generales', (rows, todo) => {
     const g2 = rows?.[0] || {}
     const g1 = todo?.generales1?.[0] || {}
     const i = (v) => parseInt(v ?? 0, 10)
     const f = (v) => parseFloat(v ?? 0)
     const totalSecop2 = i(g2.total)
     const valorSecop2 = f(g2.valor)
-    const totalSecop1 = i(g1.n)
+    const totalSecop1 = i(g1.n) - repetidos.filas
+    const valorSecop1 = f(g1.valor) - repetidos.valor
     return {
       total: totalSecop2 + totalSecop1,
-      valor: valorSecop2 + f(g1.valor),
-      directa: i(g2.directa) + i(g1.directa),
+      valor: valorSecop2 + valorSecop1,
+      directa: i(g2.directa),
+      valorDirecta: f(g2.v_directa),
       totalSecop2,
       valorSecop2,
       totalSecop1,
-      // La parte de SECOP I que entra en "Sin competencia", por separado. La
-      // usa el desglose de esa tarjeta para poder cuadrar con ella: el reparto
-      // por modalidad se consulta solo contra SECOP II, así que sin estas dos
-      // filas la suma del detalle no daba el número de arriba.
+      valorSecop1,
+      // Se sacan sobre las filas de SECOP I tal como llegan, repetidas o no: son
+      // una proporción, para la nota del detalle de "Sin competencia".
       directaSecop1: i(g1.directa),
-      valorSecop1: f(g1.valor),
-      // Ausente en las respuestas guardadas antes de agosto de 2026 (la caché
-      // del Panorama nacional dura 24 h). `null` y no 0: son cosas distintas, y
-      // el desglose por cuantía se abstiene mientras no lo tenga en vez de
-      // dibujar un cero que se leería como "SECOP I no adjudicó nada así".
-      valorDirectaSecop1: g1.v_directa == null ? null : f(g1.v_directa),
+      regimenSecop1: i(g1.regimen),
+      filasSecop1: i(g1.n),
       tieneSecop1: totalSecop1 > 0,
     }
   })
+  // Sin esperar el archivo, la tarjeta saltaría de una cifra a otra al llegar.
+  const generales = {
+    ...generalesCrudas,
+    isLoading: generalesCrudas.isLoading || archivoRepetidos.isLoading,
+  }
 
   // Escala del sistema: cuántos actores participan.
   //
@@ -209,22 +215,22 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
         const rows = await socrataQuery(DS, `SELECT count(id_contrato) as n ${where} LIMIT 1`)
         return parseInt(rows[0]?.n ?? 0, 10)
       }
-      const [completo, parcial, sinDato] = await Promise.all([
-        contar(['valor_pagado >= valor_del_contrato']),
+      // No hay fila de "pago completo": moraConditions() ya los excluye, porque
+      // quien recibió el pago total ya terminó.
+      const [parcial, sinDato] = await Promise.all([
         contar(['valor_pagado > 0', 'valor_pagado < valor_del_contrato']),
         contar(['valor_pagado = 0']),
       ])
-      return { completo, parcial, sinDato }
+      return { parcial, sinDato }
     },
   })
 
   // Contratos en mora, con su desglose por antigüedad en la misma consulta
   // (total+riesgo y una franja por rango, en un solo sum(case()) cada una).
   //
-  // El vencido reciente de SECOP I viaja aparte (recientesSecop1) con su propia
-  // base de "vigentes" (vigentesSecop1 = su estimación de en ejecución): la
-  // tarjeta lo muestra como línea separada, no fusionado, porque su tasa sobre
-  // vigentes difiere mucho de la de SECOP II y un promedio mezclado engañaría.
+  // El vencido reciente de SECOP I viaja aparte (recientesSecop1): la tarjeta lo
+  // muestra como línea separada, no fusionado, porque SECOP I no trae pagos y su
+  // cifra no se mide igual.
   const mora = usarPedazo(panorama, 'mora', (rows, todo) => {
     const r = rows[0] || {}
     const g1 = todo?.generales1?.[0] || {}
@@ -237,7 +243,6 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
       medios: n(r.medios),
       antiguos: n(r.antiguos),
       recientesSecop1,
-      vigentesSecop1: n(g1.n_ejec),
       tieneSecop1: recientesSecop1 > 0,
     }
   })
@@ -291,31 +296,30 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
     }
   })
 
-  // Cuánto del total está realmente vivo, en dos cortes.
+  // Cuánto del total está realmente vivo.
   //
   // El total del Panorama es actividad histórica acumulada: incluye contratos
   // terminados, cerrados y "Modificado" (que en un 86% ya venció). Esta consulta
-  // saca la parte viva, para mostrarla junto a la cifra grande. Son dos cortes
-  // porque "En ejecución" no es de fiar: la mayoría también tiene el plazo
-  // vencido y sigue así solo porque nadie cerró el registro. El corte estricto
-  // —en ejecución Y con plazo aún por vencer— es el único genuinamente activo.
-  // El desglose vivo (en ejecución / plazo vigente) suma la estimación de
-  // SECOP I: 'Celebrado' como proxy de "en ejecución" (ver soqlGeneralesSecop1).
+  // saca la parte viva, para mostrarla junto a la cifra grande. Solo cuenta quien
+  // tiene el plazo corriendo: el estado "En ejecución" no es de fiar, porque el
+  // 79,5% de esos contratos ya venció (medido nov 2026) y sigue así solo porque
+  // nadie cerró el registro. Aquí SECOP I sí suma: sus concesiones son contratos
+  // vivos, y sin ellas faltarían $82 billones.
   const ejecucion = usarPedazo(panorama, 'ejecucion', (rows, todo) => {
     const r = rows[0] || {}
     const g1 = todo?.generales1?.[0] || {}
     const i = (v) => parseInt(v ?? 0, 10)
     const f = (v) => parseFloat(v ?? 0)
     return {
-      nEjecucion: i(r.n_ejec) + i(g1.n_ejec),
-      valorEjecucion: f(r.v_ejec) + f(g1.v_ejec),
-      nVigente: i(r.n_vig) + i(g1.n_vig),
-      valorVigente: f(r.v_vig) + f(g1.v_vig),
+      nVigente: i(r.n_vig) + i(g1.n_vig) - repetidos.filasVigentes,
+      valorVigente: f(r.v_vig) + f(g1.v_vig) - repetidos.valorVigentes,
+      nVigenteSecop2: i(r.n_vig),
     }
   })
 
   return {
     generales, entidadesActoras, contratistasActores, porEstado, mora,
     ejecucionVencidos, queSeContrata, entidadesMora, porModalidad, cierre, ejecucion,
+    repetidos,
   }
 }

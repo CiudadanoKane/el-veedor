@@ -3,7 +3,27 @@ import {
   valorCoherenteConElPresupuestoSecop1,
   esc, soloContratosValidos, cuantiaPosibleSecop2, rangoNumerico, rangoFecha, whereFromFilters,
   moraConditions, moraConditionsSecop1, cuantiaPosibleSecop1,
+  soloContratosValidosSecop1, contratosListablesSecop1, condicionEstadoSecop1,
 } from './soql.js'
+
+// El 2 nov 2026 la portada sumaba $25,6 billones de registros de prueba y $139,7
+// billones de un convenio de cofinanciación repetido en cuatro filas.
+describe('soloContratosValidosSecop1', () => {
+  it('saca los registros de prueba y el convenio del Metro', () => {
+    expect(soloContratosValidosSecop1()).toContain(`nombre_entidad != 'No Definido'`)
+    expect(soloContratosValidosSecop1()).toContain('22-22-40040-12277957')
+  })
+
+  it('el convenio se sigue pudiendo encontrar en una lista', () => {
+    expect(contratosListablesSecop1()).toContain(`nombre_entidad != 'No Definido'`)
+    expect(contratosListablesSecop1()).not.toContain('22-22-40040-12277957')
+  })
+
+  it('la mora y el estado elegido en el Buscador heredan la limpieza', () => {
+    expect(moraConditionsSecop1()).toContain(soloContratosValidosSecop1())
+    expect(condicionEstadoSecop1(['Celebrado'])).toContain(`nombre_entidad != 'No Definido'`)
+  })
+})
 
 // Las condiciones de mora no pasan por soloContratosValidos(), así que no
 // heredan su guardia: hay que ponérselo a mano, y se olvidó. En oct 2026 cinco

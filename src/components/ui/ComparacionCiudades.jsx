@@ -12,6 +12,7 @@ import {
   claveCiudad,
 } from '../../lib/poblacionCiudades'
 import { formatPct, formatCOP, formatCOPCorto } from '../../lib/formatters'
+import { tasaVencidos } from '../../lib/panoramaGeoQueries'
 import { Seccion } from './Seccion'
 
 const N = (x) => (x ?? 0).toLocaleString('es-CO')
@@ -48,9 +49,9 @@ const METRICAS = {
   vencidos: {
     label: 'Plazo vencido',
     color: 'rgb(var(--c-danger))',
-    valorDe: (f) => (f.enEjecucion >= MIN_MUESTRA ? (f.vencidos / f.enEjecucion) * 100 : null),
+    valorDe: (f) => tasaVencidos(f, MIN_MUESTRA),
     formato: (v) => formatPct(v),
-    detalle: (f) => `${N(f.vencidos)} vencidos de ${N(f.enEjecucion)} en ejecución`,
+    detalle: (f) => `${N(f.vencidos)} vencidos y ${N(f.vigentes)} con plazo vigente`,
   },
   directa: {
     label: 'Sin competencia',
@@ -238,14 +239,15 @@ export function ComparacionCiudades() {
       <p className="mt-3 text-nota text-textSecondary leading-snug max-w-2xl">
         {territorial ? (
           <>
-            Solo <strong>gobiernos locales</strong> (alcaldías y gobernaciones), donde la ciudad
+            Solo <strong>SECOP II</strong> y solo <strong>gobiernos locales</strong> (alcaldías y gobernaciones), donde la ciudad
             ubica bien el gasto. Aun así, una <strong>gobernación</strong> tiene sede en la capital
             del departamento pero contrata para todo el territorio, así que las capitales
-            departamentales quedan algo infladas.
+            departamentales quedan algo infladas. Al entrar a una ciudad verás una cifra mayor:
+            allí se suman las entidades nacionales con sede en ella y SECOP I.
           </>
         ) : (
           <>
-            <strong>Todas las entidades.</strong> En SECOP la ciudad es la <strong>sede</strong> de
+            <strong>Todas las entidades de SECOP II.</strong> En SECOP la ciudad es la <strong>sede</strong> de
             la entidad: como todas las entidades nacionales tienen sede en Bogotá, aquí{' '}
             <strong>Bogotá absorbe la contratación de medio país</strong>. Útil para ver el
             fenómeno, no para comparar ciudades.
@@ -260,9 +262,13 @@ export function ComparacionCiudades() {
         capitales departamentales; un conjunto fijo, para que Total, per cápita y las tasas midan
         siempre las mismas ciudades y una métrica de tasa no la copen municipios diminutos—. Se
         muestran las {TOP} primeras; el selector debajo del ranking deja añadir cualquier otra con
-        su posición real. Solo <strong>SECOP II</strong>: SECOP I no trae una ciudad fiable.
-        Las tasas (plazo vencido, sin competencia, con prórroga) exigen al menos {MIN_MUESTRA}{' '}
-        contratos para ser representativas.
+        su posición real. Solo <strong>SECOP II</strong>, la fuente vigente: SECOP I se suma en la
+        página de cada ciudad. Las tasas (plazo vencido, sin competencia, con prórroga) exigen al
+        menos {MIN_MUESTRA} contratos para ser representativas.
+        <br />
+        <br />
+        <strong>Plazo vencido:</strong> contratos en ejecución que vencieron en los últimos 6
+        meses sin pago completo, sobre esos mismos más los que tienen el plazo vigente.
         <br />
         <br />
         <strong>Per cápita:</strong> por cada habitante (valor) o por cada 100.000 habitantes

@@ -9,6 +9,8 @@ import { MODALIDADES_SIN_COMPETENCIA } from './useDashboard'
 import { SECOP1_A_MODALIDAD, MODALIDAD_SIN_COMPETENCIA_SECOP1 } from '../lib/catalogosSecop1'
 import { ERRORES, INCOMPLETOS } from './useCalidadDatos'
 import { valorMasFrecuente, documentoIdentifica } from '../lib/identidad'
+import { condicionEntidadSecop1 } from '../lib/entidadesSecop1'
+import { periodoValido, firmaSana } from '../lib/periodo'
 import { adaptList as adaptListSecop2 } from '../adapters/secop2Adapter'
 import { adaptList as adaptListSecop1 } from '../adapters/secop1Adapter'
 
@@ -26,19 +28,6 @@ const unir = (grupo) =>
   Object.values(grupo)
     .map((d) => d.condicion)
     .join(' OR ')
-
-// Fechas de firma dentro de un rango sano: SECOP I trae basura (año 2096, 2099)
-// y algún registro anterior a 2000. Se descartan para que el periodo mostrado
-// no diga "…— ene de 2096". Compara como cadenas ISO, que ordenan bien.
-function periodoValido(fechas) {
-  const hoy = new Date().toISOString()
-  const ok = fechas.filter((f) => f && f >= '2000-01-01' && f <= hoy)
-  if (!ok.length) return { desde: null, hasta: null }
-  return {
-    desde: ok.reduce((a, b) => (a < b ? a : b)),
-    hasta: ok.reduce((a, b) => (a > b ? a : b)),
-  }
-}
 
 // Fusiona modalidades traduciendo el vocabulario de SECOP I al de SECOP II
 // donde el cruce es claro (ver catalogosSecop1.js), para no duplicar la misma
@@ -113,7 +102,11 @@ function combinarPorAnio(filas2, filas1) {
 // el NIT es el único puente. Se usa únicamente cuando ese NIT identifica a UNA
 // sola entidad en SECOP II; si es un NIT compartido por varias dependencias, no
 // se suma —no se podría atribuir a esta entidad en particular— y se avisa. Ver
-// ROADMAP.md sección 8.
+// ROADMAP.md sección 8 y entidadesSecop1.js.
+//
+// Una entidad sin contratos en SECOP II se busca en SECOP I por su nombre: es el
+// caso de ANI o Ecopetrol, y de todo enlace que nace en una fila de SECOP I, que
+// antes llevaba a "No encontramos contratos".
 //
 // Carga en dos tiempos (oct 2026). Antes eran tres fases en fila —SECOP II, la
 // comprobación del NIT, SECOP I— y la ficha no pintaba nada hasta tener las
@@ -133,11 +126,15 @@ export function usePerfilEntidad(nombre) {
   })
 
   const nit = base.data?.nitDominante
-  const conSecop1 = Boolean(nit) && base.data?.nitCompartido === false
+  const sinSecop2 = Boolean(base.data) && entero(base.data.resumen[0]?.n) === 0
+  const conSecop1 = sinSecop2 || (Boolean(nit) && base.data?.nitCompartido === false)
+  const filtroSecop1 = sinSecop2
+    ? `nombre_entidad = '${esc(nombre)}'`
+    : nit && condicionEntidadSecop1(nit)
   const s1 = useQuery({
     enabled: conSecop1,
-    queryKey: ['perfil', 'entidad', nombre, 'secop1', nit],
-    queryFn: () => cargarSecop1(nit),
+    queryKey: ['perfil', 'entidad', nombre, 'secop1', filtroSecop1],
+    queryFn: () => cargarSecop1(filtroSecop1),
   })
 
   const data = useMemo(
@@ -152,6 +149,8 @@ export function usePerfilEntidad(nombre) {
       // quedarse en blanco por una fuente que es complemento.
       secop1Pendiente: conSecop1 && s1.isLoading,
       secop1Fallo: conSecop1 && s1.isError,
+      // Se buscó y no apareció: puede estar con otro nombre y sin NIT.
+      secop1SinCruce: conSecop1 && s1.isSuccess && data.totalContratosSecop1 === 0,
     },
     isLoading: base.isLoading,
     isError: base.isError,
@@ -239,21 +238,25 @@ async function cargarSecop2(nombre) {
   return { resumen, nitDominante, nitCompartido, modalidades, contratistas, porAnio, contratos }
 }
 
-// Fase 2: SECOP I, acotado por ese NIT inequívoco.
-async function cargarSecop1(nit) {
+// Fase 2: SECOP I, acotado por ese NIT inequívoco o, sin SECOP II, por el nombre.
+async function cargarSecop1(filtro) {
   // Con el guardia de cuantías imposibles, igual que la parte de SECOP II
   // (soloContratosValidos ya lo trae; la versión de SECOP I solo filtra
   // estados). Sin él, un contrato de SECOP I registrado por $165 billones
   // entraba entero en el total del perfil de su entidad.
-  const F1 = `${soloContratosValidosSecop1()} AND ${cuantiaPosibleSecop1()} AND ${valorCoherenteConElPresupuestoSecop1()} AND nit_de_la_entidad = '${esc(nit)}'`
-  const [resumen1, modalidades1, contratistas1, porAnio1, contratos1] = await Promise.all([
+  const F1 = `${soloContratosValidosSecop1()} AND ${cuantiaPosibleSecop1()} AND ${valorCoherenteConElPresupuestoSecop1()} AND ${filtro}`
+  const [resumen1, periodo1, modalidades1, contratistas1, porAnio1, contratos1] = await Promise.all([
     socrataQuery(
       DS1,
       `SELECT count(uid) as n, sum(${VALOR_SECOP1_SOQL}) as valor,
               count(distinct identificacion_del_contratista) as contratistas,
-              min(fecha_de_firma_del_contrato) as desde, max(fecha_de_firma_del_contrato) as hasta,
               sum(case(modalidad_de_contratacion = '${esc(MODALIDAD_SIN_COMPETENCIA_SECOP1)}', 1, true, 0)) as sin_competencia
        WHERE ${F1}`,
+    ),
+    socrataQuery(
+      DS1,
+      `SELECT min(fecha_de_firma_del_contrato) as desde, max(fecha_de_firma_del_contrato) as hasta
+       WHERE ${F1} AND ${firmaSana('fecha_de_firma_del_contrato')}`,
     ),
     socrataQuery(
       DS1,
@@ -281,10 +284,10 @@ async function cargarSecop1(nit) {
        WHERE ${F1} ORDER BY ${VALOR_SECOP1_SOQL} DESC LIMIT 50`,
     ),
   ])
-  return { resumen1, modalidades1, contratistas1, porAnio1, contratos1 }
+  return { resumen1, periodo1, modalidades1, contratistas1, porAnio1, contratos1 }
 }
 
-const SIN_SECOP1 = { resumen1: [], modalidades1: [], contratistas1: [], porAnio1: [], contratos1: [] }
+const SIN_SECOP1 = { resumen1: [], periodo1: [], modalidades1: [], contratistas1: [], porAnio1: [], contratos1: [] }
 
 function armarPerfil(nombre, base, s1 = SIN_SECOP1) {
   const { resumen, nitDominante, nitCompartido, modalidades, contratistas, porAnio, contratos } = base
@@ -299,7 +302,8 @@ function armarPerfil(nombre, base, s1 = SIN_SECOP1) {
     detalle[d.campo] = entero(g[d.campo])
   }
 
-  const { desde, hasta } = periodoValido([g.desde, g1.desde, g.hasta, g1.hasta])
+  const p1 = s1.periodo1[0] || {}
+  const { desde, hasta } = periodoValido([g.desde, p1.desde, g.hasta, p1.hasta])
 
   const contratosCombinados = [
     ...adaptListSecop2(contratos),
@@ -322,8 +326,13 @@ function armarPerfil(nombre, base, s1 = SIN_SECOP1) {
     valorTotal: numero(g.valor) + numero(g1.valor),
     // SECOP I no reporta ejecución financiera: "Pagado" solo cubre SECOP II.
     valorPagado: numero(g.pagado),
-    contratistas: entero(g.contratistas) + entero(g1.contratistas),
-    sinCompetencia: entero(g.sin_competencia) + entero(g1.sin_competencia),
+    // SECOP II si la entidad tiene contratos ahí: sumar las dos fuentes contaría
+    // dos veces a quien está en ambas (INDER Medellín: 9.324 contra 7.148 reales)
+    // y mezclaría dos formas de registrar la modalidad. Ver soqlGeneralesSecop1.
+    contratistas: entero(totalSecop2 ? g.contratistas : g1.contratistas),
+    contratistasSecop1: entero(g1.contratistas),
+    sinCompetencia: entero(totalSecop2 ? g.sin_competencia : g1.sin_competencia),
+    baseCompetencia: totalSecop2 || totalSecop1,
     desde,
     hasta,
 

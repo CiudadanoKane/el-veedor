@@ -14,11 +14,13 @@ import { normalizarDepto, SIN_GEOGRAFIA } from '../lib/departamentos'
 //   valor       — valor contratado
 //   directa     — contratos sin competencia (contratación directa)
 //   prorroga    — contratos con adición de tiempo (dias_adicionados > 0)
-//   enEjecucion — contratos en ejecución (denominador de "plazo vencido")
-//   vencidos    — en ejecución cuyo plazo venció en los últimos 6 meses (el
-//                 tramo con mayor probabilidad de ser retraso real, no registro
-//                 sin cerrar). Deliberadamente NO se llama "mora": esa palabra
-//                 da por hecho un incumplimiento que el dato no prueba.
+//   enEjecucion — contratos en ejecución
+//   vigentes    — en ejecución con el plazo corriendo
+//   vencidos    — en ejecución, sin pago completo, cuyo plazo venció en los
+//                 últimos 6 meses (el tramo con mayor probabilidad de ser retraso
+//                 real, no registro sin cerrar). Deliberadamente NO se llama
+//                 "mora": esa palabra da por hecho un incumplimiento que el dato
+//                 no prueba.
 //
 // Se agrupa además por `orden` (Nacional / Territorial / …). Motivo: en SECOP II
 // `departamento` es la SEDE de la entidad, no dónde se gasta. Las entidades
@@ -29,13 +31,14 @@ import { normalizarDepto, SIN_GEOGRAFIA } from '../lib/departamentos'
 // muestra la territorial. Ver memoria secop2-geografia-es-sede.
 export function useMapaMetricas() {
   return usePedazoGeo('mapa', (rows) => {
-    const cero = () => ({ n: 0, valor: 0, directa: 0, prorroga: 0, enEjecucion: 0, vencidos: 0 })
+    const cero = () => ({ n: 0, valor: 0, directa: 0, prorroga: 0, enEjecucion: 0, vigentes: 0, vencidos: 0 })
     const acumular = (t, r) => {
       t.n += parseInt(r.n ?? 0, 10)
       t.valor += parseFloat(r.valor ?? 0)
       t.directa += parseInt(r.directa ?? 0, 10)
       t.prorroga += parseInt(r.prorroga ?? 0, 10)
       t.enEjecucion += parseInt(r.en_ejecucion ?? 0, 10)
+      t.vigentes += parseInt(r.vigentes ?? 0, 10)
       t.vencidos += parseInt(r.vencidos ?? 0, 10)
     }
     // Por departamento se guardan dos agregados: `todas` (suma de todos los

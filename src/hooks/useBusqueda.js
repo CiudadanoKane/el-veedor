@@ -3,7 +3,7 @@ import { socrataQuery, socrataBusqueda } from '../lib/socrataClient'
 import { DATASETS, CONTRACT_FIELDS, CONTRACT_FIELDS_SECOP1 } from '../lib/constants'
 import {
   esc, whereFromFilters, condicionEstado,
-  soloContratosValidosSecop1, valorCoherenteConElPresupuestoSecop1, cuantiaPosibleSecop1, condicionEstadoSecop1, whereFromFiltrosSecop1,
+  contratosListablesSecop1, valorCoherenteConElPresupuestoSecop1, cuantiaPosibleSecop1, condicionEstadoSecop1, whereFromFiltrosSecop1,
   rangoNumerico, rangoValorSecop1, rangoFecha,
 } from '../lib/soql'
 import { variantesDeFrase, variantesReducidas, tieneTextoBuscable, palabrasDeFrase, pluralDeFrase, sinTildes } from '../lib/acentos'
@@ -404,7 +404,7 @@ export function useBusqueda(criterios = {}, filtrosGeo = {}, { pausada = false }
         // ceros de más: lo mismo que SECOP II ya descarta dentro de
         // condicionEstado (cuantiaPosibleSecop2 y valorCoherenteConElPago).
         estadosSecop1 === null
-          ? [soloContratosValidosSecop1(), cuantiaPosibleSecop1(), valorCoherenteConElPresupuestoSecop1()].join(' AND ')
+          ? [contratosListablesSecop1(), cuantiaPosibleSecop1(), valorCoherenteConElPresupuestoSecop1()].join(' AND ')
           : condicionEstadoSecop1(estadosSecop1),
         ...rangosSecop1(criterios),
       ]

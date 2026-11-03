@@ -74,6 +74,8 @@ function Perfil({ perfil, refNacional }) {
   const concentracion = perfil.contratistas_lista[0]
     ? pct(perfil.contratistas_lista[0].valor, perfil.valorTotal)
     : null
+  const soloSecop1 = perfil.tieneSecop1 && perfil.totalContratosSecop2 === 0
+  const ambasFuentes = perfil.tieneSecop1 && perfil.totalContratosSecop2 > 0
 
   // Una unidad por lista (ver formatCOPLista): en una misma columna no deben
   // convivir "millones" y "mil millones" para cifras de la misma escala.
@@ -175,6 +177,21 @@ function Perfil({ perfil, refNacional }) {
         </p>
       )}
 
+      {soloSecop1 && (
+        <p className="text-cuerpo text-textSecondary -mt-2 max-w-3xl leading-snug">
+          Esta ficha solo reúne contratos de <strong className="text-textPrimary">SECOP I</strong>.
+          Si la entidad también contrata en SECOP II, allá figura con otro nombre y sus cifras
+          no están aquí.
+        </p>
+      )}
+      {perfil.secop1SinCruce && perfil.totalContratosSecop2 > 0 && (
+        <p className="text-cuerpo text-textSecondary -mt-2 max-w-3xl leading-snug">
+          No encontramos su historia en <strong className="text-textPrimary">SECOP I</strong>: esa
+          fuente deja sin NIT a parte de las entidades, así que puede existir con otro nombre.
+          Las cifras de abajo son de SECOP II.
+        </p>
+      )}
+
       {/* Los nombres de entidad no coinciden entre SECOP I y II, así que SECOP I
           se suma por NIT — pero solo si es inequívoco. Cuando el NIT lo comparten
           varias dependencias, no se puede atribuir a esta entidad y se omite. */}
@@ -199,31 +216,33 @@ function Perfil({ perfil, refNacional }) {
           sub={
             // SECOP I no reporta pagos (ver ROADMAP.md sección 8): "Pagado" solo
             // cubre SECOP II. Se avisa cuando la entidad también tiene SECOP I.
-            perfil.tieneSecop1
-              ? `Pagado en SECOP II: ${formatCOP(perfil.valorPagado)} · ${perfil.totalContratosSecop1.toLocaleString('es-CO')} contratos de SECOP I no reportan pagos`
-              : `Pagado: ${formatCOP(perfil.valorPagado)}`
+            soloSecop1
+              ? 'SECOP I no reporta pagos'
+              : ambasFuentes
+                ? `Pagado en SECOP II: ${formatCOP(perfil.valorPagado)} · ${perfil.totalContratosSecop1.toLocaleString('es-CO')} contratos de SECOP I no reportan pagos`
+                : `Pagado: ${formatCOP(perfil.valorPagado)}`
           }
         />
         <StatCard
           label="Contratistas"
           value={perfil.contratistas.toLocaleString('es-CO')}
           sub={
-            perfil.tieneSecop1
-              ? 'Distintos, sumando SECOP II y SECOP I'
+            ambasFuentes
+              ? `En SECOP II. En SECOP I: ${perfil.contratistasSecop1.toLocaleString('es-CO')}. No se suman: pueden repetirse`
               : 'Personas y empresas distintas a las que ha contratado'
           }
         />
         <StatCard
           label="Sin competencia"
-          value={formatPct(pct(perfil.sinCompetencia, perfil.totalContratos))}
-          sub="Contratos adjudicados de forma directa"
+          value={formatPct(pct(perfil.sinCompetencia, perfil.baseCompetencia))}
+          sub={ambasFuentes ? 'De sus contratos en SECOP II' : 'Contratos adjudicados de forma directa'}
           tone="warning"
         />
       </div>
 
       <IndiceSecciones
         secciones={[
-          { id: 'registro', titulo: 'Cómo registra' },
+          ...(soloSecop1 ? [] : [{ id: 'registro', titulo: 'Cómo registra' }]),
           { id: 'a-quien', titulo: 'A quién contrata' },
           { id: 'adjudica', titulo: 'Cómo adjudica' },
           ...(perfil.porAnio.length > 1 ? [{ id: 'evolucion', titulo: 'Por año' }] : []),
@@ -231,7 +250,7 @@ function Perfil({ perfil, refNacional }) {
         ]}
       />
 
-      <Seccion
+      {!soloSecop1 && <Seccion
         id="registro"
         titulo="Cómo registra su información"
         intro="Qué tan completo y consistente queda el rastro público de lo que contrata."
@@ -292,7 +311,7 @@ function Perfil({ perfil, refNacional }) {
             ))}
           </ul>
         )}
-      </Seccion>
+      </Seccion>}
 
       <Seccion
         id="a-quien"
@@ -412,8 +431,10 @@ export function Entidad() {
       <QueryState query={query} empty="No encontramos contratos de esta entidad.">
         {(perfil) =>
           perfil.totalContratos === 0 ? (
-            <p className="text-lectura text-textSecondary py-8">
-              No encontramos contratos registrados con este nombre de entidad.
+            <p className="text-lectura text-textSecondary py-8" role="status">
+              {perfil.secop1Pendiente
+                ? 'Buscando esta entidad en SECOP I…'
+                : 'No encontramos contratos registrados con este nombre de entidad.'}
             </p>
           ) : (
             <Perfil perfil={perfil} refNacional={refNacional} />

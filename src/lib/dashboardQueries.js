@@ -23,7 +23,8 @@ export function soqlGenerales(filters) {
   const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
   // El conteo de contratación directa va en la misma consulta: sale gratis
   return `SELECT count(id_contrato) as total, sum(valor_del_contrato) as valor,
-                 sum(case(${MODALIDADES_SIN_COMPETENCIA}, 1, true, 0)) as directa
+                 sum(case(${MODALIDADES_SIN_COMPETENCIA}, 1, true, 0)) as directa,
+                 sum(case(${MODALIDADES_SIN_COMPETENCIA}, valor_del_contrato, true, 0)) as v_directa
           ${where} LIMIT 1`
 }
 
@@ -99,22 +100,25 @@ export const PANORAMA_SOQL = {
 }
 
 // --- SECOP I: solo las cifras de "totales" que se pueden combinar de forma
-// limpia y RÁPIDA. Contratos (count), Valor (sum saneado) y Sin competencia
-// (su modalidad directa) salen en una sola consulta de agregado (~20s, la paga
-// el cron). NO se incluyen Contratistas ni Entidades: su count(distinct) sobre
-// los 5,8M tarda >2 min (no cabe en el cron) y además sumar distinct entre
-// fuentes sobrecontaría a quien aparece en ambas. El resto del Panorama —mora,
-// cierre, ejecución, por estado— depende de pago/estado que SECOP I no reporta,
-// así que sigue siendo solo de SECOP II. Ver ROADMAP.md.
+// limpia y RÁPIDA. Contratos (count) y Valor (sum saneado) salen en una sola
+// consulta de agregado (~20s, la paga el cron). NO se incluyen Contratistas ni
+// Entidades: su count(distinct) sobre los 5,8M tarda >2 min (no cabe en el cron)
+// y además sumar distinct entre fuentes sobrecontaría a quien aparece en ambas.
+// El resto del Panorama —mora, cierre, ejecución, por estado— depende de
+// pago/estado que SECOP I no reporta, así que sigue siendo solo de SECOP II. Ver
+// ROADMAP.md.
+//
+// `directa` y `regimen` no se suman a SECOP II: el 37,8% de SECOP I es "Régimen
+// Especial", que mezcla procesos con y sin competencia, y sumarlo bajaba la cifra
+// nacional de 77,9% a 63% y Medellín de 89% a 53%. Van aparte, como nota.
 export function soqlGeneralesSecop1(filters) {
   const where = buildWhere(
     whereFromFiltrosSecop1(filters, [soloContratosValidosSecop1(), cuantiaPosibleSecop1(), valorCoherenteConElPresupuestoSecop1()]),
   )
   const V = VALOR_SECOP1_SOQL
-  // Estimación de "vivo" en SECOP I: 'Celebrado' es firmado y aún no liquidado
-  // ni terminado — el proxy más cercano a "en ejecución" de SECOP II. "Vigente"
-  // le suma que el plazo no haya vencido. Es una aproximación a propósito (el
-  // Panorama es general), porque SECOP I no tiene el estado "En ejecución".
+  // Lo vivo en SECOP I: 'Celebrado' es firmado y sin liquidar, pero el 96-99% de
+  // esos contratos terminó hace más de un año, así que solo cuenta el que tiene
+  // el plazo corriendo. SECOP I no tiene el estado "En ejecución".
   const vivo = `estado_del_proceso = 'Celebrado'`
   const vigente = `${vivo} AND fecha_fin_ejec_contrato >= '${HOY()}T00:00:00'`
   // "Vencidos hace poco" de SECOP I: firmado (Celebrado), plazo terminado en
@@ -133,17 +137,9 @@ export function soqlGeneralesSecop1(filters) {
     `fecha_fin_ejec_contrato < '${HOY()}T00:00:00'`,
     `fecha_fin_ejec_contrato >= fecha_ini_ejec_contrato`,
   ].join(' AND ')
-  // `v_directa` acompaña a `directa` para que el desglose de "Sin competencia"
-  // pueda leerse también por cuantía. Es un agregado más en un barrido que ya se
-  // paga: agrupar SECOP I por modalidad en vivo cuesta 187 s en el caso nacional
-  // (medido ago 2026) —más que el techo de 60 s de una función—, así que la
-  // partición gruesa que sale de aquí es la única que se puede mostrar sin
-  // montar otro precálculo diario.
   return `SELECT count(uid) as n, sum(${V}) as valor,
                  sum(case(modalidad_de_contratacion = '${esc(MODALIDAD_SIN_COMPETENCIA_SECOP1)}', 1, true, 0)) as directa,
-                 sum(case(modalidad_de_contratacion = '${esc(MODALIDAD_SIN_COMPETENCIA_SECOP1)}', ${V}, true, 0)) as v_directa,
-                 sum(case(${vivo}, 1, true, 0)) as n_ejec,
-                 sum(case(${vivo}, ${V}, true, 0)) as v_ejec,
+                 sum(case(modalidad_de_contratacion = 'Régimen Especial', 1, true, 0)) as regimen,
                  sum(case(${vigente}, 1, true, 0)) as n_vig,
                  sum(case(${vigente}, ${V}, true, 0)) as v_vig,
                  sum(case(${vencReciente}, 1, true, 0)) as venc_recientes

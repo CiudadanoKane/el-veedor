@@ -693,7 +693,7 @@ export function AlertaObraParalizada() {
           <br />
           <br />
           <strong>Estos contratos también aparecen en "Contratos vencidos"</strong>: los
-          5.976 casos están todos ahí dentro, porque esta alerta es un filtro más
+          Estos casos están todos ahí dentro, porque esta alerta es un filtro más
           estricto sobre esa misma lista. La repetimos aparte a propósito, porque es la
           señal más fuerte que tenemos y esconderla tras un filtro sería desaprovecharla.
         </>

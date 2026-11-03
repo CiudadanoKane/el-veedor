@@ -203,9 +203,10 @@ export function Concentracion({ filters = {}, contratistas, tieneSecop1 }) {
                     que se leen cómodo—. Es el mismo tope que ya usa la entrada
                     de cada sección. */}
                 <p className="mt-5 text-nota text-textSecondary max-w-2xl">
-                  Valor total contratado {ambito}: {formatCOPCorto(d.total)} (solo SECOP II).
+                  Valor total contratado {ambito}: {formatCOPCorto(d.total)}, solo SECOP II y solo
+                  contratos con contratista identificado.
                   {tieneSecop1
-                    ? ' Es menor que la tarjeta «Valor contratado» de arriba, que suma además SECOP I.'
+                    ? ' La tarjeta «Valor contratado» de arriba suma además SECOP I y los contratos sin contratista identificado.'
                     : ''}
                 </p>
               </>

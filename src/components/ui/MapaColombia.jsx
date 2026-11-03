@@ -11,6 +11,7 @@ import { normalizarDepto } from '../../lib/departamentos'
 import { poblacionDe, POBLACION_ANIO } from '../../lib/poblacion'
 import { CHART, SCALE_SENAL, SCALE_NEUTRO, colorEnEscala } from '../../lib/chartTheme'
 import { formatPct, formatCOP, formatCOPCorto, formatDate } from '../../lib/formatters'
+import { tasaVencidos } from '../../lib/panoramaGeoQueries'
 import { Seccion } from './Seccion'
 
 const GEO = '/departamentos-colombia.geojson'
@@ -41,19 +42,19 @@ const METRICAS = {
     escala: SCALE_SENAL,
     tono: 'text-danger',
     descripcion:
-      'Qué proporción de los contratos en ejecución venció en los últimos 6 meses.',
+      'De los contratos activos o recién vencidos, qué proporción venció en los últimos 6 meses.',
     leyenda: () => 'Plazo vencido',
-    valorDe: (f) => (f.enEjecucion >= MIN_MUESTRA ? (f.vencidos / f.enEjecucion) * 100 : null),
+    valorDe: (f) => tasaVencidos(f, MIN_MUESTRA),
     formato: (v) => formatPct(v),
-    detalle: (f) => `${N(f.vencidos)} vencidos de ${N(f.enEjecucion)} en ejecución`,
+    detalle: (f) => `${N(f.vencidos)} vencidos y ${N(f.vigentes)} con plazo vigente`,
     metodologia: (
       <>
-        Contratos <strong>en ejecución</strong> cuyo plazo venció en los{' '}
-        <strong>últimos 6 meses</strong>, sobre el total en ejecución del departamento. Se
-        usa ese tramo porque es el que con más probabilidad es un retraso real y no un
-        registro que la entidad nunca cerró. Un plazo vencido en el registro no prueba por
-        sí solo que el contrato esté incumplido. Se excluyen los departamentos con menos de{' '}
-        {MIN_MUESTRA} contratos en ejecución.
+        Contratos <strong>en ejecución</strong> sin pago completo cuyo plazo venció en los{' '}
+        <strong>últimos 6 meses</strong>, sobre esos mismos más los que tienen el plazo
+        vigente. Se usa ese tramo porque es el que con más probabilidad es un retraso real y
+        no un registro que la entidad nunca cerró. Un plazo vencido en el registro no prueba
+        por sí solo que el contrato esté incumplido. Se excluyen los departamentos con menos
+        de {MIN_MUESTRA} contratos en esa base.
       </>
     ),
   },
@@ -340,14 +341,14 @@ export function MapaColombia() {
         <p className="mt-3 text-nota text-textSecondary leading-snug max-w-2xl">
           {territorial ? (
             <>
-              Solo <strong>gobiernos locales</strong> (alcaldías y gobernaciones). Excluye toda la
+              Solo <strong>SECOP II</strong> y solo <strong>gobiernos locales</strong> (alcaldías y gobernaciones). Excluye toda la
               contratación nacional —incluidas instituciones regionales como el SENA o el ICBF, que
               sí operan en el departamento—, así que <strong>sobre-corrige</strong>: los
               departamentos pequeños pueden quedar con pocos datos o ninguno.
             </>
           ) : (
             <>
-              <strong>Todas las entidades.</strong> La mayoría está bien ubicada (p. ej. SENA e
+              <strong>Todas las entidades de SECOP II.</strong> La mayoría está bien ubicada (p. ej. SENA e
               ICBF regionales). Pero en SECOP el departamento es la <strong>sede</strong> de la
               entidad: las grandes entidades nacionales centralizadas se cuentan en su ciudad-sede
               —una vía de INVÍAS en el Guaviare se suma en Bogotá—, así que <strong>Bogotá aparece

@@ -159,14 +159,14 @@ export function ContratosVencidos() {
         "En ejecución", su <code>fecha de fin</code> ya pasó, y{' '}
         <strong>no hay evidencia de que haya terminado</strong>. Ese último filtro
         excluye los contratos con pago registrado del 100%: si ya se pagó todo, casi con
-        certeza se ejecutó, aunque nadie actualizara el estado. Son 13.939 casos menos
+        certeza se ejecutó, aunque nadie actualizara el estado. Son más de 30 mil casos menos
         solo en el tramo reciente. El razonamiento es asimétrico a propósito: un pago
         completo sí prueba que terminó, pero la <em>ausencia</em> de datos de pago no
         prueba lo contrario, porque ese campo está muy incompleto.
         <br />
         <br />
-        Aun así, <strong>"vencido" no equivale a "retrasado"</strong>: el 65% de los
-        vencidos del país lo está desde hace más de un año, y en su mayoría son
+        Aun así, <strong>"vencido" no equivale a "retrasado"</strong>: dos de cada tres
+        vencidos del país lo están desde hace más de un año, y en su mayoría son
         contratos terminados cuyo registro nadie cerró. Por eso el filtro de antigüedad
         viene en <strong>"Últimos 6 meses"</strong>, el tramo con más probabilidad de
         ser retraso real. El semáforo clasifica por días vencidos: verde &lt;30, ámbar

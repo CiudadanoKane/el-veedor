@@ -146,15 +146,23 @@ function Perfil({ perfil }) {
         <StatCard
           label="Entidades"
           value={perfil.entidades.toLocaleString('es-CO')}
-          sub="Entidades distintas que le han contratado"
+          sub={
+            perfil.tieneSecop1 && perfil.enSecop2
+              ? `En SECOP II. En SECOP I: ${perfil.entidadesSecop1.toLocaleString('es-CO')}. No se suman: pueden repetirse`
+              : 'Entidades distintas que le han contratado'
+          }
         />
         {/* La lectura interpretativa se reserva a empresas. Para una persona
             natural, contratar con una sola entidad es tener un empleo. */}
         {empresa ? (
           <StatCard
             label="Sin competencia"
-            value={formatPct(pct(perfil.sinCompetencia, perfil.totalContratos))}
-            sub="Contratos adjudicados por contratación directa"
+            value={formatPct(pct(perfil.sinCompetencia, perfil.baseCompetencia))}
+            sub={
+              perfil.tieneSecop1 && perfil.enSecop2
+                ? 'De sus contratos en SECOP II'
+                : 'Contratos adjudicados por contratación directa'
+            }
           />
         ) : (
           <StatCard
@@ -188,9 +196,7 @@ function Perfil({ perfil }) {
           contratos. Una concentración alta no indica irregularidad por sí sola: hay
           proveedores especializados cuyo único cliente posible es una entidad concreta.
           Lo que muestra es <strong>dependencia</strong>, que es un dato distinto.
-          {perfil.entidades > 15 && (
-            <> Se muestran las 15 primeras de {perfil.entidades.toLocaleString('es-CO')}.</>
-          )}
+          {perfil.entidadesEnLista > 15 && <> Se muestran las 15 primeras.</>}
         </Methodology>
         <div className="mt-4">
           <ListaBarra

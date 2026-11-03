@@ -323,7 +323,7 @@ function RankingEntidades({ filters }) {
         más de diez años añadidos al plazo, o arrancado sin reportar ni pago ni pendiente.
         Es la misma medida del <strong>Índice por entidad</strong> de Errores en SECOP, y
         el porcentaje enlaza allá. Se marca en ámbar por encima del doble de la tasa
-        nacional (0,38%), y se omite en entidades con menos de {UMBRAL_CONTRATOS} contratos,
+        nacional (cerca de 0,4%), y se omite en entidades con menos de {UMBRAL_CONTRATOS} contratos,
         donde una tasa no significa nada.
         <br />
         <br />
@@ -464,7 +464,7 @@ function RankingAdiciones({ filters }) {
       <Methodology>
         El valor inicial no vive en el registro del contrato: hay que buscarlo en el{' '}
         <strong>dataset de Procesos</strong>. Como esa comparación no se puede hacer en
-        vivo sobre 5,4 millones de contratos, se <strong>precalcula una vez al día</strong>{' '}
+        vivo sobre más de 5 millones de contratos, se <strong>precalcula una vez al día</strong>{' '}
         y esta tabla lee el resultado. Ese recorrido diario ya pasa por todos los contratos
         del país, así que en la misma vuelta arma también el ranking de cada departamento y
         cada municipio: por eso la tabla <strong>sí responde al filtro</strong> aunque no

@@ -1,5 +1,5 @@
 import { ESTADO_ACTIVO, HOY } from './constants.js'
-import { haceDias, soloContratosValidos } from './soql.js'
+import { haceDias, soloContratosValidos, SIN_EVIDENCIA_DE_TERMINADO } from './soql.js'
 import { MODALIDADES_SIN_COMPETENCIA } from './dashboardQueries.js'
 
 // Las dos consultas geográficas del Panorama: el mapa por departamento y la
@@ -23,14 +23,33 @@ import { MODALIDADES_SIN_COMPETENCIA } from './dashboardQueries.js'
 
 // Contratos en ejecución cuyo plazo venció en los últimos 6 meses. Se exige que
 // la fecha de fin no sea anterior a la de inicio para descartar registros con
-// fechas imposibles, que existen y falsearían el conteo.
+// fechas imposibles, que existen y falsearían el conteo. Quien tiene el pago
+// completo ya terminó, aunque nadie cambiara el estado: es la misma definición de
+// moraConditions(), la de la tarjeta "Vencidos hace poco".
 export function condicionVencido(ejec) {
   return (
     `${ejec}` +
     ` AND fecha_de_fin_del_contrato >= '${haceDias(180)}'` +
     ` AND fecha_de_fin_del_contrato < '${HOY()}T00:00:00'` +
-    ` AND fecha_de_fin_del_contrato >= fecha_de_inicio_del_contrato`
+    ` AND fecha_de_fin_del_contrato >= fecha_de_inicio_del_contrato` +
+    ` AND ${SIN_EVIDENCIA_DE_TERMINADO}`
   )
+}
+
+// Contratos en ejecución con el plazo corriendo.
+export function condicionVigente(ejec) {
+  return `${ejec} AND fecha_de_fin_del_contrato >= '${HOY()}T00:00:00'`
+}
+
+// Tasa de "plazo vencido": de los contratos activos o recién vencidos, cuántos
+// vencieron. La base no puede ser "En ejecución", porque cuatro de cada cinco ya
+// pasaron su plazo; ni solo los vigentes, porque un vencido no es un vigente y la
+// tasa llegaba a 165% en Cali. Sin `vigentes` (caché de antes del cambio) no hay
+// tasa: dividir contra cero la pintaría en 100%.
+export function tasaVencidos({ vencidos, vigentes }, minimo = 0) {
+  if (!vigentes) return null
+  const base = vigentes + vencidos
+  return base >= minimo ? (vencidos / base) * 100 : null
 }
 
 // Métricas por departamento. Se agrupa además por `orden` porque en SECOP II
@@ -45,6 +64,7 @@ export function soqlMapaMetricas() {
                 sum(case(${MODALIDADES_SIN_COMPETENCIA}, 1, true, 0)) as directa,
                 sum(case(dias_adicionados > 0 AND dias_adicionados <= 3650, 1, true, 0)) as prorroga,
                 sum(case(${ejec}, 1, true, 0)) as en_ejecucion,
+                sum(case(${condicionVigente(ejec)}, 1, true, 0)) as vigentes,
                 sum(case(${condicionVencido(ejec)}, 1, true, 0)) as vencidos
          WHERE ${soloContratosValidos()} AND departamento IS NOT NULL
          GROUP BY departamento, orden
@@ -74,6 +94,7 @@ export function soqlComparacionCiudades() {
                 sum(case(${MODALIDADES_SIN_COMPETENCIA}, 1, true, 0)) as directa,
                 sum(case(dias_adicionados > 0 AND dias_adicionados <= 3650, 1, true, 0)) as prorroga,
                 sum(case(${ejec}, 1, true, 0)) as en_ejecucion,
+                sum(case(${condicionVigente(ejec)}, 1, true, 0)) as vigentes,
                 sum(case(${condicionVencido(ejec)}, 1, true, 0)) as vencidos
          WHERE ${soloContratosValidos()}
                AND ciudad IS NOT NULL AND ciudad NOT IN ('No Definido')

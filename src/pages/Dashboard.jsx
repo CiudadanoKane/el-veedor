@@ -18,38 +18,27 @@ import { useDashboardStats } from '../hooks/useDashboard'
 import { useColumnas } from '../hooks/useColumnas'
 import { formatCOP, formatCOPCorto, formatCOPFull, pct, formatPct } from '../lib/formatters'
 import { SECTOR_COLORS } from '../lib/chartTheme'
+import { ESTADO_ACTIVO } from '../lib/constants'
 import { resumirTipos, SIN_CLASIFICAR } from '../lib/queSeContrata'
+import { tasaVencidos } from '../lib/panoramaGeoQueries'
 import { Seccion, Subseccion } from '../components/ui/Seccion'
 
-// Bajo el total histórico, cuánto está realmente vivo. Dos cortes: "En
-// ejecución" (el estado activo, aunque muchos ya tengan el plazo vencido) y su
-// subconjunto genuinamente activo, con plazo aún por vencer.
+// Bajo el total histórico, cuánto está realmente vivo: los contratos con el plazo
+// corriendo. No se muestra "En ejecución": en SECOP II el 79,5% de esos contratos
+// ya venció, y en SECOP I el estado no existe.
 function SubVivo({ data, tipo, nota }) {
   if (!data) return null
-  const fmt =
-    tipo === 'valor'
-      ? (n, v) => formatCOPCorto(v)
-      : (n) => n.toLocaleString('es-CO')
-  const filas = [
-    { label: 'En ejecución', a: data.nEjecucion, b: data.valorEjecucion },
-    { label: 'Con plazo vigente', a: data.nVigente, b: data.valorVigente },
-  ]
   return (
     <div>
-      <div className="space-y-0.5">
-        {filas.map((f) => (
-          <div key={f.label} className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
-            {/* El número a la izquierda, en columna de ancho fijo, para que
-                quede alineado bajo la cifra grande y las etiquetas empiecen
-                todas al mismo punto. En móvil, donde las tarjetas van a dos
-                columnas, esa reserva no cabe: el número y su etiqueta se
-                apilan en vez de partir la etiqueta en tres renglones. */}
-            <span className="tabular-nums font-medium text-textPrimary sm:min-w-[5.5rem]">
-              {fmt(f.a, f.b)}
-            </span>
-            <span>{f.label}</span>
-          </div>
-        ))}
+      <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
+        {/* El número a la izquierda, en columna de ancho fijo, para que quede
+            alineado bajo la cifra grande. En móvil, donde las tarjetas van a dos
+            columnas, esa reserva no cabe: el número y su etiqueta se apilan en
+            vez de partir la etiqueta en tres renglones. */}
+        <span className="tabular-nums font-medium text-textPrimary sm:min-w-[5.5rem]">
+          {tipo === 'valor' ? formatCOPCorto(data.valorVigente) : data.nVigente.toLocaleString('es-CO')}
+        </span>
+        <span>Con plazo vigente</span>
       </div>
       {nota && <div className="mt-1.5 text-nota">{nota}</div>}
     </div>
@@ -70,14 +59,19 @@ const Detalle = Subseccion
 // la lista para que quien lea no tenga que sumar para comprobarlo. La tarjeta se
 // guarda una vez al día y algunas listas se consultan en vivo, así que puede
 // haber una diferencia mínima, y se dice cuando la abreviatura la deja ver.
-function Cierre({ suma, total, formato }) {
+//
+// `descuento` es lo que la tarjeta resta y la lista en vivo no puede restar: las
+// filas repetidas de SECOP I, que solo se conocen por lugar.
+function Cierre({ suma, total, formato, descuento = 0 }) {
   if (total == null) return null
   const a = formato(suma)
   const b = formato(total)
+  const c = formato(descuento)
   return (
     <p className="mt-3 text-micro text-textSecondary/80 leading-snug">
-      Las filas suman {a}. La tarjeta dice {b}.
-      {a !== b && ' La diferencia viene de que la tarjeta se actualiza una vez al día.'}
+      Las filas suman {a}. La tarjeta dice {b}
+      {descuento > 0 ? `, porque descuenta ${c} de filas repetidas en SECOP I.` : '.'}
+      {formato(suma - descuento) !== b && ' La diferencia viene de que la tarjeta se actualiza una vez al día.'}
     </p>
   )
 }
@@ -145,7 +139,7 @@ export function Dashboard() {
 
   const {
     generales, entidadesActoras, contratistasActores, porEstado, mora,
-    ejecucionVencidos, queSeContrata, entidadesMora, porModalidad, cierre, ejecucion,
+    ejecucionVencidos, queSeContrata, entidadesMora, porModalidad, cierre, ejecucion, repetidos,
   } = useDashboardStats(filters, abiertas)
 
   // Con un departamento o municipio activo, la página deja de ser el panorama
@@ -164,70 +158,42 @@ export function Dashboard() {
 
   // Solo los contratos En ejecución pueden tener el plazo vencido.
   const enEjecucion = porEstado.data?.enEjecucion
-  const pctRecienteNum = pct(mora.data?.recientes, enEjecucion)
+  // La tasa de los recientes se mide sobre quienes siguen activos o acaban de
+  // vencer, la misma base del mapa y las ciudades (ver tasaVencidos).
+  const pctRecienteNum = tasaVencidos({
+    vencidos: mora.data?.recientes ?? 0,
+    vigentes: ejecucion.data?.nVigenteSecop2,
+  })
   const pctReciente = pctRecienteNum != null ? formatPct(pctRecienteNum) : null
-  // El vencido reciente de SECOP I se muestra como conteo aparte, nunca sumado
-  // ni promediado con el de SECOP II: sus bases son distintas y una tasa
-  // mezclada engañaría (ver el detalle de estados).
+  // El total de vencidos sí se lee contra "En ejecución": dice cuánto de lo que
+  // figura activo ya pasó su plazo.
   const pctVencidosNum = pct(mora.data?.total, enEjecucion)
   const pctVencidos = pctVencidosNum != null ? formatPct(pctVencidosNum) : null
   // El riesgo (valor_pendiente) es solo de SECOP II, así que se compara contra
   // el valor de SECOP II, no el total combinado con SECOP I.
   const pctRiesgoNum = pct(mora.data?.riesgo, generales.data?.valorSecop2)
   const pctRiesgo = pctRiesgoNum != null ? formatPct(pctRiesgoNum) : null
-  const pctDirectaNum = pct(generales.data?.directa, generales.data?.total)
+  // Solo SECOP II: la modalidad de SECOP I no permite compararlo. Ver la
+  // consulta en soqlGeneralesSecop1.
+  const pctDirectaNum = pct(generales.data?.directa, generales.data?.totalSecop2)
   const pctDirecta = pctDirectaNum != null ? formatPct(pctDirectaNum) : null
+  const pctValorDirectaNum = pct(generales.data?.valorDirecta, generales.data?.valorSecop2)
+  const pctValorDirecta = pctValorDirectaNum != null ? formatPct(pctValorDirectaNum) : null
 
   const abierta = (k) => activa === k
+  const pctSinPlazoNum = pct(enEjecucion - (ejecucion.data?.nVigenteSecop2 ?? 0), enEjecucion)
+  const pctSinPlazo = ejecucion.data && pctSinPlazoNum != null ? formatPct(pctSinPlazoNum) : null
 
   // "No se pudo medir", en sus dos formas: la fuente contestó mal (isError) o
   // no se pudo ni preguntar (isPaused, sin conexión). Las ocho cifras salen de
   // la misma consulta, así que la condición es una sola.
   const sinFuente = generales.isError || generales.isPaused
 
-  // Las dos filas de SECOP I del desglose de "Sin competencia".
-  //
-  // La tarjeta suma las dos fuentes, pero el reparto por modalidad se consulta
-  // solo contra SECOP II: agrupar SECOP I por modalidad cuesta 187 s en el caso
-  // nacional (medido ago 2026), más que el techo de 60 s de una función. Así que
-  // el detalle contradecía a su propia cifra —sumar sus filas no daba el número
-  // de arriba— y lo único que había era una nota diciéndolo.
-  //
-  // Con lo que el barrido diario ya cuenta (total de SECOP I y cuántos son
-  // directa) se puede cerrar la resta sin ninguna consulta nueva. Es una
-  // partición gruesa, y por eso va con etiqueta propia en vez de fundirse en las
-  // filas de SECOP II: prometer el mismo detalle para las dos fuentes cuando no
-  // lo tenemos sería peor que decir hasta dónde llega cada una — el mismo
-  // criterio de las dos líneas separadas de Evolución.
   const g = generales.data
-  const filasSecop1Modalidad = useMemo(() => {
-    // valorDirectaSecop1 falta en las respuestas cacheadas de antes del cambio;
-    // hasta que el cron refresque, mejor no pintar estas filas que pintarlas con
-    // una cuantía inventada. Se corrige solo en la siguiente corrida diaria.
-    if (!g?.tieneSecop1 || g.valorDirectaSecop1 == null) return []
-    const restoN = g.totalSecop1 - g.directaSecop1
-    const restoValor = g.valorSecop1 - g.valorDirectaSecop1
-    return [
-      {
-        clave: 'secop1-directa',
-        label: 'Contratación directa · SECOP I',
-        n: g.directaSecop1,
-        valor: g.valorDirectaSecop1,
-        nota: 'Sin concurso abierto. Va aparte porque SECOP I no se puede desglosar por modalidad sin una consulta que tarda minutos',
-      },
-      {
-        clave: 'secop1-resto',
-        label: 'Otras modalidades · SECOP I',
-        n: restoN > 0 ? restoN : 0,
-        valor: restoValor > 0 ? restoValor : 0,
-        nota: 'Todo lo demás de SECOP I junto: licitaciones, mínima cuantía, régimen especial y las modalidades que solo existen en esa fuente',
-      },
-    ]
-  }, [g])
 
-  // La fila de SECOP I del desglose por estado, con el mismo criterio: sus
-  // estados no equivalen uno a uno a los de SECOP II, y sin esta fila la lista
-  // sumaba la mitad de la tarjeta en el total nacional.
+  // La fila de SECOP I del desglose por estado: sus estados no equivalen uno a
+  // uno a los de SECOP II, y sin esta fila la lista sumaba la mitad de la tarjeta
+  // en el total nacional.
   const filaSecop1Estado = g?.tieneSecop1
     ? [{
         clave: 'secop1',
@@ -329,7 +295,7 @@ export function Dashboard() {
           label="Entidades contratantes"
           fuente={fuenteSolo2}
           value={entidadesActoras.data?.toLocaleString('es-CO') ?? '—'}
-          sub="Organismos que firmaron"
+          sub="Organismos con NIT propio"
           loading={entidadesActoras.isLoading}
           error={sinFuente}
           reservaPct={false}
@@ -358,7 +324,7 @@ export function Dashboard() {
           label="Vencidos hace poco"
           fuente={fuenteSolo2}
           value={mora.data?.recientes?.toLocaleString('es-CO') ?? '—'}
-          pct={pctReciente ? `${pctReciente} de los vigentes` : null}
+          pct={pctReciente ? `${pctReciente} de los activos o recién vencidos` : null}
           // La tarjeta se lee de un vistazo. El porqué del estado "Celebrado"
           // pasó al detalle de "¿En qué estado están esos contratos?", y la
           // ventana de 6 meses ya estaba en el de antigüedad. Lo único que se
@@ -415,14 +381,15 @@ export function Dashboard() {
       nodo: (
         <StatCard
           label="Sin competencia"
-          fuente={fuenteAmbas}
+          fuente={fuenteSolo2}
           value={pctDirecta ?? '—'}
           // Un porcentaje suelto no dice nada: la base va en la misma línea que
-          // en las demás tarjetas, para que las cinco se lean igual.
-          pct={generales.data?.total ? 'de todos los contratos' : null}
+          // en las demás tarjetas, para que las cinco se lean igual. El valor va
+          // al lado porque cuenta otra historia: los directos son muchos y pequeños.
+          pct={generales.data?.totalSecop2 ? 'de los contratos' : null}
           sub={
-            generales.data?.directa
-              ? `${generales.data.directa.toLocaleString('es-CO')} de ${generales.data.total.toLocaleString('es-CO')}, sin concurso abierto`
+            pctValorDirecta
+              ? `${pctValorDirecta} del valor, sin concurso abierto`
               : 'Adjudicados sin concurso'
           }
           tone="warning"
@@ -542,14 +509,24 @@ export function Dashboard() {
           <>
             Quedan excluidos de todas las cifras los <strong>borradores</strong>,{' '}
             <strong>cancelados</strong> y los que siguen en trámite de aprobación,
-            porque no representan contratación real. Los cancelados por sí solos
-            sumaban $1.156 billones e inflaban el valor nacional en más del 130%.
+            porque no representan contratación real.
             <br />
             <br />
-            En <strong>SECOP I</strong> no existe el estado "En ejecución": ahí esa
-            cifra se <strong>estima</strong> con el estado <strong>"Celebrado"</strong>{' '}
-            —firmado y sin liquidar—, que es su equivalente más cercano. Por eso las
-            dos fuentes se muestran por separado y nunca se promedian sus tasas.
+            En <strong>SECOP I</strong> tampoco cuentan los registros de prueba (entidad
+            "No Definido") ni el convenio de cofinanciación de la Línea 2 del Metro de
+            Bogotá, que fija aportes entre la Nación y el Distrito y no contrata a nadie.
+            Esa fuente repite un mismo contrato en varias filas, así que cada día medimos
+            lo que sobra y lo descontamos del total nacional y de cada lugar. Con filtro de
+            entidad o en los listados no se puede descontar, y esas filas siguen dentro.
+            <br />
+            <br />
+            <strong>"En ejecución" no significa que siga vivo.</strong> Es un estado que
+            la entidad debe actualizar, y la mayoría de esos contratos ya pasó su plazo. Por
+            eso la tarjeta muestra los que tienen el <strong>plazo vigente</strong>, con las
+            dos fuentes. Es el valor total de esos contratos, no lo que se gasta este año:
+            una concesión a 30 años cuenta completa. SECOP I no tiene ese estado, y su
+            "Celebrado" no sirve de reemplazo: casi todos esos contratos terminaron hace
+            años.
           </>
         }
       >
@@ -561,6 +538,9 @@ export function Dashboard() {
                 label: e.estado,
                 n: e.n,
                 valor: e.valor,
+                nota: e.estado === ESTADO_ACTIVO && pctSinPlazo
+                  ? `${pctSinPlazo} ya pasó su plazo y sigue así porque nadie cerró el registro`
+                  : undefined,
               })),
               ...filaSecop1Estado,
             ]
@@ -631,7 +611,12 @@ export function Dashboard() {
                   nota: NOTAS_TIPO[t.segmento],
                 }))}
               />
-              <Cierre suma={data.totalValor} total={g?.valor} formato={formatCOPCorto} />
+              <Cierre
+                suma={data.totalValor}
+                total={g?.valor}
+                formato={formatCOPCorto}
+                descuento={hayLugar ? repetidos.valor : 0}
+              />
               <Link
                 to={rutaConAmbito('/rankings', { t: 'categorias' })}
                 className="mt-3 inline-block text-nota font-semibold text-primary enlace-sutil"
@@ -647,11 +632,7 @@ export function Dashboard() {
     competencia: (
       <Detalle
         titulo="¿Cómo se escoge a quién contrata el Estado?"
-        intro={
-          generales.data?.tieneSecop1 && filasSecop1Modalidad.length
-            ? 'Cuánto se adjudica por concurso y cuánto de forma directa. Las filas suman lo mismo que el porcentaje de arriba: las de SECOP II van desglosadas una a una, y las dos últimas reúnen SECOP I, que solo se puede partir entre directa y el resto.'
-            : 'Cuánto se adjudica por concurso y cuánto de forma directa.'
-        }
+        intro="Cuánto se adjudica por concurso y cuánto de forma directa, en SECOP II."
         metodologia={
           <>
             Contamos como <strong>sin competencia</strong> las modalidades
@@ -659,29 +640,25 @@ export function Dashboard() {
             entidad escoge al contratista sin un concurso abierto.{' '}
             <strong>Que sea directa no la hace irregular</strong> — la ley la permite
             para servicios profesionales, urgencias y otros casos. Lo que importa es
-            su <em>peso relativo</em>: cuando tres de cada cuatro contratos del país
-            se adjudican así, vale la pena preguntarse por qué. La "urgencia
+            su <em>peso relativo</em>: cuando la mayoría de los contratos del país
+            se adjudica así, vale la pena preguntarse por qué. La "urgencia
             manifiesta" no aparece como modalidad propia en SECOP II: es una causal
             dentro de la contratación directa.
             <br />
             <br />
-            <strong>Por qué SECOP I va en dos filas y no desglosado.</strong> Su
-            equivalente de contratación directa es "Contratación Directa (Ley 1150 de
-            2007)", y hasta ahí llega lo que se puede afirmar sin pagar una consulta
-            de tres minutos: agrupar los 6,4 millones de registros de SECOP I por
-            modalidad tarda <strong>187 segundos</strong> en el ámbito nacional. Antes
-            esas filas no estaban y el desglose no cuadraba con su propia cifra —
-            preferimos una partición gruesa que sí suma, a un detalle fino al que le
-            falta media fuente.
+            <strong>Por qué esta cifra es solo de SECOP II.</strong> Buena parte de SECOP I
+            figura como "Régimen Especial", que mezcla procesos con y sin competencia.
+            Sumarla daría un porcentaje más bajo sin que hubiera más concurso. Por eso
+            SECOP I se muestra aparte y nunca se promedia.
           </>
         }
       >
         <QueryState query={porModalidad} empty="Sin datos de modalidad.">
           {(data) => (
-            <DesgloseConteoCuantia
-              colores={SECTOR_COLORS}
-              items={[
-                ...data.map((m) => ({
+            <>
+              <DesgloseConteoCuantia
+                colores={SECTOR_COLORS}
+                items={data.map((m) => ({
                   clave: m.modalidad,
                   label: m.modalidad,
                   ayuda: m.modalidad,
@@ -690,10 +667,21 @@ export function Dashboard() {
                   nota: /directa/i.test(m.modalidad)
                     ? 'Sin concurso abierto: la entidad escoge al contratista'
                     : undefined,
-                })),
-                ...filasSecop1Modalidad,
-              ]}
-            />
+                }))}
+              />
+              <Cierre
+                suma={data.reduce((a, m) => a + m.n, 0)}
+                total={g?.totalSecop2}
+                formato={(n) => `${n.toLocaleString('es-CO')} contratos`}
+              />
+              {g?.tieneSecop1 && g.regimenSecop1 > 0 && (
+                <p className="mt-2 text-nota text-textSecondary leading-snug">
+                  En SECOP I, {formatPct(pct(g.directaSecop1, g.filasSecop1))} figura como
+                  contratación directa y {formatPct(pct(g.regimenSecop1, g.filasSecop1))} como
+                  régimen especial, que no permite saber si hubo competencia.
+                </p>
+              )}
+            </>
           )}
         </QueryState>
       </Detalle>
@@ -704,7 +692,7 @@ export function Dashboard() {
         titulo="¿Cuántos están realmente retrasados?"
         intro={
           mora.data?.total && enEjecucion
-            ? `${mora.data.total.toLocaleString('es-CO')} contratos (${pctVencidos} de los vigentes) tienen el plazo vencido — pero no todos son retrasos reales.`
+            ? `${mora.data.total.toLocaleString('es-CO')} contratos (${pctVencidos} de los que figuran en ejecución) tienen el plazo vencido — pero no todos son retrasos reales.`
             : 'Distribución de los contratos con plazo vencido según su antigüedad.'
         }
         metodologia={
@@ -715,7 +703,12 @@ export function Dashboard() {
             retrasado, mientras que uno vencido hace cinco años casi con certeza{' '}
             <strong>ya terminó y la entidad nunca actualizó el registro</strong>. Por
             eso la cifra destacada arriba usa solo los vencidos en los últimos 6 meses:
-            sumarlo todo bajo la etiqueta "mora" sería exagerar.
+            sumarlo todo bajo la etiqueta "mora" sería exagerar. Los que tienen el pago
+            completo no cuentan: ya terminaron, aunque el estado no se haya actualizado.
+            <br />
+            <br />
+            El porcentaje de la tarjeta compara esos vencidos con los contratos activos o
+            recién vencidos, es decir, ellos mismos más los que tienen el plazo vigente.
           </>
         }
       >
@@ -755,6 +748,7 @@ export function Dashboard() {
         <QueryState query={entidadesMora} empty="Sin contratos vencidos.">
           {(data) => (
             <ListaBarra
+              total={mora.data?.total}
               items={data.map((e) => ({
                 clave: e.entidad,
                 label: e.entidad,
@@ -779,7 +773,8 @@ export function Dashboard() {
             "Cerrado", el <strong>34% reporta $0 pagado</strong>, lo cual es imposible
             en la práctica. Por eso el tercer grupo se llama <em>"sin registro de
             pago"</em> y no <em>"no pagado"</em>: la ausencia de dato no es evidencia
-            de que no hubo desembolso.
+            de que no hubo desembolso. Los contratos con el pago completo no aparecen:
+            ya terminaron, y por eso no cuentan como vencidos.
           </>
         }
       >
@@ -787,13 +782,6 @@ export function Dashboard() {
           {(data) => (
             <ListaBarra
               items={[
-                {
-                  clave: 'completo',
-                  label: 'Con pago registrado completo',
-                  valor: data.completo,
-                  color: 'rgb(var(--c-success))',
-                  nota: 'Se pagó el 100% o más del valor: sugiere que ya se ejecutó',
-                },
                 {
                   clave: 'parcial',
                   label: 'Con pago parcial registrado',

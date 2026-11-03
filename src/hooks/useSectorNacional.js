@@ -45,3 +45,8 @@ export function useTiposNacional(enabled = true) {
     select: (payload) => ({ secop2: payload.sector, secop1: payload.secop1 }),
   })
 }
+
+// Lo que el barrido encontró repetido en SECOP I. Ver repetidosSecop1.js.
+export function useRepetidosSecop1() {
+  return useQuery({ ...opciones(true), select: (payload) => payload.repetidosSecop1 })
+}

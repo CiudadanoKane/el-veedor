@@ -241,10 +241,26 @@ export function Transparencia() {
               <strong>En aprobación</strong>: no son contratación real.
             </p>
             <p>
-              <strong>Por qué importa:</strong> los contratos cancelados sumaban $1.156
-              billones. Incluirlos inflaba el valor comprometido nacional de $891 a $2.082
-              billones — más del doble — y hacía ver el valor en riesgo como 2,2% cuando
-              en realidad es 5,1%.
+              <strong>Por qué importa:</strong> sumarlos contaría como contratado lo que
+              nunca llegó a firmarse, y haría ver más pequeño el valor en riesgo.
+            </p>
+          </Regla>
+
+          <Regla titulo="Filas repetidas y registros de prueba en SECOP I">
+            <p>
+              SECOP I no trae una fila por contrato: un mismo contrato puede aparecer varias
+              veces, una por cada código de proyecto o en copias idénticas. Sumar la columna
+              de valor contaba unos <strong>$141 billones de más</strong>. Cada día recorremos
+              la fuente, medimos lo que sobra y lo descontamos del total nacional y de cada
+              lugar. Con filtro de entidad y en los listados no se puede descontar, y ahí
+              esas filas siguen dentro.
+            </p>
+            <p>
+              Excluimos además la entidad <strong>"No Definido"</strong>, con objetos como
+              "PRUEBA" y un solo registro de $25 billones, y el{' '}
+              <strong>convenio de cofinanciación de la Línea 2 del Metro de Bogotá</strong>: fija
+              aportes entre la Nación y el Distrito y no contrata a nadie. El convenio se
+              puede seguir encontrando en el Buscador.
             </p>
           </Regla>
 
@@ -265,13 +281,13 @@ export function Transparencia() {
 
           <Regla titulo="El contratista &quot;No Definido&quot;">
             <p>
-              Unos 14.839 contratos no tienen NIT o cédula registrada y SECOP los agrupa
+              Cerca de 16 mil contratos no tienen NIT o cédula registrada y SECOP los agrupa
               bajo esa etiqueta. Al ordenar por contratista aparecían como un falso
               contratista gigante, así que los excluimos de ese ranking.
             </p>
             <p>
-              Pero excluirlos del ranking no los hace desaparecer: involucran cerca de
-              $91 billones y en ellos <strong>no se puede saber quién recibió el dinero
+              Pero excluirlos del ranking no los hace desaparecer: involucran más de
+              $100 billones y en ellos <strong>no se puede saber quién recibió el dinero
               público</strong>. Por eso tienen su propia alerta.
             </p>
           </Regla>
@@ -287,7 +303,7 @@ export function Transparencia() {
 
           <Regla titulo="Muestras demasiado pequeñas">
             <p>
-              En el mapa excluimos departamentos con menos de 100 contratos en ejecución:
+              En el mapa excluimos departamentos con menos de 100 contratos en la base de la tasa:
               una tasa calculada sobre 20 contratos no es comparable con una sobre 150.000.
             </p>
           </Regla>
@@ -311,10 +327,33 @@ export function Transparencia() {
             </p>
             <p>
               Aun así evitamos la palabra "mora", que sugiere incumplimiento. Con la
-              definición amplia, el 81% de los contratos vigentes del país estaría
-              vencido — pero el 65% lo está desde hace más de un año, y en su mayoría son
-              contratos terminados cuyo registro nadie cerró. Por eso destacamos solo el
-              tramo de los últimos 6 meses y mostramos los tres por separado.
+              definición amplia, cerca de cuatro de cada cinco contratos que figuran "En
+              ejecución" ya pasaron su plazo — pero dos de cada tres vencidos lo están desde
+              hace más de un año, y en su mayoría son contratos terminados cuyo registro
+              nadie cerró. Por eso destacamos solo el tramo de los últimos 6 meses y
+              mostramos los tres por separado.
+            </p>
+            <p>
+              La tasa de plazo vencido compara los vencidos recientes con los contratos
+              activos o recién vencidos: ellos mismos más los que tienen el plazo vigente.
+              Es la misma en el Panorama, el mapa, las ciudades y Graficar.
+            </p>
+          </Regla>
+
+          <Regla titulo="Contratos con plazo vigente">
+            <p>
+              Son los que siguen corriendo hoy, de SECOP II y SECOP I. No usamos el estado "En
+              ejecución" porque la mayoría de esos contratos ya pasó su plazo, y SECOP I no lo
+              tiene. Es el valor total de cada contrato, no lo que se gasta este año: una
+              concesión a 30 años cuenta completa.
+            </p>
+          </Regla>
+
+          <Regla titulo="Sin competencia">
+            <p>
+              Se mide solo en SECOP II. Buena parte de SECOP I figura como "Régimen Especial",
+              que mezcla procesos con y sin competencia, y sumarla bajaría el porcentaje sin
+              que hubiera más concurso. Por eso SECOP I se muestra aparte y nunca se promedia.
             </p>
           </Regla>
 

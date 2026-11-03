@@ -243,8 +243,8 @@ export function Noticias() {
       enlace: { to: conFiltros('/', null, filters), texto: 'Ver el desglose en el Panorama' },
       titular: (
         <>
-          En {ambito}, <strong>{Math.round(d.pct)} de cada 100</strong> contratos se adjudicó por
-          contratación directa, sin abrir un concurso.
+          En {ambito}, <strong>{Math.round(d.pct)} de cada 100</strong> contratos de SECOP II se
+          adjudicó por contratación directa, sin abrir un concurso.
         </>
       ),
     }

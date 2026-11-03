@@ -120,7 +120,7 @@ const TERMINOS = [
     termino: 'Contratación directa',
     definicion:
       'La entidad escoge al contratista sin abrir un concurso. La ley la permite en casos concretos: servicios profesionales, urgencias, cuando solo existe un proveedor posible, o convenios entre entidades públicas.',
-    ojo: 'que sea legal no la hace neutral. Sin concurso no hay quien discipline el precio ni el plazo. En Colombia es el 77,7% de todos los contratos, y ese peso relativo es lo que vale la pena preguntarse.',
+    ojo: 'que sea legal no la hace neutral. Sin concurso no hay quien discipline el precio ni el plazo. En SECOP II son casi ocho de cada diez contratos, y ese peso relativo es lo que vale la pena preguntarse.',
   },
   {
     termino: 'Urgencia manifiesta',
@@ -222,8 +222,8 @@ export function Aprender() {
             {
               clave: 'directa',
               label: 'Contratación directa — la entidad escoge',
-              valor: 77.7,
-              valorTexto: '≈ 4,1 millones',
+              valor: 77.9,
+              valorTexto: '≈ 4,4 millones',
               color: 'rgb(var(--c-warning))',
               nota: 'Legal en los casos que define la ley: servicios profesionales, urgencias, cuando solo hay un proveedor posible, o convenios entre entidades públicas.',
             },
@@ -231,15 +231,15 @@ export function Aprender() {
               clave: 'especial',
               label: 'Régimen especial — no aplica la ley general',
               valor: 14.0,
-              valorTexto: '≈ 745 mil',
+              valorTexto: '≈ 784 mil',
               color: 'rgb(var(--c-text-soft))',
               nota: 'Universidades públicas, empresas industriales del Estado y otras entidades que la ley exceptúa de las reglas generales y que contratan con sus propios manuales.',
             },
             {
               clave: 'concurso',
               label: 'Con concurso abierto — varios compiten',
-              valor: 8.3,
-              valorTexto: '≈ 438 mil',
+              valor: 8.1,
+              valorTexto: '≈ 457 mil',
               color: 'rgb(var(--c-success))',
               nota: 'Licitación pública, concurso de méritos, selección abreviada y mínima cuantía. La entidad publica lo que necesita y escoge entre las ofertas que le llegan.',
             },
@@ -247,7 +247,7 @@ export function Aprender() {
         />
 
         <p className="text-nota text-textSecondary mt-4 max-w-2xl leading-relaxed">
-          Cifras aproximadas sobre el total de contratos vigentes. Se redondean porque
+          Cifras aproximadas sobre los contratos de SECOP II. Se redondean porque
           esta página explica proporciones, no lleva la cuenta:{' '}
           <Link to="/" className="text-primary enlace-sutil font-semibold">
             el Panorama
