@@ -1,4 +1,4 @@
-import { ejecucionContratistasQueryOptions } from '../src/lib/ejecucionContratistas.js'
+import { prorrogasNoticiasQueryOptions } from '../src/lib/ejecucionContratistas.js'
 import {
   concentracionEntidadQueryOptions,
   directaGranCuantiaQueryOptions,
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     }
 
     const [prorrogas, concentracion, directa] = await Promise.all([
-      ejecucionContratistasQueryOptions(filters, 'peor', 'prorroga').queryFn(),
+      prorrogasNoticiasQueryOptions(filters).queryFn(),
       // Solo en la vista nacional: con un lugar o una entidad la nota de
       // concentración se oculta (Noticias.jsx), y calcularla igual —agrupa todo
       // el país por contratista— hacía tardar 144 s a Barranquilla (4 nov 2026).

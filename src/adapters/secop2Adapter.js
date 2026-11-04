@@ -42,6 +42,7 @@ export function secop2Adapter(raw) {
 
     contractValue:    num('valor_del_contrato'),
     valuePaid:        num('valor_pagado'),
+    valueInvoiced:    num('valor_facturado'),
     valuePending:     num('valor_pendiente_de_ejecucion'),
     valueAdvance:     num('valor_de_pago_adelantado'),
     cdpBalance:       num('saldo_cdp'),

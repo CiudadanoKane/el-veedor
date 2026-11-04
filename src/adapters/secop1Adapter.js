@@ -62,6 +62,7 @@ export function secop1Adapter(raw) {
     contractValue:    num('valor_contrato_con_adiciones') ?? num('cuantia_contrato'),
     // SECOP I no reporta ejecución financiera: no existen estos campos.
     valuePaid:        null,
+    valueInvoiced:    null,
     valuePending:     null,
     valueAdvance:     null,
     cdpBalance:       null,

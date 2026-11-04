@@ -121,18 +121,21 @@ export function Noticias() {
   const notaObra = (() => {
     const base = { key: 'obra', categoria: 'Obra vencida', icon: 'alerta', tono: 'danger' }
     if (obra.lista.isLoading) return { ...base, cargando: true }
-    const casos = (obra.lista.data || []).filter((x) => x.valuePending)
+    const casos = (obra.lista.data || []).filter((x) => x.sinEjecutar)
     const o = casos[0]
     if (!o) return null
     const venc = humanDuration(daysSince(o.endDate))
     return {
       ...base,
-      contexto: 'El dinero pendiente es evidencia de que la obra no terminó; su plazo venció hace más de seis meses. Mostramos varias por si la primera es un dato atípico.',
+      // Antes decía que el dinero pendiente "es evidencia de que la obra no
+      // terminó". No lo era: las obras que encabezaban la nota no tenían ni un
+      // pago ni una factura registrados (ver condicionesObraParalizada).
+      contexto: 'Solo cuenta obras con algún pago o factura registrados; lo sin ejecutar es lo que falta por facturar o pagar. Su plazo venció hace más de seis meses. Mostramos varias por si la primera es un dato atípico.',
       enlace: { to: conFiltros('/alertas', PESTANAS_ALERTAS.obra, filters), texto: 'Ver las obras paralizadas' },
       titular: (
         <>
           <EnlaceContrato id={o.id}>Una obra</EnlaceContrato> contratada por <strong><EnlaceEntidad nombre={o.entityName} /></strong> sigue vencida
-          {venc ? ` hace ${venc}` : ''} con <strong>{formatCOP(o.valuePending)}</strong> sin ejecutar.
+          {venc ? ` hace ${venc}` : ''} con <strong>{formatCOP(o.sinEjecutar)}</strong> sin ejecutar.
         </>
       ),
       secundarios: casos.slice(1, 3).map((c) => ({
@@ -140,7 +143,7 @@ export function Noticias() {
         node: (
           <>
             <EnlaceEntidad nombre={c.entityName} className="font-semibold" />:{' '}
-            <EnlaceContrato id={c.id}>{formatCOP(c.valuePending)} sin ejecutar</EnlaceContrato>
+            <EnlaceContrato id={c.id}>{formatCOP(c.sinEjecutar)} sin ejecutar</EnlaceContrato>
           </>
         ),
       })),

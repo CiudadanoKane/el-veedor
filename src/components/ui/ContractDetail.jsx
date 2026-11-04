@@ -241,6 +241,12 @@ export function ContractDetail({ contract: c }) {
           label="Pagado"
           value={c.source === 'SECOP I' ? 'No disponible en SECOP I' : formatCOP(c.valuePaid)}
         />
+        {/* Lo facturado suele estar lleno cuando el pago no: sin él, una obra
+            facturada al 100% se leía como "nada pagado, todo pendiente". */}
+        <Fact
+          label="Facturado"
+          value={c.source === 'SECOP I' ? 'No disponible en SECOP I' : formatCOP(c.valueInvoiced)}
+        />
         <Fact
           label="Pendiente por ejecutar"
           value={c.source === 'SECOP I' ? 'No disponible en SECOP I' : formatCOP(c.valuePending)}

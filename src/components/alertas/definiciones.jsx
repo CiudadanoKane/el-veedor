@@ -672,11 +672,11 @@ export function AlertaObraParalizada() {
       render: (r) => formatCOP(r.contractValue),
     },
     {
-      key: 'valuePending',
+      key: 'sinEjecutar',
       header: 'Sin ejecutar',
       className: 'text-right tabular-nums',
       render: (r) => (
-        <span className="text-danger font-medium">{formatCOP(r.valuePending)}</span>
+        <span className="text-danger font-medium">{formatCOP(r.sinEjecutar)}</span>
       ),
     },
     { key: 'endDate', header: 'Debió terminar', render: (r) => formatDate(r.endDate) },
@@ -704,16 +704,21 @@ export function AlertaObraParalizada() {
       methodology={
         <>
           Contratos de <strong>tipo Obra</strong> que siguen "En ejecución", cuyo plazo
-          venció hace <strong>más de 180 días</strong>, y que además reportan{' '}
-          <strong>dinero pendiente por ejecutar</strong>. Es la combinación más
-          preocupante: la obra no terminó, el plazo se venció hace rato y quedaron
-          recursos sin gastar.
+          venció hace <strong>más de 180 días</strong>, y que además tienen{' '}
+          <strong>dinero sin ejecutar</strong>: la obra no terminó, el plazo se venció
+          hace rato y quedaron recursos sin gastar.
           <br />
           <br />
-          A diferencia de otros contratos vencidos, aquí el dinero pendiente es evidencia
-          positiva de que la obra <em>no</em> se completó — no depende de que alguien
-          actualizara el estado. Ordenadas por monto sin ejecutar. Se excluyen valores con
-          errores de digitación evidentes.
+          <strong>Sin ejecutar</strong> es el valor del contrato menos lo mayor entre lo
+          pagado y lo facturado. No usamos el "valor pendiente" que publica SECOP: lo
+          calcula restando solo lo pagado, y el pago casi nunca se registra, así que una
+          obra facturada al 100% aparecía sin ejecutar del todo.
+          <br />
+          <br />
+          Solo entran obras con <strong>algún pago o alguna factura registrados</strong>.
+          Las que no tienen ninguno —unas dos de cada tres— no dicen si la obra avanzó o
+          no; dicen que la entidad no actualizó el registro. Ordenadas por monto sin
+          ejecutar. Se excluyen valores con errores de digitación evidentes.
           <br />
           <br />
           <strong>Estos contratos también aparecen en "Contratos vencidos"</strong>: los

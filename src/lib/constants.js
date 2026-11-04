@@ -80,7 +80,7 @@ export const CONTRACT_FIELDS = [
   'nombre_entidad', 'nit_entidad', 'departamento', 'ciudad', 'sector',
   'modalidad_de_contratacion', 'tipo_de_contrato', 'estado_contrato',
   'proveedor_adjudicado', 'documento_proveedor', 'es_pyme',
-  'valor_del_contrato', 'valor_pagado', 'valor_pendiente_de_ejecucion',
+  'valor_del_contrato', 'valor_pagado', 'valor_facturado', 'valor_pendiente_de_ejecucion',
   'valor_de_pago_adelantado', 'saldo_cdp',
   'fecha_de_firma', 'fecha_de_inicio_del_contrato', 'fecha_de_fin_del_contrato',
   'dias_adicionados', 'urlproceso',

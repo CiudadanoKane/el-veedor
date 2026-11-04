@@ -2,14 +2,13 @@ import { useQuery } from '@tanstack/react-query'
 import { socrataQuery } from '../lib/socrataClient'
 import { DATASETS } from '../lib/constants'
 import { soqlGenerales } from '../lib/dashboardQueries'
-import { adaptList } from '../adapters/secop2Adapter'
 import {
-  obraParalizadaListaQueryOptions,
+  obraParalizadaListaQueryOptions, adaptObraParalizada,
   cerradoSinPagoConteoQueryOptions, sinContratistaConteoQueryOptions,
   fechasInconsistentesConteoQueryOptions,
 } from './useAlertas'
 import { useAdicionesTiempo } from './useAdiciones'
-import { ejecucionContratistasQueryOptions } from './useEjecucionContratistas'
+import { prorrogasNoticiasQueryOptions } from '../lib/ejecucionContratistas.js'
 import { concentracionEntidadQueryOptions, directaGranCuantiaQueryOptions } from './useRankings'
 
 const DS = DATASETS.CONTRATOS
@@ -83,7 +82,7 @@ export function useNoticiasData(filters = {}) {
     enabled: dev,
   })
   const prorrogasDev = useQuery({
-    ...ejecucionContratistasQueryOptions(filters, 'peor', 'prorroga'),
+    ...prorrogasNoticiasQueryOptions(filters),
     enabled: dev,
   })
   const concentracionDev = useQuery({ ...concentracionEntidadQueryOptions(), enabled: dev })
@@ -140,7 +139,7 @@ export function useNoticiasData(filters = {}) {
 
   return {
     adicion: { lista: adicion },
-    obra: { lista: pick('obra', adaptList) },
+    obra: { lista: pick('obra', adaptObraParalizada) },
     cerrado: { conteo: pick('cerrado', selectConteoValor) },
     sinContratista: { conteo: pick('sinContratista', selectConteoValor) },
     fechas: {

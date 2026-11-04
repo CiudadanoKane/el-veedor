@@ -2,6 +2,7 @@ import { socrataQuery } from './socrataClient.js'
 import { DATASETS, HOY } from './constants.js'
 import { whereFromFilters, buildWhere, soloContratosValidos } from './soql.js'
 import { valorMasFrecuente, documentoIdentifica } from './identidad.js'
+import { sinEntidadesPublicas } from './contratistasPublicos.js'
 
 const DS = DATASETS.CONTRATOS
 
@@ -197,6 +198,21 @@ export function ejecucionContratistasQueryOptions(filters = {}, extremo = 'peor'
           tasaSinEjecutar: tasa(numero(g.sin_ejecutar), numero(g.valor_total)),
         },
       }
+    },
+  }
+}
+
+// La nota "Patrón de prórrogas" de Señales: la misma tabla de "Quién más
+// prorroga" (más prórrogas, por número de contratos) sin las entidades públicas
+// contratadas por otras —Puerta de Oro encabezaba la de Barranquilla—. Ver
+// contratistasPublicos.js. Rankings sigue mostrando la tabla completa.
+export function prorrogasNoticiasQueryOptions(filters = {}) {
+  const base = ejecucionContratistasQueryOptions(filters, 'peor', 'prorroga')
+  return {
+    queryKey: ['noticias', 'prorrogas', filters],
+    queryFn: async () => {
+      const tabla = await base.queryFn()
+      return { ...tabla, contratistas: await sinEntidadesPublicas(tabla.contratistas) }
     },
   }
 }

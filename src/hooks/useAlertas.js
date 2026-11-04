@@ -7,7 +7,7 @@ import {
   whereFromFilters, buildWhere, soloContratosValidos, haceDias,
   whereFromFiltrosSecop1, soloContratosValidosSecop1, cuantiaPosibleSecop1, VALOR_SECOP1_SOQL,
 } from '../lib/soql.js'
-import { adaptList } from '../adapters/secop2Adapter.js'
+import { adaptList, secop2Adapter } from '../adapters/secop2Adapter.js'
 import { adaptList as adaptListSecop1 } from '../adapters/secop1Adapter.js'
 import { documentoIdentifica } from '../lib/identidad.js'
 
@@ -258,6 +258,22 @@ export function useSinContratista(filters = {}) {
 // Un contrato de obra vencido hace más de seis meses, que además reporta
 // dinero sin ejecutar. La combinación es la señal más preocupante: la obra
 // no terminó, el plazo se venció hace rato y quedaron recursos sin gastar.
+//
+// Lo "sin ejecutar" NO es el campo valor_pendiente_de_ejecucion de SECOP. Ese
+// campo es valor − pagado y no mira lo facturado, y el pago casi nunca se
+// registra: en nov 2026, 4.185 de las 6.036 obras que salían aquí (el 69%, con
+// $2,65 de los $3,29 billones) no tenían ni un peso pagado ni facturado, así
+// que salían "100% sin ejecutar" por pura falta de dato. Las tres que nombraba
+// la nota de Barranquilla eran de esas, y había obras facturadas al 100% que
+// figuraban sin ejecutar del todo (CO1.PCCNTR.7951656).
+//
+// Ahora: (1) solo obras con algún pago o factura registrados —sin ningún
+// registro no hay evidencia de nada, ni de avance ni de parálisis—, y (2) lo
+// pendiente es el valor menos lo mayor entre pagado y facturado.
+export const EJECUTADO_OBRA =
+  'case(valor_facturado > coalesce(valor_pagado, 0), valor_facturado, true, coalesce(valor_pagado, 0))'
+export const PENDIENTE_OBRA = `valor_del_contrato - ${EJECUTADO_OBRA}`
+
 function condicionesObraParalizada() {
   return [
     `estado_contrato = '${ESTADO_ACTIVO}'`,
@@ -265,20 +281,21 @@ function condicionesObraParalizada() {
     `fecha_de_fin_del_contrato >= '2000-01-01T00:00:00'`,
     `fecha_de_fin_del_contrato >= fecha_de_inicio_del_contrato`,
     `fecha_de_fin_del_contrato < '${haceDias(180)}'`,
-    `valor_pendiente_de_ejecucion > 0`,
+    `(valor_pagado > 0 OR valor_facturado > 0)`,
+    `${PENDIENTE_OBRA} > 0`,
     // Cota para que un valor mal digitado no distorsione el total
-    `valor_pendiente_de_ejecucion < 1000000000000`,
+    `${PENDIENTE_OBRA} < 1000000000000`,
   ]
 }
 
 export function obraParalizadaConteoQueryOptions(filters = {}) {
   return {
-    queryKey: ['alerta', 'obra', 'conteo', filters],
+    queryKey: ['alerta', 'obra', 'conteo', 'v2', filters],
     queryFn: () => {
       const where = buildWhere(whereFromFilters(filters, condicionesObraParalizada()))
       return socrataQuery(
         DS,
-        `SELECT count(id_contrato) as n, sum(valor_pendiente_de_ejecucion) as pendiente
+        `SELECT count(id_contrato) as n, sum(${PENDIENTE_OBRA}) as pendiente
          ${where} LIMIT 1`,
       )
     },
@@ -289,18 +306,28 @@ export function obraParalizadaConteoQueryOptions(filters = {}) {
   }
 }
 
+// Las filas llevan `sinEjecutar` (valor − lo mayor entre pagado y facturado),
+// que es lo que muestran la tabla y la nota de Señales. Lo usa también
+// useNoticias, que recibe las filas crudas de /api/noticias.
+export function adaptObraParalizada(rows) {
+  return (rows || []).map((r) => {
+    const n = parseFloat(r.pendiente_obra)
+    return { ...secop2Adapter(r), sinEjecutar: isNaN(n) ? null : n }
+  })
+}
+
 export function obraParalizadaListaQueryOptions(filters = {}) {
   return {
-    queryKey: ['alerta', 'obra', 'lista', filters],
+    queryKey: ['alerta', 'obra', 'lista', 'v2', filters],
     queryFn: () => {
       const where = buildWhere(whereFromFilters(filters, condicionesObraParalizada()))
       return socrataQuery(
         DS,
-        `SELECT ${CONTRACT_FIELDS} ${where}
-         ORDER BY valor_pendiente_de_ejecucion DESC LIMIT 100`,
+        `SELECT ${CONTRACT_FIELDS}, ${PENDIENTE_OBRA} as pendiente_obra ${where}
+         ORDER BY pendiente_obra DESC LIMIT 100`,
       )
     },
-    select: adaptList,
+    select: adaptObraParalizada,
   }
 }
 

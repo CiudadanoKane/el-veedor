@@ -9,6 +9,7 @@ import {
 import { valorMasFrecuente, documentoIdentifica } from '../lib/identidad.js'
 import { tipoDocSecop1ASecop2 } from '../lib/catalogosSecop1.js'
 import { MODALIDADES_SIN_COMPETENCIA } from '../lib/dashboardQueries.js'
+import { sinEntidadesPublicas } from '../lib/contratistasPublicos.js'
 import { useRankingsContratistasPrecalculados } from './useRankingsContratistasPrecalculados.js'
 
 const DS = DATASETS.CONTRATOS
@@ -352,7 +353,7 @@ export function useConcentracionEntidad() {
 // contratista — es un patrón de adjudicación, no un acto del contratista.
 export function directaGranCuantiaQueryOptions(filters = {}) {
   return {
-    queryKey: ['noticias', 'directa', filters],
+    queryKey: ['noticias', 'directa', 'sin-publicas', filters],
     queryFn: async () => {
       const where = buildWhere(
         whereFromFilters(filters, [
@@ -369,12 +370,17 @@ export function directaGranCuantiaQueryOptions(filters = {}) {
          ${where}
          GROUP BY documento_proveedor
          ORDER BY valor DESC
-         LIMIT 30`,
+         LIMIT 50`,
       )
+      // Sin las entidades públicas: sus convenios interadministrativos van
+      // por contratación directa por ley y tapaban a los particulares (en
+      // Barranquilla, EDUBAR, Puerta de Oro y el propio Distrito). Ver
+      // contratistasPublicos.js.
+      const privadas = await sinEntidadesPublicas(filas, (r) => r.documento_proveedor)
       const nombres = await resolverNombres(
-        filas.map((r) => r.documento_proveedor).filter(Boolean),
+        privadas.map((r) => r.documento_proveedor).filter(Boolean),
       )
-      return filas.map((r) => ({
+      return privadas.map((r) => ({
         documento: r.documento_proveedor,
         ...nombres.get(r.documento_proveedor),
         contratos: parseInt(r.contratos, 10),
