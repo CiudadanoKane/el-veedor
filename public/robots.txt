@@ -9,3 +9,9 @@ Disallow: /buscar
 Disallow: /constructor
 Disallow: /api/
 Disallow: /*?
+
+# Reflectionbot (reflection.ai) recoge contenido para entrenar modelos de IA. Era
+# casi todo el tráfico del 3 y 4 nov 2026: ~75 mil peticiones al día desde
+# 16.216.88.0/24, con un navegador automatizado que carga cada página completa.
+User-agent: Reflectionbot
+Disallow: /
