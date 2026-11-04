@@ -176,7 +176,10 @@ export function AdicionesTiempo() {
         registro no cuadra consigo mismo y ahí no sabemos el plazo, en vez de publicar un
         número inventado. El <strong>% de adición</strong> es días añadidos ÷ plazo
         original. Colores: ámbar &gt;50%, rojo &gt;100%, rojo intenso &gt;200%. Se excluyen
-        valores mayores a 3.650 días (errores de digitación).{' '}
+        valores mayores a 3.650 días (errores de digitación) y los contratos de{' '}
+        <strong>valor $0</strong>, aquí y en el conteo de arriba: son convenios sin
+        recursos —préstamo de un inmueble, cooperación entre instituciones— y alargarlos
+        no compromete dinero público. Siguen apareciendo en el buscador.{' '}
         <strong>Pulsa un contrato para ver el detalle y el historial completo de
         modificaciones.</strong>
         <br />

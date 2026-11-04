@@ -101,6 +101,15 @@ const ORDEN_ADIC_SECOP1 = {
 // final. Es barato: la lista de SECOP I tarda 139 ms en el ámbito nacional
 // (`tiempo_adiciones_en_dias` está indexado), frente a los 119 s que costaría el
 // agregado de prevalencia — ver usePrevalenciaAdicionTiempo.
+// Fuera los contratos de valor $0: convenios sin recursos (comodatos,
+// aprovechamiento de inmuebles, cooperación académica). Alargar uno no pone
+// dinero público en juego, y llenaban el tope de la lista. Caso que lo motivó
+// (nov 2026): Señales de Barranquilla abría con "amplió su plazo en un 984%",
+// el convenio CO1.PCCNTR.3519258 de $0 entre el Distrito y Puerta de Oro, que
+// pasó de 334 días a 10 años en su tercer mes; el segundo caso de la nota
+// también era un convenio de $0. Siguen en el buscador.
+const SIN_VALOR_CERO = 'valor_del_contrato > 0'
+
 export function useAdicionesTiempo(filters = {}, limit = 50, orden = 'dias') {
   const orderBy = ORDEN_ADIC[orden] || ORDEN_ADIC.dias
   const orderBy1 = ORDEN_ADIC_SECOP1[orden] || ORDEN_ADIC_SECOP1.dias
@@ -114,6 +123,7 @@ export function useAdicionesTiempo(filters = {}, limit = 50, orden = 'dias') {
           soloContratosValidos(),
           'dias_adicionados > 0',
           'dias_adicionados <= 3650',
+          SIN_VALOR_CERO,
         ]),
       )
       const where1 = buildWhere(
@@ -124,6 +134,7 @@ export function useAdicionesTiempo(filters = {}, limit = 50, orden = 'dias') {
           cuantiaPosibleSecop1(),
           'tiempo_adiciones_en_dias > 0',
           'tiempo_adiciones_en_dias <= 3650',
+          `${VALOR_SECOP1_SOQL} > 0`,
         ]),
       )
       const [filas2, filas1] = await Promise.all([
@@ -212,6 +223,9 @@ const BASE_ADICION_TIEMPO = [
   soloContratosValidos(),
   'dias_adicionados > 0',
   'dias_adicionados <= 3650',
+  // Mismo universo que la lista (ver SIN_VALOR_CERO): el conteo de arriba y
+  // las filas de abajo hablan de los mismos contratos.
+  SIN_VALOR_CERO,
   // Sin este resguardo, un contrato con fechas invertidas (fin antes que
   // inicio) da una duración negativa y "supera" cualquier umbral por error de
   // dato, no por adición real.
