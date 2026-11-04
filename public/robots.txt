@@ -1,0 +1,11 @@
+# Las secciones principales se pueden rastrear. Los perfiles, las búsquedas y
+# las vistas filtradas no: son cientos de miles de direcciones, cada una carga
+# unas 40 piezas y consulta SECOP en vivo. En nov 2026 el sitio superó el millón
+# de peticiones del mes con solo unas decenas de visitas humanas.
+User-agent: *
+Disallow: /contratista/
+Disallow: /entidad/
+Disallow: /buscar
+Disallow: /constructor
+Disallow: /api/
+Disallow: /*?
