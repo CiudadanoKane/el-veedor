@@ -1,0 +1,68 @@
+name: Recalcular Quién más prorroga
+
+# "Quién más prorroga" (Rankings) para todo el país tardaba 45-60 s en vivo:
+# agrupa unos 4,7 millones de contratos por contratista y ordena por una razón
+# calculada. Se precalcula una vez al día para las seis combinaciones de la
+# pestaña y el resultado (public/ejecucion-contratistas.json) se sirve como
+# archivo estático. Con un lugar o una entidad la página sigue en vivo. Ver
+# scripts/calcular-ejecucion-contratistas.mjs.
+
+on:
+  schedule:
+    # 10:30 UTC = 05:30 en Colombia. Después del bloque de crons de Vercel
+    # (09:00-10:05 UTC): todos usan el mismo SOCRATA_TOKEN, y Socrata encola las
+    # peticiones simultáneas del mismo token.
+    - cron: '30 10 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ejecucion-contratistas
+  cancel-in-progress: false
+
+jobs:
+  calcular:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Verificar el token
+        env:
+          SOCRATA_TOKEN: ${{ secrets.SOCRATA_TOKEN }}
+        run: |
+          if [ -z "$SOCRATA_TOKEN" ]; then
+            echo "::error::Falta el secreto SOCRATA_TOKEN (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+
+      - name: Calcular Quién más prorroga
+        env:
+          SOCRATA_BASE: https://www.datos.gov.co/resource
+          SOCRATA_TOKEN: ${{ secrets.SOCRATA_TOKEN }}
+        run: node scripts/calcular-ejecucion-contratistas.mjs
+
+      - name: Commitear si cambió
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git diff --quiet -- public/ejecucion-contratistas.json && \
+             git ls-files --error-unmatch public/ejecucion-contratistas.json >/dev/null 2>&1; then
+            echo 'Sin cambios en Quién más prorroga.'
+            exit 0
+          fi
+          git add public/ejecucion-contratistas.json
+          git commit -m 'Datos: recalcula Quién más prorroga'
+          # Otros recálculos pueden haber subido mientras este corría: traerlos
+          # y reintentar (ver rankings-contratistas.yml).
+          for intento in 1 2 3; do
+            git pull --rebase --quiet && git push && exit 0
+            sleep $((intento * 5))
+          done
+          exit 1
