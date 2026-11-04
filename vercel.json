@@ -61,37 +61,37 @@
   ],
   "functions": {
     "api/noticias.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "api/noticias-fechas.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "api/geo.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "api/panorama.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "api/panorama-geo.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "api/alertas-vencidos.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "api/errores-indice.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "api/concentracion.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "api/evolucion.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "api/buscar-ia.js": {
       "maxDuration": 30
     },
     "api/noticias-actores.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     }
   }
 }
