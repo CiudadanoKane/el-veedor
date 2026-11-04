@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { PageHeader } from '../components/layout/Layout'
 import { NotaCard } from '../components/ui/NotaCard'
 import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
@@ -31,6 +32,17 @@ function conFiltros(path, t, filters) {
   if (filters.entity) p.set('entidad', filters.entity)
   const qs = p.toString()
   return qs ? `${path}?${qs}` : path
+}
+
+// Las notas de caso nombran UN contrato: el texto que lo nombra lleva a él (el
+// buscador lo abre por su código), sin pasar por la lista de la alerta.
+function EnlaceContrato({ id, children }) {
+  if (!id) return children
+  return (
+    <Link to={`/buscar?${new URLSearchParams({ q: id })}`} className="enlace-perfil enlace-visible">
+      {children}
+    </Link>
+  )
 }
 
 export function Noticias() {
@@ -76,7 +88,7 @@ export function Noticias() {
       enlace: { to: conFiltros('/alertas', PESTANAS_ALERTAS.adiciones, filters), texto: 'Ver todas las adiciones de tiempo' },
       titular: (
         <>
-          Un contrato de <strong><EnlaceEntidad nombre={a.entityName} /></strong> amplió su plazo
+          <EnlaceContrato id={a.id}>Un contrato</EnlaceContrato> de <strong><EnlaceEntidad nombre={a.entityName} /></strong> amplió su plazo
           {/* El porcentaje puede faltar si el plazo original no se pudo
               reconstruir; la tabla lo muestra como "—" y aquí se calla, en vez
               de escribir "un null%". Los días añadidos, que son el dato de la
@@ -93,7 +105,7 @@ export function Noticias() {
           <>
             <EnlaceEntidad nombre={c.entityName} className="font-semibold" />
             {c.pctAdicion != null ? `: +${num(c.pctAdicion)}%` : ':'}{' '}
-            ({plazoTexto(c)})
+            (<EnlaceContrato id={c.id}>{plazoTexto(c)}</EnlaceContrato>)
           </>
         ),
       })),
@@ -119,7 +131,7 @@ export function Noticias() {
       enlace: { to: conFiltros('/alertas', PESTANAS_ALERTAS.obra, filters), texto: 'Ver las obras paralizadas' },
       titular: (
         <>
-          Una obra contratada por <strong><EnlaceEntidad nombre={o.entityName} /></strong> sigue vencida
+          <EnlaceContrato id={o.id}>Una obra</EnlaceContrato> contratada por <strong><EnlaceEntidad nombre={o.entityName} /></strong> sigue vencida
           {venc ? ` hace ${venc}` : ''} con <strong>{formatCOP(o.valuePending)}</strong> sin ejecutar.
         </>
       ),
@@ -128,7 +140,7 @@ export function Noticias() {
         node: (
           <>
             <EnlaceEntidad nombre={c.entityName} className="font-semibold" />:{' '}
-            {formatCOP(c.valuePending)} sin ejecutar
+            <EnlaceContrato id={c.id}>{formatCOP(c.valuePending)} sin ejecutar</EnlaceContrato>
           </>
         ),
       })),
