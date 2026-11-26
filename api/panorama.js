@@ -14,6 +14,16 @@ const CLAVE = 'panorama'
 const MINIMO_CONTRATOS_NACIONAL = 1_000_000
 const totalDe = (payload) => Number(payload?.generales?.[0]?.total) || 0
 
+// Tope de cada consulta en el recálculo nacional. La función muere a los 300 s
+// (maxDuration) y entonces no se escribe nada: el 26 de noviembre de 2026, a
+// mediodía, el refresco dio 504 dos veces porque la consulta de SECOP I tardó
+// 250 s ella sola con Socrata lento, y las otras siete, que ya habían
+// respondido, se perdieron con ella. Con el tope, la que no llega a tiempo se
+// toma del Panorama guardado y el resto se escribe fresco. Deja margen para
+// leer y escribir Edge Config.
+const TOPE_CONSULTA_NACIONAL_MS = 250_000
+const hoy = () => new Date().toISOString().slice(0, 10)
+
 // Cifras del Panorama (la home). El caso por defecto —sin filtros geográficos,
 // el que ve todo el mundo al entrar— se sirve desde Edge Config: un almacén
 // global de lectura instantánea que NO se purga con los deploys ni depende del
@@ -55,20 +65,39 @@ export default async function handler(req, res) {
     // Cómputo: vista filtrada, refresco del cron, o Edge Config aún vacío.
     // SECOP II (7 consultas) y SECOP I (agregado de totales combinables) en
     // paralelo; se fusionan en un solo payload por clave.
-    const claves = Object.keys(PANORAMA_SOQL)
-    const claves1 = Object.keys(PANORAMA_SOQL_SECOP1)
-    const [resultados, resultados1] = await Promise.all([
-      Promise.all(claves.map((clave) => socrataQuery(datasetId, PANORAMA_SOQL[clave](filters)))),
-      Promise.all(
-        claves1.map((clave) =>
-          socrataQuery(DATASETS.PROCESOS_SECOP1, PANORAMA_SOQL_SECOP1[clave](filters)),
-        ),
-      ),
-    ])
-    const payload = {
-      ...Object.fromEntries(claves.map((clave, i) => [clave, resultados[i]])),
-      ...Object.fromEntries(claves1.map((clave, i) => [clave, resultados1[i]])),
-    }
+    //
+    // En la vista nacional cada consulta tiene un tope (TOPE_CONSULTA_NACIONAL_MS)
+    // y la que falla o no llega se reemplaza por su versión guardada. Las
+    // filtradas no tienen nada guardado con qué reemplazar: fallan enteras,
+    // como antes.
+    const anterior = sinFiltros ? await leerEdgeConfig(CLAVE) : null
+    const opciones = sinFiltros ? { tiempoMaximo: TOPE_CONSULTA_NACIONAL_MS } : {}
+    const consultas = [
+      ...Object.entries(PANORAMA_SOQL).map(([clave, soql]) => [clave, datasetId, soql]),
+      ...Object.entries(PANORAMA_SOQL_SECOP1).map(([clave, soql]) => [clave, DATASETS.PROCESOS_SECOP1, soql]),
+    ]
+    const resultados = await Promise.allSettled(
+      consultas.map(([, ds, soql]) => socrataQuery(ds, soql(filters), opciones)),
+    )
+    const payload = {}
+    // Fecha de cálculo de cada cifra, para que una que se reaprovecha día tras
+    // día no envejezca sin que nadie lo note (ver la cabecera de abajo).
+    const actualizado = {}
+    const reaprovechadas = []
+    consultas.forEach(([clave], i) => {
+      const r = resultados[i]
+      if (r.status === 'fulfilled') {
+        payload[clave] = r.value
+        actualizado[clave] = hoy()
+      } else if (anterior?.[clave]) {
+        payload[clave] = anterior[clave]
+        actualizado[clave] = anterior.actualizado?.[clave] ?? 'antes'
+        reaprovechadas.push(clave)
+      } else {
+        throw r.reason
+      }
+    })
+    if (sinFiltros) payload.actualizado = actualizado
 
     // Guarda el resultado por defecto en Edge Config (best-effort). Se espera
     // para asegurar que el refresco del cron persista antes de que la función
@@ -80,13 +109,15 @@ export default async function handler(req, res) {
         // La fuente llegó incompleta: no se pisa lo guardado. Se sirve lo
         // anterior si es bueno; si no, lo calculado, marcado como incompleto.
         escrito = 'rechazado-fuente-incompleta'
-        const anterior = await leerEdgeConfig(CLAVE)
         if (anterior && totalDe(anterior) >= MINIMO_CONTRATOS_NACIONAL) {
           res.setHeader('Cache-Control', 'no-store')
           res.setHeader('X-Panorama-Write', escrito)
           return res.status(200).json(anterior)
         }
         payload.fuenteIncompleta = true
+      } else if (reaprovechadas.length === consultas.length) {
+        // Nada respondió: lo guardado ya es esto mismo.
+        escrito = 'sin-cambios'
       } else {
         escrito = await escribirEdgeConfig(CLAVE, payload)
       }
@@ -99,6 +130,8 @@ export default async function handler(req, res) {
     // Estado de la escritura a Edge Config (ok | no-config | error-<status> |
     // excepcion): sirve para vigilar la salud del refresco diario del cron.
     if (sinFiltros) res.setHeader('X-Panorama-Write', escrito)
+    // Las cifras que no respondieron a tiempo y salieron del Panorama guardado.
+    if (reaprovechadas.length) res.setHeader('X-Panorama-Reaprovechadas', reaprovechadas.join(','))
     res.status(200).json(payload)
   } catch (err) {
     res.status(502).json({ error: err.message })

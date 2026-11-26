@@ -25,9 +25,9 @@ async function pedir(url, tiempoMaximo) {
 }
 
 // Consulta con SoQL completo en un solo parámetro ($query).
-export async function socrataQuery(datasetId, soql) {
+export async function socrataQuery(datasetId, soql, { tiempoMaximo } = {}) {
   const params = new URLSearchParams({ $query: soql })
-  return pedir(`${BASE}/${datasetId}.json?${params}`)
+  return pedir(`${BASE}/${datasetId}.json?${params}`, tiempoMaximo)
 }
 
 // Búsqueda de texto completo ($q). Va por parámetros separados porque $q no se
