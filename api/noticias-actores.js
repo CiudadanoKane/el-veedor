@@ -1,4 +1,4 @@
-import { prorrogasNoticiasQueryOptions } from '../src/lib/ejecucionContratistas.js'
+import { prorrogasNoticiasQueryOptions, tablaSinEntidadesPublicas } from '../src/lib/ejecucionContratistas.js'
 import {
   concentracionEntidadQueryOptions,
   directaGranCuantiaQueryOptions,
@@ -7,6 +7,23 @@ import { leerEdgeConfig, escribirEdgeConfig } from '../src/lib/edgeConfig.js'
 import { refrescoBloqueado } from '../src/lib/limiteTasa.js'
 
 const CLAVE = 'noticias-actores'
+
+// La tabla nacional de prórrogas sale del precálculo diario de Rankings
+// (public/ejecucion-contratistas.json, GitHub Actions) en vez de recalcularse:
+// es la consulta más pesada del grupo (50-190 s) y con ella el refresco
+// nacional pasaba de los 300 s de la función (26 nov 2026: "fetch failed" a
+// los 270 s). Si el archivo falta —la reescritura de vercel.json devuelve
+// index.html y res.json() falla— se calcula en vivo como antes.
+async function prorrogasNacionales(req) {
+  try {
+    const res = await fetch(`https://${req.headers.host}/ejecucion-contratistas.json`)
+    const tabla = res.ok ? (await res.json())?.tablas?.peor?.prorroga : null
+    if (tabla?.contratistas?.length) return tablaSinEntidadesPublicas(tabla)
+  } catch {
+    // cae al cálculo en vivo
+  }
+  return prorrogasNoticiasQueryOptions({}).queryFn()
+}
 
 // Las tres notas de Noticias que hablan de ACTORES: quién prorroga más, cuánto
 // concentra la entidad mayor y la contratación directa de gran cuantía. Salieron
@@ -46,7 +63,7 @@ export default async function handler(req, res) {
     }
 
     const [prorrogas, concentracion, directa] = await Promise.all([
-      prorrogasNoticiasQueryOptions(filters).queryFn(),
+      sinFiltros ? prorrogasNacionales(req) : prorrogasNoticiasQueryOptions(filters).queryFn(),
       // Solo en la vista nacional: con un lugar o una entidad la nota de
       // concentración se oculta (Noticias.jsx), y calcularla igual —agrupa todo
       // el país por contratista— hacía tardar 144 s a Barranquilla (4 nov 2026).

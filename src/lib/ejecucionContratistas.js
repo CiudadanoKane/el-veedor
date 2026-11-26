@@ -210,9 +210,12 @@ export function prorrogasNoticiasQueryOptions(filters = {}) {
   const base = ejecucionContratistasQueryOptions(filters, 'peor', 'prorroga')
   return {
     queryKey: ['noticias', 'prorrogas', filters],
-    queryFn: async () => {
-      const tabla = await base.queryFn()
-      return { ...tabla, contratistas: await sinEntidadesPublicas(tabla.contratistas) }
-    },
+    queryFn: async () => tablaSinEntidadesPublicas(await base.queryFn()),
   }
+}
+
+// Lo mismo sobre una tabla ya calculada (el precálculo diario, en
+// /api/noticias-actores).
+export async function tablaSinEntidadesPublicas(tabla) {
+  return { ...tabla, contratistas: await sinEntidadesPublicas(tabla.contratistas) }
 }
