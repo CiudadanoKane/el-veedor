@@ -104,6 +104,14 @@ export const MODALIDADES_GLOSARIO = {
 }
 
 export const TIPOS_GLOSARIO = {
+  'Operaciones de Crédito Público': {
+    resumen: 'Un préstamo que toma la entidad, casi siempre con un banco: deuda pública, no una compra.',
+    detalle:
+      'Se registra como contratación directa porque la ley no exige concurso para ' +
+      'endeudarse; se autoriza por otras vías (el concejo, la asamblea o el Ministerio de ' +
+      'Hacienda). En El Veedor aparece como "Crédito" y no cuenta como contrato sin concurso ' +
+      'en Señales.',
+  },
   'Prestación de servicios': {
     resumen: 'Una persona o empresa hace una labor concreta, sin ser empleada de la entidad.',
     detalle:

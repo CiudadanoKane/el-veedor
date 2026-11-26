@@ -33,6 +33,12 @@ import { esc } from './soql.js'
 // en "No" para EDUBAR y Puerta de Oro.
 export const JUSTIFICACION_INTERADMINISTRATIVO =
   'Contratos o convenios Interadministrativos (valor cero)'
+// Las dos variantes del catálogo de SECOP; en los datos solo aparece la de
+// "valor cero" (nov 2026), con montos de billones pese a la etiqueta.
+export const JUSTIFICACIONES_INTERADMINISTRATIVAS = [
+  JUSTIFICACION_INTERADMINISTRATIVO,
+  'Contratos o convenios Interadministrativos (con valor)',
+]
 const MIN_INTERADMINISTRATIVOS = 2
 const PROPORCION_MINIMA = 0.15
 

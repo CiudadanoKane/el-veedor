@@ -18,6 +18,7 @@ import {
   usePersonaConValorImposible, useCerosDeMasFrenteAlProceso,
 } from '../../hooks/useCuantiaImposible'
 import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/formatters'
+import { etiquetaTipo } from '../../lib/catalogos'
 import { EnlaceEntidad, EnlaceContratista } from '../ui/EnlacePerfil'
 import { FuenteBadge } from '../ui/FuenteBadge'
 
@@ -487,7 +488,7 @@ export function AlertaContratosSinValor() {
       header: 'Contratista',
       render: (r) => <EnlaceContratista nombre={r.contractorName} documento={r.contractorId} />,
     },
-    { key: 'contractType', header: 'Tipo', render: (r) => r.contractType || '—' },
+    { key: 'contractType', header: 'Tipo', render: (r) => etiquetaTipo(r.contractType) || '—' },
     {
       key: 'contractValue',
       header: 'Valor registrado',
@@ -764,7 +765,7 @@ export function AlertaValorDesproporcionado() {
       render: (r) => (
         <div className="max-w-[200px]">
           <EnlaceEntidad nombre={r.entityName} />
-          <div className="text-nota text-textSecondary">{r.contractType}</div>
+          <div className="text-nota text-textSecondary">{etiquetaTipo(r.contractType)}</div>
         </div>
       ),
     },

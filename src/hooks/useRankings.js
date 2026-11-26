@@ -9,7 +9,8 @@ import {
 import { valorMasFrecuente, documentoIdentifica } from '../lib/identidad.js'
 import { tipoDocSecop1ASecop2 } from '../lib/catalogosSecop1.js'
 import { MODALIDADES_SIN_COMPETENCIA } from '../lib/dashboardQueries.js'
-import { sinEntidadesPublicas } from '../lib/contratistasPublicos.js'
+import { TIPO_CREDITO_PUBLICO } from '../lib/catalogos.js'
+import { sinEntidadesPublicas, JUSTIFICACIONES_INTERADMINISTRATIVAS } from '../lib/contratistasPublicos.js'
 import { useRankingsContratistasPrecalculados } from './useRankingsContratistasPrecalculados.js'
 
 const DS = DATASETS.CONTRATOS
@@ -353,13 +354,22 @@ export function useConcentracionEntidad() {
 // contratista — es un patrón de adjudicación, no un acto del contratista.
 export function directaGranCuantiaQueryOptions(filters = {}) {
   return {
-    queryKey: ['noticias', 'directa', 'sin-publicas', filters],
+    queryKey: ['noticias', 'directa', 'sin-publicas-ni-creditos', filters],
     queryFn: async () => {
       const where = buildWhere(
         whereFromFilters(filters, [
           soloContratosValidos(),
           documentoIdentifica(),
           MODALIDADES_SIN_COMPETENCIA,
+          // Sin los créditos: son deuda pública, no compras, y la ley no pide
+          // concurso para endeudarse. Sin las entidades públicas los
+          // encabezaban los bancos (Bancolombia, 171 por $6,1 billones).
+          `(tipo_de_contrato IS NULL OR tipo_de_contrato != '${TIPO_CREDITO_PUBLICO}')`,
+          // Sin los convenios interadministrativos, que solo existen entre
+          // entidades públicas. Quitarlos aquí, antes de ordenar, deja arriba a
+          // los particulares: si no, el top nacional eran casi todo entidades
+          // (46 de 50) y el filtro de después dejaba tres o cuatro filas.
+          `(justificacion_modalidad_de IS NULL OR justificacion_modalidad_de NOT IN (${JUSTIFICACIONES_INTERADMINISTRATIVAS.map((j) => `'${esc(j)}'`).join(', ')}))`,
         ]),
       )
       const filas = await socrataQuery(

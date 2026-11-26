@@ -18,7 +18,7 @@ import { extraerIdentificador } from '../lib/busquedaId'
 import { nombreSegmento } from '../lib/unspsc'
 import { useQueryClient } from '@tanstack/react-query'
 import { useGeo, esperarCatalogoGeo } from '../hooks/useGeoOptions'
-import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO, etiquetaEstado } from '../lib/catalogos'
+import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO, etiquetaEstado, etiquetaTipo } from '../lib/catalogos'
 import { ESTADOS_SOLO_SECOP1 } from '../lib/catalogosSecop1'
 import { sinTildes, pluralDeFrase } from '../lib/acentos'
 import { esContratoMarco, palabrasDeObra, afinidadConObra } from '../lib/contratoMarco'
@@ -237,7 +237,7 @@ const EJEMPLOS = [
 // propios de SECOP I sin equivalente allá.
 const ESTADOS_FILTRO = [...ESTADOS_CONTRATO, ...ESTADOS_SOLO_SECOP1]
 
-function Campo({ label, value, onChange, options, placeholder }) {
+function Campo({ label, value, onChange, options, placeholder, etiqueta = (o) => o }) {
   return (
     <div className="flex flex-col gap-1 w-full sm:w-auto">
       <label className="text-micro uppercase tracking-label text-textSecondary font-semibold">
@@ -252,7 +252,7 @@ function Campo({ label, value, onChange, options, placeholder }) {
       >
         <option value="">{placeholder}</option>
         {options.map((o) => (
-          <option key={o} value={o}>{o}</option>
+          <option key={o} value={o}>{etiqueta(o)}</option>
         ))}
       </select>
     </div>
@@ -1284,6 +1284,7 @@ export function Buscar() {
                       value={criterios.tipo}
                       onChange={(v) => actualizar({ tipo: v })}
                       options={TIPOS_CONTRATO}
+                      etiqueta={etiquetaTipo}
                       placeholder="Todos los tipos"
                     />
                   </div>

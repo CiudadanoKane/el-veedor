@@ -18,6 +18,13 @@ export const MODALIDADES = [
   'Licitación Pública Acuerdo Marco de Precios',
 ]
 
+// Préstamos que toma la entidad, casi siempre con bancos: deuda pública, no
+// una compra. SECOP los registra como contratación directa —la ley no exige
+// concurso para endeudarse— y por eso encabezaban "Sin concurso, contratos
+// grandes" en Señales (Bancolombia, 171 créditos por $6,1 billones, nov 2026).
+// El valor se conserva tal cual para filtrar; en pantalla se llama "Crédito".
+export const TIPO_CREDITO_PUBLICO = 'Operaciones de Crédito Público'
+
 export const TIPOS_CONTRATO = [
   'Prestación de servicios',
   'Obra',
@@ -31,8 +38,16 @@ export const TIPOS_CONTRATO = [
   'Concesión',
   'Asociación Público Privada',
   'Decreto 092 de 2017',
+  TIPO_CREDITO_PUBLICO,
   'Otro',
 ]
+
+const TIPOS_A_LA_VISTA = {
+  [TIPO_CREDITO_PUBLICO]: 'Crédito',
+}
+export function etiquetaTipo(tipo) {
+  return TIPOS_A_LA_VISTA[tipo] ?? tipo
+}
 
 // Estados reales de estado_contrato, por frecuencia (verificado jul 2026). La
 // capitalización y los acentos importan tal cual: la API es sensible a ambos y
