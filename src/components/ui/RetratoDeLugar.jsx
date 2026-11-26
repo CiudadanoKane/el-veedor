@@ -43,8 +43,9 @@ export function RetratoDeLugar({ lugar }) {
         titulo="Quién recibe el dinero"
         intro={
           <>
-            Los cinco contratistas con más valor contratado en {lugar}. Cada nombre lleva a su
-            perfil, con todo lo que ha firmado.
+            Los cinco contratistas con más valor contratado en {lugar}, sin contar créditos con
+            bancos ni convenios con otras entidades públicas. Cada nombre lleva a su perfil, con
+            todo lo que ha firmado.
           </>
         }
       >

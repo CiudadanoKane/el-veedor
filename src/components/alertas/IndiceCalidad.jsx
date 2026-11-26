@@ -28,26 +28,43 @@ import { formatPct } from '../../lib/formatters'
 // defecto, filtrada por la entidad. Sin esto la tabla afirma "264 contratos sin
 // contratista" y deja al lector sin forma de comprobarlo, que es justo lo que
 // esta plataforma le reprocha a las cifras oficiales.
-function columnaDefecto(defecto) {
+function conteoDefecto(defecto, fila) {
+  const n = fila[defecto.campo]
+  if (!defecto.pestana) return <span className="font-semibold">{n.toLocaleString('es-CO')}</span>
+  const destino = `/errores?t=${defecto.pestana}&entidad=${encodeURIComponent(fila.entidad)}`
+  // Subrayado permanente, no solo al pasar el cursor: sin él las cifras no
+  // se leen como enlaces y nadie descubre que llevan a los casos.
+  return (
+    <Link
+      to={destino}
+      className="text-primary font-semibold underline underline-offset-2
+                 decoration-primary/40 hover:decoration-primary"
+    >
+      {n.toLocaleString('es-CO')}
+    </Link>
+  )
+}
+
+// El desglose del grupo que se está midiendo: todos sus defectos con casos, de
+// mayor a menor. Antes había cuatro columnas fijas y el total contaba ocho
+// defectos más dos: ICBF Tolima salía con 167 errores y columnas que sumaban 3,
+// porque 164 eran "sin pago ni pendiente", que no tenía columna.
+function columnaDesglose(grupo) {
+  const defectos = Object.values(grupo)
   return {
-    key: defecto.campo,
-    header: defecto.encabezado,
-    className: 'text-right tabular-nums',
+    key: 'desglose',
+    header: 'Desglose',
     render: (fila) => {
-      const n = fila[defecto.campo]
-      if (!n) return <span className="text-textSecondary">0</span>
-      if (!defecto.pestana) return n.toLocaleString('es-CO')
-      const destino = `/errores?t=${defecto.pestana}&entidad=${encodeURIComponent(fila.entidad)}`
-      // Subrayado permanente, no solo al pasar el cursor: sin él las cifras no
-      // se leen como enlaces y nadie descubre que llevan a los casos.
+      const conCasos = defectos.filter((d) => fila[d.campo] > 0).sort((a, b) => fila[b.campo] - fila[a.campo])
+      if (!conCasos.length) return <span className="text-textSecondary">Ninguno</span>
       return (
-        <Link
-          to={destino}
-          className="text-primary font-semibold underline underline-offset-2
-                     decoration-primary/40 hover:decoration-primary"
-        >
-          {n.toLocaleString('es-CO')}
-        </Link>
+        <ul className="text-nota leading-snug space-y-0.5 min-w-[11rem]">
+          {conCasos.map((d) => (
+            <li key={d.campo}>
+              {d.corto}: {conteoDefecto(d, fila)}
+            </li>
+          ))}
+        </ul>
       )
     },
   }
@@ -143,10 +160,7 @@ export function IndiceCalidad() {
       ),
     },
     ...columnasTasa,
-    columnaDefecto({ ...ERRORES.sinContratista, encabezado: 'Sin contratista' }),
-    columnaDefecto({ ...ERRORES.fechas, encabezado: 'Fechas imposibles' }),
-    columnaDefecto({ ...ERRORES.sinValor, encabezado: 'En $0 con CDP' }),
-    columnaDefecto({ ...INCOMPLETOS.cerradoSinPago, encabezado: 'Cerrado sin pago' }),
+    columnaDesglose(midiendoErrores ? ERRORES : INCOMPLETOS),
   ]
 
   return (
@@ -212,10 +226,12 @@ export function IndiceCalidad() {
         ese piso el ranking lo coparían entidades con tres contratos y un error, al 33%.
         <br />
         <br />
-        <strong>Errores</strong> reúne cuatro contradicciones objetivas, verificables sin
+        <strong>Errores</strong> reúne ocho contradicciones objetivas, verificables sin
         interpretar nada: contratista sin identificación, fecha de fin anterior a la de
-        inicio, valor en $0 pese a tener presupuesto comprometido, y pagos por encima del
-        valor del contrato.{' '}
+        inicio, valor en $0 pese a tener presupuesto comprometido, pagos por encima del
+        valor del contrato, contratos que arrancaron y no reportan ni pago ni saldo
+        pendiente, valores imposibles para un solo contrato, más de diez años añadidos al
+        plazo, y pagos sobre un contrato en $0.{' '}
         <strong>
           Pulsa cualquier conteo para ver los contratos concretos de esa entidad.
         </strong>
@@ -230,7 +246,9 @@ export function IndiceCalidad() {
         <br />
         <br />
         Un contrato cuenta <strong>una sola vez</strong> dentro de cada grupo aunque
-        acumule varios defectos, para que la tasa no pueda pasar del 100%.
+        acumule varios defectos, para que la tasa no pueda pasar del 100%. En el
+        desglose, en cambio, aparece en cada defecto que tenga: por eso puede sumar algo
+        más que el total.
         <br />
         <br />
         <strong>Falta un defecto que sí tiene pestaña propia:</strong> los valores

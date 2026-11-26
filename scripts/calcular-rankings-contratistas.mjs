@@ -36,6 +36,7 @@ import {
   soloContratosValidosSecop1, cuantiaPosibleSecop1, valorCoherenteConElPresupuestoSecop1, VALOR_SECOP1_SOQL,
 } from '../src/lib/soql.js'
 import { documentoIdentifica, valorMasFrecuente } from '../src/lib/identidad.js'
+import { NO_ES_CREDITO } from '../src/lib/dashboardQueries.js'
 
 const AQUI = dirname(fileURLToPath(import.meta.url))
 const SALIDA = resolve(AQUI, '../public/rankings-contratistas.json')
@@ -116,11 +117,24 @@ async function escanear({ etiqueta, dataset, campoId, campoDocumento, campoValor
   return mapa
 }
 
+// Se toman el doble de candidatos porque después se quitan las entidades
+// públicas (ver sinPublicas), igual que en el ranking en vivo de useRankings.js.
 function topPorValor(mapa) {
-  return [...mapa.entries()].sort((a, b) => b[1].valor - a[1].valor).slice(0, TOP)
+  return [...mapa.entries()].sort((a, b) => b[1].valor - a[1].valor).slice(0, TOP * 2)
 }
 function topPorCantidad(mapa) {
-  return [...mapa.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, TOP)
+  return [...mapa.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, TOP * 2)
+}
+
+// Quita las entidades públicas de un top y lo deja en TOP. contratistasPublicos
+// usa socrataClient, que lee SOCRATA_BASE al cargarse: por eso se importa aquí y
+// no arriba, después de asegurar la variable.
+async function sinPublicas(...tops) {
+  process.env.SOCRATA_BASE ||= BASE
+  const { documentosPublicos } = await import('../src/lib/contratistasPublicos.js')
+  const publicos = await documentosPublicos([...new Set(tops.flat().map(([d]) => d))])
+  console.error(`  ${publicos.size} entidades públicas fuera del top`)
+  return tops.map((top) => top.filter(([d]) => !publicos.has(d)).slice(0, TOP))
 }
 
 // SECOP II: además del nombre/tipo, el ranking en vivo trae una columna de
@@ -237,7 +251,9 @@ async function main() {
     campoDocumento: 'documento_proveedor',
     campoValor: 'valor_del_contrato',
     campoDias: 'dias_adicionados',
-    condicionesBase: [soloContratosValidos(), documentoIdentifica()],
+    // Sin créditos con bancos: el banco le presta a la entidad, no recibe
+    // recursos públicos (ver TOP_RANKING en useRankings.js).
+    condicionesBase: [soloContratosValidos(), documentoIdentifica(), NO_ES_CREDITO],
   })
 
   console.error('Paso 2/2 — SECOP I (f789-7hwg)…')
@@ -256,10 +272,9 @@ async function main() {
     ],
   })
 
-  const s2Valor = topPorValor(mapaSecop2)
-  const s2Cantidad = topPorCantidad(mapaSecop2)
-  const s1Valor = topPorValor(mapaSecop1)
-  const s1Cantidad = topPorCantidad(mapaSecop1)
+  console.error('Quitando entidades públicas…')
+  const [s2Valor, s2Cantidad] = await sinPublicas(topPorValor(mapaSecop2), topPorCantidad(mapaSecop2))
+  const [s1Valor, s1Cantidad] = await sinPublicas(topPorValor(mapaSecop1), topPorCantidad(mapaSecop1))
 
   console.error('Enriqueciendo finalistas (nombre, tipo, concentración)…')
   const docsSecop2 = [...new Set([...s2Valor, ...s2Cantidad].map(([d]) => d))]

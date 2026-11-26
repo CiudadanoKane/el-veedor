@@ -21,18 +21,21 @@ const DS = DATASETS.CONTRATOS
 export const ERRORES = {
   sinContratista: {
     label: 'Sin contratista identificado',
+    corto: 'Sin contratista',
     campo: 'sin_contratista',
     pestana: 'sincontratista',
     condicion: `NOT (${documentoIdentifica()})`,
   },
   fechas: {
     label: 'Fecha de fin anterior al inicio',
+    corto: 'Fin antes del inicio',
     campo: 'fechas',
     pestana: 'fechas',
     condicion: `fecha_de_fin_del_contrato < fecha_de_inicio_del_contrato`,
   },
   sinValor: {
     label: 'En $0 con presupuesto comprometido',
+    corto: 'En $0 con presupuesto',
     campo: 'sin_valor',
     pestana: 'sinvalor',
     condicion: `(valor_del_contrato <= 0 AND saldo_cdp > 0)`,
@@ -41,6 +44,7 @@ export const ERRORES = {
   // un millón evita marcar redondeos y ajustes menores.
   sobrepago: {
     label: 'Pagado por encima del valor del contrato',
+    corto: 'Pagado de más',
     campo: 'sobrepago',
     pestana: null,
     condicion: `(valor_del_contrato > 0 AND valor_pagado - valor_del_contrato > 1000000)`,
@@ -60,6 +64,7 @@ export const ERRORES = {
   // ejecutar no es una contradicción sino lo normal. Medido: 1.234 casos.
   sinPagoNiPendiente: {
     label: 'Arrancó pero no reporta ni pago ni pendiente',
+    corto: 'Sin pago ni pendiente',
     campo: 'sin_pago_ni_pendiente',
     pestana: null,
     condicion: `(estado_contrato IN ('En ejecución', 'Modificado', 'terminado', 'Cerrado')
@@ -72,6 +77,7 @@ export const ERRORES = {
   // que existe y era justamente el único invisible para este índice.
   cuantiaImposible: {
     label: 'Valor imposible para un solo contrato',
+    corto: 'Valor imposible',
     campo: 'cuantia_imposible',
     pestana: 'digitacion',
     condicion: `valor_del_contrato >= ${CUANTIA_IMPOSIBLE}`,
@@ -80,6 +86,7 @@ export const ERRORES = {
   // de adiciones (ver useAdiciones.js); aquí se le cobra a quien lo escribió.
   plazoImposible: {
     label: 'Más de 10 años añadidos al plazo',
+    corto: 'Más de 10 años de prórroga',
     campo: 'plazo_imposible',
     pestana: null,
     condicion: `dias_adicionados > 3650`,
@@ -87,6 +94,7 @@ export const ERRORES = {
   // El reverso del sobrepago: no hay contrato que pagar, pero hay pago.
   pagoSinContrato: {
     label: 'Registra pagos con el contrato en $0',
+    corto: 'Pagos con contrato en $0',
     campo: 'pago_sin_contrato',
     pestana: null,
     condicion: `(valor_del_contrato <= 0 AND valor_pagado > 0)`,
@@ -117,12 +125,14 @@ export const ERRORES = {
 export const INCOMPLETOS = {
   cerradoSinPago: {
     label: 'Cerrado sin registrar ningún pago',
+    corto: 'Cerrado sin pago',
     campo: 'cerrado_sin_pago',
     pestana: 'cerradosinpago',
     condicion: `(estado_contrato = 'Cerrado' AND valor_del_contrato > 0 AND (valor_pagado IS NULL OR valor_pagado <= 0))`,
   },
   vencidoSinCerrar: {
     label: 'Vencido hace más de un año y sigue "en ejecución"',
+    corto: 'Vencido sin cerrar',
     campo: 'vencido_sin_cerrar',
     condicion: `(estado_contrato = '${ESTADO_ACTIVO}' AND fecha_de_fin_del_contrato >= '2000-01-01T00:00:00' AND fecha_de_fin_del_contrato < '${haceDias(365)}')`,
   },

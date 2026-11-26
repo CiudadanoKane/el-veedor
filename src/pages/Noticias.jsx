@@ -130,7 +130,7 @@ export function Noticias() {
       // Antes decía que el dinero pendiente "es evidencia de que la obra no
       // terminó". No lo era: las obras que encabezaban la nota no tenían ni un
       // pago ni una factura registrados (ver condicionesObraParalizada).
-      contexto: 'Solo cuenta obras con algún pago o factura registrados; lo sin ejecutar es lo que falta por facturar o pagar. Su plazo venció hace más de seis meses. Mostramos varias por si la primera es un dato atípico.',
+      contexto: 'Solo cuenta obras con algún pago o factura registrados y a las que les falta al menos el 10% del valor; lo sin ejecutar es lo que falta por facturar o pagar. Su plazo venció hace más de seis meses. Mostramos varias por si la primera es un dato atípico.',
       enlace: { to: conFiltros('/alertas', PESTANAS_ALERTAS.obra, filters), texto: 'Ver las obras paralizadas' },
       titular: (
         <>

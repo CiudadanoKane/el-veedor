@@ -174,6 +174,15 @@ function RankingContratistas({ filters }) {
         Top 30.
         <br />
         <br />
+        <strong>No entran los créditos con bancos ni las entidades públicas.</strong> En
+        un crédito el banco le presta a la entidad: no recibe recursos públicos, los
+        adelanta. Con ellos, Bancolombia encabezaba la tabla con $6,2 billones, de los que
+        $5,9 eran préstamos. Y los convenios entre entidades (EDUBAR, ETB, el propio
+        municipio como contratista) mueven presupuesto dentro del Estado. Una entidad
+        cuenta como pública si contrata en SECOP o si buena parte de lo que recibe son
+        convenios interadministrativos.
+        <br />
+        <br />
         <strong>Entidades (país)</strong> cuenta con cuántas entidades distintas contrata
         esa persona o empresa <strong>en todo el país</strong>, e ignora a propósito el
         filtro geográfico. Contar solo dentro del filtro medía el tamaño del filtro y no

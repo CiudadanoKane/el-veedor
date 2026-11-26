@@ -8,13 +8,27 @@ import {
 } from '../lib/soql.js'
 import { valorMasFrecuente, documentoIdentifica } from '../lib/identidad.js'
 import { tipoDocSecop1ASecop2 } from '../lib/catalogosSecop1.js'
-import { MODALIDADES_SIN_COMPETENCIA } from '../lib/dashboardQueries.js'
+import { MODALIDADES_SIN_COMPETENCIA, NO_ES_CREDITO } from '../lib/dashboardQueries.js'
 import { TIPO_CREDITO_PUBLICO } from '../lib/catalogos.js'
 import { sinEntidadesPublicas, JUSTIFICACIONES_INTERADMINISTRATIVAS } from '../lib/contratistasPublicos.js'
 import { useRankingsContratistasPrecalculados } from './useRankingsContratistasPrecalculados.js'
 
 const DS = DATASETS.CONTRATOS
 const DS1 = DATASETS.PROCESOS_SECOP1
+
+// "Quién recibe más" (y el bloque "Quién recibe el dinero" del Panorama) deja
+// fuera dos cosas que no son plata pública que llega a un contratista:
+//
+//   - Los créditos con bancos (tipo "Operaciones de Crédito Público"): ahí el
+//     banco PRESTA a la entidad. Bancolombia encabezaba el ranking nacional con
+//     $6,2 billones, de los que $5,92 eran créditos; BBVA y Davivienda eran
+//     casi solo eso (nov 2026).
+//   - Las entidades públicas (ver contratistasPublicos.js): sus convenios con
+//     otras entidades mueven presupuesto dentro del Estado. En Barranquilla el
+//     bloque lo abrían EDUBAR, Puerta de Oro y el propio Distrito.
+//
+// Es la misma regla que ya seguían las notas de actores de Señales.
+export const TOP_RANKING = 30
 
 export function selectRankingContratistas(rows) {
   return rows
@@ -44,13 +58,16 @@ export function selectRankingContratistas(rows) {
 // caso aislado: en Vaupés solo contratan 7 entidades en total, así que tener una
 // sola es allá la norma. La versión anterior marcaba a 6 de los 12 primeros por
 // un artefacto del filtro, sobre partes con nombre propio.
+//
+// La pregunta es quién recibe la plata, así que no entran ni los créditos con
+// bancos ni las entidades públicas (ver RANKING_SIN_ESTADO_NI_CREDITOS).
 export async function rankingContratistasQuery(filters = {}, orderBy = 'valor_total') {
   // Excluir los documentos que no identifican a nadie: agrupan contratos
   // ajenos en contratistas falsos. Ver DOCUMENTOS_SIN_IDENTIDAD.
   const where = buildWhere(
-    whereFromFilters(filters, [soloContratosValidos(), documentoIdentifica()]),
+    whereFromFilters(filters, [soloContratosValidos(), documentoIdentifica(), NO_ES_CREDITO]),
   )
-  const filas = await socrataQuery(
+  const candidatas = await socrataQuery(
     DS,
     `SELECT documento_proveedor,
             count(id_contrato) as total_contratos,
@@ -59,8 +76,11 @@ export async function rankingContratistasQuery(filters = {}, orderBy = 'valor_to
      ${where}
      GROUP BY documento_proveedor
      ORDER BY ${orderBy} DESC
-     LIMIT 30`,
+     LIMIT ${TOP_RANKING * 2}`,
   )
+  // Se piden de más porque las entidades públicas se quitan después: en
+  // Barranquilla salen 3 de los 5 primeros.
+  const filas = (await sinEntidadesPublicas(candidatas, (r) => r.documento_proveedor)).slice(0, TOP_RANKING)
 
   const documentos = filas.map((r) => r.documento_proveedor).filter(Boolean)
   if (!documentos.length) return []
@@ -133,7 +153,7 @@ export async function rankingContratistasQuerySecop1(filters = {}, orderBy = 'va
   ]
   const where = buildWhere(whereFromFiltrosSecop1(filters, base))
 
-  const filas = await socrataQuery(
+  const candidatas = await socrataQuery(
     DS1,
     `SELECT identificacion_del_contratista as documento_proveedor,
             count(uid) as total_contratos,
@@ -142,8 +162,9 @@ export async function rankingContratistasQuerySecop1(filters = {}, orderBy = 'va
      ${where}
      GROUP BY documento_proveedor
      ORDER BY ${orderExpr}
-     LIMIT 30`,
+     LIMIT ${TOP_RANKING * 2}`,
   )
+  const filas = (await sinEntidadesPublicas(candidatas, (r) => r.documento_proveedor)).slice(0, TOP_RANKING)
 
   const documentos = filas.map((r) => r.documento_proveedor).filter(Boolean)
   if (!documentos.length) return []
@@ -196,7 +217,7 @@ export function useRankingContratistas(filters = {}, orderBy = 'valor_total', fu
   const usarPrecalculo = !import.meta.env.DEV && sinFiltros
 
   const directo = useQuery({
-    queryKey: ['rank', 'contratistas', fuente, filters, orderBy],
+    queryKey: ['rank', 'contratistas', 'v2', fuente, filters, orderBy],
     queryFn: () =>
       esSecop1
         ? rankingContratistasQuerySecop1(filters, orderBy)

@@ -274,6 +274,9 @@ export const EJECUTADO_OBRA =
   'case(valor_facturado > coalesce(valor_pagado, 0), valor_facturado, true, coalesce(valor_pagado, 0))'
 export const PENDIENTE_OBRA = `valor_del_contrato - ${EJECUTADO_OBRA}`
 
+export const PROPORCION_MINIMA_OBRA = 0.1
+export const PENDIENTE_MINIMO_OBRA = 20_000_000
+
 function condicionesObraParalizada() {
   return [
     `estado_contrato = '${ESTADO_ACTIVO}'`,
@@ -282,7 +285,13 @@ function condicionesObraParalizada() {
     `fecha_de_fin_del_contrato >= fecha_de_inicio_del_contrato`,
     `fecha_de_fin_del_contrato < '${haceDias(180)}'`,
     `(valor_pagado > 0 OR valor_facturado > 0)`,
-    `${PENDIENTE_OBRA} > 0`,
+    // Lo que falta debe ser una parte relevante de la obra, en proporción y en
+    // plata. Sin esto, de las 1.283 que salían (nov 2026) 730 tenían pendiente
+    // menos del 5% del valor y 573 menos de $1 millón —filas con "$7" y "$0"
+    // sin ejecutar—: obras terminadas con la última cuota sin registrar. Con
+    // los dos mínimos quedan 278, que suman el 94% del dinero pendiente.
+    `${PENDIENTE_OBRA} >= valor_del_contrato * ${PROPORCION_MINIMA_OBRA}`,
+    `${PENDIENTE_OBRA} >= ${PENDIENTE_MINIMO_OBRA}`,
     // Cota para que un valor mal digitado no distorsione el total
     `${PENDIENTE_OBRA} < 1000000000000`,
   ]
@@ -290,7 +299,7 @@ function condicionesObraParalizada() {
 
 export function obraParalizadaConteoQueryOptions(filters = {}) {
   return {
-    queryKey: ['alerta', 'obra', 'conteo', 'v2', filters],
+    queryKey: ['alerta', 'obra', 'conteo', 'v3', filters],
     queryFn: () => {
       const where = buildWhere(whereFromFilters(filters, condicionesObraParalizada()))
       return socrataQuery(
@@ -318,7 +327,7 @@ export function adaptObraParalizada(rows) {
 
 export function obraParalizadaListaQueryOptions(filters = {}) {
   return {
-    queryKey: ['alerta', 'obra', 'lista', 'v2', filters],
+    queryKey: ['alerta', 'obra', 'lista', 'v3', filters],
     queryFn: () => {
       const where = buildWhere(whereFromFilters(filters, condicionesObraParalizada()))
       return socrataQuery(

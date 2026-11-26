@@ -272,7 +272,9 @@ export function AlertaErrorDigitacion() {
           Siete patrones de valor que no puede ser real: (1) el valor es{' '}
           <strong>exactamente ×100, ×1.000 o ×10.000</strong> el original del proceso — se
           digitó en unidades equivocadas (ej. un proceso de $450 millones registrado como
-          $450.000 millones); (2) el valor creció <strong>más de 500%</strong>, cuando la
+          $450.000 millones). Se compara con lo adjudicado y con el precio base, porque a
+          veces la coma se corrió también en la adjudicación y solo la base quedó bien; y
+          si el precio base respalda el valor, no se marca; (2) el valor creció <strong>más de 500%</strong>, cuando la
           Ley 80 limita las adiciones al 50% del valor inicial; (3){' '}
           <strong>valor imposible</strong>: por encima de <strong>$50 billones</strong>,
           diez veces el contrato real más grande del país — un valor centinela
@@ -718,12 +720,18 @@ export function AlertaObraParalizada() {
           <br />
           Solo entran obras con <strong>algún pago o alguna factura registrados</strong>.
           Las que no tienen ninguno —unas dos de cada tres— no dicen si la obra avanzó o
-          no; dicen que la entidad no actualizó el registro. Ordenadas por monto sin
-          ejecutar. Se excluyen valores con errores de digitación evidentes.
+          no; dicen que la entidad no actualizó el registro.
           <br />
           <br />
-          <strong>Estos contratos también aparecen en "Contratos vencidos"</strong>: los
-          Estos casos están todos ahí dentro, porque esta alerta es un filtro más
+          Y lo sin ejecutar tiene que ser <strong>al menos el 10% del valor y al menos
+          $20 millones</strong>. Por debajo casi siempre es una obra terminada a la que le
+          falta registrar la última cuota: antes salían filas con $7 sin ejecutar.
+          Ordenadas por monto sin ejecutar. Se excluyen valores con errores de
+          digitación evidentes.
+          <br />
+          <br />
+          <strong>Estos contratos también aparecen en "Contratos vencidos"</strong>: están
+          todos ahí dentro, porque esta alerta es un filtro más
           estricto sobre esa misma lista. La repetimos aparte a propósito, porque es la
           señal más fuerte que tenemos y esconderla tras un filtro sería desaprovecharla.
         </>
