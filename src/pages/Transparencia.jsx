@@ -400,6 +400,11 @@ export function Transparencia() {
               una causal dentro de la contratación directa.
             </p>
             <p>
+              En el Panorama no se cuentan los créditos con bancos (tipo «Crédito»): van
+              siempre por contratación directa porque la ley no prevé concurso para un
+              préstamo, y su valor enorme inflaba el porcentaje del valor sin concurso.
+            </p>
+            <p>
               Se mide solo en SECOP II. Buena parte de SECOP I figura como "Régimen Especial",
               que mezcla procesos con y sin competencia, y sumarla bajaría el porcentaje sin
               que hubiera más concurso. Por eso SECOP I se muestra aparte y nunca se promedia.

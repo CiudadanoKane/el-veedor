@@ -14,7 +14,8 @@ import { concentracionEntidadQueryOptions, directaGranCuantiaQueryOptions } from
 const DS = DATASETS.CONTRATOS
 
 function selectGenerales(rows) {
-  const total = parseInt(rows[0]?.total ?? 0, 10)
+  // Sin los créditos con bancos, como la tarjeta del Panorama (soqlGenerales).
+  const total = parseInt(rows[0]?.total ?? 0, 10) - parseInt(rows[0]?.creditos ?? 0, 10)
   const directa = parseInt(rows[0]?.directa ?? 0, 10)
   return { total, directa, pct: total ? (directa / total) * 100 : null }
 }

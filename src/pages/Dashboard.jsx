@@ -183,9 +183,9 @@ export function Dashboard() {
   const pctRiesgo = pctRiesgoNum != null ? formatPct(pctRiesgoNum) : null
   // Solo SECOP II: la modalidad de SECOP I no permite compararlo. Ver la
   // consulta en soqlGeneralesSecop1.
-  const pctDirectaNum = pct(generales.data?.directa, generales.data?.totalSecop2)
+  const pctDirectaNum = pct(generales.data?.directa, generales.data?.totalCompetencia)
   const pctDirecta = pctDirectaNum != null ? formatPct(pctDirectaNum) : null
-  const pctValorDirectaNum = pct(generales.data?.valorDirecta, generales.data?.valorSecop2)
+  const pctValorDirectaNum = pct(generales.data?.valorDirecta, generales.data?.valorCompetencia)
   const pctValorDirecta = pctValorDirectaNum != null ? formatPct(pctValorDirectaNum) : null
 
   const abierta = (k) => activa === k
@@ -648,6 +648,12 @@ export function Dashboard() {
             dentro de la contratación directa.
             <br />
             <br />
+            <strong>No cuenta los créditos con bancos</strong> (tipo «Crédito»): un
+            préstamo a una entidad va siempre por contratación directa porque la ley
+            no prevé concurso para eso, y son pocos contratos de valor enorme que
+            inflaban el porcentaje del valor. Salen de la cifra y de su base.
+            <br />
+            <br />
             <strong>Por qué esta cifra es solo de SECOP II.</strong> Buena parte de SECOP I
             figura como "Régimen Especial", que mezcla procesos con y sin competencia.
             Sumarla daría un porcentaje más bajo sin que hubiera más concurso. Por eso
@@ -673,9 +679,16 @@ export function Dashboard() {
               />
               <Cierre
                 suma={data.reduce((a, m) => a + m.n, 0)}
-                total={g?.totalSecop2}
+                total={g?.totalCompetencia}
                 formato={(n) => `${n.toLocaleString('es-CO')} contratos`}
               />
+              {g?.creditos > 0 && (
+                <p className="mt-2 text-nota text-textSecondary leading-snug">
+                  Aparte, {g.creditos.toLocaleString('es-CO')}{' '}
+                  {g.creditos === 1 ? 'crédito' : 'créditos'} con bancos por{' '}
+                  {formatCOP(g.valorCreditos)}, que no entran en esta cuenta.
+                </p>
+              )}
               {g?.tieneSecop1 && g.regimenSecop1 > 0 && (
                 <p className="mt-2 text-nota text-textSecondary leading-snug">
                   En SECOP I, {formatPct(pct(g.directaSecop1, g.filasSecop1))} figura como

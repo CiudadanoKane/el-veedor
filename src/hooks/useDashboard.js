@@ -4,7 +4,7 @@ import { DATASETS, ESTADO_ACTIVO } from '../lib/constants'
 import {
   whereFromFilters, buildWhere, moraConditions, soloContratosValidos, RANGOS_VENCIMIENTO,
 } from '../lib/soql'
-import { PANORAMA_SOQL, PANORAMA_SOQL_SECOP1, MODALIDADES_SIN_COMPETENCIA } from '../lib/dashboardQueries'
+import { PANORAMA_SOQL, PANORAMA_SOQL_SECOP1, MODALIDADES_SIN_COMPETENCIA, NO_ES_CREDITO } from '../lib/dashboardQueries'
 import { repetidosDelAmbito } from '../lib/repetidosSecop1'
 import { useCategorias } from './useCategorias'
 import { useRepetidosSecop1 } from './useSectorNacional'
@@ -132,6 +132,13 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
       valorDirecta: f(g2.v_directa),
       totalSecop2,
       valorSecop2,
+      // Base de "Sin competencia": SECOP II sin los créditos con bancos, que
+      // también salen del numerador (ver soqlGenerales). Un payload guardado
+      // de antes de estos campos los trae vacíos y la base queda entera.
+      creditos: i(g2.creditos),
+      valorCreditos: f(g2.v_creditos),
+      totalCompetencia: totalSecop2 - i(g2.creditos),
+      valorCompetencia: valorSecop2 - f(g2.v_creditos),
       totalSecop1,
       valorSecop1,
       // Se sacan sobre las filas de SECOP I tal como llegan, repetidas o no: son
@@ -168,7 +175,9 @@ export function useDashboardStats(filters = {}, abiertas = new Set()) {
     queryKey: ['dash', 'modalidad', filters],
     enabled: abiertas.has('competencia'),
     queryFn: () => {
-      const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
+      // Sin los créditos con bancos, como la tarjeta: así el desglose suma lo
+      // mismo que su base.
+      const where = buildWhere(whereFromFilters(filters, [soloContratosValidos(), NO_ES_CREDITO]))
       return socrataQuery(
         DS,
         `SELECT modalidad_de_contratacion, count(id_contrato) as n,

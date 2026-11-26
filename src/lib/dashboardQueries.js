@@ -12,6 +12,7 @@ import {
 } from './soql.js'
 import { documentoIdentifica } from './identidad.js'
 import { MODALIDAD_SIN_COMPETENCIA_SECOP1 } from './catalogosSecop1.js'
+import { TIPO_CREDITO_PUBLICO } from './catalogos.js'
 
 // Modalidades donde no hubo concurso: el Estado escoge al contratista
 // directamente. Es la vía legítima en muchos casos (servicios profesionales,
@@ -19,12 +20,24 @@ import { MODALIDAD_SIN_COMPETENCIA_SECOP1 } from './catalogosSecop1.js'
 export const MODALIDADES_SIN_COMPETENCIA =
   `modalidad_de_contratacion IN ('Contratación directa', 'Contratación Directa (con ofertas)')`
 
+// Los créditos con bancos (tipo "Operaciones de Crédito Público") van todos por
+// contratación directa porque la ley no prevé concurso para un préstamo. No son
+// contratación sin competencia en el sentido de la tarjeta, y pesan: 705
+// contratos por $18,9 billones, que subían el "% del valor sin concurso" del
+// país de 42,8% a 44,0% (nov 2026). La tarjeta los saca del numerador y de la
+// base; `creditos` y `v_creditos` viajan aparte para restarlos de la base.
+const ES_CREDITO = `tipo_de_contrato = '${esc(TIPO_CREDITO_PUBLICO)}'`
+export const NO_ES_CREDITO = `(tipo_de_contrato IS NULL OR NOT (${ES_CREDITO}))`
+export const DIRECTA_SIN_CREDITOS = `${MODALIDADES_SIN_COMPETENCIA} AND ${NO_ES_CREDITO}`
+
 export function soqlGenerales(filters) {
   const where = buildWhere(whereFromFilters(filters, [soloContratosValidos()]))
   // El conteo de contratación directa va en la misma consulta: sale gratis
   return `SELECT count(id_contrato) as total, sum(valor_del_contrato) as valor,
-                 sum(case(${MODALIDADES_SIN_COMPETENCIA}, 1, true, 0)) as directa,
-                 sum(case(${MODALIDADES_SIN_COMPETENCIA}, valor_del_contrato, true, 0)) as v_directa
+                 sum(case(${DIRECTA_SIN_CREDITOS}, 1, true, 0)) as directa,
+                 sum(case(${DIRECTA_SIN_CREDITOS}, valor_del_contrato, true, 0)) as v_directa,
+                 sum(case(${ES_CREDITO}, 1, true, 0)) as creditos,
+                 sum(case(${ES_CREDITO}, valor_del_contrato, true, 0)) as v_creditos
           ${where} LIMIT 1`
 }
 
