@@ -17,12 +17,13 @@ const TIPOS = [
   'Otro',
 ]
 
-// Debe reflejar el menú actual. Contratos vencidos y Adiciones dejaron de ser
-// secciones propias y ahora son pestañas dentro de Alertas.
+// Debe reflejar el menú actual (Sidebar.jsx), con los mismos nombres: quien
+// reporta busca la sección como la vio. Contratos vencidos y Adiciones son
+// pestañas dentro de Alertas; "Qué se contrata", una pestaña de Rankings.
 const SECCIONES = [
-  'Panorama', 'Buscar contratos', 'Alertas', 'Errores en SECOP',
-  'En qué se contrata', 'Rankings', 'Perfil de un contratista',
-  'Metodología y límites', 'No aplica',
+  'Panorama', 'Señales del día', 'Buscador inteligente', 'Alertas', 'Rankings',
+  'Graficar', 'Perfil de una entidad', 'Perfil de un contratista', 'Aprende',
+  'Errores en SECOP', 'Metodología y límites', 'No aplica',
 ]
 
 function Campo({ etiqueta, ayuda, children, requerido }) {

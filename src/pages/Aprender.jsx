@@ -261,6 +261,9 @@ export function Aprender() {
               Solo 8 de cada 100 contratos se adjudican en un concurso abierto, y 78 por
               contratación directa.
             </strong>{' '}
+            Los 14 restantes van por <em>régimen especial</em>: hospitales, universidades
+            y empresas del Estado que contratan con sus propias reglas, con o sin
+            competencia.{' '}
             Eso no significa que esos 78 sean irregulares. La enorme mayoría de la
             contratación directa son contratos de prestación de servicios: es la forma en
             que el Estado vincula a buena parte de quienes trabajan para él, y la ley lo
