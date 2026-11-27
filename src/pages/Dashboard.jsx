@@ -1,4 +1,6 @@
 import { Fragment, useState, useCallback, useMemo } from 'react'
+import { etiquetaModalidad } from '../lib/catalogos'
+import { nombreCiudad } from '../lib/nombreLugar'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '../components/layout/Layout'
 import { StatCard } from '../components/ui/StatCard'
@@ -148,7 +150,8 @@ export function Dashboard() {
   // los dos gráficos que son siempre nacionales y se añaden el ranking local y
   // las salidas. Antes esto vivía en una sección aparte ("Mi municipio") que
   // repetía la mitad del Panorama y obligaba a elegir entre las dos.
-  const lugar = filters.city || filters.department
+  // Para mostrar: el nombre con tildes (ver nombreLugar.js).
+  const lugar = nombreCiudad(filters.city, filters.department) || filters.department
   const hayLugar = !!lugar
   // Cuando el alcance trae SECOP I, cada tarjeta rotula su fuente: las tres que
   // combinan ("SECOP II + I") y las que solo se pueden medir en SECOP II. Si no
@@ -669,7 +672,7 @@ export function Dashboard() {
                 colores={SECTOR_COLORS}
                 items={data.map((m) => ({
                   clave: m.modalidad,
-                  label: m.modalidad,
+                  label: etiquetaModalidad(m.modalidad),
                   ayuda: m.modalidad,
                   n: m.n,
                   valor: m.valor,

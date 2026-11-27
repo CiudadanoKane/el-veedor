@@ -205,10 +205,14 @@ export function valorOriginalDe(proceso) {
 // adición que reportar, o un objeto con el monto, el porcentaje y —si el dato
 // no es creíble— el motivo por el que se aparta como anomalía en vez de
 // contarse como sobrecosto real.
+export const ADICION_MINIMA = 1000
+
 export function clasificarAdicion(valorActual, valorOriginal) {
   if (!(valorActual > 0) || !(valorOriginal > 0)) return null
   const adicion = valorActual - valorOriginal
-  if (adicion <= 0) return null
+  // Menos de $1.000 es redondeo entre el proceso y el contrato (centavos o un
+  // decimal de IVA), no una adición: el detalle mostraba "+$1" (nov 2026).
+  if (adicion < ADICION_MINIMA) return null
 
   const pctAdicion = Math.round((adicion / valorOriginal) * 100)
   const multiplo = detectarErrorDigitacion(valorActual, valorOriginal)

@@ -18,6 +18,19 @@ export const MODALIDADES = [
   'Licitación Pública Acuerdo Marco de Precios',
 ]
 
+// SECOP escribe las modalidades con mayúsculas y tildes a su manera
+// ("Licitación pública Obra Publica"). Como con los estados, el valor se
+// conserva tal cual para filtrar; esto es solo cómo se muestra.
+const MODALIDADES_A_LA_VISTA = {
+  'Contratación Directa (con ofertas)': 'Contratación directa (con ofertas)',
+  'Selección Abreviada de Menor Cuantía': 'Selección abreviada de menor cuantía',
+  'Licitación pública Obra Publica': 'Licitación pública de obra',
+  'Licitación Pública Acuerdo Marco de Precios': 'Licitación pública por Acuerdo Marco de Precios',
+}
+export function etiquetaModalidad(modalidad) {
+  return MODALIDADES_A_LA_VISTA[modalidad] ?? modalidad
+}
+
 // Préstamos que toma la entidad, casi siempre con bancos: deuda pública, no
 // una compra. SECOP los registra como contratación directa —la ley no exige
 // concurso para endeudarse— y por eso encabezaban "Sin concurso, contratos

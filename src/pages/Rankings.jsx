@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { nombreCiudad } from '../lib/nombreLugar'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
@@ -398,7 +399,7 @@ function RankingAdiciones({ filters }) {
   const ambito = useAdicionesPorAmbito(filters)
   const hayAmbito = !!claveAmbitoAdiciones(filters)
   const query = hayAmbito ? ambito : nacional
-  const lugar = filters.city || filters.department
+  const lugar = nombreCiudad(filters.city, filters.department) || filters.department
   const esEntidades = lado === 'entidades'
 
   const columnas = [

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { nombreCiudad } from '../../lib/nombreLugar'
 import { useBusquedaWeb, usePuentePrensa } from '../../hooks/useBusquedaWeb'
 import { sinTildes } from '../../lib/acentos'
 
@@ -52,7 +53,7 @@ export function SugerenciasBusqueda({ consultaPrensa, texto, filtrosGeo, activo 
   const medio = puente.data?.fuentes?.[0]?.dominio
   const segun = medio ? `según ${medio}` : 'según la prensa'
   const contratos = (n, mas = false) => `${mas ? 'más de ' : ''}${n.toLocaleString('es-CO')} contrato${n === 1 && !mas ? '' : 's'}`
-  const nombreLugar = filtrosGeo.city || filtrosGeo.department
+  const nombreLugar = nombreCiudad(filtrosGeo.city, filtrosGeo.department) || filtrosGeo.department
 
   for (const o of puente.data?.obras ?? []) {
     const n = o.contratos?.length ?? 0

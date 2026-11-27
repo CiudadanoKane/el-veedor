@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { nombreCiudad } from '../../lib/nombreLugar'
 import { useFilters } from '../../context/FiltersContext'
 import { useDepartamentos, useCiudades } from '../../hooks/useGeoOptions'
 import { SIN_GEOGRAFIA } from '../../lib/departamentos'
@@ -81,7 +82,7 @@ export function ElegirLugar() {
     } catch { /* idem */ }
   }
 
-  const nombreUltimo = ultimo?.ciudad || ultimo?.departamento
+  const nombreUltimo = nombreCiudad(ultimo?.ciudad, ultimo?.departamento) || ultimo?.departamento
 
   // Una línea, no una tarjeta. La tarjeta con título, párrafo y dos
   // selectores medía media pantalla del teléfono, y el primer dato del
@@ -125,7 +126,7 @@ export function ElegirLugar() {
             : esMovil ? 'Todo el depto.' : 'Todo el departamento'}
       </option>
       {(ciudades.data || []).map((c) => (
-        <option key={c} value={c}>{c}</option>
+        <option key={c} value={c}>{nombreCiudad(c, filters.department)}</option>
       ))}
     </select>
   )

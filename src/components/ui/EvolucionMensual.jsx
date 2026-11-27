@@ -7,7 +7,7 @@ import { Segmented } from './Segmented'
 import { FilaControl } from './FilaControl'
 import { Methodology } from './Methodology'
 import { useEvolucion, PERIODOS, METRICAS } from '../../hooks/useEvolucion'
-import { formatCOP, formatCOPFull, formatPct } from '../../lib/formatters'
+import { formatCOP, formatCOPFull, formatPct, formatEje } from '../../lib/formatters'
 import { CHART, tooltipProps } from '../../lib/chartTheme'
 import { Seccion } from './Seccion'
 
@@ -126,15 +126,7 @@ export function EvolucionMensual({ filters }) {
                   tickLine={false}
                   axisLine={false}
                   width={58}
-                  tickFormatter={(v) =>
-                    tipo === 'dinero'
-                      ? formatCOP(v).replace('$', '').replace(' billones', 'B').replace(' millones', 'M').replace(' mil', 'k')
-                      : tipo === 'porcentaje'
-                        ? `${Math.round(v)}%`
-                        : v >= 1000
-                          ? `${Math.round(v / 1000)}k`
-                          : v
-                  }
+                  tickFormatter={(v) => formatEje(v, tipo)}
                 />
                 <Tooltip
                   formatter={(v, name) => [formatear(v, tipo, true), name]}

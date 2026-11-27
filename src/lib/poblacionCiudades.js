@@ -49,7 +49,7 @@ import { normalizarDepto } from './departamentos.js'
 // El generador ABORTA si alguna fila curada no empareja con el anexo, en vez de
 // descartarla: perder un municipio en silencio lo sacaría del ranking sin que
 // nadie lo notara.
-const POBLACION_MUNICIPAL_2025 = [
+export const POBLACION_MUNICIPAL_2025 = [
   ['Distrito Capital de Bogotá', 'Bogotá', 7_942_867],
   ['Antioquia', 'Medellín', 2_528_343],
   ['Valle del Cauca', 'Cali', 2_277_296],

@@ -16,7 +16,7 @@ import {
   DIMENSIONES, METRICAS, MIN_MUESTRA,
   dimensionesDisponibles, tiposGraficoDisponibles, tipoGraficoPorDefecto,
 } from '../lib/constructorQueries'
-import { formatCOP, formatPct } from '../lib/formatters'
+import { formatCOP, formatEje, formatPct } from '../lib/formatters'
 import { CHART, SECTOR_COLORS, tooltipProps } from '../lib/chartTheme'
 
 // Dimensiones de alta cardinalidad relativa: se capan a las 20 de mayor valor
@@ -35,14 +35,8 @@ function formatear(valor, tipo) {
   return valor.toLocaleString('es-CO')
 }
 
-// Versión compacta para los ejes, igual criterio que EvolucionMensual.jsx.
-function formatearEje(valor, tipo) {
-  if (tipo === 'dinero') {
-    return formatCOP(valor).replace('$', '').replace(' billones', 'B').replace(' millones', 'M').replace(' mil', 'k')
-  }
-  if (tipo === 'porcentaje') return `${Math.round(valor)}%`
-  return valor >= 1000 ? `${Math.round(valor / 1000)}k` : valor
-}
+// Versión compacta para los ejes: formatEje, la misma que EvolucionMensual.jsx.
+const formatearEje = formatEje
 
 // Ordena por el valor de la métrica, de mayor a menor, dejando al final las
 // filas sin dato (muestra insuficiente o división por cero) en vez de

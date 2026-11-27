@@ -1,4 +1,5 @@
 import { interpretContract } from '../../lib/interpret'
+import { nombreCiudad } from '../../lib/nombreLugar'
 import { formatCOP, formatDate, formatPct, daysSince, humanDuration } from '../../lib/formatters'
 import { plazoDelContrato, clasificarAdicion } from '../../lib/adiciones'
 import { useModificaciones, useValorOriginalProceso } from '../../hooks/useModificaciones'
@@ -7,7 +8,7 @@ import { SecopLink } from './SecopLink'
 import { DOCUMENTOS_SIN_IDENTIDAD } from '../../lib/identidad'
 import { ModificationHistory } from './ModificationHistory'
 import { TerminoConAyuda } from './Ayuda'
-import { etiquetaEstado, etiquetaTipo } from '../../lib/catalogos'
+import { etiquetaModalidad, etiquetaEstado, etiquetaTipo } from '../../lib/catalogos'
 import { esSectorTematico } from '../../lib/sectores'
 
 // Estados donde la fecha de fin pasada no es una alerta: el contrato ya cerró
@@ -148,9 +149,11 @@ export function ContractDetail({ contract: c }) {
             su "?" al lado: son justo los que no significan nada para quien no
             trabaja en el sector. Ver glosario.js. */}
         <Fact label="Estado" value={<TerminoConAyuda termino={c.status} texto={etiquetaEstado(c.status)} />} />
-        <Fact label="Modalidad" value={<TerminoConAyuda termino={c.modality} />} />
+        <Fact label="Modalidad" value={<TerminoConAyuda termino={c.modality} texto={etiquetaModalidad(c.modality)} />} />
         <Fact label="Tipo de contrato" value={<TerminoConAyuda termino={c.contractType} texto={etiquetaTipo(c.contractType)} />} />
-        <Fact label="Sector de la entidad" value={esSectorTematico(c.sector) ? c.sector : 'Sin sector'} />
+        {/* "No aplica", "Servicio Público"… no dicen nada de la entidad; antes
+            salía "Sin sector", que se leía como un dato. Se omite. */}
+        {esSectorTematico(c.sector) && c.sector && <Fact label="Sector de la entidad" value={c.sector} />}
         <Fact label="Fecha de firma" value={formatDate(c.signDate)} />
         <Fact label="Inicio" value={formatDate(c.startDate)} />
         <Fact
@@ -258,7 +261,7 @@ export function ContractDetail({ contract: c }) {
         <Fact label="Entidad (NIT)" value={c.entityNit} />
         <Fact label="Contratista (NIT/CC)" value={c.contractorId} />
         <Fact label="Referencia" value={c.reference} />
-        <Fact label="Ciudad · Depto." value={[c.city, c.department].filter(Boolean).join(' · ')} />
+        <Fact label="Ciudad · Depto." value={[nombreCiudad(c.city, c.department), c.department].filter(Boolean).join(' · ')} />
       </div>
 
       {/* Historial de adiciones de dinero y tiempo (fuente: dataset de

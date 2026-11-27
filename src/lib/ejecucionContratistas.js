@@ -90,6 +90,12 @@ const numero = (v) => {
 }
 const tasa = (parte, total) => (total ? (parte / total) * 100 : 0)
 
+// Filas que se muestran, y candidatas que se piden para llegar a ellas después
+// de quitar las entidades públicas contratadas por otras (Puerta de Oro, EDUBAR,
+// ETB…), igual que en "Quién recibe más". Ver contratistasPublicos.js.
+const FILAS = 25
+const CANDIDATAS = 75
+
 // Cálculo en vivo contra Socrata. Sin dependencias de React: lo usan el hook
 // (src/hooks/useEjecucionContratistas.js), /api/noticias-actores y el
 // precálculo diario (scripts/calcular-ejecucion-contratistas.mjs).
@@ -97,7 +103,7 @@ export function ejecucionContratistasQueryOptions(filters = {}, extremo = 'peor'
   const activa = METRICAS[metrica] || METRICAS.prorroga
 
   return {
-    queryKey: ['ejecucion', 'contratistas', filters, extremo, metrica],
+    queryKey: ['ejecucion', 'contratistas', 'v2', filters, extremo, metrica],
     queryFn: async () => {
       const where = buildWhere(whereFromFilters(filters, condicionesEvaluables()))
       const sinFiltro = buildWhere(condicionesEvaluables())
@@ -123,7 +129,7 @@ export function ejecucionContratistasQueryOptions(filters = {}, extremo = 'peor'
            GROUP BY documento_proveedor
            HAVING count(id_contrato) >= ${UMBRAL_CONTRATOS}
            ORDER BY ${orden}
-           LIMIT 25`,
+           LIMIT ${CANDIDATAS}`,
         ),
         socrataQuery(
           DS,
@@ -137,7 +143,12 @@ export function ejecucionContratistasQueryOptions(filters = {}, extremo = 'peor'
         ),
       ])
 
-      const documentos = filas.map((r) => r.documento_proveedor).filter(Boolean)
+      // Antes de buscar nombres: la consulta de nombres va con la lista IN.
+      const privadas = (
+        await sinEntidadesPublicas(filas, (r) => r.documento_proveedor)
+      ).slice(0, FILAS)
+
+      const documentos = privadas.map((r) => r.documento_proveedor).filter(Boolean)
       let nombres = []
       if (documentos.length) {
         const lista = documentos.map((d) => `'${d.replace(/'/g, "''")}'`).join(', ')
@@ -164,7 +175,7 @@ export function ejecucionContratistasQueryOptions(filters = {}, extremo = 'peor'
       const totalPais = entero(g.n)
 
       return {
-        contratistas: filas.map((r) => {
+        contratistas: privadas.map((r) => {
           const n = entero(r.n)
           const anadidos = entero(r.dias_anadidos)
           const totales = entero(r.dias_totales)
@@ -203,19 +214,20 @@ export function ejecucionContratistasQueryOptions(filters = {}, extremo = 'peor'
 }
 
 // La nota "Patrón de prórrogas" de Señales: la misma tabla de "Quién más
-// prorroga" (más prórrogas, por número de contratos) sin las entidades públicas
-// contratadas por otras —Puerta de Oro encabezaba la de Barranquilla—. Ver
-// contratistasPublicos.js. Rankings sigue mostrando la tabla completa.
+// prorroga" (más prórrogas, por número de contratos). Desde nov 2026 la tabla
+// ya sale sin entidades públicas —Puerta de Oro encabezaba la de Barranquilla
+// también en Rankings—, así que es la misma consulta.
 export function prorrogasNoticiasQueryOptions(filters = {}) {
   const base = ejecucionContratistasQueryOptions(filters, 'peor', 'prorroga')
   return {
-    queryKey: ['noticias', 'prorrogas', filters],
-    queryFn: async () => tablaSinEntidadesPublicas(await base.queryFn()),
+    queryKey: ['noticias', 'prorrogas', 'v2', filters],
+    queryFn: base.queryFn,
   }
 }
 
-// Lo mismo sobre una tabla ya calculada (el precálculo diario, en
-// /api/noticias-actores).
+// Sobre una tabla ya calculada (el precálculo diario, en /api/noticias-actores).
+// Con el precálculo de antes de nov 2026 todavía hacía falta; con el nuevo no
+// quita nada.
 export async function tablaSinEntidadesPublicas(tabla) {
   return { ...tabla, contratistas: await sinEntidadesPublicas(tabla.contratistas) }
 }

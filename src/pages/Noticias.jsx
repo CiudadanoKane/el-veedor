@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { nombreCiudad } from '../lib/nombreLugar'
 import { PageHeader } from '../components/layout/Layout'
 import { NotaCard } from '../components/ui/NotaCard'
 import { EnlaceEntidad, EnlaceContratista } from '../components/ui/EnlacePerfil'
@@ -56,7 +57,7 @@ export function Noticias() {
     competencia, prorrogas, concentracion, directa,
   } = useNoticiasData(filters)
 
-  const ambito = filters.city || filters.department || 'Colombia'
+  const ambito = nombreCiudad(filters.city, filters.department) || filters.department || 'Colombia'
   // A prueba de nulos: un dato faltante en UNA nota tumbaba la sección entera.
   // Pasó con el Valle del Cauca (oct 2026): el tercer caso de adición de tiempo
   // no tenía plazo original reconstruible y "Noticias" mostraba "Algo falló".

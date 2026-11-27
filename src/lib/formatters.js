@@ -1,11 +1,15 @@
 import { SEMAFORO } from './constants'
 
-const COP = new Intl.NumberFormat('es-CO', {
+const COP_INTL = new Intl.NumberFormat('es-CO', {
   style: 'currency',
   currency: 'COP',
   minimumFractionDigits: 0,
   maximumFractionDigits: 0,
 })
+// Intl escribe "$ 500.000" con un espacio duro tras el signo; el resto del
+// sitio escribe "$7 millones" sin él, y en una misma ficha convivían "$ 0" y
+// "$379 mil millones" (revisión de nov 2026). Sin espacio en todos.
+const COP = { format: (v) => COP_INTL.format(v).replace(/\$\s+/, '$') }
 
 const es = (n, dec = 1) =>
   n.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: dec })
@@ -80,6 +84,26 @@ export function formatCOPCorto(value) {
   return COP.format(value)
 }
 
+// Etiquetas de los ejes de los gráficos: cortas, pero en español. Antes los
+// ejes decían "300k", "1200k" y, en dinero, "300kM" (la k reemplazaba el "mil"
+// de "mil millones"). Las marcas del eje son números redondos, así que basta
+// un decimal.
+export function formatEje(valor, tipo) {
+  if (valor == null) return ''
+  if (tipo === 'porcentaje') return `${Math.round(valor)}%`
+  const abs = Math.abs(valor)
+  if (tipo === 'dinero') {
+    if (abs >= 1e12) return `${es(valor / 1e12)} bill.`
+    if (abs >= 1e9) return `${es(valor / 1e9)} mil M`
+    if (abs >= 1e6) return `${es(valor / 1e6)} M`
+    if (abs >= 1e3) return `${es(valor / 1e3)} mil`
+    return es(valor, 0)
+  }
+  if (abs >= 1e6) return `${es(valor / 1e6)} mill.`
+  if (abs >= 1e3) return `${es(valor / 1e3)} mil`
+  return es(valor, 0)
+}
+
 export function formatCOPFull(value) {
   if (value == null) return '—'
   return COP.format(value)
@@ -109,7 +133,8 @@ export function formatDate(dateStr) {
   // SECOP ("2022-08-04T00:00:00.000").
   const s = /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? `${dateStr}T00:00:00` : dateStr
   return new Date(s).toLocaleDateString('es-CO', {
-    day: '2-digit',
+    // "8 de nov.", no "08 de nov.": el cero delante es de formulario.
+    day: 'numeric',
     month: 'short',
     year: 'numeric',
   })
@@ -125,12 +150,17 @@ export function humanDuration(days) {
     const m = Math.round(abs / 30)
     return `${m} ${m === 1 ? 'mes' : 'meses'}`
   }
-  const years = Math.floor(abs / 365)
-  const months = Math.round((abs % 365) / 30)
-  if (years >= 5 || months === 0) {
-    return `${years} ${years === 1 ? 'año' : 'años'}`
+  let years = Math.floor(abs / 365)
+  let months = Math.round((abs % 365) / 30)
+  // 360 días sobre el año redondean a 12 meses: es un año más, no "1 año 12 m".
+  if (months >= 12) {
+    years += 1
+    months = 0
   }
-  return `${years} ${years === 1 ? 'año' : 'años'} ${months} m`
+  const anios = `${years} ${years === 1 ? 'año' : 'años'}`
+  if (years >= 5 || months === 0) return anios
+  // Antes "1 año 6 m": la "m" sola no se lee como meses.
+  return `${anios} y ${months} ${months === 1 ? 'mes' : 'meses'}`
 }
 
 // Porcentaje seguro (evita división por cero)

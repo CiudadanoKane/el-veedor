@@ -227,6 +227,13 @@ export function IndiceEjecucion() {
         total.
         <br />
         <br />
+        <strong>No entran las entidades públicas que otras contratan</strong>, como
+        empresas de desarrollo urbano o de servicios: reciben convenios
+        interadministrativos, cuyos plazos se ajustan entre entidades del Estado, y
+        no son contratistas en el sentido de esta tabla. Es la misma regla de «Quién
+        recibe más».
+        <br />
+        <br />
         Se exige un mínimo de <strong>{UMBRAL_CONTRATOS} contratos evaluables</strong>:
         con uno solo prorrogado la tasa daría 100%. "Días añadidos por 100 pactados" suma
         todos los días de prórroga contra todo el plazo originalmente acordado — 30

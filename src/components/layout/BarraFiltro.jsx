@@ -1,4 +1,5 @@
 import { useFilters } from '../../context/FiltersContext'
+import { nombreCiudad } from '../../lib/nombreLugar'
 import { useDepartamentos, useCiudades } from '../../hooks/useGeoOptions'
 
 // Ámbito geográfico de toda la plataforma, en una barra fija arriba.
@@ -13,7 +14,7 @@ import { useDepartamentos, useCiudades } from '../../hooks/useGeoOptions'
 // se está mirando. Esa duda no es menor en veeduría —una cifra nacional y una
 // municipal se leen distinto, y varias secciones son largas—; antes había que
 // subir hasta el encabezado para comprobarlo.
-function Select({ etiqueta, value, onChange, options, loading, placeholder, disabled }) {
+function Select({ etiqueta, value, onChange, options, loading, placeholder, disabled, mostrar = (o) => o }) {
   return (
     <select
       aria-label={etiqueta}
@@ -36,7 +37,7 @@ function Select({ etiqueta, value, onChange, options, loading, placeholder, disa
       <option value="">{loading ? 'Cargando…' : placeholder}</option>
       {options.map((o) => (
         <option key={o} value={o}>
-          {o}
+          {mostrar(o)}
         </option>
       ))}
     </select>
@@ -82,6 +83,7 @@ export function BarraFiltro() {
         options={ciudades.data || []}
         loading={ciudades.isLoading}
         placeholder="Todas las ciudades"
+        mostrar={(c) => nombreCiudad(c, filters.department)}
         disabled={!filters.department}
       />
 

@@ -1,4 +1,5 @@
 import { QueryState } from './QueryState'
+import { nombreCiudad } from '../../lib/nombreLugar'
 import { useSearchParams } from 'react-router-dom'
 import { Seccion } from './Seccion'
 import { Segmented } from './Segmented'
@@ -11,7 +12,7 @@ const PARTE = { 25: 'la cuarta parte', 50: 'la mitad', 75: 'tres cuartas partes'
 
 // Etiqueta del ámbito activo, para el titular en lenguaje llano.
 function ambitoDe({ city, department, entity } = {}) {
-  if (city) return `en ${city}`
+  if (city) return `en ${nombreCiudad(city, department)}`
   if (department) return `en ${department}`
   if (entity) return `en ${entity}`
   return 'en el país'

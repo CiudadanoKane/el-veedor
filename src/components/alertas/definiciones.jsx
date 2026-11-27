@@ -19,7 +19,7 @@ import {
   usePersonaConValorImposible, useCerosDeMasFrenteAlProceso,
 } from '../../hooks/useCuantiaImposible'
 import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/formatters'
-import { etiquetaTipo } from '../../lib/catalogos'
+import { etiquetaModalidad, etiquetaTipo } from '../../lib/catalogos'
 import { EnlaceEntidad, EnlaceContratista } from '../ui/EnlacePerfil'
 import { FuenteBadge } from '../ui/FuenteBadge'
 
@@ -601,7 +601,7 @@ export function AlertaSinContratista() {
       className: 'text-right tabular-nums',
       render: (r) => formatCOP(r.contractValue),
     },
-    { key: 'modality', header: 'Modalidad', render: (r) => r.modality || '—' },
+    { key: 'modality', header: 'Modalidad', render: (r) => etiquetaModalidad(r.modality) || '—' },
   ]
 
   return (

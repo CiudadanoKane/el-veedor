@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { nombreCiudad } from '../../lib/nombreLugar'
 import { useSearchParams } from 'react-router-dom'
 import { QueryState } from './QueryState'
 import { Methodology } from './Methodology'
@@ -299,7 +300,8 @@ export function ComparacionCiudades() {
               // `depto` viaja hasta aquí porque es lo que necesita el enlace
               // para fijar el ámbito completo: sin él, tocar "Rionegro" ponía
               // la ciudad sin departamento y el filtro quedaba a medias.
-              filas.push({ clave: c.clave, nombre: c.nombre, depto: c.depto, v, fila, pob })
+              // `nombre` es la clave de SECOP para el enlace; `visible`, con tildes.
+              filas.push({ clave: c.clave, nombre: c.nombre, visible: nombreCiudad(c.nombre, c.depto), depto: c.depto, v, fila, pob })
             }
             filas.sort((a, b) => b.v - a.v)
 
@@ -340,7 +342,7 @@ export function ComparacionCiudades() {
               const idx = filas.findIndex((f) => f.clave === clave)
               if (idx === -1) {
                 const cruda = porCiudad.get(clave)
-                if (cruda) anadidasSinDatos.push({ ...cruda, esAuto })
+                if (cruda) anadidasSinDatos.push({ ...cruda, visible: nombreCiudad(cruda.nombre, cruda.depto), esAuto })
                 continue
               }
               anadidasConDatos.push({ ...filas[idx], posicion: idx + 1, esAuto })
@@ -365,8 +367,8 @@ export function ComparacionCiudades() {
                 clave: f.clave,
                 nombre:
                   nombresDelRanking.get(f.nombre).size > 1 && f.depto
-                    ? `${f.nombre} (${f.depto})`
-                    : f.nombre,
+                    ? `${f.visible} (${f.depto})`
+                    : f.visible,
                 posicion: i + 1,
               }))
               .filter(
@@ -408,7 +410,7 @@ export function ComparacionCiudades() {
             const repetidos = new Set(
               [...porNombre].filter(([, claves]) => claves.size > 1).map(([n]) => n),
             )
-            const etiqueta = (c) => (repetidos.has(c.nombre) ? `${c.nombre} (${c.depto})` : c.nombre)
+            const etiqueta = (c) => (repetidos.has(c.nombre) ? `${c.visible} (${c.depto})` : c.visible)
 
             return (
               <>
@@ -452,7 +454,7 @@ export function ComparacionCiudades() {
                         <li key={c.clave} className="py-1 flex items-center gap-3">
                           <span className="w-6 shrink-0" />
                           <span className="flex-1 text-cuerpo text-textPrimary leading-snug">
-                            {c.nombre}{' '}
+                            {c.visible}{' '}
                             <span className="text-textSecondary font-normal">
                               — sin muestra suficiente para esta métrica
                             </span>
@@ -460,7 +462,7 @@ export function ComparacionCiudades() {
                           {!c.esAuto && (
                             <button
                               onClick={() => quitar(c.clave)}
-                              aria-label={`Quitar ${c.nombre} de la comparación`}
+                              aria-label={`Quitar ${c.visible} de la comparación`}
                               className="shrink-0 text-textSecondary hover:text-textPrimary text-base leading-none"
                             >
                               ×

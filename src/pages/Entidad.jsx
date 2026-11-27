@@ -10,7 +10,7 @@ import { ListaBarra } from '../components/ui/ListaBarra'
 import { Methodology } from '../components/ui/Methodology'
 import { usePerfilEntidad } from '../hooks/usePerfilEntidad'
 import { ERRORES, INCOMPLETOS, useCalidadDatos } from '../hooks/useCalidadDatos'
-import { MODALIDADES } from '../lib/catalogos'
+import { etiquetaModalidad, MODALIDADES } from '../lib/catalogos'
 import { SIN_GEOGRAFIA } from '../lib/departamentos'
 import { formatCOP, formatCOPLista, formatDate, pct, formatPct } from '../lib/formatters'
 import { EnlaceContratista } from '../components/ui/EnlacePerfil'
@@ -113,7 +113,7 @@ function Perfil({ perfil, refNacional }) {
       className: 'text-right tabular-nums',
       render: (r) => copContratos(r.contractValue),
     },
-    { key: 'modality', header: 'Modalidad', render: (r) => r.modality || '—' },
+    { key: 'modality', header: 'Modalidad', render: (r) => etiquetaModalidad(r.modality) || '—' },
     { key: 'signDate', header: 'Firma', render: (r) => formatDate(r.signDate) },
   ]
 
@@ -356,7 +356,7 @@ function Perfil({ perfil, refNacional }) {
           total={perfil.totalContratos}
           items={perfil.modalidades.map((m) => ({
             clave: m.modalidad,
-            label: m.modalidad || 'Sin registro',
+            label: etiquetaModalidad(m.modalidad) || 'Sin registro',
             // El "?" explica qué es cada modalidad: el reparto no dice nada si
             // no se sabe qué distingue una licitación de una directa.
             ayuda: m.modalidad,
@@ -370,7 +370,7 @@ function Perfil({ perfil, refNacional }) {
                 to={`/buscar?${new URLSearchParams({ modalidad: m.modalidad, entidad: perfil.nombre })}`}
                 className="enlace-perfil enlace-visible"
               >
-                {m.modalidad}
+                {etiquetaModalidad(m.modalidad)}
               </Link>
             ) : undefined,
             secundario: copModalidades(m.valor),

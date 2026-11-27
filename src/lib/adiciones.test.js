@@ -50,6 +50,12 @@ describe('clasificarAdicion', () => {
     expect(clasificarAdicion(80_000_000, 100_000_000)).toBeNull()
   })
 
+  it('no cuenta como adición una diferencia de redondeo', () => {
+    expect(clasificarAdicion(100_000_001, 100_000_000)).toBeNull()
+    expect(clasificarAdicion(100_000_999, 100_000_000)).toBeNull()
+    expect(clasificarAdicion(100_001_000, 100_000_000).adicion).toBe(1000)
+  })
+
   it('cuenta una adición normal con su monto y porcentaje', () => {
     const r = clasificarAdicion(130_000_000, 100_000_000)
     expect(r.adicion).toBe(30_000_000)

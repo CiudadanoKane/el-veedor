@@ -1,4 +1,5 @@
 import { useParams } from 'react-router-dom'
+import { etiquetaModalidad } from '../lib/catalogos'
 import { limpiarTexto, limpiarNombre } from '../lib/textoVisible'
 import { Volver } from '../components/ui/Volver'
 import { PageHeader } from '../components/layout/Layout'
@@ -98,7 +99,7 @@ function Perfil({ perfil }) {
       className: 'text-right tabular-nums',
       render: (r) => copContratos(r.contractValue),
     },
-    { key: 'modality', header: 'Modalidad', render: (r) => r.modality || '—' },
+    { key: 'modality', header: 'Modalidad', render: (r) => etiquetaModalidad(r.modality) || '—' },
     { key: 'signDate', header: 'Firma', render: (r) => formatDate(r.signDate) },
   ]
 
@@ -226,7 +227,7 @@ function Perfil({ perfil }) {
           total={perfil.totalContratos}
           items={perfil.modalidades.map((m) => ({
             clave: m.modalidad,
-            label: m.modalidad || 'Sin registro',
+            label: etiquetaModalidad(m.modalidad) || 'Sin registro',
             valor: m.n,
             secundario: copModalidades(m.valor),
           }))}

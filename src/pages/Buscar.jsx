@@ -20,7 +20,7 @@ import { extraerIdentificador } from '../lib/busquedaId'
 import { nombreSegmento } from '../lib/unspsc'
 import { useQueryClient } from '@tanstack/react-query'
 import { useGeo, esperarCatalogoGeo } from '../hooks/useGeoOptions'
-import { MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO, etiquetaEstado, etiquetaTipo } from '../lib/catalogos'
+import { etiquetaModalidad, MODALIDADES, TIPOS_CONTRATO, ESTADOS_CONTRATO, etiquetaEstado, etiquetaTipo } from '../lib/catalogos'
 import { ESTADOS_SOLO_SECOP1 } from '../lib/catalogosSecop1'
 import { sinTildes, pluralDeFrase } from '../lib/acentos'
 import { esContratoMarco, palabrasDeObra, afinidadConObra } from '../lib/contratoMarco'
@@ -374,7 +374,7 @@ function SugerenciaEntidad({ quien, lugar, onElegir }) {
 // y editable sin tener que abrir el panel entero.
 function FiltrosAplicados({ criterios, actualizar }) {
   const etiquetas = []
-  if (criterios.modalidad) etiquetas.push({ texto: criterios.modalidad, quitar: { modalidad: '' } })
+  if (criterios.modalidad) etiquetas.push({ texto: etiquetaModalidad(criterios.modalidad), quitar: { modalidad: '' } })
   if (criterios.tipo) etiquetas.push({ texto: criterios.tipo, quitar: { tipo: '' } })
   if (criterios.estados.length) {
     etiquetas.push({ texto: `Estado: ${criterios.estados.map(etiquetaEstado).join(', ')}`, quitar: { estados: [] } })
@@ -1279,6 +1279,7 @@ export function Buscar() {
                       value={criterios.modalidad}
                       onChange={(v) => actualizar({ modalidad: v })}
                       options={MODALIDADES}
+                      etiqueta={etiquetaModalidad}
                       placeholder="Todas las modalidades"
                     />
                     <Campo
