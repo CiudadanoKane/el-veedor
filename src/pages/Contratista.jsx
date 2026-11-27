@@ -1,4 +1,5 @@
 import { useParams } from 'react-router-dom'
+import { limpiarTexto, limpiarNombre } from '../lib/textoVisible'
 import { Volver } from '../components/ui/Volver'
 import { PageHeader } from '../components/layout/Layout'
 import { QueryState } from '../components/ui/QueryState'
@@ -87,7 +88,7 @@ function Perfil({ perfil }) {
               </span>
             )}
           </div>
-          <div className="text-nota text-textSecondary line-clamp-2">{r.description}</div>
+          <div className="text-nota text-textSecondary line-clamp-2">{limpiarTexto(r.description)}</div>
         </div>
       ),
     },
@@ -113,7 +114,7 @@ function Perfil({ perfil }) {
                 perfil.documento,
                 perfil.tipoDocumento,
               )}`
-            : perfil.nombre
+            : limpiarNombre(perfil.nombre)
         }
         subtitle={
           perfil.documentoCompartido

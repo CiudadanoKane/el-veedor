@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { limpiarNombre } from '../../lib/textoVisible'
 import { DOCUMENTOS_SIN_IDENTIDAD } from '../../lib/identidad'
 
 // El nombre de una entidad o un contratista es siempre una puerta a su perfil.
@@ -30,10 +31,12 @@ export function EnlaceEntidad({ nombre, className = '' }) {
     <Link
       to={`/entidad/${encodeURIComponent(nombre)}`}
       onClick={(e) => e.stopPropagation()}
-      title={`Ver el perfil de ${nombre}`}
+      title={`Ver el perfil de ${limpiarNombre(nombre)}`}
       className={`${className} enlace-perfil enlace-visible`}
     >
-      {nombre}
+      {/* Se muestra limpio; el enlace lleva el nombre tal cual, que es la
+          clave en SECOP (ver textoVisible.js). */}
+      {limpiarNombre(nombre)}
     </Link>
   )
 }
@@ -43,15 +46,15 @@ export function EnlaceContratista({ nombre, documento, className = '' }) {
   if (!nombre && !identifica) return '—'
   // Con documento utilizable pero sin nombre, el perfil sigue siendo útil: es un
   // contratista real cuyo nombre no quedó registrado en esta fila.
-  if (!identifica) return nombre || '—'
+  if (!identifica) return limpiarNombre(nombre) || '—'
   return (
     <Link
       to={`/contratista/${encodeURIComponent(documento)}`}
       onClick={(e) => e.stopPropagation()}
-      title={`Ver el perfil de ${nombre || documento}`}
+      title={`Ver el perfil de ${limpiarNombre(nombre) || documento}`}
       className={`${className} enlace-perfil enlace-visible`}
     >
-      {nombre || documento}
+      {limpiarNombre(nombre) || documento}
     </Link>
   )
 }

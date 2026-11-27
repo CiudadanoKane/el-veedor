@@ -4,6 +4,7 @@
 // contrato vencido dice algo de la ejecución; una fecha de fin anterior al
 // inicio dice algo de quién llenó el formulario.
 import { QueryState } from '../ui/QueryState'
+import { limpiarTexto } from '../../lib/textoVisible'
 import { DataTable } from '../ui/DataTable'
 import { ContractDetail } from '../ui/ContractDetail'
 import { AlertCard } from '../ui/AlertCard'
@@ -40,7 +41,7 @@ export function AlertaFechasInconsistentes() {
       render: (r) => (
         <div className="max-w-[220px]">
           <div><EnlaceEntidad nombre={r.entityName} /></div>
-          <div className="text-nota text-textSecondary truncate">{r.description}</div>
+          <div className="text-nota text-textSecondary truncate">{limpiarTexto(r.description)}</div>
         </div>
       ),
     },
@@ -232,7 +233,7 @@ export function AlertaErrorDigitacion() {
             <EnlaceEntidad nombre={r.entityName} />
             <FuenteBadge source={r.source} />
           </div>
-          <div className="text-nota text-textSecondary truncate">{r.description}</div>
+          <div className="text-nota text-textSecondary truncate">{limpiarTexto(r.description)}</div>
         </div>
       ),
     },
@@ -400,7 +401,7 @@ export function AlertaCerradoSinPago() {
       render: (r) => (
         <div className="max-w-[220px]">
           <div><EnlaceEntidad nombre={r.entityName} /></div>
-          <div className="text-nota text-textSecondary truncate">{r.description}</div>
+          <div className="text-nota text-textSecondary truncate">{limpiarTexto(r.description)}</div>
         </div>
       ),
     },
@@ -481,7 +482,7 @@ export function AlertaContratosSinValor() {
       render: (r) => (
         <div className="max-w-[220px]">
           <div><EnlaceEntidad nombre={r.entityName} /></div>
-          <div className="text-nota text-textSecondary truncate">{r.description}</div>
+          <div className="text-nota text-textSecondary truncate">{limpiarTexto(r.description)}</div>
         </div>
       ),
     },
@@ -567,7 +568,7 @@ export function AlertaSinContratista() {
             <EnlaceEntidad nombre={r.entityName} />
             <FuenteBadge source={r.source} />
           </div>
-          <div className="text-nota text-textSecondary truncate">{r.description}</div>
+          <div className="text-nota text-textSecondary truncate">{limpiarTexto(r.description)}</div>
         </div>
       ),
     },
@@ -666,7 +667,7 @@ export function AlertaObraParalizada() {
       render: (r) => (
         <div className="max-w-[240px]">
           <div><EnlaceEntidad nombre={r.entityName} /></div>
-          <div className="text-nota text-textSecondary truncate">{r.description}</div>
+          <div className="text-nota text-textSecondary truncate">{limpiarTexto(r.description)}</div>
         </div>
       ),
     },

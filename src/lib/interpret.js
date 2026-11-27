@@ -1,6 +1,7 @@
 import { formatCOP, formatDate, humanDuration } from './formatters'
 import { ESTADO_ACTIVO } from './constants'
 import { esSectorTematico } from './sectores'
+import { limpiarNombre, limpiarTexto } from './textoVisible'
 
 // Estima el plazo original (días) restando las adiciones al plazo actual.
 function plazoOriginalDias(c) {
@@ -12,10 +13,6 @@ function plazoOriginalDias(c) {
   return orig > 0 ? orig : null
 }
 
-function capitalizar(txt) {
-  const t = txt.trim().toLowerCase()
-  return t.charAt(0).toUpperCase() + t.slice(1)
-}
 
 // Genera una interpretación NEUTRAL y factual del contrato en lenguaje llano.
 // No opina ni acusa: solo describe lo que dicen los datos. Devuelve un arreglo
@@ -26,16 +23,19 @@ export function interpretContract(c) {
 
   // 1. Identidad
   let ident = `Contrato por ${formatCOP(c.contractValue)}`
-  if (c.entityName) ident += ` de ${c.entityName}`
-  if (c.contractorName) ident += ` con ${c.contractorName}`
+  if (c.entityName) ident += ` de ${limpiarNombre(c.entityName)}`
+  if (c.contractorName) ident += ` con ${limpiarNombre(c.contractorName)}`
   if (c.sector && esSectorTematico(c.sector)) ident += `, en el sector ${c.sector}`
   s.push(ident + '.')
 
   // 2. Objeto (qué se contrató)
+  // Tal como se registró, entre comillas. Antes se pasaba todo a minúsculas
+  // para que no "gritara", y se rompían nombres y códigos: "20hl02 obando
+  // isnos" (nov 2026). Las mayúsculas de la fuente son parte del dato.
   if (c.description) {
-    const obj =
-      c.description.length > 200 ? c.description.slice(0, 200) + '…' : c.description
-    s.push(`Objeto: ${capitalizar(obj)}.`)
+    const texto = limpiarTexto(c.description)
+    const obj = texto.length > 200 ? texto.slice(0, 200) + '…' : texto
+    s.push(`Objeto: «${obj}».`)
   }
 
   // 3. Línea de tiempo

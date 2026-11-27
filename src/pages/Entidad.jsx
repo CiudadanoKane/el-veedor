@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
+import { limpiarTexto, limpiarNombre } from '../lib/textoVisible'
 import { Volver } from '../components/ui/Volver'
 import { PageHeader } from '../components/layout/Layout'
 import { QueryState } from '../components/ui/QueryState'
@@ -97,7 +98,7 @@ function Perfil({ perfil, refNacional }) {
               SECOP I
             </span>
           )}
-          <span className="text-textPrimary line-clamp-2">{r.description}</span>
+          <span className="text-textPrimary line-clamp-2">{limpiarTexto(r.description)}</span>
         </div>
       ),
     },
@@ -128,7 +129,7 @@ function Perfil({ perfil, refNacional }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={perfil.nombre}
+        title={limpiarNombre(perfil.nombre)}
         subtitle={perfil.nit ? `NIT: ${perfil.nit}` : undefined}
       />
 

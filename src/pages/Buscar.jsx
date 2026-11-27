@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { limpiarTexto } from '../lib/textoVisible'
 import { useSearchParams, Link } from 'react-router-dom'
 import { PageHeader } from '../components/layout/Layout'
 import { QueryState } from '../components/ui/QueryState'
@@ -85,7 +86,7 @@ function MarcosDelLugar({ lugar, nombreLugar, textos, buscado }) {
               to={`/buscar?${new URLSearchParams({ q: c.id })}`}
               className="text-cuerpo font-semibold text-primary enlace-visible leading-snug line-clamp-2"
             >
-              {c.description}
+              {limpiarTexto(c.description)}
             </Link>
             <p className="text-nota text-textSecondary leading-snug">
               {c.entityName} · {c.contractorName} · {formatCOP(c.contractValue)}
@@ -990,7 +991,7 @@ export function Buscar() {
               </span>
             )}
           </div>
-          <div className="text-nota text-textSecondary line-clamp-2">{r.description}</div>
+          <div className="text-nota text-textSecondary line-clamp-2">{limpiarTexto(r.description)}</div>
           {/* Misma etiqueta y color para toda pista de "por qué apareció esta
               fila", venga de un campo del registro o de un documento anexo: es
               la misma promesa —explicar la coincidencia— sin importar la fuente. */}

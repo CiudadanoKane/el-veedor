@@ -2,6 +2,7 @@
 // adición es también un patrón que merece atención, así que ahora conviven con
 // las demás alertas en vez de vivir aparte.
 import { useState, useMemo } from 'react'
+import { limpiarTexto } from '../../lib/textoVisible'
 import { QueryState } from '../ui/QueryState'
 import { DataTable } from '../ui/DataTable'
 import { ContractDetail } from '../ui/ContractDetail'
@@ -40,7 +41,7 @@ const colEntidad = {
             fila de SECOP I se leería con las reglas del sistema que no es. */}
         <FuenteBadge source={r.source} />
       </div>
-      <div className="text-nota text-textSecondary truncate">{r.description}</div>
+      <div className="text-nota text-textSecondary truncate">{limpiarTexto(r.description)}</div>
     </div>
   ),
 }

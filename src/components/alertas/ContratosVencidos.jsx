@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { limpiarTexto } from '../../lib/textoVisible'
 import { useSearchParams } from 'react-router-dom'
 import { QueryState } from '../ui/QueryState'
 import { DataTable } from '../ui/DataTable'
@@ -48,7 +49,7 @@ export function ContratosVencidos() {
       render: (r) => (
         <div className="max-w-[200px]">
           <div><EnlaceEntidad nombre={r.entityName} /></div>
-          <div className="text-nota text-textSecondary truncate">{r.description}</div>
+          <div className="text-nota text-textSecondary truncate">{limpiarTexto(r.description)}</div>
         </div>
       ),
     },
