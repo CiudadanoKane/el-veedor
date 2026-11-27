@@ -4,6 +4,7 @@ import { QueryState } from '../ui/QueryState'
 import { DataTable } from '../ui/DataTable'
 import { Methodology } from '../ui/Methodology'
 import { Segmented } from '../ui/Segmented'
+import { FilaControl } from '../ui/FilaControl'
 import { useFilters } from '../../context/FiltersContext'
 import {
   useCalidadDatos, UMBRAL_CONTRATOS, METRICAS, ERRORES, INCOMPLETOS,
@@ -165,10 +166,10 @@ export function IndiceCalidad() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
-          {extremo === 'peor' ? 'Registro más deficiente' : 'Registro más cuidadoso'}
-        </h2>
+      <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] mb-3">
+        {extremo === 'peor' ? 'Registro más deficiente' : 'Registro más cuidadoso'}
+      </h2>
+      <FilaControl etiqueta="Mostrar:" className="mb-2">
         <Segmented
           value={extremo}
           onChange={setExtremo}
@@ -177,16 +178,15 @@ export function IndiceCalidad() {
             { value: 'mejor', label: 'Mejor registro' },
           ]}
         />
-      </div>
+      </FilaControl>
 
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        <span className="text-nota text-textSecondary">Ordenar por:</span>
+      <FilaControl etiqueta="Ordenar por:" className="mb-4">
         <Segmented
           value={metrica}
           onChange={setMetrica}
           options={Object.entries(METRICAS).map(([v, m]) => ({ value: v, label: m.label }))}
         />
-      </div>
+      </FilaControl>
 
       {referencia && (
         <div className="mb-5 max-w-3xl">

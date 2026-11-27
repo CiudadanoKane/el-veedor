@@ -56,8 +56,10 @@ export function Seccion({
             </p>
           )}
         </div>
-        {control}
       </div>
+      {/* Debajo del texto y a la izquierda, no al extremo derecho del título:
+          ahí no se veía en una pantalla ancha (ver FilaControl). */}
+      {control && <div className="mt-3">{control}</div>}
       {metodologia && <Methodology>{metodologia}</Methodology>}
       <div className="mt-5">{children}</div>
     </section>

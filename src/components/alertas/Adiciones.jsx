@@ -7,6 +7,7 @@ import { DataTable } from '../ui/DataTable'
 import { ContractDetail } from '../ui/ContractDetail'
 import { Methodology } from '../ui/Methodology'
 import { Segmented } from '../ui/Segmented'
+import { FilaControl } from '../ui/FilaControl'
 import { useFilters } from '../../context/FiltersContext'
 import {
   useAdicionesTiempo, usePrevalenciaAdicionTiempo, useAdicionesCosto, useAdicionesAmbas,
@@ -126,12 +127,12 @@ export function AdicionesTiempo() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-textSecondary text-cuerpo">
+      <h3 className="text-textSecondary text-cuerpo">
           {prevalencia.data
             ? `${nf(prevalencia.data.total)} contratos con adición de plazo en SECOP II`
             : 'Cargando…'}
-        </h3>
+      </h3>
+      <FilaControl etiqueta="Ordenar por:" className="mt-2">
         <Segmented
           value={orden}
           onChange={setOrden}
@@ -140,7 +141,7 @@ export function AdicionesTiempo() {
             { value: 'valor', label: 'Mayor valor' },
           ]}
         />
-      </div>
+      </FilaControl>
       {prevalencia.data && (
         <p className="mt-1 text-nota text-textSecondary">
           De esos, <strong>{nf(prevalencia.data.mas50)}</strong> superan el 50% de adición
@@ -283,18 +284,18 @@ export function AdicionesCosto() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-textSecondary text-cuerpo">
+      <h3 className="text-textSecondary text-cuerpo">
           {query.data
             ? `${query.data.adiciones.length} contratos cuyo valor creció tras la firma`
             : 'Cargando…'}
-        </h3>
+      </h3>
+      <FilaControl etiqueta="Ordenar por:" className="mt-2">
         <Segmented
           value={orden}
           onChange={setOrden}
           options={Object.entries(ORDENES_COSTO).map(([v, o]) => ({ value: v, label: o.label }))}
         />
-      </div>
+      </FilaControl>
       <Methodology>
         <strong>Adición = valor actual del contrato − valor original.</strong>{' '}
         En <strong>SECOP II</strong> el valor original hay que ir a buscarlo al proceso, y
@@ -413,18 +414,18 @@ export function AdicionesAmbas() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-textSecondary text-cuerpo">
+      <h3 className="text-textSecondary text-cuerpo">
           {query.data
             ? `${filas.length} contratos que crecieron en plazo y en presupuesto`
             : 'Cargando…'}
-        </h3>
+      </h3>
+      <FilaControl etiqueta="Ordenar por:" className="mt-2">
         <Segmented
           value={orden}
           onChange={setOrden}
           options={Object.entries(ORDENES_AMBAS).map(([v, o]) => ({ value: v, label: o.label }))}
         />
-      </div>
+      </FilaControl>
 
       <p className="text-lectura text-textSecondary font-light mt-2 max-w-2xl leading-relaxed">
         Pedir más tiempo puede ser un imprevisto. Pedir más plata, también. Las dos

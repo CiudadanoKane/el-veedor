@@ -6,6 +6,7 @@ import { Semaforo } from '../ui/Semaforo'
 import { ContractDetail } from '../ui/ContractDetail'
 import { Methodology } from '../ui/Methodology'
 import { Segmented } from '../ui/Segmented'
+import { FilaControl } from '../ui/FilaControl'
 import { useFilters } from '../../context/FiltersContext'
 import { useMora } from '../../hooks/useMora'
 import { formatCOP, formatDate, daysSince, humanDuration } from '../../lib/formatters'
@@ -93,10 +94,11 @@ export function ContratosVencidos() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
-          {query.data ? `${query.data.length} contratos mostrados` : 'Contratos vencidos'}
-        </h2>
+      <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] mb-3">
+        {query.data ? `${query.data.length} contratos mostrados` : 'Contratos vencidos'}
+      </h2>
+
+      <FilaControl etiqueta="Ordenar por:" className="mb-2">
         <Segmented
           value={orden}
           onChange={setOrden}
@@ -105,10 +107,9 @@ export function ContratosVencidos() {
             { value: 'valor', label: 'Mayor valor' },
           ]}
         />
-      </div>
+      </FilaControl>
 
-      <div className="flex flex-wrap items-center gap-2 mb-1">
-        <span className="text-nota text-textSecondary">Antigüedad del vencimiento:</span>
+      <FilaControl etiqueta="Antigüedad del vencimiento:" className="mb-1">
         <Segmented
           value={rango}
           onChange={cambiarRango}
@@ -119,10 +120,9 @@ export function ContratosVencidos() {
             { value: 'todos', label: 'Todos' },
           ]}
         />
-      </div>
+      </FilaControl>
 
-      <div className="flex flex-wrap items-center gap-2 mb-1 mt-2">
-        <span className="text-nota text-textSecondary">Fuente:</span>
+      <FilaControl etiqueta="Fuente:" className="mb-1 mt-2">
         <Segmented
           value={fuente}
           onChange={setFuente}
@@ -131,7 +131,7 @@ export function ContratosVencidos() {
             { value: 'secop1', label: 'SECOP I' },
           ]}
         />
-      </div>
+      </FilaControl>
 
       {esSecop1 && (
         <div className="border-l-2 border-warning pl-4 py-1 mt-3 mb-1">

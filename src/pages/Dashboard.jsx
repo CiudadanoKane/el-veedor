@@ -5,6 +5,7 @@ import { StatCard } from '../components/ui/StatCard'
 import { QueryState } from '../components/ui/QueryState'
 import { ListaBarra } from '../components/ui/ListaBarra'
 import { Segmented } from '../components/ui/Segmented'
+import { FilaControl } from '../components/ui/FilaControl'
 import { EvolucionMensual } from '../components/ui/EvolucionMensual'
 import { MapaColombia } from '../components/ui/MapaColombia'
 import { ComparacionCiudades } from '../components/ui/ComparacionCiudades'
@@ -87,16 +88,16 @@ function DesgloseConteoCuantia({ items, colores }) {
 
   return (
     <>
-      <div className="flex justify-end -mt-2 mb-4">
+      <FilaControl etiqueta="Ordenar por:" className="-mt-2 mb-4">
         <Segmented
           value={orden}
           onChange={setOrden}
           options={[
-            { value: 'cantidad', label: 'Por cantidad' },
-            { value: 'cuantia', label: 'Por valor contratado' },
+            { value: 'cantidad', label: 'Cantidad' },
+            { value: 'cuantia', label: 'Valor contratado' },
           ]}
         />
-      </div>
+      </FilaControl>
       <ListaBarra
         apilada
         colores={colores}

@@ -6,6 +6,7 @@ import { DataTable } from '../components/ui/DataTable'
 import { ContractDetail } from '../components/ui/ContractDetail'
 import { Methodology } from '../components/ui/Methodology'
 import { Segmented } from '../components/ui/Segmented'
+import { FilaControl } from '../components/ui/FilaControl'
 import { useFilters } from '../context/FiltersContext'
 import { BuscadorContratista } from '../components/ui/BuscadorContratista'
 import { BuscadorEntidad } from '../components/ui/BuscadorEntidad'
@@ -1344,11 +1345,20 @@ export function Buscar() {
                   </div>
                 )}
                 <div className="min-w-0">
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-                  <h2 className="font-display font-extrabold text-titulo-3 tracking-[-0.02em]">
-                    {entidadPendiente ? `Mientras eliges: todo ${lugarFiltro || 'el país'}` : 'Contratos en SECOP'}
-                  </h2>
-                  <div className="flex flex-wrap items-center gap-3">
+                <h2 className="font-display font-extrabold text-titulo-3 tracking-[-0.02em] mb-2">
+                  {entidadPendiente ? `Mientras eliges: todo ${lugarFiltro || 'el país'}` : 'Contratos en SECOP'}
+                </h2>
+                <div className="flex flex-wrap items-center gap-3 mb-2">
+                    {/* Sin encoger: con el botón de la prensa al lado, la fila
+                        lo apretaba y el control mostraba su barra de
+                        desplazamiento horizontal. Mejor que la fila salte. */}
+                    <FilaControl etiqueta="Ordenar por:" className="shrink-0">
+                      <Segmented
+                        value={criterios.orden}
+                        onChange={(v) => actualizar({ orden: v })}
+                        options={Object.entries(ORDENES).map(([v, o]) => ({ value: v, label: o.label }))}
+                      />
+                    </FilaControl>
                     {/* La sección de prensa va al final de la lista, y con
                         muchos contratos nadie llegaba a ella ("contrato arroyo
                         85 barranquilla", oct 2026): un acceso a la vista. */}
@@ -1365,17 +1375,6 @@ export function Buscar() {
                         {contarFuentes(resultadosPrensa)} ↓
                       </button>
                     )}
-                    {/* Sin encoger: con el botón de la prensa al lado, la fila
-                        lo apretaba y el control mostraba su barra de
-                        desplazamiento horizontal. Mejor que la fila salte. */}
-                    <div className="shrink-0">
-                      <Segmented
-                        value={criterios.orden}
-                        onChange={(v) => actualizar({ orden: v })}
-                        options={Object.entries(ORDENES).map(([v, o]) => ({ value: v, label: o.label }))}
-                      />
-                    </div>
-                  </div>
                 </div>
 
                 <Methodology>

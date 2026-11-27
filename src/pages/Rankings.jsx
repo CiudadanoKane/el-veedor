@@ -8,6 +8,7 @@ import { QueryState } from '../components/ui/QueryState'
 import { DataTable } from '../components/ui/DataTable'
 import { Methodology } from '../components/ui/Methodology'
 import { Segmented } from '../components/ui/Segmented'
+import { FilaControl } from '../components/ui/FilaControl'
 import { ListaBarra } from '../components/ui/ListaBarra'
 import { useEsMovil } from '../hooks/useEsMovil'
 import { IndiceEjecucion } from '../components/alertas/IndiceEjecucion'
@@ -27,13 +28,20 @@ import { PESTANAS_ALERTAS, PESTANAS_RANKINGS, PESTANAS_ERRORES } from '../lib/pe
 // justo al lado del título, a la izquierda. Antes iba alineado a la derecha con
 // justify-between, donde en una pantalla ancha de PC quedaba tan lejos del
 // título que pasaba desapercibido.
-function Encabezado({ titulo, children }) {
+//
+// Y debajo del título, con etiqueta (ver FilaControl): pegado al título pero
+// sin decir qué hacía, "Por valor / Por cantidad" se leía como un adorno.
+function Encabezado({ titulo, etiqueta, children }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-3">
+    <div className="mb-3">
       <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
         {titulo}
       </h2>
-      {children}
+      {children && (
+        <FilaControl etiqueta={etiqueta} className="mt-2">
+          {children}
+        </FilaControl>
+      )}
     </div>
   )
 }
@@ -48,10 +56,9 @@ const FUENTES = [
 // engañoso. Se elige una u otra.
 function SelectorFuente({ fuente, onChange }) {
   return (
-    <div className="flex flex-wrap items-center gap-2 mb-4">
-      <span className="text-nota text-textSecondary">Fuente:</span>
+    <FilaControl etiqueta="Fuente:" className="mb-4">
       <Segmented value={fuente} onChange={onChange} options={FUENTES} />
-    </div>
+    </FilaControl>
   )
 }
 
@@ -143,13 +150,13 @@ function RankingContratistas({ filters }) {
 
   return (
     <>
-      <Encabezado titulo="Quién recibe más recursos públicos">
+      <Encabezado titulo="Quién recibe más recursos públicos" etiqueta="Ordenar por:">
         <Segmented
           value={orderBy}
           onChange={setOrderBy}
           options={[
-            { value: 'valor_total', label: 'Por valor' },
-            { value: 'total_contratos', label: 'Por cantidad' },
+            { value: 'valor_total', label: 'Valor' },
+            { value: 'total_contratos', label: 'Cantidad' },
           ]}
         />
       </Encabezado>
@@ -449,7 +456,7 @@ function RankingAdiciones({ filters }) {
 
   return (
     <>
-      <Encabezado titulo="Quién más adiciona">
+      <Encabezado titulo="Quién más adiciona" etiqueta="Ver:">
         <Segmented
           value={lado}
           onChange={setLado}
@@ -620,13 +627,13 @@ function RankingCategorias({ filters }) {
 
   return (
     <>
-      <Encabezado titulo="En qué contrata el Estado">
+      <Encabezado titulo="En qué contrata el Estado" etiqueta="Medir por:">
         <Segmented
           value={metric}
           onChange={setMetric}
           options={[
-            { value: 'valor', label: 'Por valor' },
-            { value: 'contratos', label: 'Por cantidad' },
+            { value: 'valor', label: 'Valor' },
+            { value: 'contratos', label: 'Cantidad' },
           ]}
         />
       </Encabezado>

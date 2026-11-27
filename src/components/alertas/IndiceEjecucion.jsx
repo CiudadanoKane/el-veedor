@@ -4,6 +4,7 @@ import { QueryState } from '../ui/QueryState'
 import { DataTable } from '../ui/DataTable'
 import { Methodology } from '../ui/Methodology'
 import { Segmented } from '../ui/Segmented'
+import { FilaControl } from '../ui/FilaControl'
 import { useFilters } from '../../context/FiltersContext'
 import {
   useEjecucionContratistas, UMBRAL_CONTRATOS, METRICAS,
@@ -147,10 +148,10 @@ export function IndiceEjecucion() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em]">
-          {extremo === 'peor' ? 'Más prórrogas' : 'Cumplen el plazo pactado'}
-        </h2>
+      <h2 className="font-display font-extrabold text-titulo-2 tracking-[-0.03em] mb-3">
+        {extremo === 'peor' ? 'Más prórrogas' : 'Cumplen el plazo pactado'}
+      </h2>
+      <FilaControl etiqueta="Mostrar:" className="mb-2">
         <Segmented
           value={extremo}
           onChange={setExtremo}
@@ -159,16 +160,15 @@ export function IndiceEjecucion() {
             { value: 'mejor', label: 'Menos prórrogas' },
           ]}
         />
-      </div>
+      </FilaControl>
 
-      <div className="flex flex-wrap items-center gap-2 mb-2">
-        <span className="text-nota text-textSecondary">Ordenar por:</span>
+      <FilaControl etiqueta="Ordenar por:" className="mb-2">
         <Segmented
           value={metrica}
           onChange={setMetrica}
           options={Object.entries(METRICAS).map(([v, m]) => ({ value: v, label: m.label }))}
         />
-      </div>
+      </FilaControl>
       {/* Qué mide la opción elegida, a la vista y no dentro de la
           metodología: es lo que hace falta para leer la tabla. */}
       <p className="text-cuerpo text-textSecondary mb-5 max-w-2xl leading-snug">

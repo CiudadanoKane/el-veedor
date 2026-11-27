@@ -4,6 +4,7 @@ import {
 } from 'recharts'
 import { QueryState } from './QueryState'
 import { Segmented } from './Segmented'
+import { FilaControl } from './FilaControl'
 import { Methodology } from './Methodology'
 import { useEvolucion, PERIODOS, METRICAS } from '../../hooks/useEvolucion'
 import { formatCOP, formatCOPFull, formatPct } from '../../lib/formatters'
@@ -60,11 +61,13 @@ export function EvolucionMensual({ filters }) {
         </>
       }
       control={
-        <Segmented
-          value={periodo}
-          onChange={setPeriodo}
-          options={Object.entries(PERIODOS).map(([v, p]) => ({ value: v, label: p.label }))}
-        />
+        <FilaControl etiqueta="Período:">
+          <Segmented
+            value={periodo}
+            onChange={setPeriodo}
+            options={Object.entries(PERIODOS).map(([v, p]) => ({ value: v, label: p.label }))}
+          />
+        </FilaControl>
       }
     >
       <div>

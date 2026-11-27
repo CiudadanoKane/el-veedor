@@ -10,17 +10,24 @@ const COP = new Intl.NumberFormat('es-CO', {
 const es = (n, dec = 1) =>
   n.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: dec })
 
+// Una cifra en su unidad (millones, billones…). Desde 100 el decimal mueve la
+// cifra menos del 1% y solo estorba: "$29.801,9 millones" se lee "$29.801
+// millones". Se trunca y no se redondea, para no anunciar un millón que no
+// está. Por debajo de 100 sí pesa —entre $18,9 y $18 billones hay un 5%— y
+// se conserva.
+const enUnidad = (n) => (Math.abs(n) >= 100 ? es(Math.trunc(n), 0) : es(n))
+
 // Escala colombiana: billón = 10^12, millón = 10^6
 export function formatCOP(value) {
   if (value == null) return '—'
   const abs = Math.abs(value)
-  if (abs >= 1e12) return `$${es(value / 1e12)} billones`
+  if (abs >= 1e12) return `$${enUnidad(value / 1e12)} billones`
   // Escalón intermedio: sin él, un contrato de 6×10¹¹ se lee "$600.728,9
   // millones", seis dígitos que nadie procesa de un vistazo. Solo aplica desde
   // 100 mil millones porque debajo de ahí "3.500 millones" sigue siendo la
   // forma más natural en español, y es como lo dice la prensa.
-  if (abs >= 1e11) return `$${es(value / 1e9, 0)} mil millones`
-  if (abs >= 1e6) return `$${es(value / 1e6)} millones`
+  if (abs >= 1e11) return `$${enUnidad(value / 1e9)} mil millones`
+  if (abs >= 1e6) return `$${enUnidad(value / 1e6)} millones`
   if (abs >= 1e3) return `$${es(value / 1e3, 0)} mil`
   return COP.format(value)
 }
@@ -44,7 +51,7 @@ export function formatCOPLista(valores) {
   return (value) => {
     if (value == null) return '—'
     const abs = Math.abs(value)
-    if (enMilMillones && abs >= 1e9 && abs < 1e11) return `$${es(value / 1e9)} mil millones`
+    if (enMilMillones && abs >= 1e9 && abs < 1e11) return `$${enUnidad(value / 1e9)} mil millones`
     return formatCOP(value)
   }
 }
@@ -58,7 +65,7 @@ export function formatCOPLista(valores) {
 // Usa una letra por escala: B para billones, M para millones. No abrevia el
 // tramo intermedio de "mil millones" porque inventar una unidad como "mM"
 // obligaría al lector a descifrarla. Ese tramo se expresa en millones —
-// "$182.555,7 M"— que es largo pero cabe en una línea y no pierde precisión.
+// "$182.555 M"— que es largo pero cabe en una línea y no pierde precisión.
 // Expresarlo en billones daría "$0,2 B", que ahorra espacio a costa de volver
 // ilegible la cifra de un departamento entero.
 //
@@ -67,8 +74,8 @@ export function formatCOPLista(valores) {
 export function formatCOPCorto(value) {
   if (value == null) return '—'
   const abs = Math.abs(value)
-  if (abs >= 1e12) return `$${es(value / 1e12)} B`
-  if (abs >= 1e6) return `$${es(value / 1e6)} M`
+  if (abs >= 1e12) return `$${enUnidad(value / 1e12)} B`
+  if (abs >= 1e6) return `$${enUnidad(value / 1e6)} M`
   if (abs >= 1e3) return `$${es(value / 1e3, 0)} k`
   return COP.format(value)
 }
