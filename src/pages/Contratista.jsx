@@ -24,9 +24,11 @@ function AvisoDocumentoCompartido({ perfil }) {
         Este documento agrupa varias organizaciones
       </p>
       <p className="text-cuerpo text-textSecondary font-light leading-relaxed mt-1 max-w-3xl">
-        En SECOP, {perfil.nombres.length} nombres distintos comparten este número, y
-        ninguno concentra la mayoría de los contratos (el más frecuente tiene el{' '}
-        {formatPct(perfil.proporcionDominante * 100, 0)}). Pasa sobre todo con los NIT de
+        En SECOP, {perfil.nombres.length} nombres distintos comparten este número.{' '}
+        {perfil.proporcionDominante < 0.5
+          ? `Ninguno concentra la mayoría de los contratos: el más frecuente tiene el ${formatPct(perfil.proporcionDominante * 100, 0)}.`
+          : `El más frecuente tiene el ${formatPct(perfil.proporcionDominante * 100, 0)} de los contratos; el resto va a nombre de otras organizaciones.`}{' '}
+        Pasa sobre todo con los NIT de
         alcaldías y gobernaciones, que varias dependencias usan como propio.{' '}
         <strong className="font-semibold text-textPrimary">
           Las cifras de esta página suman todas ellas

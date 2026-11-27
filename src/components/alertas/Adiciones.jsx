@@ -113,6 +113,11 @@ export function AdicionesTiempo() {
                 en {r.prorrogas} prórrogas
               </span>
             )}
+            {r.posibleError && (
+              <span className="block text-micro text-textSecondary font-normal">
+                posible error de registro
+              </span>
+            )}
           </span>
         )
       },

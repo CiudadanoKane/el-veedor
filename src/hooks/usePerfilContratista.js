@@ -4,7 +4,7 @@ import { DATASETS, CONTRACT_FIELDS, CONTRACT_FIELDS_SECOP1 } from '../lib/consta
 import { esc, soloContratosValidos, soloContratosValidosSecop1, cuantiaPosibleSecop1, valorCoherenteConElPresupuestoSecop1 } from '../lib/soql'
 import { MODALIDADES_SIN_COMPETENCIA } from './useDashboard'
 import { SECOP1_A_MODALIDAD, MODALIDAD_SIN_COMPETENCIA_SECOP1 } from '../lib/catalogosSecop1'
-import { valorMasFrecuente } from '../lib/identidad'
+import { valorMasFrecuente, proporcionDelNombre } from '../lib/identidad'
 import { periodoValido, firmaSana } from '../lib/periodo'
 import { adaptList as adaptListSecop2 } from '../adapters/secop2Adapter'
 import { adaptList as adaptListSecop1 } from '../adapters/secop1Adapter'
@@ -281,9 +281,10 @@ export function usePerfilContratista(documento) {
         nombres: listaNombres,
         // Si ningún nombre domina, el documento agrupa organizaciones
         // distintas y el perfil no puede tratarse como uno solo.
+        // Las variantes del nombre dominante ("FE Y ALEGRIA DE COLOMBIA" junto
+        // a "FE Y ALEGRIA") cuentan con él: ver esVarianteDe.
         documentoCompartido:
-          listaNombres.length > 1 &&
-          (dominante?.proporcion ?? 1) < UMBRAL_NOMBRE_DOMINANTE,
+          listaNombres.length > 1 && proporcionDelNombre(listaNombres) < UMBRAL_NOMBRE_DOMINANTE,
         proporcionDominante: dominante?.proporcion ?? 1,
 
         entidades_lista: entidadesCombinadas.slice(0, 15),

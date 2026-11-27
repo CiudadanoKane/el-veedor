@@ -113,6 +113,18 @@ export function useCerradoSinPago(filters = {}) {
   }
 }
 
+// Un mismo CDP suele amparar muchos contratos: en el país, decenas de convenios
+// de Colombia Mayor salían seguidos, cada uno con "$717 mil millones", como si
+// cada contrato tuviera ese presupuesto (nov 2026). Cada fila lleva cuántas de
+// la lista repiten su CDP (misma entidad, mismo saldo) para decirlo al lado.
+function marcarCdpCompartido(rows) {
+  const lista = adaptList(rows)
+  const clave = (c) => `${c.entityName}|${c.cdpBalance}`
+  const veces = new Map()
+  for (const c of lista) veces.set(clave(c), (veces.get(clave(c)) || 0) + 1)
+  return lista.map((c) => ({ ...c, cdpCompartido: veces.get(clave(c)) }))
+}
+
 export function contratosSinValorConteoQueryOptions(filters = {}) {
   return {
     queryKey: ['alerta', 'sinvalor', 'conteo', filters],
@@ -128,7 +140,7 @@ export function contratosSinValorConteoQueryOptions(filters = {}) {
 
 export function contratosSinValorListaQueryOptions(filters = {}) {
   return {
-    queryKey: ['alerta', 'sinvalor', 'lista', filters],
+    queryKey: ['alerta', 'sinvalor', 'lista', 'v2', filters],
     queryFn: () => {
       const where = buildWhere(whereFromFilters(filters, CONDICIONES_SIN_VALOR))
       return socrataQuery(
@@ -136,7 +148,7 @@ export function contratosSinValorListaQueryOptions(filters = {}) {
         `SELECT ${CONTRACT_FIELDS} ${where} ORDER BY saldo_cdp DESC LIMIT 100`,
       )
     },
-    select: adaptList,
+    select: marcarCdpCompartido,
   }
 }
 

@@ -419,7 +419,7 @@ export function AlertaCerradoSinPago() {
       key: 'valuePaid',
       header: 'Pago registrado',
       className: 'text-right tabular-nums',
-      render: () => <span className="text-danger font-medium">$ 0</span>,
+      render: () => <span className="text-danger font-medium">$0</span>,
     },
     { key: 'endDate', header: 'Fecha fin', render: (r) => formatDate(r.endDate) },
   ]
@@ -495,14 +495,21 @@ export function AlertaContratosSinValor() {
       key: 'contractValue',
       header: 'Valor registrado',
       className: 'text-right tabular-nums',
-      render: () => <span className="text-danger font-medium">$ 0</span>,
+      render: () => <span className="text-danger font-medium">$0</span>,
     },
     {
       key: 'cdpBalance',
       header: 'Presupuesto (CDP)',
       className: 'text-right tabular-nums whitespace-nowrap',
       render: (r) => (
-        <span className="text-warning font-medium">{formatCOP(r.cdpBalance)}</span>
+        <span className="text-warning font-medium">
+          {formatCOP(r.cdpBalance)}
+          {r.cdpCompartido > 1 && (
+            <span className="block text-micro text-textSecondary font-normal">
+              el mismo CDP en {r.cdpCompartido} contratos de esta lista
+            </span>
+          )}
+        </span>
       ),
     },
   ]

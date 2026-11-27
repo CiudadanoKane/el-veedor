@@ -39,6 +39,45 @@ export function valorMasFrecuente(filas, campo, campoConteo = 'n') {
   return { ...dominante, total, proporcion: total ? dominante.n / total : 0 }
 }
 
+// Las palabras de un nombre, sin tildes, mayúsculas ni puntuación.
+function palabrasDe(nombre) {
+  return new Set(
+    String(nombre || '')
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9ñ]+/g, ' ')
+      .trim()
+      .split(' ')
+      .filter(Boolean),
+  )
+}
+
+const contiene = (a, b) => [...b].every((p) => a.has(p))
+
+// ¿Es `nombre` una forma de escribir `base`? Sí cuando uno lleva todas las
+// palabras del otro: "FE Y ALEGRIA DE COLOMBIA", "FE Y ALEGRIA DE  COLOMBIA" o
+// "FE Y ALEGRIA DE COLOMBIA UDS H.I CAMPANITA MELODIOSA" son Fe y Alegría (su
+// NIT salía con 13 "organizaciones distintas", nov 2026). Las dependencias de
+// Bogotá que comparten el 899999061 —Secretaría de Seguridad, Bomberos,
+// alcaldías locales— no comparten palabras así, y siguen contando aparte.
+export function esVarianteDe(nombre, base) {
+  const a = palabrasDe(nombre)
+  const b = palabrasDe(base)
+  if (!a.size || !b.size) return false
+  return contiene(a, b) || contiene(b, a)
+}
+
+// Qué parte de los contratos lleva el nombre dominante o una variante suya.
+// `nombres`: [{ nombre, n }] ordenados de mayor a menor.
+export function proporcionDelNombre(nombres) {
+  const total = nombres.reduce((s, x) => s + x.n, 0)
+  if (!total) return 1
+  const base = nombres[0].nombre
+  const suyos = nombres.filter((x) => esVarianteDe(x.nombre, base)).reduce((s, x) => s + x.n, 0)
+  return suyos / total
+}
+
 // Documentos que no identifican a nadie.
 //
 // "No Definido" es el más conocido —14.838 contratos de 13.623 contratistas

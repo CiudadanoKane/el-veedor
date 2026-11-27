@@ -110,6 +110,16 @@ const ORDEN_ADIC_SECOP1 = {
 // también era un convenio de $0. Siguen en el buscador.
 const SIN_VALOR_CERO = 'valor_del_contrato > 0'
 
+// Una prórroga de más de diez veces el plazo original Y de más de un año casi
+// siempre es una fecha de fin mal escrita, no una prórroga: un apoyo a la
+// gestión de $4,1 millones en Ibagué pasó de 91 días a 10 años (+3.648 días) y
+// Señales lo daba como hallazgo (nov 2026). No se saca de la lista —más de diez
+// veces por sí solo pasa en 13.401 contratos, muchos reales—: se marca, en la
+// tabla y en la nota, para que no se lea como un caso.
+export function posibleErrorDePlazo({ pctAdicion, diasAcumulados }) {
+  return pctAdicion != null && pctAdicion >= 1000 && (diasAcumulados || 0) >= 365
+}
+
 export function useAdicionesTiempo(filters = {}, limit = 50, orden = 'dias') {
   const orderBy = ORDEN_ADIC[orden] || ORDEN_ADIC.dias
   const orderBy1 = ORDEN_ADIC_SECOP1[orden] || ORDEN_ADIC_SECOP1.dias
@@ -191,6 +201,7 @@ export function useAdicionesTiempo(filters = {}, limit = 50, orden = 'dias') {
           prorrogas: plazo.prorrogas,
           plazoOriginal,
           pctAdicion,
+          posibleError: posibleErrorDePlazo({ pctAdicion, diasAcumulados }),
           valorOriginal: original?.valor ?? null,
           // Solo se publica como adición lo que pasa las guardas compartidas
           // (múltiplos de digitación, crecimientos imposibles).

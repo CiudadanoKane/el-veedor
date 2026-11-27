@@ -97,6 +97,7 @@ export function Noticias() {
             <> en un <strong>{num(a.pctAdicion)}%</strong></>
           ) : null}{' '}
           — {plazoTexto(a)}.
+          {a.posibleError && <span className="text-textSecondary font-normal"> Puede ser un error de registro: más de diez veces su plazo original.</span>}
         </>
       ),
       secundarios: casos.slice(1, 3).map((c) => ({
@@ -106,6 +107,7 @@ export function Noticias() {
             <EnlaceEntidad nombre={c.entityName} className="font-semibold" />
             {c.pctAdicion != null ? `: +${num(c.pctAdicion)}%` : ':'}{' '}
             (<EnlaceContrato id={c.id}>{plazoTexto(c)}</EnlaceContrato>)
+            {c.posibleError && <span className="text-textSecondary"> · posible error de registro</span>}
           </>
         ),
       })),
