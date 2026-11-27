@@ -76,10 +76,10 @@ export async function rankingContratistasQuery(filters = {}, orderBy = 'valor_to
      ${where}
      GROUP BY documento_proveedor
      ORDER BY ${orderBy} DESC
-     LIMIT ${TOP_RANKING * 2}`,
+     LIMIT ${TOP_RANKING * 4}`,
   )
   // Se piden de más porque las entidades públicas se quitan después: en
-  // Barranquilla salen 3 de los 5 primeros.
+  // Barranquilla salen 3 de los 5 primeros, y en el país 52 de los 60.
   const filas = (await sinEntidadesPublicas(candidatas, (r) => r.documento_proveedor)).slice(0, TOP_RANKING)
 
   const documentos = filas.map((r) => r.documento_proveedor).filter(Boolean)
@@ -162,7 +162,7 @@ export async function rankingContratistasQuerySecop1(filters = {}, orderBy = 'va
      ${where}
      GROUP BY documento_proveedor
      ORDER BY ${orderExpr}
-     LIMIT ${TOP_RANKING * 2}`,
+     LIMIT ${TOP_RANKING * 4}`,
   )
   const filas = (await sinEntidadesPublicas(candidatas, (r) => r.documento_proveedor)).slice(0, TOP_RANKING)
 

@@ -46,6 +46,7 @@ const TOKEN = process.env.SOCRATA_TOKEN || ''
 
 const PAGINA = 50_000
 const TOP = 30
+const CANDIDATOS = 200
 
 const args = process.argv.slice(2)
 const opcion = (nombre) => {
@@ -117,13 +118,15 @@ async function escanear({ etiqueta, dataset, campoId, campoDocumento, campoValor
   return mapa
 }
 
-// Se toman el doble de candidatos porque después se quitan las entidades
-// públicas (ver sinPublicas), igual que en el ranking en vivo de useRankings.js.
+// Se toman CANDIDATOS porque después se quitan las entidades públicas (ver
+// sinPublicas). Con el doble no alcanzaba: en el país 52 de los 60 primeros
+// por valor eran entidades públicas, quedaban 18 filas y la guarda frenó la
+// escritura (27 nov 2026).
 function topPorValor(mapa) {
-  return [...mapa.entries()].sort((a, b) => b[1].valor - a[1].valor).slice(0, TOP * 2)
+  return [...mapa.entries()].sort((a, b) => b[1].valor - a[1].valor).slice(0, CANDIDATOS)
 }
 function topPorCantidad(mapa) {
-  return [...mapa.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, TOP * 2)
+  return [...mapa.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, CANDIDATOS)
 }
 
 // Quita las entidades públicas de un top y lo deja en TOP. contratistasPublicos
@@ -132,7 +135,12 @@ function topPorCantidad(mapa) {
 async function sinPublicas(...tops) {
   process.env.SOCRATA_BASE ||= BASE
   const { documentosPublicos } = await import('../src/lib/contratistasPublicos.js')
-  const publicos = await documentosPublicos([...new Set(tops.flat().map(([d]) => d))])
+  // En lotes de 100: con 200 candidatos por top, un solo IN pasa de 10 KB de URL.
+  const documentos = [...new Set(tops.flat().map(([d]) => d))]
+  const publicos = new Set()
+  for (let i = 0; i < documentos.length; i += 100) {
+    for (const d of await documentosPublicos(documentos.slice(i, i + 100))) publicos.add(d)
+  }
   console.error(`  ${publicos.size} entidades públicas fuera del top`)
   return tops.map((top) => top.filter(([d]) => !publicos.has(d)).slice(0, TOP))
 }
